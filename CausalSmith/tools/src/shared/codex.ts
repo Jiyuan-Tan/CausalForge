@@ -12,6 +12,7 @@ import {
   type LocalConfig,
 } from "../local_config.js";
 import { MODELS } from "../models.js";
+import type { ModelTokenUsage } from "../token_usage.js";
 
 /**
  * Canonical codex dispatcher. Used by every research stage today and (per
@@ -97,6 +98,8 @@ export interface CodexRunInput {
   /** Ignore inherited user config while retaining CODEX_HOME authentication.
    * Cold referees use this so user MCP/tool settings cannot widen the call. */
   ignoreUserConfig?: boolean;
+  /** Receives exact cumulative usage from this Codex session, including native subagents. */
+  onUsage?: (usage: ModelTokenUsage) => void;
 }
 
 export type CodexSandboxMode = LocalConfig["codexSandbox"];
@@ -467,6 +470,16 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
       },
     },
   });
+  // Telemetry is best-effort and must never change the model call's outcome.
+  try {
+    const sessionFile = await findCodexSessionFile(spawnedAt, marker);
+    if (sessionFile && input.onUsage) {
+      const usage = await extractCodexTokenUsage(sessionFile);
+      if (usage) input.onUsage(usage);
+    }
+  } catch (err) {
+    console.warn(`[token-usage] could not read Codex usage: ${String(err)}`);
+  }
   const killed =
     result.killedDueToLiveness ??
     (result.killedDueToInactivity
@@ -492,6 +505,10 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
 }
 
 async function codexSessionStarted(after: number, marker: string): Promise<boolean> {
+  return (await findCodexSessionFile(after, marker)) !== null;
+}
+
+async function findCodexSessionFile(after: number, marker: string): Promise<string | null> {
   // Must follow the ACTIVE codex home: api mode relocates CODEX_HOME, and a
   // hardcoded `~/.codex/sessions` would then never see the marker, so the
   // startup watchdog would kill every healthy worker at the startup window.
@@ -499,9 +516,42 @@ async function codexSessionStarted(after: number, marker: string): Promise<boole
   const candidates: string[] = [];
   await collectNewerJsonl(root, after, 3, candidates);
   for (const file of candidates) {
-    if (await fileHeadContains(file, marker)) return true;
+    if (await fileHeadContains(file, marker)) return file;
   }
-  return false;
+  return null;
+}
+
+/** Read the final cumulative token counter from a Codex rollout JSONL. */
+export async function extractCodexTokenUsage(file: string): Promise<ModelTokenUsage | null> {
+  let latest: ModelTokenUsage | null = null;
+  for (const line of (await readFile(file, "utf8")).split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line) as {
+        type?: string;
+        payload?: {
+          type?: string;
+          info?: { total_token_usage?: Partial<ModelTokenUsage> & { cache_write_input_tokens?: number } };
+        };
+      };
+      const raw = event.type === "event_msg" && event.payload?.type === "token_count"
+        ? event.payload.info?.total_token_usage
+        : undefined;
+      if (!raw) continue;
+      latest = {
+        input_tokens: raw.input_tokens ?? 0,
+        cached_input_tokens: raw.cached_input_tokens ?? 0,
+        cache_creation_input_tokens:
+          raw.cache_creation_input_tokens ?? raw.cache_write_input_tokens ?? 0,
+        output_tokens: raw.output_tokens ?? 0,
+        reasoning_output_tokens: raw.reasoning_output_tokens ?? 0,
+        total_tokens: raw.total_tokens ?? (raw.input_tokens ?? 0) + (raw.output_tokens ?? 0),
+      };
+    } catch {
+      // Non-JSON or truncated final lines carry no usable counter.
+    }
+  }
+  return latest;
 }
 
 async function collectNewerJsonl(

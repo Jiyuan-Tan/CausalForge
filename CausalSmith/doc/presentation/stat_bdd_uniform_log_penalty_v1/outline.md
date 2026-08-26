@@ -115,8 +115,8 @@ objs: lem:coordinatewise-overlap-direct-product, lem:cty-support-boundary-angula
 bib: CattaneoTitiunikYu2026Distance, Stone1982, Tsybakov2009, Mammen1995, Cuevas2004, Vapnik1971, Pollard1984, VanderVaart1996
 
 ## section: Appendix B: Signed-Distance Geometry, Maximal Inequalities, and Upper Bound
-This appendix section will prove the VC fact for Euclidean balls, the pointwise winsorization-bias bound, and the bounded-envelope maximal inequality, then assemble the expected outer-risk upper bound for the stabilized local-polynomial estimator. The proof path will route through \(\cref{lem:euclidean-balls-vc,lem:cty-winsorization-bias,lem:cty-winsorized-score-maximal-bound}\) before concluding \(\cref{prop:cty-a1-a2-winsorized-expected-outer-upper}\).
-objs: lem:euclidean-balls-vc, lem:cty-winsorization-bias, lem:cty-winsorized-score-maximal-bound
+This appendix section will prove the VC fact for Euclidean balls and the bounded-envelope maximal inequality, then assemble the expected outer-risk upper bound for the stabilized local-polynomial estimator. The proof path will route through \(\cref{lem:euclidean-balls-vc,lem:cty-winsorized-score-maximal-bound}\) before concluding \(\cref{prop:cty-a1-a2-winsorized-expected-outer-upper}\).
+objs: lem:euclidean-balls-vc, lem:cty-winsorized-score-maximal-bound
 bib: CattaneoTitiunikYu2026Distance, Fan1996, Ruppert1994, Calonico2014, Calonico2020, Vapnik1971, Pollard1984, VanderVaart1996
 
 ## section: Appendix C: Signed-Distance Hypercube and Matched Rate

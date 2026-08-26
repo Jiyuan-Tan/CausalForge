@@ -186,7 +186,11 @@ describe("a rendered proof must reach the paper", () => {
     expect(dropped[0].detail).toContain("never placed in paper.tex");
   });
 
-  it("catches the seven real dropped proofs in the shipped bundles", async () => {
+  it("finds no dropped proofs in the shipped bundles", async () => {
+    // Until 2026-08-25 this test asserted the historical failure set (seven dropped proofs
+    // shipped live); the isolated-lemma fix wave reassembled those bundles, so the invariant
+    // flips: shipped bundles must stay clean. Removing an object from a paper also deletes its
+    // proofs/*.tex, so every id under proofs/ is expected to be placed — no filtering.
     const { lintProofsReachedPaper } = await import("../src/presentation/stages/p2_draft.js");
     const { readFile, readdir } = await import("node:fs/promises");
     const root = new URL("../../doc/presentation/", import.meta.url);
@@ -199,11 +203,6 @@ describe("a rendered proof must reach the paper", () => {
         .filter((n) => n.endsWith(".tex")).map((n) => n.slice(0, -4));
       found.push(...lintProofsReachedPaper(paper, ids).map((p) => p.objId!));
     }
-    // The lint must actually fire on the historical failures rather than being vacuously green.
-    expect(found).toEqual(expect.arrayContaining([
-      "lem:unit-fe-collapse", "lem:pseudo-true-ppml-projection",
-      "prop:four-cohort-sign-reversal", "lem:admissible-swaps-preserve-direction",
-      "prop:oracle-regime-reduction",
-    ]));
+    expect(found).toEqual([]);
   });
 });

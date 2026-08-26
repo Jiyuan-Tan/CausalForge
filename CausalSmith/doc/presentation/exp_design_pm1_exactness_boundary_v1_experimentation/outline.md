@@ -6,7 +6,7 @@
 # Notation
 notation_gaps: none
 
-env_overrides: none
+env_overrides: prop:symmetry-reduction=propositionv
 
 | note symbol | paper notation | defining property in one phrase | home |
 |---|---|---|---|

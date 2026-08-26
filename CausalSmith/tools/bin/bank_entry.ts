@@ -36,6 +36,7 @@
  *     --tier accepted|downgraded|failed|legacy \
  *     [--reason "<one-sentence verbatim verdict>"] \
  *     [--achieved-tier <incremental|subfield|field|flagship>] \
+ *     [--orchestrator-tokens <nonnegative integer>] \
  *     [--seeds-burned "0,3"] \
  *     [--seed-burn-reason "<why these seeds are burned>"] \
  *     [--dry-run]
@@ -64,6 +65,12 @@ import { auditCitedReview, auditDelivery } from "../src/formalization/delivery_a
 import type { CitedReviewReceipt, DeliveryReviewReceipt } from "../src/types.js";
 import { normalizeNoveltyTarget, type NoveltyTarget } from "../src/novelty.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
+import {
+  summarizeTokenUsage,
+  tokenUsageYaml,
+  writeTokenUsageSummary,
+  type PaperTokenUsageSummary,
+} from "../src/token_usage.js";
 
 const STAGE_0_5_IDX = STAGE_ORDER.indexOf("0.5");
 
@@ -115,6 +122,7 @@ interface Args {
   dryRun: boolean;
   /** Gate node ids discharged before this (re-)bank; recorded when re-banking a reopened entry. */
   dischargedGates?: string[];
+  orchestratorTokens?: number;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -142,6 +150,7 @@ function parseArgs(argv: string[]): Args {
       }
       case "--seeds-burned":     a.seedsBurned = v.split(",").map((s) => parseInt(s.trim(), 10)).filter(Number.isFinite); i++; break;
       case "--seed-burn-reason": a.seedBurnReason = v; i++; break;
+      case "--orchestrator-tokens": a.orchestratorTokens = Number(v); i++; break;
       case "--dry-run":          a.dryRun = true; break;
       default:
         if (k?.startsWith("--")) throw new Error(`Unknown flag: ${k}`);
@@ -158,6 +167,10 @@ function parseArgs(argv: string[]): Args {
   }
   if (a.reraiseStatus !== undefined && !RERAISE_STATUS_VALUES.includes(a.reraiseStatus)) {
     throw new Error(`Invalid --reraise-status: ${a.reraiseStatus}. Must be one of ${RERAISE_STATUS_VALUES.join("|")}`);
+  }
+  if (a.orchestratorTokens !== undefined &&
+      (!Number.isSafeInteger(a.orchestratorTokens) || a.orchestratorTokens < 0)) {
+    throw new Error("Invalid --orchestrator-tokens: expected a nonnegative safe integer");
   }
   return a as Args;
 }
@@ -374,8 +387,9 @@ function renderReadme(args: {
   proposalPromiseGap: string | null;
   bankedNoveltyTier?: NoveltyTarget;
   seedsBurnedEntries: Array<{ index: number; one_liner: string; reason: string }>;
+  tokenUsage: PaperTokenUsageSummary;
 }): string {
-  const { state, tier, qid, spec, bankedOn, bankedReason, tierProp, tierDeriv, reusable, reraiseStatus, proposalPromiseGap, bankedNoveltyTier, seedsBurnedEntries } = args;
+  const { state, tier, qid, spec, bankedOn, bankedReason, tierProp, tierDeriv, reusable, reraiseStatus, proposalPromiseGap, bankedNoveltyTier, seedsBurnedEntries, tokenUsage } = args;
   const topic = state?.proposed_from?.topic ?? "(unknown)";
   const noveltyTarget = state?.proposed_from?.novelty_target ?? "(unknown)";
 
@@ -469,6 +483,7 @@ function renderReadme(args: {
     `${seedsYaml}\n` +
     (failedTheoremsYaml ? `${failedTheoremsYaml}` : "") +
     `proof_attempt_summary: ${yamlBlock(`TODO: 2-3 sentence epitaph — what was attempted, what collapsed, what remains.`)}\n` +
+    `${tokenUsageYaml(tokenUsage)}\n` +
     `banked_on: ${yamlStr(bankedOn)}\n` +
     `---\n\n`;
 
@@ -560,6 +575,8 @@ export interface BankEntryArgs {
    * is present; ignored on a normal first bank. Set by `--discharge-gate`.
    */
   dischargedGates?: string[];
+  /** External main-orchestrator total, obtained mechanically from its usage counter. */
+  orchestratorTokens?: number;
 }
 
 export interface BankEntryResult {
@@ -587,6 +604,7 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
     seedBurnReason: input.seedBurnReason,
     dryRun: input.dryRun ?? false,
     dischargedGates: input.dischargedGates ?? [],
+    orchestratorTokens: input.orchestratorTokens,
   };
   if (!TIERS.includes(args.tier)) {
     throw new Error(`Invalid --tier: ${args.tier}. Must be one of ${TIERS.join("|")}`);
@@ -596,6 +614,10 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
   }
   if (args.reraiseStatus !== undefined && !RERAISE_STATUS_VALUES.includes(args.reraiseStatus)) {
     throw new Error(`Invalid --reraise-status: ${args.reraiseStatus}. Must be one of ${RERAISE_STATUS_VALUES.join("|")}`);
+  }
+  if (args.orchestratorTokens !== undefined &&
+      (!Number.isSafeInteger(args.orchestratorTokens) || args.orchestratorTokens < 0)) {
+    throw new Error("Invalid orchestratorTokens: expected a nonnegative safe integer");
   }
   const repoRoot = input.repoRoot ?? findCausalSmithRoot(process.cwd());
   const { formalizationDir, formalizationKind, researchBankRoot, literatureBankRoot } =
@@ -610,6 +632,7 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
   const statePath = await locateStateJson(srcDir, args.qid, args.spec);
   const stateRaw = await readFile(statePath, "utf8");
   const state = JSON.parse(stateRaw);
+  const tokenUsage = await summarizeTokenUsage(srcDir, args.orchestratorTokens);
 
   if (state.banked === true) {
     throw new Error(`State.json already marked banked: ${statePath}. Refusing to re-bank.`);
@@ -774,6 +797,7 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
     banked_reason: bankedReason,
     banked_reusable: reusable,
     banked_proposal_promise_gap: proposalPromiseGap ?? null,
+    token_usage: tokenUsage,
     ...(bankedNoveltyTier ? { banked_novelty_tier: bankedNoveltyTier } : {}),
   };
 
@@ -825,6 +849,7 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
     proposalPromiseGap,
     bankedNoveltyTier,
     seedsBurnedEntries,
+    tokenUsage,
   });
 
   if (args.dryRun) {
@@ -865,6 +890,7 @@ export async function bankEntry(input: BankEntryArgs): Promise<BankEntryResult> 
 
   // 3. Write README scaffold at the new location.
   await writeFile(path.join(destDir, "README.md"), readme, "utf8");
+  await writeTokenUsageSummary(destDir, tokenUsage);
 
   return {
     destDir,
@@ -1012,6 +1038,7 @@ async function main() {
     seedsBurned: args.seedsBurned,
     seedBurnReason: args.seedBurnReason,
     dryRun: args.dryRun,
+    orchestratorTokens: args.orchestratorTokens,
     repoRoot,
   })) as BankEntryResult & { __dryRun?: boolean };
 

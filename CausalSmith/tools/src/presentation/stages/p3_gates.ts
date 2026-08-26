@@ -20,6 +20,7 @@ import {
   minRubric,
   parseRubricReview,
   parseJsonLoose,
+  GATE_RERUN_SENTINEL,
   type GateRunners,
   type HardGateInput,
   type RubricReview,
@@ -309,7 +310,7 @@ export async function stageP3(io: StageIO): Promise<void> {
       if (!v || typeof v.clean !== "boolean" || !Array.isArray(v.flags)) {
         return {
           clean: false,
-          flags: [{ sentence: misses[0].sentence, fix: "Overclaim auditor returned invalid JSON; re-run the gate." }],
+          flags: [{ sentence: misses[0].sentence, fix: `${GATE_RERUN_SENTINEL} Overclaim auditor returned invalid JSON; re-run the gate.` }],
         };
       }
       let matchedFlags = 0;
@@ -328,12 +329,24 @@ export async function stageP3(io: StageIO): Promise<void> {
       // not match: every unit was stored `flag: null`, so the "re-run the gate" retry
       // then hit an all-clean cache and the gate passed vacuously with zero model calls.
       if (v.clean || matchedFlags > 0) {
-        for (const p of pending) gateCache.overclaimUnits[p.key] = { flag: p.flag };
+        // A PARTIALLY-matched reply (some flags matched, others matched no unit) must not
+        // cache the un-flagged units as clean: one of them is likely the unmatched flag's
+        // real target (id wrong + sentence rephrased), and a cached `flag: null` replays
+        // as a clean verdict forever. Cache matched flags; leave clean-LOOKING units
+        // uncached for re-audit whenever any flag went unmatched (audit, 2026-08-26).
+        const unmatched = v.flags.length - matchedFlags;
+        for (const p of pending) {
+          if (p.flag === null && unmatched > 0) continue;
+          gateCache.overclaimUnits[p.key] = { flag: p.flag };
+        }
+        if (unmatched > 0) {
+          io.state.notes.push(`P3 overclaim: ${unmatched} auditor flag(s) matched no audited sentence — clean-looking units left uncached for re-audit`);
+        }
       }
       if (!v.clean && matchedFlags === 0) {
         return {
           clean: false,
-          flags: [{ sentence: misses[0].sentence, fix: "Auditor reported an unmatched overclaim; re-run the gate." }],
+          flags: [{ sentence: misses[0].sentence, fix: `${GATE_RERUN_SENTINEL} Auditor reported an unmatched overclaim; re-run the gate.` }],
         };
       }
       const out = { clean: flags.length === 0, flags };
@@ -488,8 +501,11 @@ export async function stageP3(io: StageIO): Promise<void> {
     // P3 cannot edit frozen statement environments. Do not show them to the
     // prose reviser, and omit rubric requests whose only proposed action is to
     // delete or rewrite synthesized definitions.
-    const proseProblems = problems.filter(isProseRepairable);
+    const proseProblems = problems.filter(isProseRepairable).filter((p) => !p.detail.includes(GATE_RERUN_SENTINEL));
     if (proseProblems.length === 0) {
+      if (problems.some((p) => p.detail.includes(GATE_RERUN_SENTINEL))) {
+        return; // nothing to edit — the sentinel only exists so gateLoop re-runs the gate
+      }
       throw new Error(`P3 revision round ${round} has no prose-repairable findings`);
     }
     const { stdout } = await deps.runCodex({
@@ -640,8 +656,15 @@ export async function stageP3(io: StageIO): Promise<void> {
       if (reviews.length === 0) {
         throw new Error("P3 rubric: no reviewer returned a valid review (scores must be finite numbers) — re-run P3");
       }
-      gateCache.rubric[rubricKey] = reviews;
-      await saveGateCache();
+      if (reviews.length < rubricRuns.length) {
+        // A dropped reviewer silently loosens the min-binds ensemble (the discarded one may
+        // have been the harsher); proceed fail-closed on what parsed, but say so and do NOT
+        // cache the partial ensemble — the next entry retries both reviewers.
+        io.state.notes.push(`P3 rubric: ${rubricRuns.length - reviews.length} of ${rubricRuns.length} reviewer(s) returned unusable output — scored on a partial ensemble this pass, uncached`);
+      } else {
+        gateCache.rubric[rubricKey] = reviews;
+        await saveGateCache();
+      }
     }
     await appendFile(reviewsPath, JSON.stringify({ kind: "rubric", reviews }) + "\n", "utf8");
     return { reviews, minScore: minRubric(reviews) };

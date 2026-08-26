@@ -22,8 +22,8 @@ proof_attempt_summary: |
   transfers the published moment-matching input `ZengOneArmMinimaxLower` to
   ATE; that published construction is cited and attested, not rederived here.
 banked_on: "2026-07-18"
-paper_score: 8.2
-paper_score_rationale: "The paper delivers a technically meaningful and well-scoped minimax contribution with unusually good claim fidelity, but it still needs presentational and reproducibility tightening before publication."
+paper_score: 8
+paper_score_rationale: "The paper delivers a significant and well-positioned sharp minimax-rate result with verified statements, but several exposition and claim-fidelity issues should be cleaned up before publication."
 ---
 
 # stat_discrete_ate_minimax_loggap / polynomial_upper_match — Accepted

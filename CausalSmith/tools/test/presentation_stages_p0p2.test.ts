@@ -200,8 +200,16 @@ const deps: PaperDeps = {
           !prompt.includes("(none recorded for this result)") && !prompt.includes("{{informal_derivation}}"),
         );
       }
+      // The prompt carries the paper's citable envs; cite them, as a real proof does. Without
+      // this the assembled paper has lemmas no proof uses (isolated-lemma gate), and a proof
+      // whose Lean route invokes another result env's decl without a \cref trips the
+      // deterministic missing-citation check — both gates rightly reject the stub otherwise.
+      const helperIds = [...new Set(
+        [...prompt.matchAll(/\\begin\{(?:lemmav|theoremv|propositionv)\}\{([\w:-]+)\}/g)].map((m) => m[1]),
+      )].filter((id) => id !== thmId);
+      const cite = helperIds.length > 0 ? ` By \\cref{${helperIds.map((id) => `obj:${id}`).join(",")}}.` : "";
       return {
-        stdout: `chatter\n\\begin{proof}[Proof of \\cref{obj:${thmId}}]\nStep 1. % lean: t_thm\n\\end{proof}\nmore chatter`,
+        stdout: `chatter\n\\begin{proof}[Proof of \\cref{obj:${thmId}}]\nStep 1.${cite} % lean: t_thm\n\\end{proof}\nmore chatter`,
         stderr: "",
       };
     }
@@ -338,6 +346,11 @@ describe("parseNotationReviewerOutput (P1 reviewer JSON boundary)", () => {
   it("throws on non-JSON output instead of passing as clean", () => {
     expect(() => parseNotationReviewerOutput("I could not review this layer."))
       .toThrow(/notation reviewer/);
+  });
+  it("throws on the contradictory clean:false with empty problems instead of passing as clean", () => {
+    // The reviewer found problems but listed them in prose (or emitted an unfilled
+    // skeleton) — the only notation check must fail loud (audit, 2026-08-26).
+    expect(() => parseNotationReviewerOutput('{"clean": false, "problems": []}')).toThrow(/notation reviewer/);
   });
   it("throws when neither clean:true nor a problems array is present", () => {
     expect(() => parseNotationReviewerOutput('{"clean": false}')).toThrow(/notation reviewer/);

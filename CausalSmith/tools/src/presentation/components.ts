@@ -310,6 +310,11 @@ export async function ensureComponentsForEnvs(args: {
     out[e.obj_id] = comps;
     complete[e.obj_id] = true;
     cache[e.obj_id] = { policy: COMPONENT_DISCOVERY_POLICY, key, complete: true, components: comps };
+    // Persist after each PAID discovery: `discoverComponents` throws on an invalid reply,
+    // and the single end-of-loop write meant a throw at env k discarded every earlier
+    // env's paid discovery this run (the equivalence cache learned the same lesson on a
+    // Slurm expiry, 2026-08-20). Graph-first entries are free and keep the final write.
+    await writeJsonAtomic(args.cachePath, cache);
   }
   await writeJsonAtomic(args.cachePath, cache);
   return { components: out, complete, moduleDecls };

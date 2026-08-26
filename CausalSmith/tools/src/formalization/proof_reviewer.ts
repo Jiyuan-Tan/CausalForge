@@ -752,30 +752,41 @@ export async function runReviewer(args: {
       args.corePath ?? "(no core)",
       ...(args.leanDir ? [args.leanDir] : []),
     ];
-    const codex = await dispatchAgent({
-      ctx: args.ctx,
-      deps: { runCodex: args.deps.runCodex },
-      stage: args.mode === "convergence" ? "4" : "2.5",
-      label: `F${args.mode === "convergence" ? "4 convergence" : "2.5 delta"} reviewer :: ${label}`,
-      prompt,
-      promptSources: dispatchSources,
-      model: MODELS.codexKernel,
-      reasoningEffort: effort,
-      multiAgent: false,
-    });
+    // Configuration check BEFORE the codex dispatch: a convergence run with no Claude
+    // runner used to pay a full codex wave per unit and only then escalate missing-peer.
     if (args.mode === "convergence" && !args.deps.runClaude) {
       return { escalate: { kind: "missing-peer-reviewer", reason: `F4 requires both reviewers; Claude runner missing for ${label}` } };
     }
-    let claudeRaw: string | null = null;
-    if (args.mode === "convergence" && args.deps.runClaude) {
-      claudeRaw = await dispatchClaudeAgent({
+    // Named per-peer dispatchers: the parse boundary below re-dispatches ONE peer once on a
+    // mechanical (unparseable-stdout) failure instead of discarding the other peer's verdict.
+    const dispatchCodexPeer = () =>
+      dispatchAgent({
         ctx: args.ctx,
-        deps: { runClaude: args.deps.runClaude },
-        stage: "4",
-        label: `F4 convergence claude reviewer :: ${label}`,
+        deps: { runCodex: args.deps.runCodex },
+        stage: args.mode === "convergence" ? "4" : "2.5",
+        label: `F${args.mode === "convergence" ? "4 convergence" : "2.5 delta"} reviewer :: ${label}`,
+        prompt,
         promptSources: dispatchSources,
-        input: { prompt, cwd: args.ctx.repoRoot, model: MODELS.claudeMain, allowedTools: ["Read", "Grep", "Glob"] },
+        model: MODELS.codexKernel,
+        reasoningEffort: effort,
+        multiAgent: false,
       });
+    const claudeRunner = args.deps.runClaude;
+    const dispatchClaudePeer = claudeRunner
+      ? () =>
+          dispatchClaudeAgent({
+            ctx: args.ctx,
+            deps: { runClaude: claudeRunner },
+            stage: "4",
+            label: `F4 convergence claude reviewer :: ${label}`,
+            promptSources: dispatchSources,
+            input: { prompt, cwd: args.ctx.repoRoot, model: MODELS.claudeMain, allowedTools: ["Read", "Grep", "Glob"] },
+          })
+      : null;
+    const codex = await dispatchCodexPeer();
+    let claudeRaw: string | null = null;
+    if (args.mode === "convergence" && dispatchClaudePeer) {
+      claudeRaw = await dispatchClaudePeer();
     }
     if (args.debugLogDir) {
       const log =
@@ -853,8 +864,28 @@ export async function runReviewer(args: {
       // an obj_id-less record — graded as a synthetic drift over a real matched.
       const parsePeer = (stdout: string): ReviewerOutput =>
         resolveVerdictIds(parseJsonObject(stdout), recognizedIds);
-      let o = enforceExpected(parsePeer(codex.stdout), "codex");
-      if (claudeRaw) o = mergeOutputs(o, enforceExpected(parsePeer(claudeRaw), "claude"));
+      // Parse each peer in ISOLATION with one bounded mechanical re-dispatch (the D0
+      // solve-unit precedent): a single try spanning both peers meant one garbled stdout
+      // discarded the OTHER peer's paid, already-parsed verdict and escalated the whole
+      // unit to the operator (audit, 2026-08-26). A retry that fails again still throws
+      // into the fail-closed escalate below.
+      const parsePeerRetrying = async (
+        raw: string,
+        reviewer: "codex" | "claude",
+        redispatch: () => Promise<string>,
+      ): Promise<ReviewerOutput> => {
+        let parsed: ReviewerOutput;
+        try {
+          parsed = parsePeer(raw);
+        } catch {
+          parsed = parsePeer(await redispatch());
+        }
+        return enforceExpected(parsed, reviewer);
+      };
+      let o = await parsePeerRetrying(codex.stdout, "codex", async () => (await dispatchCodexPeer()).stdout);
+      if (claudeRaw && dispatchClaudePeer) {
+        o = mergeOutputs(o, await parsePeerRetrying(claudeRaw, "claude", dispatchClaudePeer));
+      }
       return o;
     } catch (err) {
       return {

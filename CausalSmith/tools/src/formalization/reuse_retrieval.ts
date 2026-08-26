@@ -20,7 +20,7 @@
  * See doc/research/2026-06-17-causalean-reuse-retrieval-design.md.
  */
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { isTier1, type AreaSidecar, type LibDecl, type Library } from "../library/schema.js";
 import { inClusterSubstrate, type ClusterKey } from "../constants.js";
@@ -222,6 +222,18 @@ const libCache = new Map<string, Library | null>();
 const indexCache = new Map<string, IndexedDecl[] | null>();
 const ixByNameCache = new Map<string, Map<string, IndexedDecl>>();
 
+/** Cache key = root + index-file mtime, so a mid-run `lake exe library_index` invalidates
+ *  the in-process caches. Root-only keys served the PRE-regeneration index for the life of
+ *  the process — P5's `knownDecls` then spuriously flagged just-built substrate decls as
+ *  hallucinated and bought unnecessary revise rounds (audit, 2026-08-26). */
+function retrievalCacheKey(root: string): string {
+  try {
+    return `${root}|${statSync(join(root, "doc", "library_index.json")).mtimeMs}`;
+  } catch {
+    return `${root}|missing`;
+  }
+}
+
 /**
  * Lenient index load for retrieval. Unlike `loadLibrary` (which THROWS on sidecar
  * integrity drift — stale headline/review entries vs the current index), this never
@@ -278,17 +290,19 @@ export function loadLibraryLenient(root: string): Library | null {
 }
 
 function getLibrary(root: string): Library | null {
-  if (libCache.has(root)) return libCache.get(root)!;
+  const key = retrievalCacheKey(root);
+  if (libCache.has(key)) return libCache.get(key)!;
   const lib = loadLibraryLenient(root);
-  libCache.set(root, lib);
+  libCache.set(key, lib);
   return lib;
 }
 
 function getIndexed(root: string): IndexedDecl[] | null {
-  if (indexCache.has(root)) return indexCache.get(root)!;
+  const key = retrievalCacheKey(root);
+  if (indexCache.has(key)) return indexCache.get(key)!;
   const lib = getLibrary(root);
   if (!lib) {
-    indexCache.set(root, null);
+    indexCache.set(key, null);
     return null;
   }
   const arr = lib.entries.map((d) => ({
@@ -299,16 +313,17 @@ function getIndexed(root: string): IndexedDecl[] | null {
     sym: symbolSet(d.statement),
     tier1: isTier1(d, lib.sidecars),
   }));
-  indexCache.set(root, arr);
+  indexCache.set(key, arr);
   return arr;
 }
 
-/** Name → IndexedDecl, memoized per root — lets semantic-only hits recover display metadata. */
+/** Name → IndexedDecl, memoized per root+index-mtime — lets semantic-only hits recover display metadata. */
 function getIndexedByName(root: string): Map<string, IndexedDecl> {
-  let m = ixByNameCache.get(root);
+  const key = retrievalCacheKey(root);
+  let m = ixByNameCache.get(key);
   if (!m) {
     m = new Map((getIndexed(root) ?? []).map((ix) => [ix.d.name, ix]));
-    ixByNameCache.set(root, m);
+    ixByNameCache.set(key, m);
   }
   return m;
 }

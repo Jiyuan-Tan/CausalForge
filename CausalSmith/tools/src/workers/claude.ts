@@ -6,6 +6,7 @@ import { spawnWithInactivityTimeout } from "./spawn.js";
 import { localConfig, leanProjectPathFor } from "../local_config.js";
 import { redactSecrets, resolveProviderAuth, workerEnv, type AuthMode } from "../auth.js";
 import type { ClaudeModel } from "../models.js";
+import type { ModelTokenUsage } from "../token_usage.js";
 
 export interface ClaudeRunInput {
   prompt: string;
@@ -33,6 +34,8 @@ export interface ClaudeRunInput {
    * it (pipeline.jsonl). Not called when the stream carries no model id.
    */
   onResolvedModel?: (modelId: string) => void;
+  /** Receives exact aggregate usage from the terminal Claude result event. */
+  onUsage?: (usage: ModelTokenUsage) => void;
   /**
    * Configure the `lean-lsp` MCP server for this claude call. DEFAULT-ON (user
    * policy 2026-06-04): every claude call gets the lean-lsp server + the
@@ -296,6 +299,14 @@ export async function runClaude(input: ClaudeRunInput): Promise<string> {
     inactivityTimeoutMs: input.inactivityTimeoutMs ?? 20 * 60 * 1000,
     input: input.prompt,
   });
+  const usage = extractClaudeTokenUsage(result.stdout);
+  if (usage && input.onUsage) {
+    try {
+      input.onUsage(usage);
+    } catch (err) {
+      console.warn(`[token-usage] could not report Claude usage: ${String(err)}`);
+    }
+  }
   const killed =
     result.killedDueToLiveness ??
     (result.killedDueToTotalTimeout
@@ -426,4 +437,40 @@ export function parseStreamJson(stdout: string | undefined | null): string {
     }
   }
   return texts.join("\n").trim();
+}
+
+/** Read exact aggregate usage from the terminal Claude stream-json result event. */
+export function extractClaudeTokenUsage(stdout: string | undefined | null): ModelTokenUsage | null {
+  if (!stdout) return null;
+  let latest: ModelTokenUsage | null = null;
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line) as {
+        type?: string;
+        usage?: {
+          input_tokens?: number;
+          cache_creation_input_tokens?: number;
+          cache_read_input_tokens?: number;
+          output_tokens?: number;
+        };
+      };
+      if (event.type !== "result" || !event.usage) continue;
+      const input = event.usage.input_tokens ?? 0;
+      const cacheCreation = event.usage.cache_creation_input_tokens ?? 0;
+      const cacheRead = event.usage.cache_read_input_tokens ?? 0;
+      const output = event.usage.output_tokens ?? 0;
+      latest = {
+        input_tokens: input,
+        cached_input_tokens: cacheRead,
+        cache_creation_input_tokens: cacheCreation,
+        output_tokens: output,
+        reasoning_output_tokens: 0,
+        total_tokens: input + cacheCreation + cacheRead + output,
+      };
+    } catch {
+      // Non-JSON banner lines carry no usage.
+    }
+  }
+  return latest;
 }

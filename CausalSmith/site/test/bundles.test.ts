@@ -15,6 +15,71 @@ describe("bundle loader", () => {
     expect(verifiedBadge(b)).toContain("1 theorem");
     expect(verifiedBadge(b)).toContain("machine-verified");
     expect(b.formalLayer).toBeNull(); // optional artifact absent on the bare fixture
+    expect(b.paperGraph).toBeNull(); // ditto: an older bundle simply has no Proof map
+  });
+
+  /** A bundle dir with the demo fixture plus a written-in `paper_graph.json`. */
+  const withGraph = async (id: string, graph: unknown) => {
+    const root = await mkdtemp(join(tmpdir(), "site-bundles-"));
+    const dir = join(root, id);
+    await cp(FIXTURE, dir, { recursive: true });
+    await writeFile(
+      join(dir, "paper_library_index.json"),
+      JSON.stringify({ commit: "demo", modules: {}, entries: [{ name: "t1_thm" }] }),
+    );
+    await writeFile(
+      join(dir, "paper_graph.json"),
+      typeof graph === "string" ? graph : JSON.stringify(graph),
+    );
+    return { root, dir };
+  };
+
+  it("loads paper_graph.json when the bundle carries one", async () => {
+    const { root, dir } = await withGraph("graph_v1", {
+      commit: "demo",
+      nodes: [
+        { obj_id: "T-1", env: "theoremv", paper_label: "Theorem 1", title: "Upper bound" },
+        { obj_id: "P-2", env: "lemmav", paper_label: "Assumption 1", title: null },
+      ],
+      edges: [{ from: "T-1", to: "P-2", kind: "proof-cites" }],
+    });
+    const b = await loadBundle(dir, "graph_v1");
+    expect(b.paperGraph?.nodes.map((n) => n.obj_id)).toEqual(["T-1", "P-2"]);
+    expect(b.paperGraph?.edges).toEqual([{ from: "T-1", to: "P-2", kind: "proof-cites" }]);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  // The graph is a separate file from the body the reader sees. Read mid-rewrite
+  // they disagree, and the map would label a chip with a number the block it
+  // jumps to does not carry. The body wins.
+  it("reconciles a stale graph against the crosswalk and the body", async () => {
+    const { root, dir } = await withGraph("graph_stale", {
+      commit: "stale",
+      nodes: [
+        { obj_id: "T-1", env: "theoremv", paper_label: "Theorem 9", title: "Old title" },
+        { obj_id: "ghost", env: "lemmav", paper_label: "Lemma 4", title: "Cut from the paper" },
+      ],
+      edges: [{ from: "T-1", to: "ghost", kind: "proof-cites" }],
+    });
+    const b = await loadBundle(dir, "graph_stale");
+    // Renumbered from the crosswalk, and the vanished node (with its edge) dropped.
+    expect(b.paperGraph?.nodes).toEqual([
+      { obj_id: "T-1", env: "theoremv", paper_label: "Theorem 1", title: "Upper bound" },
+    ]);
+    expect(b.paperGraph?.edges).toEqual([]);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  // The Proof map is decoration over the paper: a stale or half-written artifact
+  // must cost the panel and nothing else — never the page, never the build.
+  it("treats a malformed paper_graph.json as absent, not as a build failure", async () => {
+    for (const bad of ['{"nodes": "not a list"}', "{not json at all", "[]"]) {
+      const { root, dir } = await withGraph("graph_bad", bad);
+      const b = await loadBundle(dir, "graph_bad");
+      expect(b.paperGraph).toBeNull();
+      expect(b.entries).toHaveLength(2); // the rest of the bundle loads normally
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it("loads the Formal-layer panel data when formal_layer.json is present", async () => {

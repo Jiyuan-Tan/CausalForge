@@ -42,6 +42,11 @@ import {
   texPath,
 } from "./paths.js";
 import type { PipelineContext, Stage, StateJson } from "./types.js";
+import {
+  appendTokenUsageRecord,
+  markTokenUsageIncomplete,
+  type ModelTokenUsage,
+} from "./token_usage.js";
 import { runClaude } from "./workers/claude.js";
 import { runCodex } from "./shared/codex.js";
 import { updateLedgerFile } from "./shared/ledger_update.js";
@@ -114,6 +119,32 @@ async function logAgentCall(
   ]);
 }
 
+async function logTokenCall(
+  ctx: PipelineContext,
+  stage: string,
+  provider: "codex" | "claude",
+  model: string,
+  durationMs: number,
+  success: boolean,
+  usage: ModelTokenUsage | null,
+): Promise<void> {
+  const runDir = formalizationDir(ctx.repoRoot, ctx.qid);
+  await appendTokenUsageRecord(runDir, {
+    timestamp: new Date().toISOString(),
+    provider,
+    model,
+    stage,
+    duration_ms: durationMs,
+    success,
+    usage,
+  }).catch(async (err) => {
+    console.warn(`[token-usage] could not append call record: ${String(err)}`);
+    await markTokenUsageIncomplete(runDir, String(err)).catch((markerErr) => {
+      console.warn(`[token-usage] could not mark accounting incomplete: ${String(markerErr)}`);
+    });
+  });
+}
+
 export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: StateJson): StageDeps {
   // Stage label for the per-stage log filename. `liveStageHandler` builds a fresh StageDeps per
   // stage iteration and passes the stage it is running, so every call routes to that stage's file.
@@ -157,6 +188,7 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
     // any caller parses it). Logging never throws into the call path (best-effort append).
     runCodex: async (input) => {
       const t0 = Date.now();
+      let usage: ModelTokenUsage | null = null;
       try {
         const out = await runCodex({
           ...input,
@@ -168,14 +200,22 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
             productionWrite: input.productionWrite,
           }),
           leanProjectPath: usePaperTmpAsCwd ? ctx.repoRoot : input.leanProjectPath,
+          onUsage: (u) => {
+            usage = u;
+            input.onUsage?.(u);
+          },
         });
-        await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", Date.now() - t0, out.stdout);
+        const duration = Date.now() - t0;
+        await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", duration, out.stdout);
+        await logTokenCall(ctx, stageId, "codex", input.model ?? "?", duration, true, usage);
         return out;
       } catch (err) {
         // "Not lost": a crashed/timed-out call still gets a log entry (with any
         // partial stdout the error carries) before the throw propagates.
         const partial = (err as { stdout?: string })?.stdout ?? "";
-        await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", Date.now() - t0, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
+        const duration = Date.now() - t0;
+        await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", duration, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
+        await logTokenCall(ctx, stageId, "codex", input.model ?? "?", duration, false, usage);
         throw err;
       }
     },
@@ -184,6 +224,7 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
       // `input.model` may be an alias ("opus"); log the id it resolved to so the
       // run record pins the concrete model (see ClaudeRunInput.onResolvedModel).
       let resolvedModel: string | undefined;
+      let usage: ModelTokenUsage | null = null;
       try {
         const out = await runClaude({
           ...input,
@@ -193,12 +234,20 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
             resolvedModel = m;
             input.onResolvedModel?.(m);
           },
+          onUsage: (u) => {
+            usage = u;
+            input.onUsage?.(u);
+          },
         });
-        await logAgentCall(ctx, stageId, "claude", input.prompt, resolvedModel ?? input.model, "-", Date.now() - t0, out);
+        const duration = Date.now() - t0;
+        await logAgentCall(ctx, stageId, "claude", input.prompt, resolvedModel ?? input.model, "-", duration, out);
+        await logTokenCall(ctx, stageId, "claude", resolvedModel ?? input.model, duration, true, usage);
         return out;
       } catch (err) {
         const partial = (err as { stdout?: string })?.stdout ?? "";
-        await logAgentCall(ctx, stageId, "claude", input.prompt, resolvedModel ?? input.model, "-", Date.now() - t0, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
+        const duration = Date.now() - t0;
+        await logAgentCall(ctx, stageId, "claude", input.prompt, resolvedModel ?? input.model, "-", duration, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
+        await logTokenCall(ctx, stageId, "claude", resolvedModel ?? input.model, duration, false, usage);
         throw err;
       }
     },

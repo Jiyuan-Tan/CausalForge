@@ -551,6 +551,7 @@ import Causalean.Stat.Minimax.HellingerAffinity
 import Causalean.Stat.Minimax.HonestConfidenceSet
 import Causalean.Stat.Minimax.LeCam
 import Causalean.Stat.Minimax.LeCamTwoPoint
+import Causalean.Stat.Minimax.MarkovKernelTransport
 import Causalean.Stat.Minimax.MaximalCoupling
 import Causalean.Stat.Minimax.MinimaxRisk
 import Causalean.Stat.Minimax.MinimaxValue
@@ -598,12 +599,30 @@ import Causalean.Stat.Sample
 import Causalean.Stat.Sample.CollisionEstimator
 import Causalean.Stat.Sample.EffectiveSampleSize
 import Causalean.Stat.Sample.EmpiricalMass
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse.Basic
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse.CenteredNoiseBound
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse.Main
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse.MissingBound
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse.MissingMoments
+import Causalean.Stat.Sample.FiniteStratumMarkedRatioMse.NestedCountBound
+import Causalean.Stat.Sample.OccupancyWeightedMean
+import Causalean.Stat.Sample.OccupancyWeightedMean.Basic
+import Causalean.Stat.Sample.OccupancyWeightedMean.BinomialDesign
+import Causalean.Stat.Sample.OccupancyWeightedMean.FiniteDesign
+import Causalean.Stat.Sample.OccupancyWeightedMean.MomentBounds
+import Causalean.Stat.Sample.OccupancyWeightedMean.Variance
 import Causalean.Stat.Sample.PiTransport
 import Causalean.Stat.SampleSplit
+import Causalean.Stat.SampleSplit.FiniteCategoryPilot
+import Causalean.Stat.SampleSplit.FiniteSelector
 import Causalean.Stat.SampleSplit.FoldBEmpiricalProcess
 import Causalean.Stat.SampleSplit.FoldBWLLN
 import Causalean.Stat.SampleSplit.PartialFoldCLT
 import Causalean.Stat.UStatistic
+import Causalean.Stat.UStatistic.OrderM.MixedOrderBounds
+import Causalean.Stat.UStatistic.OrderM.MixedOrderCovariance
+import Causalean.Stat.UStatistic.OrderM.PartialMatching
 -- Structure-agnostic ATE optimality (Jin–Syrgkanis 2024): single roll-up entry point.
 -- See `Estimation/MinimaxATE.lean` for the headline-theorem index.
 -- CausalSmith research catalogue moved to the sibling package `CausalSmith/`. The umbrella

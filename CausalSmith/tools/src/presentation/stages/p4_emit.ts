@@ -20,6 +20,7 @@ import { PresentationCrosswalk, LeanSnippets, FormalLayer, PaperMeta } from "../
 import { MODELS } from "../../models.js";
 import { assertP2AssemblyFresh, recordP2Assembly, texFilesUnder } from "../assembly_freshness.js";
 import { loadJsonCache } from "../cache.js";
+import { buildPaperGraph, lintIsolatedLemmas, type PaperGraphNode } from "../paper_graph.js";
 
 const execFileP = promisify(execFile);
 const COMPILE_ATTEMPTS = 3;
@@ -192,6 +193,7 @@ export async function stageP4(io: StageIO): Promise<void> {
     ...lintNestedMathDelimiters(paperTex),
     ...lintReferences(paperTex),
     ...lintNegativeContributionFraming(paperTex),
+    ...lintIsolatedLemmas(paperTex),
     ...refRepair.problems,
   ];
   if (finalLint.length > 0) {
@@ -568,14 +570,41 @@ export async function stageP4(io: StageIO): Promise<void> {
     JSON.stringify(LeanSnippets.parse(bundle.snippets), null, 2) + "\n",
     "utf8",
   );
+  // Proof-citation graph over the paper's results (the site's dependency view). Nodes come from the
+  // crosswalk just written, so the two files agree on env/label/title by construction; edges come
+  // from the assembled paper's proof bodies. Re-run the isolated-lemma gate against the SAME node
+  // set the graph is emitted over — the P2 assembly gate ran on the paper alone, and this is the
+  // last boundary before the bundle is published.
+  const graphNodes: PaperGraphNode[] = bundle.crosswalk.entries.map((e) => ({
+    obj_id: e.obj_id,
+    env: e.env,
+    paper_label: e.paper_label,
+    title: e.title,
+  }));
+  const isolated = lintIsolatedLemmas(paperTex, graphNodes);
+  if (isolated.length > 0) {
+    throw new Error(`P4 proof-citation graph: ${isolated.map((p) => p.detail).join("; ")}`);
+  }
+  await writeFile(
+    join(io.outDir, "paper_graph.json"),
+    JSON.stringify(buildPaperGraph({ tex: paperTex, nodes: graphNodes, commit }), null, 2) + "\n",
+    "utf8",
+  );
   // The extractor itself can exit successfully with structurally valid but
   // wrong JSON. Run the independent snapshot + HEAD regression lint only after
   // all three cache inputs exist, and make a failure visible to the pipeline.
-  await execFileP(
+  const idxLint = await execFileP(
     "npx",
     ["tsx", "bin/check_paper_indexes.ts", "--strict", "--vs", "HEAD", "--bundle", basename(io.outDir)],
     { cwd: join(io.ctx.repoRoot, "tools"), maxBuffer: 16 * 1024 * 1024 },
   );
+  // The check warns (stderr) for every git-untracked module it exempts from the orphan gate; on a
+  // SUCCESSFUL run those lines would otherwise vanish with the captured buffer. Persist them so
+  // the exemption is visible in the run record, not only on a hand-run of the lint.
+  const skipped = (idxLint.stderr ?? "").split("\n").filter((l) => l.includes("[paper-index] skipping"));
+  if (skipped.length > 0) {
+    io.state.notes.push(`P4 paper-index lint: ${skipped.length} git-untracked module(s) exempted from the orphan gate (in-progress work): ${skipped.map((l) => l.slice(l.lastIndexOf(": ") + 2)).join(", ")}`);
+  }
   // Web-only "Formal layer" panel: deterministic, complete list of every from-note object
   // (NL + Lean + verified status) straight from the graph — the backstop for inline \leanref.
   // IMPORTANT: this EMITTED shape is `{commit, groups}` (FormalLayer), which is DIFFERENT from the

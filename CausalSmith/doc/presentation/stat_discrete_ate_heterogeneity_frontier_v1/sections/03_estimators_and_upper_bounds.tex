@@ -1,0 +1,262 @@
+\section{Estimators and upper bounds}
+
+We now turn from identification and the minimax loss criterion to constructive estimation. The upper bound is built from two complementary procedures. The first estimator, \leanref{sym:T_n^{poly}}{$T_n^{\mathrm{poly}}$}, uses a sample split to separate cell classification from estimation and applies a Chebyshev polynomial device to rare cells, following the large-alphabet functional-estimation logic of \citet{JiaoVenkatHanWeissman2015,WuYang2016Entropy}. The second estimator, \leanref{sym:T_n^{col}}{$T_n^{\mathrm{col}}$}, forms treatment-control contrasts in empirically crossed cells and weights those contrasts by their observed occupancy. The final estimator, \leanref{sym:widehat_tau_n^star}{$\widehat\tau_n^{\star}$}, uses the known radius to choose among the polynomial estimator, the collision estimator, and the zero estimator.
+
+The polynomial construction is useful when many cells are light. Its pilot block identifies cells with enough empirical mass for a plug-in treated-control contrast, while its estimation block evaluates both the heavy-cell plug-in terms and the light-cell factorial terms. The ordered distinct-index structure is the finite-sample analogue of unbiased polynomial estimation for sparse categorical functionals, with the sample split keeping the random heavy-light classification separate from the contribution estimates \citep{Hoeffding1948,Serfling1980}.
+
+The proof of the upper bound follows this construction. Conditional on the pilot block, the heavy set is deterministic. Heavy cells are controlled by stratified empirical means and fixed overlap; light cells are controlled by shifted-Chebyshev coefficient envelopes and covariance bounds for one-mark factorial statistics. Summing the conditional risk and then averaging over the pilot block gives the polynomial risk bound. The collision branch is analyzed separately by decomposing its error into ordinary arm-cell noise and the bias contributed by uncrossed cells; the approximate-homogeneity radius controls the latter term, and the occupancy reciprocal bound controls the random denominator.
+
+\begin{algorithmv}{def:polynomial-handle}[Polynomial estimator \(T_n^{\mathrm{poly}}\)]
+For observations \(O_i=(X_i,A_i,Y_i)\), with \(X_i\in\{1,\ldots,d\}\), \(A_i\in\{0,1\}\), and \(Y_i\in\mathbb R\), fix a polynomial handle \((N,\rho)\) with \(\rho>0\).  Let \(L:=\log(en)\),
+\[
+D_6:=8\log(27/4),
+\qquad
+\alpha_0:=\min\left\{1,\frac{1}{64\log 6},\frac{1}{512D_6}\right\},
+\qquad
+K_n:=\left\lfloor \alpha_0 L\right\rfloor .
+\]
+The handle certifies that \(2\le K_n\) whenever \(0<n\), \(0<d\), \(N\le n\), and \(d\le \rho nL\).  The active branch below is used on \(N\le n\) and \(d\le \rho nL\); the calibrated value is \(T_n^{\mathrm{poly}}=0\) when \(N>n\) or \(d>\rho nL\).
+
+\begin{enumerate}
+\item Split the sample into the pilot and estimation blocks
+\[
+I_0:=\{1,\ldots,\lfloor n/2\rfloor\},
+\qquad
+I_1:=\{\lfloor n/2\rfloor+1,\ldots,n\},
+\qquad
+m_1:=|I_1|=n-\lfloor n/2\rfloor .
+\]
+
+\item Use \(I_0\) to form the empirically heavy and light cell sets
+\[
+\widehat{\mathcal H}
+:=
+\left\{k:256L<\sum_{i\in I_0}\mathbf 1\{X_i=k\}\right\},
+\qquad
+\widehat{\mathcal L}
+:=
+\{1,\ldots,d\}\setminus \widehat{\mathcal H}.
+\]
+
+\item On each heavy cell \(k\in\widehat{\mathcal H}\), use \(I_1\) to compute the estimation-block arm counts, cell count, arm outcome totals, totalized arm means, and normalized plug-in contribution
+\[
+N_{ak}^{(1)}
+:=
+\sum_{i\in I_1}\mathbf 1\{X_i=k,A_i=a\},
+\qquad
+N_k^{(1)}
+:=
+\sum_{i\in I_1}\mathbf 1\{X_i=k\},
+\]
+\[
+S_{ak}^{(1)}
+:=
+\sum_{i\in I_1}\mathbf 1\{X_i=k,A_i=a\}Y_i,
+\qquad
+\overline Y_{ak}^{(1)}
+:=
+\begin{cases}
+S_{ak}^{(1)}/N_{ak}^{(1)}, & N_{ak}^{(1)}>0,\\
+0, & N_{ak}^{(1)}=0,
+\end{cases}
+\]
+\[
+\widehat h_k
+:=
+\frac{N_k^{(1)}}{m_1}\,
+\frac{\overline Y_{1k}^{(1)}-\overline Y_{0k}^{(1)}}{M}.
+\]
+
+\item On each light cell \(k\in\widehat{\mathcal L}\), set
+\[
+B:=\frac{4096L}{m_1},
+\qquad
+g_{K_n,j}:=
+(-1)^j\frac{2^{2j+3}}{K_n(K_n+j+2)}{K_n+j+2\choose 2j+4},
+\qquad
+j=0,\ldots,K_n-2.
+\]
+With \((m)_r\) denoting the falling factorial, evaluate the ordered distinct-index one-mark statistic
+\[
+U_{k,a,j}
+:=
+\frac{1}{(m_1)_{j+2}}
+\sum_{\substack{(i_0,\ldots,i_{j+1})\in I_1^{j+2}\\
+i_0,\ldots,i_{j+1}\ \mathrm{distinct}}}
+\frac{Y_{i_0}}{M}\,
+\mathbf 1\{X_{i_0}=k,A_{i_0}=a\}
+\left(\prod_{\ell=1}^{j}\mathbf 1\{X_{i_\ell}=k,A_{i_\ell}=a\}\right)
+\mathbf 1\{X_{i_{j+1}}=k\},
+\]
+and set the normalized light-cell contribution to
+\[
+\widehat P_k
+:=
+\sum_{a\in\{0,1\}}(-1)^{1-a}
+\sum_{j=0}^{K_n-2}\frac{g_{K_n,j}}{B^{j+1}}U_{k,a,j}.
+\]
+
+\item Writing \(\operatorname{clip}_{[a,b]}(x):=\min\{b,\max\{a,x\}\}\) for truncation to the interval \([a,b]\), sum the heavy and light contributions and output the clipped active-branch statistic
+\[
+T_n^{\mathrm{poly}}
+:=
+M\operatorname{clip}_{[-1,1]}
+\left(
+\sum_{k\in\widehat{\mathcal H}}\widehat h_k
++
+\sum_{k\in\widehat{\mathcal L}}\widehat P_k
+\right).
+\]
+\end{enumerate}
+\end{algorithmv}
+
+The factorial display in \cref{obj:def:polynomial-handle} is a mathematical representation of the statistic. A direct implementation first scans the estimation block once to store, for each cell and arm, the counts \(N_{ak}^{(1)}\), totals \(S_{ak}^{(1)}\), and powers or falling-factorial count products needed for orders \(0,\ldots,K_n-2\). The light-cell terms are then evaluated from these aggregated arrays, so the program sums over cells, arms, and polynomial orders rather than over ordered tuples of observations. With this aggregation, \cref{obj:lem:continuous-ratio-polynomial-upper-all-d} gives the post-aggregation operation count \(C_{\mathrm{op}}(d+1)(K_n+1)^2\), with \(C_{\mathrm{op}}\) independent of \(n\), \(d\), and \(M\).
+
+Concretely, the whole procedure is five passes over arrays, and it is worth spelling them out because the ordered-tuple display above looks more expensive than the computation actually is.
+\begin{enumerate}
+\item \emph{Pilot pass.} Scan \(I_0\) once and accumulate \(c_k=\#\{i\in I_0:X_i=k\}\) for each cell. Mark cell \(k\) heavy if \(c_k>256L\) and light otherwise. This fixes \(\widehat{\mathcal H}\) and \(\widehat{\mathcal L}\) before any outcome on \(I_1\) is touched, which is what keeps the two blocks independent.
+\item \emph{Aggregation pass.} Scan \(I_1\) once and accumulate, for each cell \(k\) and arm \(a\), the count \(N_{ak}^{(1)}\) and the outcome total \(S_{ak}^{(1)}\); also accumulate the cell count \(N_k^{(1)}\). Nothing else about the sample is needed afterwards, so the ordered tuples in the display are never enumerated.
+\item \emph{Heavy cells.} For \(k\in\widehat{\mathcal H}\), form \(\overline Y_{ak}^{(1)}=S_{ak}^{(1)}/N_{ak}^{(1)}\), taking the value \(0\) when \(N_{ak}^{(1)}=0\), and set \(\widehat h_k=(N_k^{(1)}/m_1)(\overline Y_{1k}^{(1)}-\overline Y_{0k}^{(1)})/M\). The zero-count convention is what makes the statistic total rather than partially defined.
+\item \emph{Light cells.} For \(k\in\widehat{\mathcal L}\), each one-mark statistic \(U_{k,a,j}\) is a ratio of a falling factorial of the aggregated counts to \((m_1)_{j+2}\), multiplied by the arm-cell outcome total. Build the falling factorials incrementally, \((N)_{r+1}=(N)_r\,(N-r)\), so orders \(j=0,\ldots,K_n-2\) cost one multiplication each; then accumulate \(\widehat P_k=\sum_a(-1)^{1-a}\sum_j (g_{K_n,j}/B^{j+1})U_{k,a,j}\). This is the \((d+1)(K_n+1)^2\) term in the operation count.
+\item \emph{Output.} Sum \(\widehat h_k\) over heavy cells and \(\widehat P_k\) over light cells, clip the total to \([-1,1]\), and multiply by \(M\). The clipping gives the estimator its \([-M,M]\) range and hence the worst-case risk control used when the polynomial branch is evaluated outside its calibrated range.
+\end{enumerate}
+Outside the calibrated range \(N_{\epsilon}\le n\) and \(d\le\rho_{\epsilon}n\log(en)\) the procedure returns \(T_n^{\mathrm{poly}}=0\), which is why the estimator is defined on the whole sample space and not only where the calibration bites.
+
+The collision estimator targets the part of the sample in which treated and control observations meet within the same adjustment cell. Its form is close to the occupancy statistics used in sparse-cell average treatment effect analysis and higher-order causal estimation: the sample supplies both the within-cell contrast and the empirical weight assigned to crossed cells \citep{Robins2008,Robins2017}. Robust mean-estimation work under weak moment conditions, such as \citet{LugosiMendelson2019}, provides a separate point of comparison for how moment assumptions shape attainable risk.
+
+\begin{algorithmv}{def:collision-handle}[Collision estimator \(T_n^{\mathrm{col}}\)]
+For observations \(O_1,\ldots,O_n\), define \(T_n^{\mathrm{col}}\) by the following one-pass cell aggregation followed by one pass through the occupied categories.
+
+\begin{enumerate}
+\item For each arm \(a\in\{0,1\}\) and cell \(k\in\{1,\ldots,d\}\), define the full-sample arm-cell count and outcome total
+\[
+N_{ak}
+:=
+\sum_{i=1}^n\mathbf 1\{X_i=k,A_i=a\},
+\qquad
+S_{ak}
+:=
+\sum_{i=1}^n\mathbf 1\{X_i=k,A_i=a\}Y_i.
+\]
+
+\item Define the full-sample cell count, crossed-cell indicator, and total count in empirically crossed cells
+\[
+N_k:=N_{0k}+N_{1k},
+\qquad
+I_k:=\mathbf 1\{N_{0k}N_{1k}>0\},
+\qquad
+R_n:=\sum_{k=1}^d N_k I_k.
+\]
+
+\item For positive arm-cell counts, define the arm-cell sample means
+\[
+\overline Y_{ak}:=\frac{S_{ak}}{N_{ak}}
+\qquad\text{when }N_{ak}>0.
+\]
+
+\item Output the occupancy-weighted treated-control statistic
+\[
+T_n^{\mathrm{col}}
+:=
+\operatorname{clip}_{[-M,M]}
+\left(
+\frac{\mathbf 1\{R_n>0\}}{R_n}
+\sum_{k=1}^d
+N_kI_k(\overline Y_{1k}-\overline Y_{0k})
+\right),
+\]
+where the inner value is \(0\) when \(R_n=0\).
+\end{enumerate}
+\end{algorithmv}
+
+The known-radius selector compares the two nonparametric remainders associated with these constructions. The quantity \(u_{n,d}\) is the rare-cell polynomial scale, and \(h_{n,d,\sigma}\) is the collision scale that combines the heterogeneity radius with the sparse crossed-cell term.
+
+\begin{algorithmv}{def:total-estimator}[Selector \(\widehat\tau_n^{\star}\)]
+Given candidate estimators \(T_n^{\mathrm{poly}}\) and \(T_n^{\mathrm{col}}\), each a total measurable map \(\mathcal O^n\to[-M,M]\), define \(\widehat\tau_n^{\star}\) by the following steps.
+\begin{enumerate}
+\item Define the rare-cell polynomial remainder
+\[
+u_{n,d}:=\frac{d^2}{n^2\log^2(en)}.
+\]
+\item Define the collision remainder
+\[
+h_{n,d,\sigma}:=\sigma^2+\frac{d}{n^2}.
+\]
+\item Output the measurable selector
+\[
+\widehat\tau_n^{\star}:=
+\begin{cases}
+T_n^{\mathrm{col}},&h_{n,d,\sigma}\le\min\{1,u_{n,d}\},\\
+T_n^{\mathrm{poly}},&u_{n,d}<\min\{1,h_{n,d,\sigma}\},\\
+0,&\text{otherwise}.
+\end{cases}
+\]
+\end{enumerate}
+\end{algorithmv}
+
+The next result records the two risk inequalities that make the selector possible. The polynomial estimator gives a uniform upper bound with the parametric term and the rare-cell polynomial remainder, while the collision estimator gives a uniform upper bound with the parametric term, the squared radius, and the crossed-cell occupancy remainder.
+
+\begin{theoremv}{thm:robust-upper-construction-resolution-all-d}[All-alphabet upper construction]
+For every \(0<\epsilon<1/2\), there exist a constant \(C_\epsilon>0\) and a polynomial calibration handle \(h=(N,\rho)\) with \(\rho>0\) such that, for every \(n,d\ge 1\), every \(M\ge 1\), and every \(0\le \sigma\le 2\), the following hold:
+\begin{itemize}
+\item \textbf{(Polynomial calibration.)} The handle satisfies \(N\le n\) and \(d\le \rho n\log(en)\Rightarrow 2\le K_n\), where \(K_n\) is the polynomial degree used by the handle-indexed heavy-light signed one-mark Chebyshev factorial estimator \(T_n^{\mathrm{poly}}\).
+\item \textbf{(Admissibility.)} The estimators \(T_n^{\mathrm{poly}}\) and \(T_n^{\mathrm{col}}\), with \(T_n^{\mathrm{col}}\) as in \cref{obj:def:collision-handle}, are measurable maps of the \(n\)-sample and take values in \([-M,M]\).
+\item \textbf{(Model class.)} The risk bounds are uniform over \(P\in\mathcal P_{d,\epsilon,M,\sigma}\), the model class in \cref{obj:def:model-class}.
+\end{itemize}
+With \(u_{n,d}=d^2/\{n^2\log^2(en)\}\), the estimators obey
+\[
+\sup_{P\in\mathcal P_{d,\epsilon,M,\sigma}}
+E_{Q_P^{(n)}}\!\left[\{T_n^{\mathrm{poly}}-\tau(P)\}^2\right]
+\le
+C_\epsilon M^2\left\{\frac1n+\min(1,u_{n,d})\right\}
+\]
+and
+\[
+\sup_{P\in\mathcal P_{d,\epsilon,M,\sigma}}
+E_{Q_P^{(n)}}\!\left[\{T_n^{\mathrm{col}}-\tau(P)\}^2\right]
+\le
+C_\epsilon M^2\left(\frac1n+\sigma^2+\frac{d}{n^2}\right).
+\]
+\end{theoremv}
+
+\Cref{obj:thm:robust-upper-construction-resolution-all-d} separates the two sources of gain. The polynomial construction is calibrated to the large-alphabet regime through \(\log(en)\) and contributes the scale \(d^2/\{n^2\log^2(en)\}\). The collision construction uses the approximate-homogeneity radius: when cell effects are close to their average, missing uncrossed contrasts contribute at the \(\sigma^2\) scale, and crossed-cell scarcity contributes \(d/n^2\).
+
+Combining the two inequalities with the measurable selector yields the all-alphabet upper benchmark. The selector uses the radius as an input, so the comparison among the three branches is deterministic once \(n\), \(d\), and \(\sigma\) are fixed.
+
+\begin{theoremv}{thm:frontier-upper-all-d}[All-alphabet frontier upper bound]
+For every overlap parameter \(\epsilon\) with \(0<\epsilon<1/2\), there exist a constant \(C_{\epsilon}>0\) and a polynomial calibration handle \((N_{\epsilon},\rho_{\epsilon})\) such that:
+\begin{itemize}
+\item \textbf{(Handle calibration.)} \(\rho_{\epsilon}>0\), and for every pair of integers \(n,d\ge1\),
+\[
+N_{\epsilon}\le n,\qquad d\le \rho_{\epsilon} n\log(en)
+\quad\Longrightarrow\quad
+2\le K_n ,
+\]
+where \(K_n\) is the polynomial degree used by the polynomial estimator.
+\item \textbf{(Index range.)} The guarantee applies to every pair of integers \(n,d\ge1\), every \(M\ge1\), and every \(0\le\sigma\le2\).
+\item \textbf{(Model class.)} The law \(P\) ranges over \(\mathcal P_{d,\epsilon,M,\sigma}\) from \cref{obj:def:model-class}.
+\end{itemize}
+For these indices, let \(T_n^{\mathrm{poly}}\) be the admissible polynomial estimator calibrated by \((N_{\epsilon},\rho_{\epsilon})\), let \(T_n^{\mathrm{col}}\) be the collision estimator, and let \(\widehat\tau_n^{\star}\) be the known-radius selector in \cref{obj:def:total-estimator} applied with radius \(\sigma\) to these two estimators, and write
+\[
+r_{n,d,\sigma}
+=
+\frac{1}{n}
++
+\min\left\{
+1,\,
+\min\left[
+\frac{d^2}{n^2\log^2(en)},\,
+\sigma^2+\frac{d}{n^2}
+\right]
+\right\}
+\]
+for the selector benchmark. Then \(\widehat\tau_n^{\star}\) is measurable, satisfies \(\widehat\tau_n^{\star}(s)\in[-M,M]\) for every sample \(s\), and
+\[
+\sup_{P\in\mathcal P_{d,\epsilon,M,\sigma}}
+E_{Q_P^{(n)}}\!\left[\left(\widehat\tau_n^{\star}-\tau(P)\right)^2\right]
+\le
+C_{\epsilon}M^2 r_{n,d,\sigma}.
+\]
+\end{theoremv}
+
+\Cref{obj:thm:frontier-upper-all-d} packages the constructive side of the minimax analysis. For every alphabet size and sample size, the known-radius estimator attains the parametric term plus the smallest available nonparametric remainder among the polynomial, collision, and clipped-zero branches. This all-alphabet statement is the upper half of the two-sided bracket assembled in the next sections.

@@ -320,6 +320,13 @@ export async function runStage2(args: {
 }): Promise<StageResult> {
   const paths = artifactPaths(args.ctx, args.state);
   const sourceRewindDirtyTargets = pendingSourceRewindDirtyNodeIds(args.state);
+  // The core⊕plan structural gate only runs POST-dispatch: an absent plan.json beside a
+  // surviving core.json (rewind/manual surgery) sailed through `readIfExists`'s "" and
+  // burned a full high-effort scaffold call before that gate threw (audit, 2026-08-26).
+  // Refuse the known-broken input before paying.
+  if (existsSync(coreJsonPath(args.ctx)) && !existsSync(paths.plan)) {
+    throw new Error("F2: core.json exists but plan.json is missing — restore the F1 plan (or rewind F1) before scaffolding");
+  }
   const planText = await readIfExists(paths.plan);
   const nonEmittedLocalIds = nonEmittedLocalIdsFromPlan(planText);
   const gatedHypsBlock = gatedHypsBlockFromPlan(planText);
@@ -500,10 +507,13 @@ export async function runStage2(args: {
   let out: string;
   if (plan.runner === "codex") {
     // codex writes the .lean files directly (workspace-write) and gets lean-lsp
-    // for the substrate survey, like F3. parseStageOutput is tolerant: on a
-    // non-JSON tail it falls back to "completed" (artifacts re-derived by F2.5's
-    // re-enrichment of the on-disk .lean), so the missing manifest is harmless on
-    // legacy (theorems-less) runs.
+    // for the substrate survey, like F3. NOTE the failure-path cost: parseStageOutput
+    // falls back to `parse_failed` on a non-JSON tail (NOT "completed" — a prior version
+    // of this comment claimed otherwise and cost a debugging cycle), and stage2 grades
+    // parse_failed as blocked — so a truncated/killed stdout envelope over a perfectly
+    // good on-disk scaffold re-scaffolds cold on resume. Known accepted cost; grading
+    // parse_failed by inspecting the on-disk artifacts instead is a deliberate design
+    // decision left open (audit, 2026-08-26).
     const res = await dispatchAgent({
       ctx: args.ctx,
       deps: args.deps,

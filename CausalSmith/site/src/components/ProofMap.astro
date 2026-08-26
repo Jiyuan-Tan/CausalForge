@@ -1,0 +1,134 @@
+---
+/**
+ * Proof map — a compact dependency map of the paper, docked in the side rail
+ * under the table of contents.
+ *
+ * The SVG is laid out at BUILD time (`buildProofGraph`), so the map is a static
+ * picture that renders with JavaScript off and costs no client-side layout
+ * pass. Each chip is a real `<a href="#obj-…">`, which is what makes the
+ * JS-off page still useful: clicking a chip jumps to the statement. With
+ * JavaScript the controller takes the click over and does the richer thing —
+ * highlight the edges, scroll and flash the block, and open the statement card.
+ *
+ * Nothing here interpolates reader-supplied text: labels and titles come from
+ * the bundle's own crosswalk (via the reconciled graph) and Astro escapes them.
+ * The attestation slots are EMPTY markup, filled by the controller with
+ * `textContent`.
+ */
+import { buildProofGraph, graphSummary, type PaperGraph } from "../lib/proofGraph.js";
+import { proofMapMarks } from "../lib/proofMapSvg.js";
+
+interface Props {
+  graph: PaperGraph;
+  paperId: string;
+  worker: string;
+}
+
+const { graph, paperId, worker } = Astro.props as Props;
+const layout = buildProofGraph(graph);
+
+const mapData = {
+  paperId,
+  worker,
+  // What the page was laid out for, and the graph to re-lay it out FROM when the
+  // rail turns out to be wider (the rail width scales with the viewport).
+  builtWidth: layout.width,
+  graph,
+  nodes: layout.nodes.map((n) => ({
+    id: n.id,
+    label: n.label,
+    title: n.title,
+    top: n.top,
+    cites: n.cites,
+    citedBy: n.citedBy,
+  })),
+};
+---
+
+<section class="pm-panel" id="proof-map" aria-labelledby="pm-panel-title">
+  <h2 class="pm-head" id="pm-panel-title">
+    <button class="pm-toggle" id="pm-toggle" type="button" aria-expanded="true" aria-controls="pm-body">
+      <span class="pm-kicker">Proof map</span>
+      <span class="pm-sub">{graphSummary(graph)}</span>
+    </button>
+    <span class="pm-coverage" id="pm-coverage" hidden>
+      <span class="pm-meter"><span id="pm-coverage-bar"></span></span>
+      <span id="pm-coverage-txt"></span>
+    </span>
+  </h2>
+
+  <div class="pm-body" id="pm-body">
+    <div class="pm-graph-scroll" id="pm-graph-scroll">
+      <svg
+        class="pm-map"
+        id="pm-map"
+        role="group"
+        aria-label="Dependency map: the paper's results, above the results their proofs invoke"
+        viewBox={`0 0 ${layout.width} ${layout.height}`}
+        width={layout.width}
+        height={layout.height}
+      >
+        <defs>
+          <marker id="pm-arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0,0.6 L7.4,4 L0,7.4 Z" fill="#cfc8bc"></path>
+          </marker>
+          <marker id="pm-arr-cites" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0,0.6 L7.4,4 L0,7.4 Z" fill="#35507a"></path>
+          </marker>
+          <marker id="pm-arr-citedby" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0,0.6 L7.4,4 L0,7.4 Z" fill="#b1040e"></path>
+          </marker>
+        </defs>
+
+        <g id="pm-marks" set:html={proofMapMarks(layout)} />
+      </svg>
+    </div>
+
+    <p class="pm-legend">
+      <span class="pm-key"><span class="pm-swatch pm-sw-top"></span> theorem</span>
+      <span class="pm-key"><span class="pm-line"></span> its proof invokes</span>
+      <span class="pm-key"><span class="pm-line pm-line-user"></span> invoked by</span>
+    </p>
+
+    <!--
+      Preview: what a selected result shows BEFORE the reader commits to a
+      jump. It lives in the rail, under the map, so it can never overlap the
+      paper column — the complaint that killed the floating card. A single
+      click on a chip fills it; it holds until another chip is chosen, or ✕ /
+      Escape / a click outside the map clears it.
+    -->
+    <div class="pm-preview" id="pm-card" role="region" aria-labelledby="pm-card-title" aria-live="polite" hidden>
+      <div class="pm-card-head">
+        <p class="pm-card-kicker" id="pm-card-label"></p>
+        <button class="pm-card-close" id="pm-card-close" type="button" aria-label="Clear preview">✕</button>
+      </div>
+      <h3 class="pm-card-title" id="pm-card-title"></h3>
+      <div class="pm-stmt" id="pm-stmt"></div>
+      <p class="pm-stmt-note">
+        <button class="pm-goto" id="pm-goto" type="button">Go to this statement ↓</button>
+      </p>
+
+      <div class="pm-rel">
+        <p class="pm-rel-label">Its proof invokes</p>
+        <div class="pm-chips" id="pm-cites"></div>
+      </div>
+      <div class="pm-rel">
+        <p class="pm-rel-label">Invoked by the proofs of</p>
+        <div class="pm-chips" id="pm-citedby"></div>
+      </div>
+
+      <div class="pm-attest" id="pm-attest" hidden>
+        <p class="pm-rel-label">Reader verification</p>
+        <div class="pm-readers" id="pm-readers"></div>
+        <button class="pm-verify" id="pm-verify" type="button"></button>
+        <p class="pm-status" id="pm-attest-status"></p>
+        <p class="pm-micro">
+          Verifying certifies that you read this statement and its proof and found them
+          correct, taking the results the proof invokes as given. Your handle is shown publicly.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="application/json" id="proof-map-data" set:html={JSON.stringify(mapData)} />

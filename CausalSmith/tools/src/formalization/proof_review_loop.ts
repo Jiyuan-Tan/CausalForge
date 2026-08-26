@@ -20,6 +20,7 @@ import { restoreCarryoverProofs } from "./proof_carryover.js";
 import { createHash } from "node:crypto";
 import { PROOF_SCAFFOLD_MAX, REPEATED_F25_ERROR_MAX } from "./loop_limits.js";
 import { isPaperTmpPath } from "../paths.js";
+import { sweepDeadHelpers, type DeadHelperFinding } from "./dead_helpers.js";
 
 /** Result of the F3.5 unused-hypothesis gate: `blocking` = definite-transitive findings (a real
  *  statement defect — a public theorem forwards a hypothesis only into a bridge where the same
@@ -342,6 +343,13 @@ export async function runProofReviewLoop(args: {
   scaffold?: (a: { redirect: string; targets: string[] }) => Promise<void>;
   /** F3.5 unused-hypothesis gate (injectable for tests; defaults to the real lint over leanDir). */
   lintUnused?: (leanDir: string) => Promise<UnusedHypGateResult>;
+  /** F4 dead-helper sweep (injectable for tests; defaults to the real sweep over leanDir).
+   *  Flags agent-authored declarations nothing in the run consumes — see dead_helpers.ts. */
+  sweepDead?: (
+    leanDir: string,
+    graphDecls: ReadonlySet<string>,
+    opts?: { searchRoot?: string },
+  ) => Promise<DeadHelperFinding[]>;
   /** Compile gate (injectable for tests; defaults to a real `lake build` of the package).
    *  The `sorry` scan is TEXTUAL, so it passes a tree that does not COMPILE — see the done-gate. */
   buildCheck?: () => Promise<{ ok: boolean; errors: string }>;
@@ -356,6 +364,7 @@ export async function runProofReviewLoop(args: {
   const leanDir = args.leanDir ?? "";
   const noProgressK = args.noProgressK ?? 10;
   const lintUnusedGate = args.lintUnused ?? defaultUnusedHypGate;
+  const deadHelperSweep = args.sweepDead ?? sweepDeadHelpers;
   const buildGate = args.buildCheck ?? (() => buildRunModules(args.ctx.repoRoot, leanDir));
   const phaseStartedAt = new Map<string, number>([["2.5", Date.now()]]);
   const markPhaseStarted = (stage: "3" | "3.5" | "4") => phaseStartedAt.set(stage, Date.now());
@@ -395,6 +404,9 @@ export async function runProofReviewLoop(args: {
     // local reset the cap to zero on every `--resume` (fresh null ≠ current errors), which
     // refunded the circuit breaker the persisted counters exist to enforce.
     last_build_error_sig: "",
+    // Filler anti-identical-prompt memory (see Phase B) — persisted with the counters so a
+    // `--resume` does not restart the loop re-hitting known dead ends cold.
+    filler_summaries: [] as string[],
   });
   const readState = async () => loadState(args.ctx.repoRoot, args.ctx.qid, args.ctx.specialization);
   let counters = zeroCounters();
@@ -719,7 +731,10 @@ export async function runProofReviewLoop(args: {
   // prompt is byte-identical round after round — a session that hits a blocker re-discovers it
   // from scratch next round (observed: ~25 of 60 consecutive rounds returned "no proof closed,
   // blocker remains"). The last few one-line summaries are cheap and make repeat dead-ends visible.
-  const recentSummaries: string[] = [];
+  // Backed by the persisted counters (saved at the top of every round), so the memory ALSO
+  // survives `--resume` — as an in-process local it restarted every resume with byte-identical
+  // prompts until new summaries accumulated (audit, 2026-08-26).
+  const recentSummaries: string[] = counters.filler_summaries;
   const priorSessionsBlock = (): string | undefined =>
     recentSummaries.length === 0
       ? undefined
@@ -830,6 +845,31 @@ export async function runProofReviewLoop(args: {
       await logPhaseCompleted("3.5", "unused-hypothesis lint completed");
       // Final convergence review (dual) = the old F4.
       markPhaseStarted("4");
+      // F4 DEAD-HELPER SWEEP — deterministic, before the dual review certifies the tree. Usage is
+      // only final here (F3 authors helpers ahead of routes that may change), and catching a dead
+      // decl now stops it reaching F5 docstrings, the bank, and ultimately a paper lemma no proof
+      // cites. A finding is an adjudication item (prune, or keep with a recorded reason — a
+      // follow-on run may consume it), never an auto-delete.
+      const deadDecls = await deadHelperSweep(
+        leanDir,
+        new Set(
+          state.graph.nodes.map((n) => n.lean?.decl_name).filter((d): d is string => d != null),
+        ),
+        // Consumers are counted package-wide (runs share substrate: a sibling run's modules may
+        // be this run's helpers' only callers); candidates still come from leanDir alone.
+        { searchRoot: path.resolve(leanDir, "../..") },
+      );
+      if (deadDecls.length > 0) {
+        return {
+          status: "escalate",
+          route: "fix-source",
+          phase: "4",
+          reason:
+            `F4 dead-helper sweep: ${deadDecls.length} declaration(s) nothing in the run consumes — ` +
+            `prune each, or keep it with a recorded justification: ` +
+            deadDecls.map((d) => `${d.decl} (${d.file}:${d.line})`).join("; "),
+        };
+      }
       const conv = await review(state, "convergence");
       await persist(conv.graph);
       // Delivery-role review must survive the process boundary: accepted banking independently

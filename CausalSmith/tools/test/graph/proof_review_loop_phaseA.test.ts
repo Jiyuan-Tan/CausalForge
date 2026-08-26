@@ -118,3 +118,36 @@ describe("proof-review loop — Phase A statement/scaffold gate", () => {
     },
   );
 });
+
+describe("proof-review loop — F4 dead-helper sweep wiring", () => {
+  it("escalates fix-source at phase 4 when the sweep finds a dead decl, before the convergence review", async () => {
+    let reviewCalled = 0;
+    const outcome = await runProofReviewLoop({
+      ctx: { repoRoot: "/tmp", qid: "q", specialization: "v1" },
+      deps: throwingDeps,
+      buildCheck: async () => ({ ok: true, errors: "" }),
+      refresh: async () => rs(),
+      fill: async (g): Promise<FillerResult> => ({ graph: g, escalate: null, summary: "" }),
+      review: async (s, mode): Promise<ReviewerResult> => { if (mode === "convergence") reviewCalled++; return okReview(s.graph); },
+      sweepDead: async () => [{ decl: "abandoned_route_helper", file: "Helpers/X.lean", line: 7 }],
+    });
+    expect(outcome).toMatchObject({ status: "escalate", route: "fix-source", phase: "4" });
+    expect((outcome as { reason?: string }).reason).toContain("abandoned_route_helper");
+    expect(reviewCalled).toBe(0); // the CONVERGENCE review never runs — the deterministic gate fires first
+  });
+
+  it("proceeds to the convergence review when the sweep is clean", async () => {
+    let reviewCalled = 0;
+    const outcome = await runProofReviewLoop({
+      ctx: { repoRoot: "/tmp", qid: "q", specialization: "v1" },
+      deps: throwingDeps,
+      buildCheck: async () => ({ ok: true, errors: "" }),
+      refresh: async () => rs(),
+      fill: async (g): Promise<FillerResult> => ({ graph: g, escalate: null, summary: "" }),
+      review: async (s, mode): Promise<ReviewerResult> => { if (mode === "convergence") reviewCalled++; return okReview(s.graph); },
+      sweepDead: async () => [],
+    });
+    expect(reviewCalled).toBeGreaterThan(0);
+    expect(outcome.status).not.toBe("escalate");
+  });
+});

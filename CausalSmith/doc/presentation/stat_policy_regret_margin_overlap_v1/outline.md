@@ -6,6 +6,8 @@
 
 # Notation
 
+env_overrides: prop:overlap-envelope=propositionv
+
 notation_gaps: $p_P(x)$=the frozen layer uses the overlap score but no definition environment states whether it is $\min\{e_P(x),1-e_P(x)\}$ or another endpoint distance; $\mathcal P_{\alpha,\gamma}$=the law class is named by `def:law-class` but its displayed set notation is not fixed there; $\eta$=the nuisance triple is used by `def:clipped-propensity` and `def:clipped-aipw-score` but only informally identified as $(\mu_0,\mu_1,e)$; $\widehat\eta^{(-k)}$=cross-fitted nuisance estimators are used in `def:feasible-erm` but their construction is not defined; $Y(a)$=potential outcomes appear in assumptions but no frozen definition introduces the potential-outcome space.
 
 | note symbol | paper notation | defining property in one phrase | home |
@@ -84,10 +86,7 @@ notation_gaps: $p_P(x)$=the frozen layer uses the overlap score but no definitio
 | logarithmic power | $p$ | finite logarithmic exponent in empirical-process bounds | ass:vc-localized-envelope |
 | centered process | $z_\pi$ | centered empirical process indexed by policies | ass:vc-localized-offset-envelope |
 | localized radius | $r$ | regret radius for localized process bounds | ass:vc-localized-envelope |
-| localization exponent | $\kappa$ | exponent $\alpha/(2+2\alpha)$ | lem:localized-vc-process-bound |
 | increments | $g_\pi$ | centered policy-indexed functions in localized bounds | ass:vc-localized-envelope |
-| i.i.d. localized supremum | $Z_m(r)$ | fixed-radius supremum over policies with regret at most $r$ | lem:localized-vc-process-bound |
-| cross-fit localized supremum | $Z_{\mathrm{cf}}(r)$ | pooled cross-fit analogue of $Z_m(r)$ | lem:crossfit-localized-process-reduction |
 | pooled cross-fit process | $G_{\mathrm{cf}}(\pi)$ | centered cross-fit process in the offset bound | lem:crossfit-localized-offset-control |
 | clipped-score drift | $b_q(x)$ | conditional mean bias of the clipped AIPW score | lem:localized-clipped-drift-bound |
 
@@ -129,7 +128,7 @@ bib: Kitagawa2018, Athey2021, Luedtke2017, Audibert2007, Massart2006, Tsybakov20
 
 This section presents the overlap-margin calibration, the two-point construction, the product-divergence control, the regret separation, and the resulting minimax lower bound. The section should emphasize that the lower bound is an observed-law statement over `def:law-class` and that the two policies used in the reduction must be available in the policy class as stated in the witness-membership lemma.
 
-objs: def:minimax-regret, def:two-point-witness, prop:overlap-envelope, lem:witness-membership, lem:two-point-divergence, lem:regret-separation, lem:le-cam-two-point-chisq, thm:minimax-lower, thm:rate-characterization
+objs: def:minimax-regret, def:two-point-witness, prop:overlap-envelope, lem:witness-membership, lem:two-point-divergence, lem:regret-separation, lem:le-cam-two-point-chisq, thm:minimax-lower
 
 bib: LeCam1986, Tsybakov2009, Kitagawa2018, Luedtke2017
 
@@ -159,9 +158,9 @@ bib: LeCam1986, Tsybakov2009
 
 ## section: Appendix B. Empirical-Process and Cross-Fitting Details
 
-This appendix contains the localized VC process bounds, cross-fitting reduction, offset control, and the self-bounding argument used by the feasible upper bound. The role of fixed $K$, balanced folds, and the assumed empirical-process envelopes should be stated as inputs rather than consequences of the law class.
+This appendix contains the cross-fit offset control and the self-bounding argument used by the feasible upper bound. The role of fixed $K$, balanced folds, and the assumed empirical-process envelopes should be stated as inputs rather than consequences of the law class.
 
-objs: lem:localized-vc-self-bound, lem:localized-vc-process-bound, lem:crossfit-localized-process-reduction, lem:crossfit-localized-offset-control
+objs: lem:localized-vc-self-bound, lem:crossfit-localized-offset-control
 
 bib: Audibert2007, Massart2006, Tsybakov2009, Chernozhukov2018
 

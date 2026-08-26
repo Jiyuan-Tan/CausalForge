@@ -1,0 +1,41 @@
+Let \(L:=\log(en)\), split the observations into three disjoint blocks \(I_{\mathrm{pil}},I_{\mathrm{cls}},I_{\mathrm{est}}\) whose sizes differ by at most one, and write \(m:=|I_{\mathrm{est}}|\).  On \(I_{\mathrm{pil}}\), compute the clipped occupancy estimator of Definition~\(\mathrm{def:collision\text{-}handle}\), using the block size in place of \(n\), and divide it by \(M\); call the resulting total map \(t\in[-1,1]\).  Put
+\[
+ \lambda_{\epsilon}:=2^{16}\epsilon^{-2},\qquad
+ \beta_{\epsilon}:=2^{12}\lambda_{\epsilon},\qquad
+ \alpha:=\min\{(128\log 6)^{-1},2^{-12}\},
+\]
+\(K:=\lfloor\alpha L\rfloor\), and \(B:=\beta_{\epsilon}L/m\).  On \(I_{\mathrm{cls}}\), call cell \(k\) heavy when its occupancy exceeds \(\lambda_{\epsilon}L\), and light otherwise.  Normalize \(V_i:=Y_i/M\).  On \(I_{\mathrm{est}}\), for \(c\in\{0,1\}\) and \(0\le j\le K-2\), define the ordered distinct-index statistics
+\[
+ U_{k,j}^{a\mid b,c}:=\frac{1}{(m)_{j+2}}
+ \sum_{i_0,\ldots,i_{j+1}\ {\rm distinct}}
+ V_{i_0}\mathbf 1\{X_{i_0}=k,A_{i_0}=a\}
+ \mathbf 1\{X_{i_1}=k,A_{i_1}=b\}
+ \prod_{q=2}^{j+1}\mathbf 1\{X_{i_q}=k,A_{i_q}=c\},
+\]
+\[
+ F_{k,j}^{c}:=\frac{1}{(m)_{j+2}}
+ \sum_{i_0,\ldots,i_{j+1}\ {\rm distinct}}
+ \mathbf 1\{X_{i_0}=k,A_{i_0}=0\}
+ \mathbf 1\{X_{i_1}=k,A_{i_1}=1\}
+ \prod_{q=2}^{j+1}\mathbf 1\{X_{i_q}=k,A_{i_q}=c\}.
+\]
+Every statistic is defined as zero when \((m)_{j+2}=0\).  With the coefficients \(g_{Kj}\) of Lemma~\(\mathrm{lem:linear\text{-}mark\text{-}factorial\text{-}covariance}\), put
+\[
+ \widehat P_k(t):=
+ \sum_{c=0}^1\sum_{j=0}^{K-2}\frac{g_{Kj}}{B^{j+1}}
+ \{U_{k,j}^{1\mid0,c}-U_{k,j}^{0\mid1,c}-tF_{k,j}^{c}\}.
+\]
+For an estimation-block cell count \(N_k\), arm count \(N_{ak}\), and normalized arm mean \(\overline V_{ak}\), with every zero-denominator ratio set to zero, define
+\[
+ \widehat h_k(t):=\frac{N_k}{m}
+ \{\overline V_{1k}\mathbf 1\{N_{1k}>0\}
+ -\overline V_{0k}\mathbf 1\{N_{0k}>0\}-t\}.
+\]
+If \(K<2\), \(m<K+2\), or any displayed calibration is unavailable, set \(T_n^{\mathrm{ctr}}:=0\).  Otherwise, for the classified sets \(\widehat{\mathcal H}\) and \(\widehat{\mathcal L}\), set
+\[
+ T_n^{\mathrm{ctr}}:=M\operatorname{clip}_{[-1,1]}\!\left[
+ t+\sum_{k\in\widehat{\mathcal H}}\widehat h_k(t)
+ +\sum_{k\in\widehat{\mathcal L}}\widehat P_k(t)
+ \right].
+\]
+The map uses only the observed sample and the fixed inputs \((n,d,\epsilon,M,\sigma)\); all factorial, arm-count, pilot-denominator, and clipping boundaries have displayed total fallbacks.

@@ -25,6 +25,7 @@ function protectedFiles(outDir: string): string[] {
     join(outDir, "verification_contract.json"),
     join(outDir, "presentation_crosswalk.json"),
     join(outDir, "lean_snippets.json"),
+    join(outDir, "paper_graph.json"),
   ];
 }
 
@@ -60,6 +61,7 @@ const P4_DERIVED_ARTIFACTS = [
   "paper_body.html",
   "lean_snippets.json",
   "presentation_crosswalk.json",
+  "paper_graph.json",
   "formal_layer_web.json",
   "assumption_table.md",
 ];

@@ -3,6 +3,7 @@ import {
   runHardGates,
   gateLoop,
   parseRubricReview,
+  parseJsonArrayLoose,
   parseJsonLoose,
   citingSentences,
   type GateRunners,
@@ -161,6 +162,33 @@ describe("helpers", () => {
       issue: String.raw`valid \(x\)`,
       fix: String.raw`lone \(p_k=0\)`,
     });
+  });
+
+  it("parseJsonArrayLoose extracts array replies parseJsonLoose structurally cannot", () => {
+    // The live P1 synthesis failure (2026-08-26): a well-formed array reply, sliced by the
+    // object-only parser from first `{` to last `}`, degraded to its FIRST element — so
+    // Array.isArray failed and all 11 codex batches were burned as "unparseable".
+    const live = String.raw`[{"symbols":["\\mathcal D_d^{\\mathrm{bin}}(\\epsilon)","\\Phi_M"],"title":"Binary source classes","body":"Let \\(\\mathcal D_d^{\\mathrm{bin}}(\\epsilon)\\) be the class."}]`;
+    const groups = parseJsonArrayLoose(live) as { symbols: string[]; body: string }[];
+    expect(Array.isArray(groups)).toBe(true);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].symbols).toEqual([
+      String.raw`\mathcal D_d^{\mathrm{bin}}(\epsilon)`,
+      String.raw`\Phi_M`,
+    ]);
+    // Multi-group array inside codex chatter + fences; lone-escape repair applies per string.
+    const fenced = 'Sure.\n```json\n[{"symbols":["K_n"],"body":"lone \\(K_n\\)"},{"symbols":["M"],"body":"cap"}]\n```\ndone';
+    expect(parseJsonArrayLoose(fenced)).toEqual([
+      { symbols: ["K_n"], body: String.raw`lone \(K_n\)` },
+      { symbols: ["M"], body: "cap" },
+    ]);
+    // A non-JSON bracket pair in prose before the real array does not poison the
+    // scan; object-only and array-free replies return null, never a coerced value.
+    expect(parseJsonArrayLoose('see [note 3] above\n[{"symbols":["x"],"body":"b"}] tail')).toEqual([
+      { symbols: ["x"], body: "b" },
+    ]);
+    expect(parseJsonArrayLoose('{"verdict":"drift"}')).toBeNull();
+    expect(parseJsonArrayLoose("no json")).toBeNull();
   });
 
   it("citingSentences pairs sentences with keys", () => {

@@ -122,9 +122,9 @@ bib: MestersZwiernik2022, Virolainen2024, XieHuangChenEtAl2023, MorinishiShimizu
 
 ## section: Appendix with proofs and auxiliary lemmas
 
-The appendix contains the proof skeletons and auxiliary invariance facts, with the source-swap lemma placed before the theorem proofs that use quotienting. It records the classical algebraic and semialgebraic interfaces as external background only, not as proved, implemented, executable, or load-bearing computational contributions.
+The appendix contains the proof skeletons. It records the classical algebraic and semialgebraic interfaces as external background only, not as proved, implemented, executable, or load-bearing computational contributions.
 
-objs: lem:admissible-swaps-preserve-direction, def:real-atlas-handle, def:effective-rational-groebner-cad-interface
+objs: def:real-atlas-handle, def:effective-rational-groebner-cad-interface
 
 bib: CoxLittleOShea2015, Collins1975, BochnakCosteRoy1998, BasuPollackRoy2006, Basu2017RAAGSurvey
 

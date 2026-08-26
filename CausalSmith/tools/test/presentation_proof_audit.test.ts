@@ -173,3 +173,49 @@ describe("proof-audit semantic notation fingerprint", () => {
   });
 
 });
+
+import { missingRealizedCitations } from "../src/presentation/audit.js";
+
+describe("missingRealizedCitations (deterministic missing-citation check)", () => {
+  const citables = [
+    { objId: "lem:ambient-sample-marginal", decl: "CausalSmith.Stat.X.finProductLaw_eq_map" },
+    { objId: "lem:pilot-sandwich", decl: "CausalSmith.Stat.X.pilot_sandwich" },
+  ];
+
+  it("flags a directly invoked realized decl the proof never crefs", () => {
+    const lean = "theorem t : True := by\n  rw [productLaw, ← finProductLaw_eq_map (obsLaw P) n]\n  trivial";
+    const tex = "\\begin{proof}[Proof of \\cref{obj:thm:t}] Direct argument. \\end{proof}";
+    expect(missingRealizedCitations(lean, tex, citables, "thm:t")).toEqual([citables[0]]);
+  });
+
+  it("is satisfied by an existing \\cref and ignores the result's own env", () => {
+    const lean = "theorem t := by exact finProductLaw_eq_map.trans (pilot_sandwich h)";
+    const tex = "By \\cref{obj:lem:ambient-sample-marginal} and \\cref{obj:lem:pilot-sandwich}, done.";
+    expect(missingRealizedCitations(lean, tex, citables, "thm:t")).toEqual([]);
+    // A lemma auditing its own proof never demands a self-citation.
+    expect(
+      missingRealizedCitations("lemma l := finProductLaw_eq_map", "no crefs", citables, "lem:ambient-sample-marginal"),
+    ).toEqual([]);
+  });
+
+  it("matches whole identifiers only, and stays silent without a Lean source", () => {
+    // `finProductLaw_eq_map'` and `myfinProductLaw_eq_map` are different declarations.
+    const lean = "theorem t := by exact finProductLaw_eq_map' (myfinProductLaw_eq_map h)";
+    expect(missingRealizedCitations(lean, "no crefs", citables, "thm:t")).toEqual([]);
+    expect(missingRealizedCitations("", "no crefs", citables, "thm:t")).toEqual([]);
+  });
+});
+
+import { droppedLeanRoutes } from "../src/presentation/audit.js";
+
+describe("droppedLeanRoutes multi-marker lines", () => {
+  it("parses several % lean: markers on one line as separate routes, so a well-formed rewrite is not discarded", () => {
+    const before = "Step 1. % lean: feasibleMaximizer_mem % lean: feasibleMaximizer_value\n";
+    const after = "Step 1a. % lean: feasibleMaximizer_mem\nStep 1b. % lean: feasibleMaximizer_value\n";
+    expect(droppedLeanRoutes(before, after)).toEqual([]);
+    // A genuinely dropped route on a multi-marker line is still caught.
+    expect(droppedLeanRoutes(before, "Step 1. % lean: feasibleMaximizer_mem\n")).toEqual([
+      "feasibleMaximizer_value",
+    ]);
+  });
+});

@@ -664,7 +664,15 @@ export function createLeanLspClient(opts: CreateLeanLspClientOpts): LeanLspClien
 // ---------------------------------------------------------------------------
 
 function parseDiagnostics(value: unknown, file: string): LeanDiagnostic[] {
-  if (!isObject(value)) return [];
+  if (!isObject(value)) {
+    // A plain-string / unrecognized payload (server shape drift) parses as ZERO
+    // diagnostics — indistinguishable from a genuinely clean file, which silently
+    // blinds the sorry gate. Never fully quiet (audit, 2026-08-26).
+    if (typeof value === "string" && value.trim().length > 0) {
+      console.warn(`[lean-lsp] diagnostics payload for ${file} is a plain string (shape drift?) — treating as zero diagnostics; first bytes: ${value.slice(0, 120)}`);
+    }
+    return [];
+  }
   // Lean-LSP MCP wraps the payload as `{result:{success,timed_out,items:[...]}}`;
   // `lake env lean --json` returns `{diagnostics:[...]}` at top level; some
   // older MCP versions returned `{items:[...]}` at top level. Try each shape.
@@ -805,6 +813,12 @@ function parsePremise(value: unknown): PremiseHit[] {
 function parseBuild(value: unknown): { success: boolean; log: string; errors: string[] } {
   if (!isObject(value)) {
     const text = typeof value === "string" ? value : "";
+    // An EMPTY/truncated body must never count as build success — "no text, no error
+    // match" let review dispatches proceed over a red tree until the deterministic
+    // compile gates caught it (audit, 2026-08-26). Fail closed; the caller retries/builds.
+    if (text.trim().length === 0) {
+      return { success: false, log: "(empty build reply — treated as failure)", errors: ["empty build reply"] };
+    }
     return { success: !/error/i.test(text), log: text, errors: [] };
   }
   const log = asString(value.log) ?? (Array.isArray(value.log_tail) ? value.log_tail.join("\n") : "") ?? "";

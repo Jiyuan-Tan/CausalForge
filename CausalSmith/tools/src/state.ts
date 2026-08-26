@@ -213,6 +213,9 @@ export const stateSchema = z
           // no-progress cap survives a `--resume` — an in-process comparand reset `stale` to 0
           // on every re-entry, refunding the circuit breaker a fresh budget each time.
           last_build_error_sig: z.string().default(""),
+          // Filler anti-identical-prompt memory — persisted so a `--resume` does not
+          // restart Phase B re-hitting the same dead ends with byte-identical prompts.
+          filler_summaries: z.array(z.string()).default([]),
         })
         .optional(),
       proof_loop_cap_hit: z.string().optional(),

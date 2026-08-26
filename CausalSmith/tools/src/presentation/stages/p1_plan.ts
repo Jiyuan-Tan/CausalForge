@@ -19,7 +19,7 @@ import {
   type LintProblem,
 } from "../tex_anchors.js";
 import { parseBib } from "../citations.js";
-import { parseJsonLoose, mapLimit } from "../gates.js";
+import { parseJsonArrayLoose, parseJsonLoose, mapLimit } from "../gates.js";
 import { buildLeanContextIndex, type LeanContext } from "../lean_context.js";
 import { citedDependencies, renderedNodes, topoOrder, refTargets, envForNode, isCitedNode } from "../graph_view.js";
 import { citedStdFromNode, reconcileCite, indexBib } from "../assumption_citations.js";
@@ -65,11 +65,15 @@ export function parseNotationReviewerOutput(stdout: string): NotationReviewerPro
   if (parsed === null) {
     throw new Error("P1 notation reviewer output is not parseable JSON — re-run P1 (inputs are cached)");
   }
-  if (Array.isArray(parsed.problems)) {
+  // The CONTRADICTORY reply `{"clean": false, "problems": []}` (problems reported in prose,
+  // or an unfilled skeleton) must fail loud, never collapse to a clean review — this is the
+  // stage's ONLY notation check (audit finding, 2026-08-26). An empty problems array WITHOUT
+  // `clean: false` stays accepted as clean (long-pinned contract).
+  if (Array.isArray(parsed.problems) && (parsed.problems.length > 0 || parsed.clean !== false)) {
     return parsed.problems as NotationReviewerProblem[];
   }
   if (parsed.clean === true) return [];
-  throw new Error("P1 notation reviewer output has neither clean:true nor a problems array — re-run P1");
+  throw new Error("P1 notation reviewer output has neither clean:true nor a usable problems array — re-run P1");
 }
 
 /** Reader-facing rendering of a node this run explicitly does not deliver. The agent normally
@@ -328,6 +332,14 @@ export function routeNotationProblems(
     const symbol = p.symbol;
     const detail = `${symbol} [${p.case ?? "?"}] in ${(p.used_in ?? []).join("/")} — ${p.fix ?? ""}`;
     if (p.case === "undefined" || p.case === "no-anchor") {
+      // A symbol used by NO env cannot be a self-containment defect of the paper — there
+      // is nothing to define, revise, or synthesize. Typical case: a Lean-realized symbol
+      // (offered to the reviewer as a candidate authoritative home) that no paper
+      // statement displays. Surface at the checkpoint instead of halting (observed live
+      // 2026-08-26: three helper-only @realizes symbols deterministically hard-halted P1).
+      if ((p.used_in ?? []).filter(Boolean).length === 0) {
+        return [{ gate: "notation-unresolved", symbol, detail: `${detail} (reported ${p.case} but used by no env — nothing to fix in the paper; checkpoint advisory)` }];
+      }
       // HOME-FIRST for ANY symbol, not only Lean-realized ones: when the notation table
       // designates an editable graph-env home, the symbol is defined THERE (journal
       // style — notation lives with the object that owns it: witness values inside the
@@ -1054,6 +1066,35 @@ export async function stageP1(io: StageIO): Promise<void> {
     // one apparatus) instead of minting a micro-definition per symbol (the per-symbol
     // path produced 34 synthesized envs in a 68-env layer).
     const symbolsBlock = fresh.map((symbol) => `SYMBOL: ${symbol}\n${usagesFor(symbol)}`).join("\n\n");
+    // MECHANICAL-failure retry accounting, ONE decision per ledger KEY, not per symbol:
+    // the key is deliberately lossy, so two fresh symbols can collide on one key — the
+    // old per-symbol loop then charged that key twice in a single failed batch (the
+    // first pass "retried" it, the second "burned" it, but the first had already
+    // deleted the synth pre-mark, so the burn never stuck and the batch re-dispatched
+    // a third time — audit, 2026-08-26). Returns the note tail.
+    const accountMechanicalFailure = async (): Promise<string> => {
+      const retried: string[] = [];
+      const burned: string[] = [];
+      cache.synthRetries ??= {};
+      const byKey = new Map<string, string[]>();
+      for (const symbol of fresh) {
+        const k = synthLedgerKey(symbol);
+        byKey.set(k, [...(byKey.get(k) ?? []), symbol]);
+      }
+      for (const [k, syms] of byKey) {
+        const n = (cache.synthRetries[k] ?? 0) + 1;
+        cache.synthRetries[k] = n;
+        if (n <= 1) {
+          delete cache.synth[k];
+          retried.push(...syms);
+        } else {
+          burned.push(...syms); // pre-mark stays: accepted:false advisory
+        }
+      }
+      await saveCache();
+      return `${retried.length} symbol(s) left for one retry` +
+        (burned.length > 0 ? `; ${burned.length} burned after repeated mechanical failure (advisory)` : "");
+    };
     try {
       const res = await deps.runCodex({
         prompt: await presentationPrompt("p1_synthesize_definition", {
@@ -1066,32 +1107,23 @@ export async function stageP1(io: StageIO): Promise<void> {
         reasoningEffort: "medium",
         leanLsp: true,
       });
-      const groups = parseJsonLoose(res.stdout) as { symbols?: string[]; title?: string; body?: string }[] | null;
+      // A decoy array in surrounding prose (`[1]`-style citation markers) can win the loose
+      // scan; a reply whose elements are not all group OBJECTS is a MECHANICAL failure and
+      // must take the retry branch below — treating it as a judgment burned the whole batch
+      // with a false "not faithfully definable" diagnosis (audit, 2026-08-26). An empty
+      // array stays a valid deliberate all-omit reply.
+      const parsedGroups = parseJsonArrayLoose(res.stdout);
+      const groups =
+        Array.isArray(parsedGroups) && parsedGroups.every((g) => g !== null && typeof g === "object" && !Array.isArray(g))
+          ? (parsedGroups as { symbols?: string[]; title?: string; body?: string }[])
+          : null;
       if (!Array.isArray(groups)) {
         // MECHANICAL failure (unparseable reply), not a judgment of undefinability:
         // un-burn the pre-marks so ONE retry may happen — but only one, tracked in
         // synthRetries. Unbounded un-burning re-dispatched the same symbols round
         // after round; a second mechanical failure burns the symbol to a checkpoint
         // advisory like any other failed attempt.
-        const retried: string[] = [];
-        const burned: string[] = [];
-        cache.synthRetries ??= {};
-        for (const symbol of fresh) {
-          const k = synthLedgerKey(symbol);
-          const n = (cache.synthRetries[k] ?? 0) + 1;
-          cache.synthRetries[k] = n;
-          if (n <= 1) {
-            delete cache.synth[k];
-            retried.push(symbol);
-          } else {
-            burned.push(symbol); // pre-mark stays: accepted:false advisory
-          }
-        }
-        io.state.notes.push(
-          `P1: batched synthesis reply unparseable — ${retried.length} symbol(s) left for one retry` +
-          (burned.length > 0 ? `; ${burned.length} burned after repeated mechanical failure (advisory)` : ""),
-        );
-        await saveCache();
+        io.state.notes.push(`P1: batched synthesis reply unparseable — ${await accountMechanicalFailure()}`);
         return out;
       }
       const freshSet = new Set(fresh.map((x) => synthLedgerKey(x)));
@@ -1106,6 +1138,10 @@ export async function stageP1(io: StageIO): Promise<void> {
         if (covered.length === 0 || !g.body || structuralEnv || /\\label\b/.test(g.body)) {
           if (covered.length > 0) {
             io.state.notes.push(`P1: synthesis for ${covered.join(", ")} rejected (structural env/label/empty) — left for the checkpoint`);
+          } else if ((g.symbols ?? []).length > 0) {
+            // A group whose every echoed symbol misses the fresh-key set is a ledger-key
+            // round-trip mismatch — invisible without a note (audit finding, 2026-08-26).
+            io.state.notes.push(`P1: synthesis group dropped — echoed symbol(s) ${(g.symbols ?? []).join(", ")} match no dispatched ledger key`);
           }
           continue;
         }
@@ -1133,25 +1169,7 @@ export async function stageP1(io: StageIO): Promise<void> {
       // unparseable-reply branch above — an unconditional un-burn here re-armed a
       // repeatedly-crashing batch forever, the exact loop the retry bound exists
       // to kill (audit finding, 2026-08-20).
-      const retried: string[] = [];
-      const burned: string[] = [];
-      cache.synthRetries ??= {};
-      for (const symbol of fresh) {
-        const k = synthLedgerKey(symbol);
-        const n = (cache.synthRetries[k] ?? 0) + 1;
-        cache.synthRetries[k] = n;
-        if (n <= 1) {
-          delete cache.synth[k];
-          retried.push(symbol);
-        } else {
-          burned.push(symbol); // pre-mark stays: accepted:false advisory
-        }
-      }
-      io.state.notes.push(
-        `P1: batched synthesis failed (${(e as Error).message?.slice(0, 80)}) — ${retried.length} symbol(s) left for one retry` +
-        (burned.length > 0 ? `; ${burned.length} burned after repeated mechanical failure (advisory)` : ""),
-      );
-      await saveCache();
+      io.state.notes.push(`P1: batched synthesis failed (${(e as Error).message?.slice(0, 80)}) — ${await accountMechanicalFailure()}`);
       return out;
     }
     await saveCache();

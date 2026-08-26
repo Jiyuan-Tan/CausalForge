@@ -3,17 +3,22 @@ Write \(m_k=|I_k|\) for the size of fold \(k\), \(w_k=m_k/n\) for its weight, an
 \[
 A_\alpha=\frac{1+\alpha}{2+\alpha}.
 \]
-The pooled cross-fit centered process and its foldwise pieces are
+The pooled cross-fit centered process is
 \[
 G_{\mathrm{cf}}(\pi)
 =
-\frac1n\sum_{i=1}^n\left\{g_{k(i),\pi}(O_i)-\int g_{k(i),\pi}(O)\,dP(O)\right\},
-\qquad
-G_k(\pi)
-=
-\frac1{m_k}\sum_{i\in I_k}\left\{g_{k,\pi}(O_i)-\int g_{k,\pi}(O)\,dP(O)\right\},
+\frac1n\sum_{i=1}^n\left\{g_{k(i),\pi}(O_i)-\int g_{k(i),\pi}(O)\,dP(O)\right\}.
 \]
-the latter defined for nonempty folds.  Grouping the pooled sum by fold gives the exact decomposition
+For every fold, use the totalized foldwise centered process
+\[
+G_k(\pi)=
+\begin{cases}
+\displaystyle
+\frac1{m_k}\sum_{i\in I_k}\left\{g_{k,\pi}(O_i)-\int g_{k,\pi}(O)\,dP(O)\right\}, & m_k>0,\\[1.2ex]
+0, & m_k=0.
+\end{cases}
+\]
+With this convention, empty folds are included in fold sums and have zero weight. Grouping the pooled sum by fold gives the exact decomposition
 \[
 G_{\mathrm{cf}}(\pi)=\sum_{k=1}^K w_kG_k(\pi),
 \qquad
@@ -56,7 +61,7 @@ The regret is bounded below by a fixed constant on all of \(\Pi\): the setup ide
 \qquad\text{for }\pi\in\Pi\text{ and for }\pi=\pi^\star_P,
 \]
 so \(R_P(\pi)=V_P(\pi^\star_P)-V_P(\pi)\ge-2-2=-4\). % lean: abs_lawWelfare_le_two % lean: lawRegret_lower_bound
-Each foldwise offset term is therefore bounded above uniformly over \(\pi\in\Pi\) — the envelope hypothesis gives \(|G_k(\pi)|\le2B\), and \(R_P(\pi)\ge-4\) — so each foldwise supremum
+Each foldwise offset term is therefore bounded above uniformly over \(\pi\in\Pi\): the envelope hypothesis gives \(|G_k(\pi)|\le2B\), with the totalized definition giving the same bound when \(m_k=0\), and \(R_P(\pi)\ge-4\). Thus each foldwise supremum
 \[
 \Omega_k=\sup_{\pi\in\Pi}\left\{2|G_k(\pi)|-\frac{R_P(\pi)}4\right\}_+
 \]
@@ -68,20 +73,23 @@ is finite, and taking the supremum over \(\pi\in\Pi\) in the previous display yi
 \]
 % lean: max_weighted_abs_sub_le_sum % lean: abs_foldCenteredProcess_le % lean: lawRegret_lower_bound % lean: pooledOffsetSup_pointwise_le_sum_fold
 
-\emph{Step 2: integrate and reduce each fold to an i.i.d.\ sample of its own size.}  The pooled offset supremum and each \(\Omega_k\) are integrable by the stated regularity hypotheses, so integrating the last display over the product law and exchanging the finite sum with the integral gives
+\emph{Step 2: integrate and reduce each nonempty fold to an i.i.d.\ sample of its own size.}  The stated regularity hypotheses give integrability of the pooled offset supremum and of the foldwise offset suprema on their fold product spaces.  The coordinate projection onto fold \(k\) is measure preserving, so the corresponding full-sample foldwise supremum is integrable.  Integrating the last display over the product law and exchanging the finite sum with the integral gives
 \[
 \mathbb E_P\sup_{\pi\in\Pi}\left\{2\left|G_{\mathrm{cf}}(\pi)\right|-\frac{R_P(\pi)}4\right\}_+
 \le
 \sum_{k=1}^K w_k\,\mathbb E_P\Omega_k .
 \]
-The coordinate projection of the size-\(n\) product sample onto the indices in \(I_k\) is measure preserving onto the product law of \(m_k\) i.i.d.\ observations from \(P\); since \(\Omega_k\) depends on the sample only through those coordinates, \(\mathbb E_P\Omega_k\) equals the offset-supremum expectation for an i.i.d.\ sample of size \(m_k\). % lean: measurePreserving_foldProjection % lean: integral_foldOffsetSup_eq_expected
-
-If \(m_k=0\) then \(w_k=0\) and that fold contributes nothing.  If \(m_k>0\), then \(g_{k,\pi}\) is policy-compatible with envelope \(|g_{k,\pi}(O)|\le B\) and second moment \(\int g_{k,\pi}^2\,dP\le B^2P_X(D_\pi)\), so \cref{obj:ass:vc-localized-offset-envelope} applies at sample size \(m_k\) and gives
+If \(m_k=0\), then \(w_k=0\) and that fold contributes nothing.  If \(m_k>0\), the same measure-preserving projection identifies \(\mathbb E_P\Omega_k\) with the offset-supremum expectation for an i.i.d.\ sample of size \(m_k\).  For such a fold, \(g_{k,\pi}\) is policy-compatible with envelope \(|g_{k,\pi}(O)|\le B\) and second moment
+\[
+\int g_{k,\pi}(O)^2\,dP(O)\le B^2P_X(D_\pi),
+\]
+so \cref{obj:ass:vc-localized-offset-envelope} applies at sample size \(m_k\) and gives
 \[
 \mathbb E_P\Omega_k
 \le
 C_0\left(\frac{B^2}{m_k}\right)^{A_\alpha}(\log m_k)^p .
 \]
+% lean: measurePreserving_foldProjection % lean: integral_foldOffsetSup_eq_expected
 
 \emph{Step 3: compare each weighted fold rate with the target \(n\)-rate.}  Put \(x=m_k/n\in(0,1]\).  Then \(B^2/m_k=(B^2/n)/x\), so
 \[

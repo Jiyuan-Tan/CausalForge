@@ -1,63 +1,100 @@
 {
   "recommendation": "minor_revision",
-  "score": 8.2,
-  "score_rationale": "The paper delivers a technically meaningful and well-scoped minimax contribution with unusually good claim fidelity, but it still needs presentational and reproducibility tightening before publication.",
-  "summary": "The submission studies ATE estimation with unrestricted finite-alphabet confounding and establishes the fixed-interior minimax rate n^{-1}+d^2/(n^2 log^2 n), with a constructive hybrid estimator and a separate exact-randomization endpoint result. The verified statements support the main contribution, and the prose is generally careful about the calibrated range, fixed-overlap constants, and the non-adaptive nature of the near-randomization selector. I would recommend publication after minor revision, mainly to make the human-readable exposition and reproducibility layer match the strength of the formal result.",
+  "score": 8,
+  "score_rationale": "The paper delivers a significant and well-positioned sharp minimax-rate result with verified statements, but several exposition and claim-fidelity issues should be cleaned up before publication.",
+  "summary": "The submission identifies the fixed-interior minimax MSE rate for ATE estimation with unrestricted finite-alphabet confounding under fixed overlap and constructs a computable split-sample ratio-polynomial estimator attaining the upper rate. The contribution is meaningful: it closes the logarithmic upper-bound gap left by the closest discrete-covariate causal benchmark and gives clear parametric and consistency regimes. The formal statements are largely faithful to the verification contract, but the manuscript needs tightening around implementability, theorem quantifiers, verification-boundary prose, and reader-facing clarity.",
   "strengths": [
-    "The main rate result is novel and important for researchers studying uniform causal inference with high-dimensional or sparse discrete covariates.",
-    "The paper is unusually disciplined about scope: the fixed-interior range, dependence on epsilon, imported lower-bound ingredient, endpoint behavior, and lack of triangular-array transition theory are mostly stated honestly.",
-    "The estimator is constructive rather than existential, and the heavy/light split gives a clear statistical explanation for the logarithmic improvement.",
-    "The relationship to semiparametric, doubly robust, higher-order influence-function, and large-alphabet functional-estimation literatures is broadly accurate and useful."
+    "Sharp fixed-interior minimax rate is an important contribution for discrete-covariate causal inference.",
+    "The estimator is explicit and tied to a clear approximation/factorial-moment mechanism rather than only an existence argument.",
+    "The paper engages the closest predecessor, including the exact logarithmic gap in ZengBalakrishnanHanKennedy2024.",
+    "The endpoint randomized bound and combined upper envelope add useful context beyond the fixed-interior theorem.",
+    "The prose mostly states the theorem conditions accurately, including fixed epsilon, the calibrated range, and the source-backed lower-bound dependency."
   ],
   "findings": [
     {
-      "severity": "minor",
-      "section": "appendix",
-      "issue": "Several appendix proofs remain too compressed for a journal article, even though the verified statements should be treated as true. For example, the proof of Lemma 1 states that the centered term, false-light term, Chebyshev approximation bound, and calibration algebra give the desired bounds, but the reader is not shown the intermediate inequalities or where the key constants enter.",
-      "fix": "Expand the proofs of the light-cell and heavy-cell lemmas into readable mathematical derivations, or insert explicitly numbered auxiliary inequalities with short explanations before invoking them. The Lean verification can remain the certification layer, but the appendix should let a statistically trained reader follow the proof architecture without reconstructing hidden sublemmas.",
-      "kind": "structure",
-      "finding_id": "appendix-proof-readability",
+      "severity": "major",
+      "section": "main results",
+      "issue": "The statement and surrounding prose call the selector a deterministic estimator, but the later paragraph says it is oracle-calibrated because C_epsilon is an existence constant. This creates a claim-fidelity tension for implementability: \"For the deterministic estimator ... one also has\" can be read as an implementable procedure, while the paper later says the rule is not computable from the sample alone.",
+      "fix": "In the theorem item title and displayed definition, rename it to an oracle-calibrated selected estimator or certificate selector, and state immediately before the display that only the two branch estimators are implementable from data while the selector packages two risk certificates using an existence constant.",
+      "kind": "prose",
+      "finding_id": "oracle-selector-implementability",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "verification note",
+      "issue": "The sentence \"The theorem statements and the proofs written in this paper are machine-checked in Lean 4\" overstates the verification boundary for synthesized presentation material and for cited external inputs unless read with later qualifications.",
+      "fix": "Rewrite the opening of the verification claim affirmatively and locally, e.g. \"The formal development machine-checks the theorem statements listed in the verification boundary and the Lean proofs of the in-paper reductions; cited published lower-bound inputs enter through theorem-local interfaces identified in the footnotes.\"",
+      "kind": "prose",
+      "finding_id": "verification-boundary-overbroad",
       "remedy": "rewrite"
     },
     {
       "severity": "minor",
       "section": "setup and assumptions",
-      "issue": "The ATE display uses conditional means in categories where they may not be defined: \"\\(\\tau(P)=\\sum_{k=1}^{d}p_k(\\mu_{1k}-\\mu_{0k})=\\sum_{k=1}^{d}\\phi(q_k)\\).\" Earlier, \\(\\mu_{ak}\\) is defined only when the conditioning event has positive probability, so the first sum is formally ambiguous for zero-mass categories.",
-      "fix": "State a convention that \\(p_k(\\mu_{1k}-\\mu_{0k})\\) is interpreted as zero when \\(p_k=0\\), or write the first sum over \\(k:p_k>0\\) and define the functional primarily by the four-cell expression \\(\\sum_k\\phi(q_k)\\).",
-      "kind": "statement",
-      "finding_id": "zero-mass-conditional-mean-convention",
-      "remedy": "rewrite"
-    },
-    {
-      "severity": "minor",
-      "section": "abstract",
-      "issue": "The sentence \"The result implies a parametric-rate window \\(d=O(\\sqrt n\\log n)\\), within the fixed-interior range, and a consistency threshold \\(d=o(n\\log n)\\)\" could still be read as a global consistency characterization, although the theorem only characterizes consistency under the calibrated fixed-interior range or in sequences eventually entering it.",
-      "fix": "Revise to say, for example, \"within the calibrated fixed-interior range, this gives a parametric-rate window ... and a consistency threshold ...\" so both consequences inherit the same range restriction.",
+      "issue": "The paragraph \"The extrema in the minimax risk\" says \"an estimator takes finitely many values and is a bounded function of the sample.\" A measurable real-valued estimator on a finite sample space is bounded, but it need not take values in a bounded a priori range common across estimators; the prose then discusses totalized order extrema. The paragraph is hard to reconcile with the later bookkeeping convention.",
+      "fix": "Clarify that each fixed estimator is bounded because the sample space is finite, while the bound can depend on the estimator; then separate this ordinary finite-sample observation from the Lean convention for empty or unbounded indexed suprema.",
       "kind": "prose",
-      "finding_id": "consistency-threshold-scope",
+      "finding_id": "minimax-extrema-clarity",
       "remedy": "rewrite"
     },
     {
       "severity": "minor",
-      "section": "verification note",
-      "issue": "The manuscript says that the formal statements and derivations are supported by a Lean 4 development, but the submitted text does not give a precise artifact location, commit, build command, or dependency information. Since the paper relies on formal verification as part of its rigor, this is a reproducibility gap.",
-      "fix": "Add a code and verification availability paragraph with repository/DOI, commit hash, Lean/toolchain version, build instructions, and a short description of how theorem names in the manuscript map to the formal declarations.",
-      "kind": "other",
-      "finding_id": "formal-artifact-reproducibility",
-      "remedy": "implementation"
+      "section": "main results",
+      "issue": "Theorem 1 quantifies over \"every single-observation law P, and every sample law mu_n in the experiment class\" even though the displayed minimax and worst-case bounds do not depend on that particular P or mu_n. The later explanatory paragraph acknowledges this, but the theorem statement remains distracting and nonstandard.",
+      "fix": "Restate the theorem without the unused law-level quantifiers in the reader-facing version, or move the inhabited-class explanation into a brief parenthetical after the theorem. If the Lean statement requires these witnesses, present that as a formalization note rather than as the statistical theorem's main quantifier structure.",
+      "kind": "statement",
+      "finding_id": "unused-theorem-quantifiers",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "setup and assumptions",
+      "issue": "The estimator definition sets M(n) and B(n) only \"For n>=2\" but then defines the estimator \"For every n\" and later claims computability for every n,d. The formal layer totalizes these boundary cases, but the manuscript recipe leaves n=0 and n=1 underspecified for readers.",
+      "fix": "Add a short boundary convention for n<2, or state the estimator definition is intended for the positive large-sample regimes and give the totalized convention used for the all-n computability theorem.",
+      "kind": "statement",
+      "finding_id": "estimator-small-n-boundary",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "related work",
+      "issue": "The comparison to ZengBalakrishnanHanKennedy2024 says \"the consistency benchmark moves from the d/n -> 0 of the standard estimator class to d/(n log n) -> 0.\" This is substantively right only when clearly restricted to the calibrated fixed-interior range and to minimax risk rather than the standard estimator class.",
+      "fix": "Revise to: \"Within the fixed-interior range d <= rho_epsilon n log n, the minimax consistency criterion is d/(n log n)->0, improving on the d/n->0 criterion for the standard plug-in/IPW/DR class analyzed there.\"",
+      "kind": "prose",
+      "finding_id": "consistency-comparison-scope",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "global",
+      "issue": "Several formal labels use synthesized names such as synth_3, synth_10, synth_13, synth_19, and synth_20. These are reader-visible through labels and cross-references if errors arise, and they make the manuscript look less polished.",
+      "fix": "Rename presentation-synthesized environments to semantic labels such as def:chebyshev-factorial-notation, def:centered-endpoint-estimator, def:product-sampling-laws, def:chebyshev-reciprocal-coefficients, and def:sparse-polynomial-means.",
+      "kind": "structure",
+      "finding_id": "synthetic-labels-polish",
+      "remedy": "source_change"
     },
     {
       "severity": "nit",
-      "section": "main results",
-      "issue": "The title and label of the second main theorem use language such as \"Universal Hybrid Envelope\" and the internal label suggests overlap-adaptivity, while the selected estimator is explicitly oracle-calibrated and depends on \\(\\epsilon\\) and \\(C_\\epsilon\\). The surrounding prose mostly clarifies this, but the naming still risks suggesting data-driven adaptivity.",
-      "fix": "Rename the theorem or add a parenthetical sentence immediately before it such as \"Universal here refers to the fixed formula of the hybrid estimator, not to data-driven adaptation to unknown overlap constants.\"",
+      "section": "global",
+      "issue": "The title \"Sharp minimax rates for average treatment effects with discrete confounding under fixed overlap\" uses sentence case correctly, but theorem title \"Overlap adaptive hybrid envelope\" would read more naturally as \"Overlap-adaptive hybrid envelope.\"",
+      "fix": "Hyphenate compound modifiers in titles and prose where needed, while preserving sentence case.",
       "kind": "prose",
-      "finding_id": "adaptive-title-overstates",
+      "finding_id": "hyphenation-polish",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "nit",
+      "section": "abstract",
+      "issue": "The phrase \"the minimax mean-squared risk ... is [displayed rate] up to constants\" is clear to specialists but slightly informal for an abstract of a theory paper.",
+      "fix": "Use \"is bounded above and below by epsilon-dependent constant multiples of\" before the display.",
+      "kind": "prose",
+      "finding_id": "abstract-rate-wording",
       "remedy": "rewrite"
     }
   ],
   "questions_for_authors": [
-    "Will the Lean development be submitted as a permanent, citable artifact with exact build instructions?",
-    "Can the authors add a short comparison, even qualitative, explaining how the hybrid estimator differs operationally from the standard estimators analyzed in Zeng et al. beyond the rate statement?"
+    "Can the existence constants C_epsilon and rho_epsilon be made at least numerically traceable from the proof, even if conservative, so the selector/envelope discussion is more operational?",
+    "Would the authors consider moving the long verification-boundary discussion to a concise appendix table and keeping the main text focused on the statistical result and estimator?"
   ]
 }

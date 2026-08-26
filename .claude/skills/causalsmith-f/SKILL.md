@@ -92,6 +92,12 @@ discharge by F2.5—not a re-plan.
   `bin/f3_directive.ts <qid> <spec> --directive "…"` (persists on `state.flags.f3_filler_directive`; a
   PROOF hint ONLY — statement changes go through `fix-source`/rewind). `--clear` once it lands.
 - `build-substrate` → § "Substrate building".
+- `fix-source` at **phase 4 with reason `F4 dead-helper sweep`** → agent-authored decl(s) nothing in the
+  run consumes (textual sweep; `@[…]`-attributed, `instance`, graph-node, and `-- keep:`-marked decls are
+  already exempt). This is a source-hygiene adjudication, NOT a note/rewind case: verify with your own
+  grep, then either DELETE the decl (default — abandoned proof routes; rebuild after) or, when it is
+  deliberate substrate for reuse, add a `-- keep: <reason>` comment line directly above it. Never keep
+  silently, and never satisfy the sweep by manufacturing a fake use.
 - `fix-source` → the `.tex`/note is wrong. **VERIFY the rewind is necessary first** (shared reference §
   "Rewind discipline" — independently reproduce the Lean↔`.tex` conflict). False → restore + fix the
   reviewer OR the scaffolder in place. **Scaffold-side drift** (note CORRECT, F2 keeps re-introducing the

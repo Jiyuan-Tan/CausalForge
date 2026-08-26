@@ -3,7 +3,7 @@
 
 **Contribution statement.** The paper derives the minimax treated-fraction schedule, under a sharp total-variation variance envelope, for estimating a polynomial rollout contrast in finite-population monotone Bernoulli designs, and shows that shifted Chebyshev-Lobatto schedules attain the low-budget exponential rate.
 
-env_overrides: oeq:exact-nested-minimax=remarkv
+env_overrides: oeq:exact-nested-minimax=remarkv, prop:equal-spacing-benchmark=propositionv, prop:no-extrapolation-boundary=propositionv, lem:exact-chebyshev-rate-feasible=propositionv
 
 # Notation
 notation_gaps: none

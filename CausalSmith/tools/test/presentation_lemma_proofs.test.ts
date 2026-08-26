@@ -21,8 +21,17 @@ describe("parseLemmaProofBatch", () => {
     expect(m.get("prop:overlap-envelope")).toMatch(/^UNCLEAR:/);
   });
 
-  it("throws when an expected lemma is missing", () => {
-    expect(() => parseLemmaProofBatch(`%% PROOF lem:witness-membership\n${proofA}`, ["lem:witness-membership", "lem:two-point-divergence"])).toThrow(/lem:two-point-divergence/);
+  it("returns the parseable subset when a lemma is omitted — the caller retries the rest", () => {
+    // The old all-or-nothing throw here discarded the parseable proofs from the same paid
+    // reply; the caller now re-requests ONLY the omitted lemmas (audit, 2026-08-26).
+    const m = parseLemmaProofBatch(`%% PROOF lem:witness-membership\n${proofA}`, ["lem:witness-membership", "lem:two-point-divergence"]);
+    expect(m.get("lem:witness-membership")).toBe(proofA);
+    expect(m.has("lem:two-point-divergence")).toBe(false);
+  });
+
+  it("drops marker ids that were not requested (a stray echo never writes a stray proof file)", () => {
+    const m = parseLemmaProofBatch(`%% PROOF lem:stray\n${proofA}\n%% PROOF lem:witness-membership\n${proofA}`, ["lem:witness-membership"]);
+    expect([...m.keys()]).toEqual(["lem:witness-membership"]);
   });
 });
 

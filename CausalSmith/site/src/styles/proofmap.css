@@ -1,0 +1,527 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Proof map — a compact dependency map docked in the paper's side rail.
+
+   Layout contract, and why it is shaped this way:
+
+   • WIDE (≥1281px, where the site already shows the contents rail): the rail
+     `.paper-side` is fixed at the left margin — the same top/left/width the
+     table of contents used on its own — and becomes a flex column holding the
+     contents (scrolling, taking what it needs) with the map docked beneath it.
+     Both stay visible for the whole read.
+   • NARROW (≤1280px): the site hides the contents rail entirely, so
+     `.paper-side` becomes an ordinary in-flow block above the paper and the map
+     is a collapsible panel — the reading column is never interrupted by a
+     graph it has no room for.
+   • The RIGHT margin belongs to the comments rail (see comments.css, which
+     positions cards against `article.paper`). Nothing here is positioned
+     against that element or occupies that side; the statement card opens over
+     the LEFT margin, beside its own rail.
+
+   Tokens, focus rings, and the reduced-motion rule come from tokens.css.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@import "./tokens.css";
+@import "./fonts.css";
+
+.paper-side {
+  font-family: Charter, Georgia, "Times New Roman", serif;
+}
+
+@media (min-width: 1281px) {
+  .paper-side {
+    position: fixed;
+    top: 2.5rem;
+    left: 1.2rem;
+    /* Grow into the left margin the centred column actually leaves.
+       `article.paper` is 760px border-box and centred, so the margin is
+       (100vw - 760px)/2; the rail starts 1.2rem in and keeps a 1rem gutter
+       before the column, which is the 2.2rem taken off. The 230px floor is what
+       the rail was, and it still clears the text at the 1281px breakpoint
+       (rail ends at 249px, the column's text starts at 285px); the 340px
+       ceiling stops a 4K monitor from turning a side map into a second column.
+       The PAPER COLUMN never moves — only this rail does. */
+    width: clamp(230px, calc((100vw - 760px) / 2 - 2.2rem), 340px);
+    max-height: calc(100vh - 4rem);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    z-index: 5;
+  }
+  /* The contents keeps its own look; it just stops positioning itself, because
+     the rail now does that for both of them. */
+  /* Contents yields first: the map and its preview are what the reader is
+     actively using, and the contents scrolls inside whatever is left. */
+  .paper-side > .paper-toc {
+    position: static;
+    width: auto;
+    max-height: none;
+    flex: 0 2 auto;
+    min-height: 3rem;
+    overflow-y: auto;
+  }
+  .paper-side > .pm-panel {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-top: 1px solid var(--rule);
+    padding-top: var(--sp-3);
+  }
+}
+
+/* ── Panel head ── */
+
+.pm-panel {
+  margin: 0;
+}
+.pm-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
+  font-size: inherit;
+  font-weight: normal;
+  flex-wrap: wrap;
+}
+.pm-toggle {
+  font-family: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45em;
+  flex-wrap: wrap;
+}
+.pm-kicker {
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.pm-sub {
+  font-size: var(--fs-2xs);
+  color: var(--ink-ghost);
+}
+/* The disclosure marker only earns its place where the panel actually
+   collapses; in the rail the map is simply always there. */
+.pm-toggle::before {
+  content: "";
+}
+.pm-coverage {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-2xs);
+  color: var(--ink-soft);
+}
+.pm-coverage[hidden] {
+  display: none;
+}
+.pm-meter {
+  width: 42px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--parchment-deep);
+  overflow: hidden;
+}
+.pm-meter > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--verified);
+  border-radius: var(--r-pill);
+}
+
+/* ── The map ── */
+
+.pm-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.pm-body[hidden] {
+  display: none;
+}
+.pm-graph-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+svg.pm-map {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.pm-edge {
+  fill: none;
+  stroke: #cfc8bc;
+  stroke-width: 1;
+  transition:
+    stroke 0.15s ease,
+    opacity 0.15s ease;
+}
+.pm-edge.is-cites {
+  stroke: var(--lean);
+  stroke-width: 1.6;
+}
+.pm-edge.is-citedby {
+  stroke: var(--accent-bright);
+  stroke-width: 1.6;
+}
+.pm-edge.is-dim {
+  opacity: 0.15;
+}
+
+a.pm-node {
+  cursor: pointer;
+  text-decoration: none;
+}
+a.pm-node rect.pm-pill {
+  fill: #ffffff;
+  stroke: var(--ink-ghost);
+  stroke-width: 1;
+  transition: stroke 0.15s ease;
+}
+a.pm-node text.pm-lbl {
+  font-family: Charter, Georgia, "Times New Roman", serif;
+  fill: var(--ink);
+}
+a.pm-node.pm-top rect.pm-pill {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+a.pm-node.pm-top text.pm-lbl {
+  font-weight: 700;
+  fill: var(--accent-deep);
+}
+/* Reader-verified: a green wash plus a dot, because a "✓N" chip is unreadable
+   at rail size. The count lives in the statement card. */
+a.pm-node circle.pm-dot {
+  fill: var(--verified);
+  opacity: 0;
+}
+a.pm-node.is-attested rect.pm-pill {
+  fill: var(--verified-wash);
+}
+a.pm-node.is-attested circle.pm-dot {
+  opacity: 1;
+}
+a.pm-node.is-selected rect.pm-pill {
+  stroke: var(--lean);
+  stroke-width: 2;
+}
+a.pm-node.is-dim {
+  opacity: 0.32;
+}
+/* Hover says "this one is clickable" and nothing else — no edges light, no
+   strip changes. Brushing past a chip on the way to the contents must cost the
+   reader nothing, which is what the churn complaint was about. */
+a.pm-node:hover rect.pm-pill {
+  stroke: var(--lean);
+  stroke-width: 1.6;
+}
+a.pm-node:focus-visible {
+  outline: 2px solid var(--lean);
+  outline-offset: 1px;
+}
+
+.pm-legend {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-2xs);
+  color: var(--ink-ghost);
+}
+.pm-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.pm-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: #ffffff;
+  border: 1.2px solid var(--ink-ghost);
+}
+.pm-swatch.pm-sw-top {
+  border-color: var(--accent);
+}
+.pm-line {
+  display: inline-block;
+  width: 14px;
+  height: 0;
+  border-top: 1.6px solid var(--lean);
+}
+.pm-line.pm-line-user {
+  border-color: var(--accent-bright);
+}
+
+/* A chip is a real link, so a JS-off click is a hash jump. Give the target
+   room at the top edge, or the statement's own heading lands flush against it
+   and the NEXT result's heading is the first thing the reader reads. */
+#paper-body .formal-block {
+  scroll-margin-top: 5rem;
+}
+
+/* ── Statement card (on demand) ────────────────────────────────────────────
+   Opens beside the rail, over the left margin. It is transient and
+   dismissible (✕ / Escape / a click outside), so overlapping the text column
+   on a narrow window is acceptable in a way a permanent panel would not be. */
+
+.pm-preview {
+  border-top: 1px solid var(--rule-soft);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 38vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+.pm-preview[hidden] {
+  display: none;
+}
+
+.pm-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.pm-card-kicker {
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+  flex: 1 1 auto;
+}
+.pm-card-close {
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  line-height: 1;
+  color: var(--ink-faint);
+  background: none;
+  border: 0;
+  padding: 0.15rem 0.25rem;
+  cursor: pointer;
+}
+.pm-card-close:hover {
+  color: var(--ink);
+}
+.pm-card-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  margin: 0 0 var(--sp-2);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.pm-stmt {
+  font-size: var(--fs-2xs);
+  color: var(--ink-soft);
+  background: var(--parchment);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-card);
+  padding: var(--sp-2) var(--sp-3);
+  margin: 0 0 var(--sp-2);
+  max-height: 11em;
+  overflow: auto;
+}
+/* The statement is CLONED out of the paper body, so neutralize the body
+   block's own chrome (cardinal rule, click affordance) inside the card. */
+.pm-stmt .pm-stmt-block {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+}
+.pm-stmt .env-label {
+  font-style: italic;
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+.pm-stmt p {
+  display: inline;
+  margin: 0;
+}
+.pm-stmt .katex-display {
+  overflow-x: auto;
+}
+.pm-stmt-note {
+  margin: 0 0 var(--sp-3);
+}
+.pm-goto {
+  font-family: inherit;
+  font-size: var(--fs-2xs);
+  color: var(--lean);
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--lean-line);
+  padding: 0;
+  cursor: pointer;
+}
+.pm-goto:hover {
+  border-bottom-style: solid;
+}
+
+.pm-rel {
+  margin: 0 0 var(--sp-3);
+}
+.pm-rel-label {
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 var(--sp-1);
+}
+.pm-chips {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+.pm-chips button {
+  font-family: inherit;
+  font-size: var(--fs-2xs);
+  cursor: pointer;
+  color: var(--lean);
+  background: var(--lean-wash);
+  border: 1px solid var(--lean-line);
+  border-radius: var(--r-pill);
+  padding: 0.1rem 0.6rem;
+}
+.pm-chips button:hover {
+  background: #e2e9f2;
+}
+.pm-chips .pm-none {
+  font-size: var(--fs-xs);
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+
+/* ── Reader verification (inside the card) ── */
+
+.pm-attest {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--sp-3);
+}
+.pm-attest[hidden] {
+  display: none;
+}
+.pm-readers {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 var(--sp-3);
+  min-height: 24px;
+  flex-wrap: wrap;
+}
+.pm-av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--verified);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  border: 1.5px solid var(--paper);
+  object-fit: cover;
+}
+.pm-av.pm-you {
+  background: var(--accent);
+}
+.pm-readers .pm-count {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.pm-verify {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  background: var(--verified);
+  color: #ffffff;
+  border: 1px solid var(--verified);
+  border-radius: var(--r-card);
+  padding: 0.4rem 0.8rem;
+}
+.pm-verify:hover {
+  background: #265939;
+}
+.pm-verify.is-mine {
+  background: var(--verified-wash);
+  color: var(--verified);
+}
+.pm-verify.needs-login {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.pm-verify.needs-login:hover {
+  background: #333333;
+}
+.pm-verify[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+.pm-status {
+  font-size: var(--fs-2xs);
+  color: var(--ink-soft);
+  margin: var(--sp-2) 0 0;
+  min-height: 1em;
+}
+.pm-micro {
+  font-size: var(--fs-2xs);
+  color: var(--ink-ghost);
+  margin: var(--sp-2) 0 0;
+  line-height: 1.4;
+}
+
+/* ── Narrow viewports: an in-flow, collapsible panel ──────────────────────
+   Below 1281px the site hides the contents rail, so there is no rail to dock
+   to. The map becomes a bordered panel above the paper, collapsed by the
+   controller so it costs one line until the reader opens it. */
+
+@media (max-width: 1280px) {
+  .paper-side {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.25rem 1.5rem 0;
+  }
+  .pm-panel {
+    border: 1px solid var(--rule);
+    border-radius: var(--r-frame);
+    background: var(--paper);
+    padding: var(--sp-3) var(--sp-4);
+  }
+  .pm-toggle::before {
+    content: "▾";
+    display: inline-block;
+    color: var(--accent-muted);
+    font-size: 0.7em;
+  }
+  .pm-panel.is-collapsed .pm-toggle::before {
+    content: "▸";
+  }
+  .pm-graph-scroll {
+    max-height: 60vh;
+    overflow-x: auto;
+  }
+  .pm-preview {
+    max-height: 50vh;
+  }
+}

@@ -54,7 +54,13 @@ export function reuseCandidateBlock(
 ): string {
   if (!existsSync(mdPath)) return "";
   const r = createRetrieval(root);
-  if (!r.library) return "";
+  if (!r.library) {
+    // Fail-open by design (retrieval must never break dispatch) but never silently: an
+    // F1 brief with ZERO reuse candidates makes downstream stages re-prove substrate the
+    // library already owns, and the only prior trace fired post-dispatch (audit, 2026-08-26).
+    console.error("[reuse] library_index.json missing/unreadable — F1 brief gets ZERO reuse candidates; run `lake build && lake exe library_index`");
+    return "";
+  }
   let md: string;
   try {
     md = readFileSync(mdPath, "utf8");
@@ -80,7 +86,10 @@ export function coreReuseCandidateBlock(
   opts: CandidateBlockOpts = {},
 ): string {
   const r = createRetrieval(root);
-  if (!r.library) return "";
+  if (!r.library) {
+    console.error("[reuse] library_index.json missing/unreadable — core brief gets ZERO reuse candidates; run `lake build && lake exe library_index`");
+    return "";
+  }
   // The node-id slug carries the human concept words ("minimax-lower" → "minimax lower",
   // "clip-bias" → "clip bias"); it is a far stronger retrieval signal than the bare node
   // KIND ("theorem"/"assumption") or a symbol name ("M_n"). Prepend it to every query title

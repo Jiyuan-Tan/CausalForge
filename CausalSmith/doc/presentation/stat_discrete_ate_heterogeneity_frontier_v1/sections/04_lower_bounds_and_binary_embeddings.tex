@@ -1,0 +1,205 @@
+\section{Lower bounds and binary embeddings}
+
+The upper bounds in \cref{obj:thm:robust-upper-construction-resolution-all-d,obj:thm:frontier-upper-all-d} are matched against lower bounds obtained by embedding binary hard experiments into the real-outcome model. The source experiments come from the discrete-adjustment constructions of \citet{ZengBalakrishnanHanKennedy2024}. The present section records the embedding map, the transfer of binary converses into the radius-indexed class in \cref{obj:def:model-class}, and the all-alphabet lower bound that will be combined with the selector bound in the main bracket.
+
+The least-favorable construction uses two binary sources. One source carries an exact-homogeneity collision lower bound, and the other passes through a channel whose attenuation equals one half of the heterogeneity radius. The capped alphabet sizes keep the source experiment within the available \(d\) cells for every finite \(n,d\).
+
+The lower-bound proof has a parallel structure. The exact-homogeneity component restricts the real-outcome model to affine images of uniform-mass binary laws with a common cell effect; the binary collision lower bound then gives the baseline \(M^2\{n^{-1}+\min(1,d/n^2)\}\). The radius component starts from an arbitrary-mass one-arm binary lower bound, pads the source alphabet into the available \(d\) cells, applies a Bernoulli channel with attenuation \(\sigma/2\), and rescales outcomes by \(M\). This transport preserves the observed-data comparison up to data processing and turns source target separation into average-treatment-effect separation of order \(M\sigma\), giving the term \(M^2\sigma^2\min\{1,u_{n,d}\}\). The exact and radius components are combined with the parametric lower term in the bracket.
+
+\begin{algorithmv}{def:least-favorable-handle}[Least-favorable handle]
+For fixed constants \(b_{\epsilon}^{\mathrm{rad}},b_{\epsilon}^{\mathrm{ex}}>0\) depending only on \(\epsilon\), define the two embedded hard families and the channel as follows.
+\begin{enumerate}
+\item Set the channel attenuation
+\[
+\lambda:=\frac{\sigma}{2}.
+\]
+\item For the radius component, set the capped alphabet size
+\[
+d_{\mathrm{rad}}:=\min\{d,\max(1,\lfloor b_{\epsilon}^{\mathrm{rad}}n\log(en)\rfloor)\}.
+\]
+Start from a fixed-sample binary one-arm hard family with at most \(d_{\mathrm{rad}}\) positive-mass cells, and assign zero mass to unused cells.
+\item Pass each binary potential response through the hypothesis-independent channel
+\[
+B'(a)\sim\operatorname{Bernoulli}\!\left\{\frac12+\lambda\left(B(a)-\frac12\right)\right\},
+\]
+and define the scaled real potential response
+\[
+Y(a):=M\{B'(a)-1/2\}.
+\]
+\item For the exact-homogeneity component, set the capped alphabet size
+\[
+d_{\mathrm{ex}}:=\min\{d,\max(1,\lfloor b_{\epsilon}^{\mathrm{ex}}n^2\rfloor)\}.
+\]
+Start from a uniform-mass binary hard family on at most \(d_{\mathrm{ex}}\) positive-mass cells, assign zero mass to unused cells, and define
+\[
+Y(a):=M\{B(a)-1/2\}.
+\]
+\item The construction outputs the radius-channel embedded family, the exact-homogeneity embedded family, and the channel above.
+\end{enumerate}
+\end{algorithmv}
+
+\Cref{obj:def:least-favorable-handle} fixes the two source-to-target routes used below. The exact-homogeneity route preserves the binary response contrast after the affine scaling by \(M\). The radius route first contracts binary mean differences by the factor \(\sigma/2\), so the transported alternatives fit the heterogeneity radius in \cref{obj:ass:approximate-homogeneity} while retaining a source separation proportional to \(M\sigma\).
+
+The affine embedding is the basic transport map. It leaves the discrete adjustment structure unchanged and rescales binary outcomes to the centered real interval dictated by \cref{obj:ass:mean-normalization}.
+
+\begin{definitionv}{synth_4}[Affine binary-to-real embedding]
+For \(M\ge1\), define \(\Phi_M\) as the affine pushforward that sends a binary \(d\)-cell law \(P\) to the real-outcome \(d\)-cell law obtained from
+\[
+Y(a):=M\{B(a)-1/2\},
+\qquad
+Y=Y(A).
+\]
+Under \(\Phi_M\), the cell masses and propensities agree with those of \(P\), each positive arm-cell conditional outcome law is pushed forward by \(b\mapsto M(b-1/2)\), and
+\[
+\mu_{ak}(\Phi_M(P))=M\{\mu_{ak}^{\mathrm{bin}}(P)-1/2\},
+\qquad
+\tau_k(\Phi_M(P))=M\{\mu_{1k}^{\mathrm{bin}}(P)-\mu_{0k}^{\mathrm{bin}}(P)\}.
+\]
+\end{definitionv}
+
+The mean-squared-error notation used in the transfer statements is tied to the observed product law in \cref{obj:def:sample-experiment} and the average treatment effect functional in \cref{obj:def:ate-functional}.
+
+\begin{definitionv}{synth_7}[Mean-squared error \(\operatorname{MSE}_{P^{\prime}}(T)\)]
+For a real-outcome law \(P^{\prime}\) and a total estimator \(T\) of the \(n\)-sample, define its mean-squared error at \(P^{\prime}\) by \[\operatorname{MSE}_{P^{\prime}}(T):=E_{Q_{P^{\prime}}^{(n)}}\left[\left(T-\tau(P^{\prime})\right)^2\right],\] where \(Q_{P^{\prime}}^{(n)}=(P_O^{\prime})^{\otimes n}\) is the observed product law and \(\tau(P^{\prime})\) is the average treatment effect functional.
+\end{definitionv}
+
+With these definitions in place, the first transfer result records how the binary classes enter the real-outcome classes and how their risk lower bounds scale. It also states the polynomial upper guarantee attached to the same affine framework, which keeps the subclass comparison and the constructive bound on a common outcome scale.
+
+\begin{propositionv}{prop:zeng-class-inclusion-and-lower-transfer}[Affine subclass transfer]
+Let \(\mathcal D_d^{\mathrm{bin}}(\epsilon)\) and \(\mathcal H_d^{\mathrm{bin}}(\epsilon)\) be the binary source classes of \cref{obj:synth_2}, whose defining conditions are recalled here only through the overlap and homogeneity constraints that this proposition uses:
+\[
+\mathcal D_d^{\mathrm{bin}}(\epsilon)
+:=
+\{P:\text{ for every positive-mass cell }k,\ 
+\epsilon\le \pi_k(P)\le 1-\epsilon\}.
+\]
+and, for the uniform-mass exactly homogeneous subclass,
+\[
+\mathcal H_d^{\mathrm{bin}}(\epsilon)
+:=
+\left\{
+P\in\mathcal D_d^{\mathrm{bin}}(\epsilon):
+p_k(P)=\frac1d\ \text{for every }k,\ 
+\mu_{1k}^{\mathrm{bin}}(P)-\mu_{0k}^{\mathrm{bin}}(P)
+=
+\mu_{1\ell}^{\mathrm{bin}}(P)-\mu_{0\ell}^{\mathrm{bin}}(P)
+\ \text{for all }k,\ell
+\right\}.
+\]
+For every overlap parameter \(\epsilon\) with \(0<\epsilon<1/2\), there are constants
+\(c_{\mathrm{ex}},c_{\mathrm{rad}},b_{\mathrm{rad}},C_{\mathrm{up}}>0\) and a polynomial
+calibration handle, consisting of a cutoff \(K_0\in\mathbb N\) and an active-range multiplier
+\(A>0\) such that
+\[
+K_0\le n,\qquad d\le A n\log(en)
+\qquad\Longrightarrow\qquad
+2\le K_n
+\]
+for all \(n,d\ge1\), where \(K_n\) is the polynomial degree of \cref{obj:def:polynomial-handle}, with the following property.  For every \(d\ge1\) and \(M\ge1\), there is an affine embedding map \(\Phi_M\), sending each binary \(d\)-cell law to a real-outcome \(d\)-cell law,
+\[
+\Phi_M:\{d\text{-cell binary laws}\}\longrightarrow \{d\text{-cell real-outcome laws}\},
+\]
+with the following properties:
+\begin{itemize}
+\item \textbf{(Affine embedding.)} For every binary law \(P\), \(\Phi_M(P)\) is the affine pushforward \(B(a)\mapsto M\{B(a)-1/2\}\): its observed law is the pushforward of the binary observed law, its cell masses and propensities agree with those of \(P\), each positive arm-cell conditional outcome law is pushed forward by \(b\mapsto M(b-1/2)\), each arm-cell mean is \(M\) times the corresponding binary mean minus \(M/2\), and its full-data law is induced by an affine pushforward of a binary full-data coupling.
+
+\item \textbf{(Unrestricted inclusion.)} If \(P\in\mathcal D_d^{\mathrm{bin}}(\epsilon)\), then \(\Phi_M(P)\in\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\), the class in \cref{obj:def:unrestricted-class}.
+
+\item \textbf{(Exact homogeneous inclusion.)} If \(P\in\mathcal H_d^{\mathrm{bin}}(\epsilon)\), then
+\[
+\Phi_M(P)\in\mathcal P_{d,\epsilon,M,0},
+\]
+with \(\mathcal P_{d,\epsilon,M,\sigma}\) as in \cref{obj:def:model-class}.
+
+\item \textbf{(Strict image.)} For every \(0\le\sigma\le2\), there exists a real-outcome law \(Q\in\mathcal P_{d,\epsilon,M,\sigma}\) that is the image of no binary law:
+\[
+\Phi_M(P)\ne Q
+\]
+for every binary law \(P\).
+
+\item \textbf{(Lower transfers and upper estimator.)} Write \(\operatorname{MSE}_{P^{\prime}}(T):=E_{Q_{P^{\prime}}^{(n)}}\left[\left(T-\tau(P^{\prime})\right)^2\right]\) for the mean-squared error of a total estimator \(T\) under the \(n\)-sample law of a real-outcome law \(P^{\prime}\). For every \(n\ge1\) and \(0\le\sigma\le2\), if \(d\le c_{\mathrm{ex}}n^2\), then every total measurable estimator with values in \([-M,M]\) has some \(P\in\mathcal H_d^{\mathrm{bin}}(\epsilon)\) satisfying
+\[
+c_{\mathrm{ex}}M^2\left(\frac1n+\frac{d}{n^2}\right)
+\le
+\operatorname{MSE}_{\Phi_M(P)}(\widehat\tau),
+\]
+and the minimax risk in \cref{obj:def:minimax-risk} satisfies
+\[
+c_{\mathrm{ex}}M^2\left(\frac1n+\frac{d}{n^2}\right)
+\le
+\mathsf R_{n,d,\epsilon,M,\sigma}.
+\]
+For all \(n\ge1\) and \(0\le\sigma\le2\), the radius-channel transfer gives
+\[
+c_{\mathrm{rad}}M^2\sigma^2\min\{1,u_{n,d}\}
+\le
+\mathsf R_{n,d,\epsilon,M,\sigma},
+\]
+together with a transfer certificate with constants \(c_{\mathrm{rad}}\) and \(b_{\mathrm{rad}}\).  The estimator \(T_n^{\mathrm{poly}}\) determined by the polynomial calibration handle is measurable, takes values in \([-M,M]\), and for every \(Q\in\mathcal P_{d,\epsilon,M,\sigma}\),
+\[
+\operatorname{MSE}_{Q}(T_n^{\mathrm{poly}})
+\le
+C_{\mathrm{up}}M^2\left(\frac1n+\min\{1,u_{n,d}\}\right).
+\]
+\end{itemize}
+\end{propositionv}
+
+\Cref{obj:prop:zeng-class-inclusion-and-lower-transfer} makes the binary-to-real comparison precise. The binary arbitrary-mass source class embeds into the unrestricted real-outcome class, while the uniform-mass exactly homogeneous source embeds into the zero-radius real-outcome class. The transferred exact-homogeneity lower bound contributes the \(M^2(n^{-1}+d/n^2)\) scale on its active alphabet range, and the radius-channel transfer contributes the \(M^2\sigma^2\min\{1,u_{n,d}\}\) scale for the rare-cell component. The final clause records that the polynomial estimator applies over the larger real-outcome class in \cref{obj:def:model-class}, so the embedding is used for converses while the constructive guarantee remains same-class.
+
+The next statement extends the exact-homogeneity lower transfer to all alphabet sizes by saturating the collision term at one. It is the exact-radius component of the lower benchmark used in the bracket.
+
+\begin{lemmav}{lem:scaled-binary-exact-lower-transfer-all-d}[Scaled binary lower transfer]
+For every overlap parameter \(\epsilon\) with \(0<\epsilon<1/2\), there exists a constant \(c_{\epsilon}>0\) such that the following statement holds.  For every \(n,d\in\mathbb N\), \(M\in\mathbb R\), and \(\sigma\in\mathbb R\) satisfying
+\begin{itemize}
+\item \textbf{(Sample and alphabet.)} \(n\ge 1\) and \(d\ge 1\);
+\item \textbf{(Outcome scale.)} \(M\ge 1\);
+\item \textbf{(Radius range.)} \(0\le \sigma\le 2\),
+\end{itemize}
+the minimax mean-squared risk \(\mathsf R_{n,d,\epsilon,M,\sigma}\) from \cref{obj:def:minimax-risk} obeys
+\[
+c_{\epsilon}M^2\left\{\frac{1}{n}+\min\left(1,\frac{d}{n^2}\right)\right\}
+\le
+\mathsf R_{n,d,\epsilon,M,\sigma}.
+\]
+\end{lemmav}
+
+\Cref{obj:lem:scaled-binary-exact-lower-transfer-all-d} supplies the lower-bound baseline that persists at every radius because exact homogeneity is included within each radius-indexed class. The term \(n^{-1}\) is the parametric sampling contribution, and the capped \(d/n^2\) term is the collision contribution inherited from the binary exactly homogeneous source experiment of \citet{ZengBalakrishnanHanKennedy2024} after scaling by \(M^2\).
+
+The radius-channel converse adds the rare-cell component governed by the heterogeneity radius. The construction in \cref{obj:def:least-favorable-handle} converts a binary source separation for \(\psi(P)\), the binary average response contrast introduced in \cref{obj:synth_1}, into a real-outcome separation for \(\tau(P)\) through the displayed affine channel.
+
+\begin{theoremv}{thm:radius-channel-converse-all-d}[All-d radius converse]
+For every \(0<\epsilon<1/2\), there exist constants \(c_{\epsilon}\) and \(b_{\epsilon}^{\mathrm{rad}}\) such that
+\[
+0<c_{\epsilon}\le 1,
+\qquad
+0<b_{\epsilon}^{\mathrm{rad}}.
+\]
+For all integers \(n,d\ge 1\), all \(M\ge 1\), and all \(0\le \sigma\le 2\), the minimax mean-squared risk \(\mathsf R_{n,d,\epsilon,M,\sigma}\) of \cref{obj:def:minimax-risk} satisfies
+\[
+c_{\epsilon}M^2
+\left\{
+\frac1n+\min\left(1,\frac d{n^2}\right)
++\sigma^2\min\left(1,\frac{d^2}{n^2\log^2(en)}\right)
+\right\}
+\le
+\mathsf R_{n,d,\epsilon,M,\sigma}.
+\]
+Moreover, for the same constants and every such \(n,d,M,\sigma\), there are a capped alphabet size \(d_{\mathrm{rad}}\), a source family, a padding map into \(\{1,\ldots,d\}\), an embedding into \(\mathcal P_{d,\epsilon,M,\sigma}\), and a coupling realizing the radius-channel construction with source constant \(b_{\epsilon}^{\mathrm{rad}}\). Along this realization, for all source laws \(P_0,P_1\),
+\[
+\tau(P_1)-\tau(P_0)
+=
+M\frac{\sigma}{2}
+\{\psi(P_1)-\psi(P_0)\},
+\]
+and for every estimator \(\widehat\tau\) taking values in \([-M,M]\), some source law \(P\) satisfies
+\[
+c_{\epsilon}M^2\sigma^2
+\min\left(1,\frac{d^2}{n^2\log^2(en)}\right)
+\le
+\mathbb E_P\{(\widehat\tau-\tau(P))^2\}.
+\]
+\end{theoremv}
+
+\Cref{obj:thm:radius-channel-converse-all-d} establishes the all-alphabet lower benchmark for the same minimax risk studied by the selector upper bound. Its first two terms are the exact-homogeneity baseline from \cref{obj:lem:scaled-binary-exact-lower-transfer-all-d}; the third term is the radius-sensitive rare-cell term generated by the channel. The displayed coupling identity shows why the scale is \(M^2\sigma^2\): the affine map contributes the factor \(M\), the channel contributes the factor \(\sigma/2\), and mean-squared risk squares the resulting target separation. The capped construction keeps the embedded source inside \(\mathcal P_{d,\epsilon,M,\sigma}\) for every finite alphabet size, so the lower bound is available at the same \(n,d,M,\sigma\) indices as the upper result in \cref{obj:thm:frontier-upper-all-d}.
+
+Together, \cref{obj:lem:scaled-binary-exact-lower-transfer-all-d,obj:thm:radius-channel-converse-all-d} provide the converse side of the paper's minimax bracket. The next section combines these lower bounds with the selector guarantee in \cref{obj:thm:frontier-upper-all-d} and then characterizes the regimes in which the two benchmarks agree in order.

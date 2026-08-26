@@ -1,0 +1,262 @@
+\section{Setup and assumptions}
+
+Throughout, \leanref{sym:n}{$n$} denotes sample size and \leanref{sym:d}{$d$} denotes the number of adjustment cells. Cell indices such as \leanref{sym:k}{$k$} range over \(\{1,\ldots,d\}\), and treatment levels such as \leanref{sym:a}{$a$} range over \(\{0,1\}\). Constants \leanref{sym:c_epsilon}{$c_\epsilon$} and \leanref{sym:C_epsilon}{$C_\epsilon$} may change from line to line and depend only on the overlap parameter \leanref{sym:epsilon}{$\epsilon$}. The outcome scale is \leanref{sym:M}{$M$}\(\ge 1\), and the heterogeneity radius is \leanref{sym:sigma}{$\sigma$}\(\in[0,2]\). We use \(O(\cdot)\), \(\lesssim_\epsilon\), and \(\asymp_\epsilon\) with constants depending only on \(\epsilon\).
+
+A full-data law \leanref{sym:P}{$P$} governs the finite-cell observational unit with confounder \leanref{sym:X}{$X$}, binary treatment \leanref{sym:A}{$A$}, potential outcomes \leanref{sym:Y(a)}{$Y(a)$}, and observed real outcome \leanref{sym:Y}{$Y$}. For a supported cell, \leanref{sym:p_k}{$p_k$} is the cell mass, \leanref{sym:pi_k}{$\pi_k$} is the propensity, and \leanref{sym:mu_{ak}}{$\mu_{ak}$} is the arm-cell conditional mean. The corresponding cell treatment effect is \leanref{sym:tau_k}{$\tau_k$}, the target average treatment effect is \leanref{sym:tau(P)}{$\tau(P)$}, and the centered cell-effect deviation is \leanref{sym:delta_k}{$\delta_k$}. These objects are fixed formally below before the minimax experiment is introduced.
+
+The analysis starts from the potential-outcomes conditions for finite-cell adjustment, followed by scale and heterogeneity restrictions that make the finite-sample risk problem comparable across real-outcome laws.
+
+\begin{assumptionv}{ass:consistency}[Consistency]
+Under \(P\),
+\[
+Y=Y(A)
+\]
+almost surely.
+\end{assumptionv}
+
+Consistency links the observed outcome to the potential outcome under the realized treatment assignment, following the potential-outcomes setup used in discrete-adjustment analyses such as \citet{ZengBalakrishnanHanKennedy2024}.
+
+\begin{assumptionv}{ass:conditional-exchangeability}[Conditional exchangeability]
+Under \(P\),
+\[
+(Y(0),Y(1))\perp A\mid X .
+\]
+\end{assumptionv}
+
+Conditional exchangeability is the selection-on-observables condition after conditioning on the discrete adjustment cell \citep{ZengBalakrishnanHanKennedy2024}. Together with consistency, it gives the usual causal interpretation of cell-level treated-control contrasts \citep{Rubin1974,RosenbaumRubin1983,ImbensRubin2015}.
+
+\begin{assumptionv}{ass:overlap}[Fixed overlap]
+For each cell \(k\), let
+\[
+p_k:=P(X=k),
+\]
+and, when \(p_k>0\), let
+\[
+\pi_k:=P(A=1\mid X=k).
+\]
+For every \(k\) with \(p_k>0\),
+\[
+\epsilon\le \pi_k\le 1-\epsilon .
+\]
+\end{assumptionv}
+
+The fixed-overlap requirement imposes strong overlap on every supported cell, as in binary discrete-adjustment work such as \citet{ZengBalakrishnanHanKennedy2024}. It keeps both treatment arms available in population within each cell while allowing the cell masses themselves to be arbitrary.
+
+\begin{assumptionv}{ass:mean-normalization}[Mean normalization]
+The law \(P\) carries an arm-cell outcome distribution for every arm \(a\in\{0,1\}\) and \emph{every} cell \(k\), zero-mass cells included; let \(\mu_{ak}\) denote its mean.  Whenever the arm-cell probability \(P(A=a,X=k)\) is positive, \(\mu_{ak}\) is the observed conditional mean \(E_P[Y\mid A=a,X=k]\).  Only supported cells are constrained: for every \(a\in\{0,1\}\) and every \(k\) with \(p_k>0\),
+\[
+|\mu_{ak}|\le M/2 .
+\]
+\end{assumptionv}
+
+Mean normalization is the affine-centered bounded conditional-mean analogue of the bounded binary response scale in \citet{ZengBalakrishnanHanKennedy2024}. The centering fixes the outcome scale for the minimax comparison, and the restriction applies on the supported part of the adjustment distribution.
+
+\begin{assumptionv}{ass:approximate-homogeneity}[Approximate homogeneity]
+For \emph{every} cell \(k\), let
+\[
+\tau_k:=\mu_{1k}-\mu_{0k}
+\]
+and
+\[
+\delta_k:=\tau_k-\sum_j p_j\tau_j ,
+\]
+both well defined on zero-mass cells as well.
+The cell-effect deviations satisfy
+\[
+\max_{k:p_k>0}|\delta_k|\le \sigma M .
+\]
+\end{assumptionv}
+
+Approximate homogeneity is the outcome-scale-normalized analogue of a maximal cell-effect-deviation radius in binary discrete adjustment \citep{ZengBalakrishnanHanKennedy2024}. The radius \(\sigma M\) measures the largest supported-cell departure of a cell treatment effect from the population-weighted average effect.
+
+\begin{assumptionv}{ass:second-central-moment}[Second central moment]
+For every \(a\in\{0,1\}\) and every \(k\) with \(p_k>0\),
+\[
+E_P\!\left[(Y-\mu_{ak})^2\mid A=a,X=k\right]\le M^2 .
+\]
+\end{assumptionv}
+
+The moment bound extends the binary bounded-outcome scale to real-valued outcomes through a uniform conditional second-central-moment envelope. It keeps the noise level on the same scale as the conditional-mean and heterogeneity restrictions.
+
+These conditions define two law classes. The first imposes the radius bound, while the second records the same overlap and moment envelope with the radius left free.
+
+\begin{definitionv}{def:model-class}[Real-outcome model class \(\mathcal P_{d,\epsilon,M,\sigma}\)]
+\[
+\mathcal P_{d,\epsilon,M,\sigma}
+:=
+\left\{
+P:
+\begin{array}{l}
+X\in\{1,\ldots,d\},\ A\in\{0,1\},\ Y,Y(0),Y(1)\in\mathbb R,\\
+0<\epsilon<1/2,\quad M\ge 1,\quad 0\le \sigma\le 2,\\
+P\text{ satisfies }\cref{obj:ass:consistency,obj:ass:conditional-exchangeability,obj:ass:overlap,obj:ass:mean-normalization,obj:ass:second-central-moment,obj:ass:approximate-homogeneity}
+\end{array}
+\right\}.
+\]
+\end{definitionv}
+
+The radius-indexed class \leanref{sym:\mathcal P_{d,epsilon,M,sigma}}{$\mathcal P_{d,\epsilon,M,\sigma}$} is the main parameter space of the paper: all finite-cell masses are allowed, and the scalar radius records the amount of cell-effect variation available to the estimator.
+
+\begin{definitionv}{def:unrestricted-class}[Unrestricted-radius class \(\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\)]
+\[
+\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}
+:=
+\left\{
+P:
+\begin{array}{l}
+X\in\{1,\ldots,d\},\ A\in\{0,1\},\ Y,Y(0),Y(1)\in\mathbb R,\\
+0<\epsilon<1/2,\quad M\ge 1,\\
+P\text{ satisfies }\cref{obj:ass:consistency,obj:ass:conditional-exchangeability,obj:ass:overlap,obj:ass:mean-normalization,obj:ass:second-central-moment}
+\end{array}
+\right\}.
+\]
+\end{definitionv}
+
+The unrestricted-radius class \leanref{sym:\mathcal P_{d,epsilon,M}^{unr}}{$\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}$} supplies the endpoint comparison for the radius scale under the same fixed-overlap and real-outcome moment envelope.
+
+The observed-data experiment is generated by independent sampling from the observed margin. Write the observed record as \leanref{sym:O}{$O$} and its observed-data law as \leanref{sym:P_O}{$P_O$}.
+
+\begin{definitionv}{def:sample-experiment}[Sample experiment \(\mathcal E_{n,d,\epsilon,M,\sigma}\)]
+Let
+\[
+O:=(X,A,Y)\in\mathcal O:=\{1,\ldots,d\}\times\{0,1\}\times\mathbb R,
+\]
+and let \(P_O\) denote the observed-data law of \(O\) under \(P\). The \(n\)-sample observed-data experiments generated by \(\mathcal P_{d,\epsilon,M,\sigma}\) are
+\[
+\mathcal E_{n,d,\epsilon,M,\sigma}
+:=
+\left\{
+Q_P^{(n)}=P_O^{\otimes n}:P\in\mathcal P_{d,\epsilon,M,\sigma}
+\right\}.
+\]
+\end{definitionv}
+
+Thus each sampling law \leanref{sym:Q_P^{(n)}}{$Q_P^{(n)}$} belongs to the experiment \leanref{sym:\mathcal E_{n,d,epsilon,M,sigma}}{$\mathcal E_{n,d,\epsilon,M,\sigma}$} induced by a law in \(\mathcal P_{d,\epsilon,M,\sigma}\).
+
+The target parameter is the finite-cell average treatment effect. Its definition uses the same cell masses and arm-cell conditional means introduced in the assumptions.
+
+\begin{definitionv}{def:ate-functional}[Average treatment effect \(\tau(P)\)]
+For a real-outcome finite-cell law \(P\) indexed by \(k=1,\ldots,d\) and an overlap parameter \(\epsilon\) with \(0<\epsilon<1/2\), assume consistency, conditional exchangeability of \((Y(0),Y(1))\) and \(A\) given \(X\) for measurable potential-outcome events, overlap \(\epsilon\le \pi_k\le 1-\epsilon\) whenever \(p_k>0\), and first-moment integrability of each arm-cell outcome law for every \(a\in\{0,1\}\) and positive-mass cell. With \(p_k\) the cell mass and \(\mu_{ak}\) the arm-cell conditional outcome mean, define
+\[
+\tau(P)
+:=
+\sum_{k=1}^{d}p_k(\mu_{1k}-\mu_{0k}).
+\]
+\end{definitionv}
+
+\begin{propositionv}{prop:ate-identification}[ATE g-formula identification]
+For every dimension \(d\), overlap parameter \(\epsilon\), envelope level \(M\), radius \(\sigma\), and every \(P\in\mathcal P_{d,\epsilon,M,\sigma}\) in the sense of \cref{obj:def:model-class}, the average treatment effect functional \(\tau(P)\) of \cref{obj:def:ate-functional} equals the full-data causal contrast and is identified from the observed margin by the finite-cell g-formula:
+\[
+\tau(P)
+=
+\int \{Y(1)-Y(0)\}\,dP
+=
+\sum_{k=1}^{d} p_k
+\left\{
+E_P[Y\mid A=1,X=k]-E_P[Y\mid A=0,X=k]
+\right\}.
+\]
+\end{propositionv}
+
+\Cref{obj:prop:ate-identification} separates causal identification from the finite-sample estimation problem. Under the stated conditions, the minimax analysis can target the observed-data g-formula representation of the full-data causal contrast, in the tradition of adjustment and g-computation arguments \citep{Rubin1974,RosenbaumRubin1983,Robins1994,ImbensRubin2015}.
+
+For the risk statements, estimators are clipped to the natural scale implied by the mean normalization. The selector benchmark used later is
+\[
+r_{n,d,\sigma}
+:=
+n^{-1}
++
+\min\left\{
+\sigma^2+\frac{d}{n^2},
+\frac{d^2}{n^2\log^2(en)},
+1
+\right\},
+\]
+where \leanref{sym:r_{n,d,sigma}}{$r_{n,d,\sigma}$} records the parametric term together with the best of the collision, polynomial, and zero-estimator scales.
+
+\begin{definitionv}{def:minimax-risk}[Minimax risk \(\mathsf R_{n,d,\epsilon,M,\sigma}\) and estimator class \(\mathcal T_{n,M}\)]
+Let
+\[
+\mathcal T_{n,M}
+:=
+\bigl\{
+T:\mathcal O^n\to[-M,M]\;:\;T\ \text{is measurable}
+\bigr\}.
+\]
+The minimax mean-squared risk over \(\mathcal P_{d,\epsilon,M,\sigma}\) is
+\[
+\mathsf R_{n,d,\epsilon,M,\sigma}
+:=
+\inf_{T\in\mathcal T_{n,M}}
+\sup_{P\in\mathcal P_{d,\epsilon,M,\sigma}}
+E_{Q_P^{(n)}}\!\left[(T-\tau(P))^2\right].
+\]
+\end{definitionv}
+
+The estimator class \leanref{sym:\mathcal T_{n,M}}{$\mathcal T_{n,M}$} matches the range of the target under the scale bound, and the minimax risk \leanref{sym:\mathsf R_{n,d,epsilon,M,sigma}}{$\mathsf R_{n,d,\epsilon,M,\sigma}$} is the paper's central finite-sample loss criterion.
+
+The main rate displays use the following benchmark notation. The table gives each symbol one role; later sections keep these names fixed.
+\[
+\begin{array}{lll}
+\hline
+\text{Symbol} & \text{Name} & \text{Definition}\\
+\hline
+u_{n,d} & \text{rare-cell polynomial remainder} & d^2/\{n^2\log^2(en)\}\\
+h_{n,d,\sigma} & \text{collision remainder} & \sigma^2+d/n^2\\
+b_{n,d} & \text{exact-homogeneity baseline} & n^{-1}+d/n^2\\
+r_{n,d,\sigma} & \text{selector benchmark} & n^{-1}+\min\{1,u_{n,d},h_{n,d,\sigma}\}\\
+q_{n,d,\sigma} & \text{triangular selector benchmark} & n^{-1}+\min\{u_{n,d},\sigma^2+d/n^2\}\\
+\ell_{n,d,\sigma} & \text{product converse benchmark} & b_{n,d}+\sigma^2u_{n,d}\\
+\hline
+\end{array}
+\]
+
+The normalization also pins down the unrestricted endpoint of the radius scale.
+
+\begin{lemmav}{lem:scale-sanity}[Scale sanity]
+For any \(d\in\mathbb N\) and any \(\epsilon,M\in\mathbb R\), let \(\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\) and \(\mathcal P_{d,\epsilon,M,\sigma}\) be the model classes in \cref{obj:def:unrestricted-class,obj:def:model-class}. For each law \(P\), write
+\[
+\tau_k(P)=\mu_{1k}(P)-\mu_{0k}(P),
+\qquad
+\tau(P)=\sum_{k\in\{1,\ldots,d\}} p_k(P)\tau_k(P),
+\qquad
+\delta_k(P)=\tau_k(P)-\tau(P).
+\]
+Every \(P\in\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\) satisfies
+\[
+|\tau_k(P)|\le M\quad\text{for every }k\text{ with }p_k(P)>0,
+\qquad
+|\tau(P)|\le M,
+\]
+and
+\[
+|\delta_k(P)|\le 2M\quad\text{for every }k\text{ with }p_k(P)>0.
+\]
+Consequently the two classes have the same underlying laws at radius \(2\): for every \(P\in\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\) there exists \(Q\in\mathcal P_{d,\epsilon,M,2}\) with the same law as \(P\), and for every \(Q\in\mathcal P_{d,\epsilon,M,2}\) there exists \(P\in\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\) with the same law as \(Q\).
+\end{lemmav}
+
+\Cref{obj:lem:scale-sanity} makes the radius normalization exact: the bounded conditional means imply \(|\tau(P)|\le M\), supported cell effects lie within the same outcome scale, and radius \(2\) coincides with the unrestricted-radius law class. This calibration is used when the main bracket is specialized to endpoint regimes.
+
+Finally, the lower-bound arguments later use binary source experiments from \citet{ZengBalakrishnanHanKennedy2024}. We record the source target and source law classes here so that the subsequent affine embeddings have a fixed reference point.
+
+\begin{definitionv}{synth_1}[Binary exact-homogeneity source target]
+For a binary-outcome fixed-sample law \(P\) in the uniform-mass exact-homogeneity source family, let \(\mu_{ak}\) denote the conditional response mean in arm \(a\in\{0,1\}\) and cell \(k\in\{1,\ldots,d\}\). The source target is\[\psi(P):=\frac{1}{d}\sum_{k=1}^{d}(\mu_{1k}-\mu_{0k}).\]
+\end{definitionv}
+
+\begin{definitionv}{synth_2}[Binary source law classes]
+For an overlap parameter \(0<\epsilon<1/2\), let \(\mathcal D_d^{\mathrm{bin}}(\epsilon)\) be the class of binary \(d\)-cell full-data laws for \((X,A,B(0),B(1),B)\), with \(X\in\{1,\ldots,d\}\), \(A,B(0),B(1),B\in\{0,1\}\), consistency \(B=B(A)\), conditional exchangeability \((B(0),B(1))\perp A\mid X\), arbitrary cell masses \(p_k\), propensities \(\pi_k\) satisfying \(\epsilon\le\pi_k\le1-\epsilon\) on every positive-mass cell, and arm means \(\mu_{ak}^{\mathrm{bin}}=E[B\mid A=a,X=k]\in[0,1]\). Define its uniform-mass exactly homogeneous subclass by
+\[
+\mathcal H_d^{\mathrm{bin}}(\epsilon)
+:=
+\left\{
+P\in\mathcal D_d^{\mathrm{bin}}(\epsilon):
+p_k(P)=\frac1d\ \text{for every }k,\ 
+\mu_{1k}^{\mathrm{bin}}(P)-\mu_{0k}^{\mathrm{bin}}(P)
+=
+\mu_{1\ell}^{\mathrm{bin}}(P)-\mu_{0\ell}^{\mathrm{bin}}(P)
+\ \text{for all }k,\ell
+\right\}.
+\]
+\end{definitionv}
+
+The source target in \cref{obj:synth_1} and the binary classes in \cref{obj:synth_2} provide the binary ingredients transported in the lower-bound section. Their role is to specify the published discrete-adjustment experiments before the paper embeds them into the real-outcome class \(\mathcal P_{d,\epsilon,M,\sigma}\).

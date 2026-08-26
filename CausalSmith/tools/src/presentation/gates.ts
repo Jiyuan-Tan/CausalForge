@@ -240,6 +240,12 @@ export function minRubric(reviews: RubricReview[]): number {
   return means.length === 0 ? 0 : means[0];
 }
 
+/** Marks a synthetic gate problem that exists only to make `gateLoop` re-RUN the gate
+ *  (e.g. the auditor replied with invalid JSON, nothing was cached). The paper is not
+ *  defective, so the reviser must skip these — dispatching a revision at the sentence a
+ *  sentinel happens to name pays a high-effort call to "fix" innocent prose. */
+export const GATE_RERUN_SENTINEL = "[gate-rerun]";
+
 /** Bounded gate-revise loop. `run` re-evaluates the gates; `revise` mutates the paper. */
 export async function gateLoop(opts: {
   maxRounds: number;
@@ -256,31 +262,65 @@ export async function gateLoop(opts: {
   return { ok: problems.length === 0, rounds: round, problems };
 }
 
-/** Extracts the first parseable JSON object from model output. */
-export function parseJsonLoose(text: string): unknown {
-  // Model-authored JSON carrying TeX gets the same three-layer escape defense as
-  // the D-stage boundaries: `normalizeRawModelJson` repairs BOTH invalid escapes
-  // (`\(m\ge1\)`) and the silent collision class (`\to` decoding to a tab) on the
-  // raw bytes, where they are still distinguishable; the post-parse deep repair
-  // then restores control characters that arrived pre-encoded as valid `\u00XX`
-  // escapes. `repairUnknownJsonEscapes` stays as the legacy fallback.
-  const parseCandidate = (candidate: string): unknown => {
-    const attempts = [
-      () => JSON.parse(normalizeRawModelJson(candidate)),
-      () => JSON.parse(candidate),
-      () => JSON.parse(repairUnknownJsonEscapes(candidate)),
-    ];
-    for (const attempt of attempts) {
-      try {
-        const parsed = attempt();
-        repairLatexStringsDeep(parsed);
-        return parsed;
-      } catch {
-        /* try the next repair tier */
+// Model-authored JSON carrying TeX gets the same three-layer escape defense as
+// the D-stage boundaries: `normalizeRawModelJson` repairs BOTH invalid escapes
+// (`\(m\ge1\)`) and the silent collision class (`\to` decoding to a tab) on the
+// raw bytes, where they are still distinguishable; the post-parse deep repair
+// then restores control characters that arrived pre-encoded as valid `\u00XX`
+// escapes. `repairUnknownJsonEscapes` stays as the legacy fallback.
+const parseCandidate = (candidate: string): unknown => {
+  const attempts = [
+    () => JSON.parse(normalizeRawModelJson(candidate)),
+    () => JSON.parse(candidate),
+    () => JSON.parse(repairUnknownJsonEscapes(candidate)),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const parsed = attempt();
+      repairLatexStringsDeep(parsed);
+      return parsed;
+    } catch {
+      /* try the next repair tier */
+    }
+  }
+  return null;
+};
+
+/** Extracts the first parseable JSON ARRAY from model output. Counterpart of
+ *  `parseJsonLoose`, which is OBJECT-only: fed an array reply, its `{`…`}` slice
+ *  cuts the brackets off and hands back the FIRST element as a bare object, so an
+ *  `Array.isArray` caller sees every well-formed array reply as unparseable
+ *  (observed live 2026-08-26: all 11 P1 synthesis batches rejected). */
+export function parseJsonArrayLoose(text: string): unknown[] | null {
+  const first = text.indexOf("[");
+  const last = text.lastIndexOf("]");
+  if (first < 0 || last <= first) return null;
+  const whole = parseCandidate(text.slice(first, last + 1));
+  if (Array.isArray(whole)) return whole;
+  // Stray brackets in surrounding prose break the whole-span attempt; accept the
+  // first balanced candidate that parses to an array (same fallback shape — and
+  // same brackets-inside-strings limitation — as the object scan below).
+  let depth = 0;
+  let start = -1;
+  for (let i = first; i <= last; i++) {
+    const c = text[i];
+    if (c === "[") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (c === "]") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        const parsed = parseCandidate(text.slice(start, i + 1));
+        if (Array.isArray(parsed)) return parsed;
+        start = -1;
       }
     }
-    return null;
-  };
+  }
+  return null;
+}
+
+/** Extracts the first parseable JSON object from model output. */
+export function parseJsonLoose(text: string): unknown {
   const first = text.indexOf("{");
   const last = text.lastIndexOf("}");
   if (first >= 0 && last > first) {

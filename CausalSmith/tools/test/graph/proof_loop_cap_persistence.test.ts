@@ -76,7 +76,7 @@ describe("proof-loop iteration caps are PERSISTED and only main can reset them",
     expect(persisted.flags.proof_loop_counters?.node_strikes.t1).toBe(2);
   });
 
-  it("clearing `proof_loop_cap_hit` resets ALL the loop's iteration counters", () => {
+  it("clearing `proof_loop_cap_hit` resets ALL the loop's iteration counters but KEEPS the filler memory", () => {
     const flags = {
       proof_loop_cap_hit: "scaffold gate did not converge",
       proof_loop_counters: {
@@ -86,6 +86,7 @@ describe("proof-loop iteration caps are PERSISTED and only main can reset them",
         tag_reroutes: 2,
         node_strikes: { t1: 3 },
         review_error_strikes: { deadbeef: 3 },
+        filler_summaries: ["round 12: blocker at measurability step"],
       },
     } as unknown as StateJson["flags"];
     clearCapGate(flags, "proof_loop_cap_hit");
@@ -97,6 +98,9 @@ describe("proof-loop iteration caps are PERSISTED and only main can reset them",
       tag_reroutes: 0,
       node_strikes: {},
       review_error_strikes: {},
+      // The dead-end memory is not a budget: wiping it restarted the resumed loop cold
+      // on the same known blockers (audit, 2026-08-26).
+      filler_summaries: ["round 12: blocker at measurability step"],
     });
   });
 

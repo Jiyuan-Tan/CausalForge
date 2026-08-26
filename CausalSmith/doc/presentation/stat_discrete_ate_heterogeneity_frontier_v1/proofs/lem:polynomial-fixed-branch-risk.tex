@@ -1,0 +1,164 @@
+\begin{proof}[Proof of \cref{obj:lem:polynomial-fixed-branch-risk}]
+Fix \(\epsilon\in(0,1/2)\), and take \(C_\epsilon>0\) from the covariance bound in \cref{obj:lem:linear-mark-factorial-covariance}; the same constant is used in the fixed light-set calculation below. % lean: fixedLightMarkedPolynomial_error_sq_le
+
+For a sample block \(z\), decompose
+\[
+\Delta_H(z)=H_m(z)+L_m(z),
+\]
+where
+\[
+H_m(z):=\frac{\widehat R_H(z)-R_H(P)}{M}
+\]
+and
+\[
+L_m(z):=
+\sum_{k\in H^{\mathrm c}}\widehat P_k(z)
+-\frac1M\sum_{k\in H^{\mathrm c}}p_k\tau_k .
+\]
+This is the deterministic fixed-branch normalized error in the statement. % lean: polynomialFixedBranchNormalizedError
+
+The heavy part satisfies
+\[
+\mathbb E_{Q_P^{(m)}}[H_m^2]
+\le
+4\left\{
+\frac{8\sum_{k\in H}p_k}{(m\vee1)\epsilon}
++\frac{6}{m\vee1}
++4\,\mathcal E_{m,\epsilon,\beta}(H)^2
+\right\}.
+\]
+The fixed marked-ratio bound is applied to the deterministic heavy set \(H\); the category masses in that bound are the cell masses \(p_k\), and the normalization by \(M\) cancels the factor \(M^2\) using \(M\ge1\). % lean: fixedHeavyMarkedRatio_error_sq_le
+
+For the light part, let
+\[
+\widehat L_S(z):=\sum_{k\in S}\widehat P_k(z),
+\qquad
+T_S(P):=\frac1M\sum_{k\in S}p_k\tau_k,
+\qquad S=H^{\mathrm c}.
+\]
+The bias-variance identity for the square-integrable statistic \(\widehat L_S\) gives
+\[
+\mathbb E_{Q_P^{(m)}}[L_m^2]
+=
+\operatorname{Var}_{Q_P^{(m)}}(\widehat L_S)
++
+\left\{
+\mathbb E_{Q_P^{(m)}}[\widehat L_S]-T_S(P)
+\right\}^2 .
+\]
+% lean: fixedLightMarkedPolynomial_error_sq_le
+
+The variance term is bounded by \cref{obj:lem:linear-mark-factorial-covariance}:
+\[
+\operatorname{Var}_{Q_P^{(m)}}(\widehat L_S)
+\le
+\frac{C_\epsilon}{m}
++
+C_\epsilon6^{2K}
+\left(dB^2+\frac{d^2K^2B^2}{m}\right),
+\]
+because \(S=H^{\mathrm c}\) satisfies the light-cell condition \(p_k\le B/4\), together with the stated degree, block-size, and shift-calibration conditions. % lean: linear_mark_factorial_covariance
+
+For the bias term, the block-size condition implies \(K\le m\), so the exact marked-factorial expectation identity applies term by term. With \(s_{1k}=p_k\pi_k\), \(s_{0k}=p_k(1-\pi_k)\), and the coefficients \(g_{Kj}\) from \cref{obj:lem:linear-mark-factorial-covariance}, it gives
+\[
+\begin{aligned}
+\mathbb E_{Q_P^{(m)}}[\widehat L_S]
+&=
+\sum_{k\in S}
+\Bigg[
+ p_k\frac{s_{1k}(\mu_{1k}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{1k}}{B}\right)^j \\
+&\hspace{7em}{}-
+ p_k\frac{s_{0k}(\mu_{0k}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{0k}}{B}\right)^j
+\Bigg].
+\end{aligned}
+\]
+Therefore \(\mathbb E_{Q_P^{(m)}}[\widehat L_S]-T_S(P)\) is the negative of the sum over \(k\in S\) of
+\[
+\frac{p_k\tau_k}{M}
+-
+\Bigg[
+ p_k\frac{s_{1k}(\mu_{1k}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{1k}}{B}\right)^j
+-
+ p_k\frac{s_{0k}(\mu_{0k}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{0k}}{B}\right)^j
+\Bigg].
+\]
+% lean: integral_allBlockMarkedPolynomialSum_eq_population
+
+For \(x\in[0,1]\), the shifted-Chebyshev expansion of the first-kind Chebyshev polynomial gives
+\[
+T_K(1-2x)
+=
+1-2K^2x
++2K^2x^2\sum_{j=0}^{K-2}g_{Kj}x^j .
+\]
+Since \(1-2x\in[-1,1]\), the standard Chebyshev bound gives \(|T_K(1-2x)|\le1\), hence \(|1-T_K(1-2x)|\le2\).  Combining this with the preceding identity and using \(K>0\) yields the reciprocal approximation certificate
+\[
+x\left|1-x\sum_{j=0}^{K-2}g_{Kj}x^j\right|
+\le \frac1{K^2}.
+\]
+% lean: gPolynomial_certificate
+
+For a supported cell, overlap gives \(\epsilon p_k\le s_{ak}\), the propensity range gives \(s_{ak}\le p_k\), the model normalization gives \(|\mu_{ak}/M|\le1/2\), and the light condition gives \(p_k\le B\). Applying the preceding certificate at \(x=s_{ak}/B\) yields, for each arm \(a\in\{0,1\}\),
+\[
+\left|
+ p_k\frac{\mu_{ak}}{M}
+-
+ p_k\frac{s_{ak}(\mu_{ak}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{ak}}{B}\right)^j
+\right|
+\le
+\frac{B}{2\epsilon K^2}.
+\]
+Combining the two arm bounds gives the cellwise treated-minus-control bias bound
+\[
+\left|
+\frac{p_k\tau_k}{M}
+-
+\Bigg[
+ p_k\frac{s_{1k}(\mu_{1k}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{1k}}{B}\right)^j
+-
+ p_k\frac{s_{0k}(\mu_{0k}/M)}{B}
+ \sum_{j=0}^{K-2}g_{Kj}\left(\frac{s_{0k}}{B}\right)^j
+\Bigg]
+\right|
+\le
+\frac{B}{\epsilon K^2}.
+\]
+When \(p_k=0\), both the target and the displayed population polynomial vanish, so the same bound holds. Summing these cellwise bounds over \(S=H^{\mathrm c}\) gives
+\[
+\left|
+\mathbb E_{Q_P^{(m)}}[\widehat L_S]-T_S(P)
+\right|
+\le
+\frac{|H^{\mathrm c}|B}{\epsilon K^2}.
+\]
+% lean: polynomialFixedLightPopulationBias_abs_le
+
+Therefore
+\[
+\mathbb E_{Q_P^{(m)}}[L_m^2]
+\le
+\frac{C_\epsilon}{m}
++
+C_\epsilon6^{2K}
+\left(dB^2+\frac{d^2K^2B^2}{m}\right)
++
+\left(\frac{|H^{\mathrm c}|B}{\epsilon K^2}\right)^2 .
+\]
+% lean: fixedLightMarkedPolynomial_error_sq_le
+
+Finally, \((u+v)^2\le2u^2+2v^2\) gives
+\[
+\mathbb E_{Q_P^{(m)}}[\Delta_H^2]
+\le
+2\mathbb E_{Q_P^{(m)}}[H_m^2]
++
+2\mathbb E_{Q_P^{(m)}}[L_m^2],
+\]
+and substituting the two bounds above is exactly the displayed inequality. % lean: polynomialFixedBranchNormalizedError_sq_integral_le
+\end{proof}

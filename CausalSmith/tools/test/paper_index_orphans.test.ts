@@ -1,4 +1,6 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -49,6 +51,33 @@ private noncomputable def hiddenDef : Nat := 0
         ),
       ).resolves.toEqual([
         { module: `${prefix}.Orphan`, file: "Orphan.lean" },
+      ]);
+    } finally {
+      await rm(runDir, { recursive: true, force: true });
+    }
+  });
+
+  it("spares git-untracked modules (concurrent-run work-in-progress) but still catches tracked orphans", async () => {
+    const runDir = await mkdtemp(path.join(tmpdir(), "paper-index-orphans-git-"));
+    try {
+      const exec = promisify(execFile);
+      const git = (...args: string[]) => exec("git", ["-C", runDir, ...args]);
+      await git("init", "-q");
+      await mkdir(path.join(runDir, "Helpers"));
+      await writeFile(
+        path.join(runDir, "TrackedOrphan.lean"),
+        "lemma trackedButUnindexed : True := by trivial\n",
+      );
+      await git("add", "TrackedOrphan.lean");
+      // Untracked: another run's in-progress helper deposited into this dir.
+      await writeFile(
+        path.join(runDir, "Helpers", "InFlight.lean"),
+        "lemma inFlightWork : True := by trivial\n",
+      );
+
+      const prefix = "CausalSmith.Stat.SCRATCH_Research";
+      await expect(findOrphanPaperModules(runDir, prefix, new Set())).resolves.toEqual([
+        { module: `${prefix}.TrackedOrphan`, file: "TrackedOrphan.lean" },
       ]);
     } finally {
       await rm(runDir, { recursive: true, force: true });

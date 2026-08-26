@@ -1,7 +1,33 @@
 import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import path from "node:path";
 import { maskLeanCommentsAndStrings } from "../graph/extractor.js";
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Files under `dir` that are untracked in git (relative paths, `/`-separated).
+ * Untracked run modules are by definition another run's work-in-progress: a
+ * publish/export snapshots HEAD, so an untracked file can never ship, and a
+ * concurrent follow-on run extending the same substrate directory must not fail
+ * this paper's index gate. Outside a git work tree (or if git is unavailable)
+ * the set is empty, i.e. every file is treated as tracked — the strict
+ * behaviour is unchanged.
+ */
+async function untrackedFilesIn(dir: string): Promise<Set<string>> {
+  try {
+    const { stdout } = await execFileAsync(
+      "git",
+      ["-C", dir, "ls-files", "--others", "--exclude-standard", "-z", "."],
+      { maxBuffer: 16 * 1024 * 1024 },
+    );
+    return new Set(stdout.split("\0").filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
 
 export interface OrphanPaperModule {
   module: string;
@@ -38,6 +64,7 @@ export async function findOrphanPaperModules(
     .map(String)
     .filter((file) => file.endsWith(".lean"))
     .sort();
+  const untracked = await untrackedFilesIn(runDir);
   const orphans: OrphanPaperModule[] = [];
   for (const file of files) {
     const normalizedFile = file.replaceAll(path.sep, "/");
@@ -45,6 +72,15 @@ export async function findOrphanPaperModules(
     // workspace. It is excluded from graph extraction and never belongs in a
     // published module inventory, even when a probe uses public declarations.
     if (normalizedFile === "tmp.lean" || normalizedFile.startsWith("tmp/")) continue;
+    // Git-untracked modules are in-progress work (typically a concurrent
+    // follow-on run extending this substrate directory), invisible to any
+    // HEAD-snapshot publish — never this paper's inventory gap. Loud, not
+    // silent: once these files are committed they re-enter the check, and the
+    // note below is the only trace of what was skipped before that.
+    if (untracked.has(normalizedFile)) {
+      console.warn(`[paper-index] skipping git-untracked module (in-progress work): ${normalizedFile}`);
+      continue;
+    }
     const module = `${modulePrefix}.${normalizedFile.slice(0, -".lean".length).replaceAll("/", ".")}`;
     if (indexedEntryModules.has(module)) continue;
     const source = await readFile(path.join(runDir, file), "utf8");
@@ -56,8 +92,10 @@ export async function findOrphanPaperModules(
 /**
  * Compiler-synthesized companion theorems that the Lean extractor omits from
  * paper/library indexes unless demonstrably hand-authored: `congr_simp` (from
- * `@[congr]`) and the on-demand equation lemmas `eq_def` / `eq_unfold` /
- * `eq_<i>`. Mirrors `isSyntheticCompanionLeaf` in `LibraryIndexCore.lean`;
+ * `@[congr]`), the on-demand equation lemmas `eq_def` / `eq_unfold` / `eq_<i>`,
+ * and the `deriving Fintype, DecidableEq` helpers `proxyType` / `proxyTypeEquiv`
+ * (range-less; tripped the strict line-zero/null-source lint on a correct bundle,
+ * 2026-08-26). Mirrors `isSyntheticCompanionLeaf` in `LibraryIndexCore.lean`;
  * keep the two in sync.
  */
-export const SYNTHETIC_COMPANION_RE = /\.(?:congr_simp|eq_def|eq_unfold|eq_\d+)$/;
+export const SYNTHETIC_COMPANION_RE = /\.(?:congr_simp|eq_def|eq_unfold|eq_\d+|proxyType|proxyTypeEquiv)$/;

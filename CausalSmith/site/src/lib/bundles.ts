@@ -1,5 +1,6 @@
 import { readFile, readdir, access } from "node:fs/promises";
 import { join } from "node:path";
+import { parsePaperGraph, reconcilePaperGraph, type PaperGraph } from "./proofGraph.js";
 
 /**
  * Bundle loader + site-side integrity gate. A bundle is what papersmith P4
@@ -79,6 +80,11 @@ export interface Bundle {
    *  object with its NL + Lean + status, for the web-only correspondence panel. (Distinct from the
    *  SOURCE `formal_layer.json` `{commit, blocks}` that the pipeline reads/writes.) */
   formalLayer: { commit: string; groups: { kind: string; items: FormalLayerItem[] }[] } | null;
+  /** Optional proof map (paper_graph.json, emitted by P4) — the paper's
+   *  theorem/proposition/lemma blocks plus one edge per "this proof cites that
+   *  result", powering the in-page Proof map panel. Bundles emitted before the
+   *  artifact existed simply have no panel. */
+  paperGraph: PaperGraph | null;
 }
 
 export async function loadBundle(dir: string, id: string): Promise<Bundle> {
@@ -115,6 +121,25 @@ export async function loadBundle(dir: string, id: string): Promise<Bundle> {
     } catch {
       formalLayer = null; // optional artifact (older bundles predate the Formal-layer panel)
     }
+  }
+
+  // The proof map is decoration over the paper, never a gate: an artifact that
+  // is absent, unreadable, or malformed costs the reader the panel and nothing
+  // else, so it is parsed defensively and never contributes a build failure.
+  //
+  // It is then RECONCILED against the crosswalk and the body. The graph is a
+  // separate file from the paper the reader sees, so the two can disagree — a
+  // bundle read mid-rewrite pairs a stale graph with a renumbered body, and the
+  // map would then label a chip "Lemma 15" while the block it jumps to reads
+  // "Lemma 16". Reconciling makes the body the single authority for numbering.
+  let paperGraph: PaperGraph | null = null;
+  try {
+    paperGraph = parsePaperGraph(await j("paper_graph.json"));
+  } catch {
+    paperGraph = null; // optional artifact (older bundles predate the Proof map)
+  }
+  if (paperGraph) {
+    paperGraph = reconcilePaperGraph(paperGraph, crosswalk.entries, bodyHtml);
   }
 
   const problems: string[] = [];
@@ -169,6 +194,7 @@ export async function loadBundle(dir: string, id: string): Promise<Bundle> {
     hasPdf,
     paperLib,
     formalLayer,
+    paperGraph,
   };
 }
 

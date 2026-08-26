@@ -144,6 +144,17 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
   for (let i = startIdx; i < ORDER.length; i++) {
     const { stage, fn, checkpointAfter } = ORDER[i];
     const io = { ctx, state, bank, outDir, reassemble: stage === "P2" && ctx.reassembleP2 === true, revisionCycle: ctx.reassembleP2 === true };
+    // Persist state BEFORE re-throwing a stage failure: stages push notes and set
+    // hard_gate_failures while running, and state otherwise reaches disk only on stage
+    // success — so every failure exit silently discarded its own diagnosis (P3 grew a
+    // local workaround, failP3; every other stage lost its notes — audit, 2026-08-26).
+    // Best-effort: a save failure must never mask the stage's real error.
+    const failStage = async (err: unknown): Promise<never> => {
+      try {
+        await savePaperState(outDir, state);
+      } catch { /* keep the original error */ }
+      throw err;
+    };
     try {
       await fn(io);
     } catch (err) {
@@ -155,7 +166,7 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
       // Never in a reassemble/revision re-entry: new formal environments are forbidden
       // there (no draft checkpoint would review them, and a promoted lemma has no
       // rendered proof for the reassemble guard to reuse).
-      if (stage !== "P2" || promotionUsed || ctx.reassembleP2 === true || !msg.includes(PROOF_AUDIT_FAILURE_MARKER)) throw err;
+      if (stage !== "P2" || promotionUsed || ctx.reassembleP2 === true || !msg.includes(PROOF_AUDIT_FAILURE_MARKER)) await failStage(err);
       // Bounded across the whole bundle, not just this invocation: `promotionUsed` caps rounds
       // per process, so re-entering P2 repeatedly grants a fresh round each time and the chain
       // grows without limit. The persisted budget is what actually terminates it; at the cap the
@@ -192,8 +203,12 @@ export async function runPaperPipeline(ctx: PaperCtx): Promise<{ halt: string }>
       // stage see the new nodes.
       bank = await loadBankEntry(ctx.repoRoot, ctx.qid, ctx.spec);
       const retryIo = { ...io, bank };
-      await stageP1({ ...retryIo, reassemble: false });
-      await fn(retryIo);
+      try {
+        await stageP1({ ...retryIo, reassemble: false });
+        await fn(retryIo);
+      } catch (retryErr) {
+        await failStage(retryErr); // the retry's notes must survive its failure too
+      }
     }
     state.stage_completed = stage;
     // A reassemble re-entry is a revision of an already-reviewed draft, not a first

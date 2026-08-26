@@ -119,8 +119,8 @@ bib: EcklesKarrerUgander2017, UganderYin2020RandomizedGCR, BrennanMirrokniPouget
 
 ## section: Appendix with proofs and auxiliary lemmas
 
-This appendix supplies detailed proofs and auxiliary probability arguments, including denominator positivity and the bounded-degree dependency-graph CLT; the main text retains only proof sketches where they convey design intuition. It ends with a verification note consolidating the Lean machine-checking scope for the finite-design and Bernoulli-randomization components, while identifying the bipartite graph scaffolding and stated asymptotic regularity conditions as inputs to the formal development.
+This appendix supplies detailed proofs and auxiliary probability arguments, including the bounded-degree dependency-graph CLT; the main text retains only proof sketches where they convey design intuition. It ends with a verification note consolidating the Lean machine-checking scope for the finite-design and Bernoulli-randomization components, while identifying the bipartite graph scaffolding and stated asymptotic regularity conditions as inputs to the formal development.
 
-objs: lem:denominator-positivity, lem:bounded-degree-dependency-clt
+objs: lem:bounded-degree-dependency-clt
 
 bib: Neyman1923, HorvitzThompson1952, Hajek1964, LiuHudgens2014, LuShiFangZhangDing2025BipartiteDesign

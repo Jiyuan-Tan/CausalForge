@@ -100,6 +100,9 @@ export const CAP_GATES: CapGate[] = [
         tag_reroutes: 0,
         node_strikes: {},
         review_error_strikes: {},
+        // Budgets reset; the filler's dead-end memory is NOT a budget — wiping it here
+        // restarted the resumed loop cold on the same known blockers (audit, 2026-08-26).
+        filler_summaries: f.proof_loop_counters?.filler_summaries ?? [],
       };
     },
     guidance:

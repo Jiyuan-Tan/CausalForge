@@ -80,9 +80,9 @@ objs: none
 bib: doss2022, hudson2023, shi2024, hejazi2022, zhang2024, schindl2024, bonvini2024
 
 ## section: Appendix: auxiliary lemmas and proofs
-The appendix contains the two-point testing ingredients, the algebra for \(\rho_n\), the oracle lower-bound lemma, the combined certified comparison lemma, and the proofs of the main displayed results. Lemmas are kept out of the main exposition unless needed for immediate interpretation.
+The appendix contains the two-point testing ingredients, the algebra for \(\rho_n\), the oracle lower-bound lemma, and the proofs of the main displayed results. Lemmas are kept out of the main exposition unless needed for immediate interpretation.
 
-objs: lem:bernoulli-mean-channel-kl, lem:le-cam-two-point-mse-source, lem:rho-oracle-regime-algebra, lem:rho-deficient-regime-algebra, lem:oracle-dose-regression-lower-all-beta, lem:certified-beta-frontier-bracket
+objs: lem:bernoulli-mean-channel-kl, lem:le-cam-two-point-mse-source, lem:rho-oracle-regime-algebra, lem:rho-deficient-regime-algebra, lem:oracle-dose-regression-lower-all-beta
 
 bib: stone1982, tsybakov2009, goldenshluger2020
 

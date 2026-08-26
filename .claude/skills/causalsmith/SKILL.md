@@ -210,6 +210,10 @@ then run [`bank_entry.ts`](../../../CausalSmith/tools/bin/bank_entry.ts): `faile
 correctness/structure/NO-PASS, `downgraded` for sound-but-not-novel. Pass `--reraise-status` from the
 sub's hopeless-vs-fixable receipts (`true-negative` / `re-raise` / `retry`). Fill the generated
 `_bank/<tier>/<qid>_<spec>/README.md` `gap_reasons` (verbatim reviewer phrases) + `proof_attempt_summary`.
+Pass `--orchestrator-tokens <exact cumulative host usage total across all sessions>` when the host exposes it; never estimate. Pipeline
+Codex/Claude calls are recorded automatically. After F7, refresh the final outer total with
+`bin/token_usage.ts --run-dir <bank-dir> --orchestrator-tokens <exact final total>`; this is mechanical
+and makes no LLM call.
 For a below-floor `downgraded` bank, pass `--achieved-tier` from the validity-gate receipt so a later
 `--upgrade` can enforce that its target is at or above it.
 Append a `terminal` decision-log entry. Bank `failed` only if the *math claim* is wrong.

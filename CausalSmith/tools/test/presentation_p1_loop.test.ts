@@ -158,15 +158,30 @@ describe("routeNotationProblems (single semantic notation authority)", () => {
       { ...base, isLeanRealized: () => true, designatedHomeFor: () => "def:b" });
     expect(out).toMatchObject([{ gate: "notation-reviewer", objId: "def:b", fixLocus: "wording-revise" }]);
   });
-  it("halts on a Lean-realized symbol whose designated home is locked or missing", () => {
+  it("halts on a USED Lean-realized symbol whose designated home is locked or missing", () => {
     const locked = routeNotationProblems(
-      [{ symbol: "\\theta_T", case: "undefined" }],
+      [{ symbol: "\\theta_T", case: "undefined", used_in: ["thm:a"] }],
       { ...base, isLeanRealized: () => true, designatedHomeFor: () => "def:b", lockedIds: new Set(["def:b"]) });
     expect(locked).toMatchObject([{ fixLocus: "halt" }]);
     const homeless = routeNotationProblems(
-      [{ symbol: "\\theta_T", case: "no-anchor" }],
+      [{ symbol: "\\theta_T", case: "no-anchor", used_in: ["thm:a"] }],
       { ...base, isLeanRealized: () => true });
     expect(homeless).toMatchObject([{ fixLocus: "halt" }]);
+  });
+  it("advisories, never halts, an undefined symbol used by NO env (helper-only @realizes)", () => {
+    // Observed live 2026-08-26: three symbols @realizes-tagged on internal Lean helpers,
+    // absent from every paper env, deterministically hard-halted P1 — nothing existed to
+    // define or revise. Zero usage ⇒ not a paper defect ⇒ checkpoint advisory.
+    for (const kase of ["undefined", "no-anchor"] as const) {
+      const out = routeNotationProblems(
+        [{ symbol: "w_k", case: kase, used_in: [], fix: "remove from reader-facing notation" }],
+        { ...base, isLeanRealized: () => true });
+      expect(out).toMatchObject([{ gate: "notation-unresolved", symbol: "w_k" }]);
+      expect(out[0].fixLocus).toBeUndefined();
+    }
+    // Same for an ordinary (non-Lean) symbol: no usage means synthesis has no anchor either.
+    const plain = routeNotationProblems([{ symbol: "K_n", case: "undefined" }], base);
+    expect(plain).toMatchObject([{ gate: "notation-unresolved", symbol: "K_n" }]);
   });
   it("routes wrong-ref/mismatch to a wording revise per using env", () => {
     const out = routeNotationProblems(

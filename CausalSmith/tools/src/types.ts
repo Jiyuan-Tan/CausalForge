@@ -319,6 +319,11 @@ export interface FormalizationFlags {
     /** Hash of the last red `lake build` diagnostic, so the identically-red no-progress
      * cap survives a `--resume` instead of resetting `stale` on every re-entry. */
     last_build_error_sig?: string;
+    /** Last few one-line filler session summaries (the anti-identical-prompt memory).
+     * Persisted for the same reason as the counters: as an in-process local, every
+     * `--resume` restarted Phase B with byte-identical filler prompts until new summaries
+     * accumulated — the exact repeat-dead-end waste the memory exists to stop. */
+    filler_summaries?: string[];
   };
   /** Set when any `proof_loop_counters` budget is exhausted. BLOCKS `--resume` until cleared via
    * `--clear-gate proof_loop_cap_hit`. Only MAIN may clear it (a sub never resets its own cap). */

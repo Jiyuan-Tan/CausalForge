@@ -35,7 +35,10 @@ interface EnvMatch extends AnchoredEnv {
   raw: string;
 }
 
-function readOptionalTitle(tex: string, pos: number): { title: string | null; end: number } {
+/** Read a LaTeX optional argument `[…]` starting at `pos` (bracket-balanced, `\[`/`\]` escaped).
+ *  Returns `{title: null, end: pos}` when there is none. Shared with the proof-citation parser so
+ *  `\begin{proof}[Proof of \cref{obj:X}]` heads are read by the same code as env titles. */
+export function readOptionalTitle(tex: string, pos: number): { title: string | null; end: number } {
   if (tex[pos] !== "[") return { title: null, end: pos };
   let depth = 1;
   for (let i = pos + 1; i < tex.length; i++) {

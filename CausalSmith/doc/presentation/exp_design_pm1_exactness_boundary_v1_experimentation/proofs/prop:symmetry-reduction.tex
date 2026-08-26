@@ -1,5 +1,3 @@
-The arguments below are presented as human-readable proof sketches: they give the construction and the load-bearing steps, but the fully formal, gap-free proofs are the Lean~4 declarations listed in Appendix~B, which are the authoritative verified artifact. Where a sketch abbreviates a routine algebraic or convex-geometric verification, the complete detail is discharged in the corresponding Lean declaration.
-
 \begin{proof}[Proof of \cref{obj:prop:symmetry-reduction}]
 Write \(n=2m\) and, for a matrix \(X\in\mathbb R^{n\times n}\), introduce the two off-diagonal block sums and the two pair counts
 \[
@@ -85,11 +83,11 @@ F_{r,\kappa}\bigl(X(u,v)\bigr)\le F_{r,\kappa}(X).
 \]
 % lean: symmetrize_objective_le
 
-\emph{Step 4 (assignment laws: the orbit average).}  Let \(H\) be the (finite, nonempty) group of two-block automorphisms: permutations \(\sigma\) of the units that either preserve both communities setwise or swap them.  For \(P\in\mathcal P_m^{\mathrm{bal}}\) define the orbit average
+\emph{Step 4 (assignment laws: the orbit average).}  Let \(H\) be the finite, nonempty group of two-block automorphisms: permutations \(\sigma\) of the units that either preserve both communities setwise or swap them.  For \(P\in\mathcal P_m^{\mathrm{bal}}\) define the orbit average
 \[
 P^{\mathrm{orb}}(Z=z)=\frac{1}{|H|}\sum_{\sigma\in H}P\bigl(Z=z\circ\sigma\bigr).
 \]
-It is a probability law (an average of such), it is sign-symmetric because each summand is, and it is \(H\)-invariant because precomposing \(z\) with \(\tau\in H\) permutes the summation over \(H\); hence \(P^{\mathrm{orb}}\in\mathcal P_m^{\mathrm{sym}}\). % lean: orbitAvgDesign_mem_class
+It is a probability law, it is sign-symmetric because each summand is, and it is \(H\)-invariant because precomposing \(z\) with \(\tau\in H\) permutes the summation over \(H\); hence \(P^{\mathrm{orb}}\in\mathcal P_m^{\mathrm{sym}}\). % lean: orbitAvgDesign_mem_class
 Sign symmetry gives zero one-point margins: replacing \(z\) by \(-z\) leaves the law unchanged and flips the sign of \(Z_i\), so \(\mathbb E[Z_i]=-\mathbb E[Z_i]\) and therefore
 \[
 \mathbb E[Z_i]=0
@@ -132,17 +130,82 @@ F_{r,\kappa}\bigl(X(P^{\mathrm{orb}})\bigr)\le F_{r,\kappa}\bigl(X(P)\bigr).
 \]
 Indeed \(\inf_{\mathcal S}f\le\inf_{\mathcal T}f\) because \(\mathcal T\subseteq\mathcal S\), and conversely each value \(f(x)\), \(x\in\mathcal S\), dominates some \(f(y)\ge\inf_{\mathcal T}f\). % lean: sInf_image_reduce
 
-\emph{Step 7 (the two infimum identities).}  On the relaxed side take \(\mathcal S=\{X\succeq0:X_{ii}=1\ \forall i\}\) and \(\mathcal T=\mathcal E_m^{\mathrm{blk}}\).  Then \(\mathcal T\subseteq\mathcal S\), since each \(X(u,v)\in\mathcal E_m^{\mathrm{blk}}\) has unit diagonal and, by the three nonnegative spectral coordinates, is positive semidefinite; % lean: blockElliptope_subset_elliptope
-\(\mathcal T\ne\emptyset\) because \(I_n=X(0,0)\in\mathcal E_m^{\mathrm{blk}}\); \(F_{r,\kappa}\) is bounded below on \(\mathcal S\), since the three block-constant matrices have bounded entries and \(|X_{ij}|\le1\) throughout \(\mathcal S\) while the Frobenius term is nonnegative; % lean: designObjective_bddBelow
-and Steps 2--3 supply the dominating point.  Step 6 gives
+\emph{Step 7 (the two infimum identities).}  On the relaxed side take
+\[
+\mathcal S_{\mathrm{rel}}=\{X:X\succeq0,\ X_{ii}=1\ \forall i\},
+\qquad
+\mathcal T_{\mathrm{blk}}=\mathcal E_m^{\mathrm{blk}} .
+\]
+The inclusion \(\mathcal T_{\mathrm{blk}}\subseteq\mathcal S_{\mathrm{rel}}\) follows from the projection decomposition used for block matrices.  Let \(P_{\mathbf 1}=J_n/(2m)\), let \(P_s=ss^\top/(2m)\), and let \(P_\perp=I_n-P_{\mathbf 1}-P_s\).  For every \(u,v\),
+\[
+X(u,v)=(1-u)P_\perp
++\bigl(1+(m-1)u-mv\bigr)P_s
++\bigl(1+(m-1)u+mv\bigr)P_{\mathbf 1}.
+\]
+The matrices \(P_{\mathbf 1}\) and \(P_s\) are positive semidefinite rank-one projections.  Also, for any vector \(\xi\), if
+\[
+A=\sum_{i\in A_m}\xi_i,
+\qquad
+B=\sum_{i\in B_m}\xi_i,
+\qquad
+Q_A=\sum_{i\in A_m}\xi_i^2,
+\qquad
+Q_B=\sum_{i\in B_m}\xi_i^2,
+\]
+then
+\[
+\xi^\top P_\perp \xi
+=Q_A+Q_B-\frac{A^2+B^2}{m}\ge0
+\]
+by Cauchy--Schwarz on the two communities, so \(P_\perp\) is positive semidefinite.  Thus the three nonnegative coordinates in \cref{obj:def:block-elliptope} make \(X(u,v)\) positive semidefinite, and the definition of \(X(u,v)\) gives unit diagonal. % lean: blockElliptope_subset_elliptope
+The set \(\mathcal T_{\mathrm{blk}}\) is nonempty because \(I_n=X(0,0)\in\mathcal E_m^{\mathrm{blk}}\).
+
+It remains to record the lower bound on the relaxed objective.  Choose block-constant representations
+\[
+L_m=G(d_L,w_L,c_L),
+\qquad
+L_m^\dagger=G(d_\dagger,w_\dagger,c_\dagger),
+\qquad
+J_n=G(1,1,1),
+\]
+and set
+\[
+B_L=|d_L|\,2m+|w_L|N_{\mathrm{w}}+|c_L|N_{\mathrm{a}},
+\qquad
+B_\dagger=|d_\dagger|\,2m+|w_\dagger|N_{\mathrm{w}}+|c_\dagger|N_{\mathrm{a}},
+\]
+\[
+B_J=2m+N_{\mathrm{w}}+N_{\mathrm{a}} .
+\]
+For \(X\in\mathcal S_{\mathrm{rel}}\), Step 2 gives \(|X_{ij}|\le1\); hence \(|S_{\mathrm{w}}(X)|\le N_{\mathrm{w}}\) and \(|S_{\mathrm{a}}(X)|\le N_{\mathrm{a}}\).  The trace identity in Step 1 then gives, for every block-constant \(G(d,w,c)\),
+\[
+\bigl|\operatorname{tr}(G(d,w,c)X)\bigr|
+\le |d|\,2m+|w|N_{\mathrm{w}}+|c|N_{\mathrm{a}} .
+\]
+Therefore
+\[
+F_{r,\kappa}(X)
+\ge -B_L-|r|B_\dagger+\kappa\|X\|_{S_2}-B_J
+\ge -\bigl(B_L+|r|B_\dagger+B_J\bigr),
+\]
+because \(\kappa\ge0\) and \(\|X\|_{S_2}\ge0\). % lean: designObjective_bddBelow
+Steps 2--3 supply, for every \(X\in\mathcal S_{\mathrm{rel}}\), the point \(X(u,v)\in\mathcal T_{\mathrm{blk}}\) with no larger objective.  Step 6 gives
 \[
 \inf_{\substack{X\succeq0\\ X_{ii}=1\ \forall i}}F_{r,\kappa}(X)
 =\inf_{X\in\mathcal E_m^{\mathrm{blk}}}F_{r,\kappa}(X).
 \]
 
-On the implementable side take \(\mathcal S=\mathcal P_m^{\mathrm{bal}}\) and \(\mathcal T=\mathcal P_m^{\mathrm{sym}}\), with \(f(P)=F_{r,\kappa}(X(P))\).  Then \(\mathcal T\subseteq\mathcal S\) by \cref{obj:def:block-exchangeable-design-class}; \(\mathcal T\ne\emptyset\) because the iid fair-sign law is block-exchangeable; % lean: iidDesign_mem_blockExchangeable
-\(f\) is bounded below because every second moment \(X(P)=\mathbb E_P[ZZ^\top]\) is a Gram matrix, hence positive semidefinite, with unit diagonal, so it lies in the set \(\mathcal S\) of the previous paragraph and inherits the same lower bound; % lean: assignmentSecondMoment_posSemidef
-and Steps 4--5 supply the dominating law.  Step 6 gives
+On the implementable side take
+\[
+\mathcal S_{\mathrm{bal}}=\mathcal P_m^{\mathrm{bal}},
+\qquad
+\mathcal T_{\mathrm{sym}}=\mathcal P_m^{\mathrm{sym}},
+\qquad
+f(P)=F_{r,\kappa}\bigl(X(P)\bigr).
+\]
+Then \(\mathcal T_{\mathrm{sym}}\subseteq\mathcal S_{\mathrm{bal}}\) by \cref{obj:def:block-exchangeable-design-class}; \(\mathcal T_{\mathrm{sym}}\ne\emptyset\) because the iid fair-sign law is block-exchangeable; % lean: iidDesign_mem_blockExchangeable
+and \(f\) is bounded below because every second moment \(X(P)=\mathbb E_P[ZZ^\top]\) is positive semidefinite with unit diagonal, hence belongs to \(\mathcal S_{\mathrm{rel}}\) and satisfies the lower bound just displayed. % lean: assignmentSecondMoment_posSemidef
+Steps 4--5 supply, for every \(P\in\mathcal S_{\mathrm{bal}}\), the law \(P^{\mathrm{orb}}\in\mathcal T_{\mathrm{sym}}\) with no larger objective.  Step 6 gives
 \[
 \inf_{P\in\mathcal P_m^{\mathrm{bal}}}F_{r,\kappa}\bigl(X(P)\bigr)
 =\inf_{P\in\mathcal P_m^{\mathrm{sym}}}F_{r,\kappa}\bigl(X(P)\bigr).

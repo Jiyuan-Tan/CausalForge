@@ -448,19 +448,27 @@ export async function runStatementAudit(io: StageIO): Promise<LintProblem[]> {
           leanLsp: true,
         }),
       )) as { results?: { obj_id?: string; verdict?: string; detail?: string }[] } | null;
+      let adopted = 0;
       for (const r of parsed?.results ?? []) {
         if (r.obj_id && (r.verdict === "faithful" || r.verdict === "drift")) {
           batchVerdicts.set(r.obj_id, { verdict: r.verdict, detail: r.detail });
           const st = statements.find((x) => x.obj_id === r.obj_id);
           if (st) cache[r.obj_id] = { key: st.cacheKey, verdict: r.verdict, detail: r.detail };
+          adopted += 1;
         }
       }
       // Persist each batch's verdicts as they land (atomic write; concurrent workers are
       // safe, same pattern as the proof audit): the sweep used to write the cache ONCE at
       // the end, so an interruption (Slurm expiry, 2026-08-20) lost hours of paid audits.
       await writeJsonAtomic(cachePath, cache);
-    } catch {
-      /* group falls through to individual calls */
+      // The individual-call fallback is by design, but SYSTEMATIC batch misparses double the
+      // audit cost of every run with no trace anywhere but agent_calls.log — say when a batch
+      // contributed nothing (audit, 2026-08-26).
+      if (adopted === 0) {
+        console.error(`[statement-equivalence] batch reply contributed no verdicts (${group.length} statement(s) fall through to individual audits)`);
+      }
+    } catch (e) {
+      console.error(`[statement-equivalence] batch dispatch failed (${(e as Error).message?.slice(0, 80)}) — ${group.length} statement(s) fall through to individual audits`);
     }
   });
 
@@ -634,14 +642,55 @@ export function droppedLeanRoutes(before: string, after: string): string[] {
   const decls = (tex: string): Map<string, number> => {
     const counts = new Map<string, number>();
     for (const m of tex.matchAll(/(?<!\\)%\s*lean:\s*([^\n]+)/g))
-      for (const raw of m[1].split(",")) {
-        const name = raw.trim().replace(/[.;]+$/, "");
-        if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-      }
+      // Split on repeated `% lean:` too: several markers on ONE line otherwise parse as a single
+      // phantom route (`A % lean: B`) that no well-formed rewrite can preserve — every refinement
+      // then "drops" it and is discarded, an unescapable loop (observed live 2026-08-25,
+      // lem:clip-balance-exponent).
+      for (const seg of m[1].split(/%\s*lean:\s*/))
+        // `;` too: the refiner has emitted `% lean: A; B` live — comma-only splitting reads that
+        // as one phantom route, the same unescapable-discard failure as the multi-marker line.
+        for (const raw of seg.split(/[,;]/)) {
+          const name = raw.trim().replace(/[.;]+$/, "");
+          if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+        }
     return counts;
   };
   const kept = decls(after);
   return [...decls(before)].filter(([name, n]) => (kept.get(name) ?? 0) < n).map(([name]) => name);
+}
+
+/**
+ * Deterministic missing-citation check: paper result envs whose realized Lean declaration the
+ * proof's own Lean source DIRECTLY invokes, but whose environment the rendered proof never
+ * `\cref`s. The p2_proof/refine_proof rule ("a route step realized by a paper env is rendered as a
+ * citation, never an inline re-derivation") is otherwise enforced only by prompt; this closes the
+ * common direct-invocation case from ground truth (the decl source), leaving transitive
+ * helper-mediated uses to the isolated-lemma assembly gate. Matching is by the declaration's final
+ * name segment as a whole word — Lean call sites use the open-namespace short name. Deliberately a
+ * per-proof AUDIT issue (feeding the existing refine loop, which adds the citation) rather than a
+ * new hard gate: the bank's `proof-uses` edges are heuristic, and a textual match can occasionally
+ * over-trigger; a wasted refine round is cheap, a false halt is not.
+ */
+export function missingRealizedCitations(
+  leanProofSource: string,
+  proofTex: string,
+  citables: readonly { objId: string; decl: string }[],
+  selfObjId: string,
+): { objId: string; decl: string }[] {
+  if (!leanProofSource) return [];
+  const out: { objId: string; decl: string }[] = [];
+  for (const c of citables) {
+    if (c.objId === selfObjId || !c.decl) continue;
+    const short = c.decl.split(".").pop()!;
+    if (!short) continue;
+    // Trailing boundary includes ?/! — `get?`/`find!` are ordinary Lean names, and a citable whose
+    // final segment is their prefix must not match them (mirrors dead_helpers.ts).
+    const wordRe = new RegExp(`(?<![A-Za-z0-9_'])${short.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9_?!'])`);
+    if (!wordRe.test(leanProofSource)) continue;
+    if (proofTex.includes(`obj:${c.objId}`)) continue;
+    out.push(c);
+  }
+  return out;
 }
 
 export async function runProofAudit(
@@ -709,6 +758,15 @@ export async function runProofAudit(
   const saveCache = () => writeJsonAtomic(cachePath, cache); // why: proofAudit workers save concurrently under mapLimit — interleaved plain writes can corrupt the cache.
 
   const auditPromptFp = await promptFingerprint("proof_audit");
+  // Lemma envs with a realized decl — the deterministic missing-citation check's citable set.
+  // Lemmas only, matching the isolated-lemma rule this check upstreams (a proof invoking a
+  // paper LEMMA's decl must cite it); theorem-to-theorem citation stays the auditor's judgment.
+  const resultCitables = (citableBlocks ?? [])
+    .filter((b) => b.env === "lemmav")
+    .flatMap((b) => {
+      const decl = declByNode.get(b.obj_id);
+      return decl ? [{ objId: b.obj_id, decl }] : [];
+    });
   // UNFILTERED lookup: propositionv proofs are audited too (isMainProofEnv), and the
   // citable list excludes them — a filtered lookup would leave their targetStatement
   // permanently "", replaying stale verdicts across statement fixes.
@@ -716,9 +774,25 @@ export async function runProofAudit(
     allLayerBlocks?.find((b) => b.obj_id === objId)?.body ?? "";
   const proofAudit = async (p: { obj_id: string; proofTex: string; leanPointer: string; leanProofSource: string; leanProofCacheSource: string; notationTable: string; tier: "main" | "auxiliary" }) => {
     const key = proofAuditCacheKey({ ...p, auditPromptFp, targetStatement: targetStatementFor(p.obj_id) });
+    // Deterministic pre-check, merged into the verdict at RETURN time (never persisted — the
+    // citable set is not in the cache key; see the hit path below). A hit stays a hit when the
+    // check is clean; a miss on the check overrides even a cached-faithful verdict, and the
+    // refine loop adds the citation.
+    const detIssues = missingRealizedCitations(p.leanProofSource, p.proofTex, resultCitables, p.obj_id).map(
+      (c) =>
+        `the Lean route invokes ${c.decl.split(".").pop()}, which the paper states as ${c.objId} — ` +
+        `cite \\cref{obj:${c.objId}} at that step instead of re-deriving it`,
+    );
     const hit = cache[p.obj_id];
     const cacheable = p.leanProofCacheSource.length > 0;
-    if (cacheable && hit?.key === key) return { verdict: hit.verdict, issues: hit.issues };
+    // The cache stores the CODEX verdict only — the deterministic issues are recomputed and
+    // merged at return time on hit and miss alike. Persisting the merged verdict would go stale:
+    // the citable set is not part of the cache key (it changes when a lemma is reclassified or
+    // removed), so a baked-in "unfaithful + cite X" would replay after X stops being a lemma.
+    if (cacheable && hit?.key === key) {
+      if (detIssues.length === 0) return { verdict: hit.verdict, issues: hit.issues };
+      return { verdict: "unfaithful", issues: [...(hit.issues ?? []), ...detIssues] };
+    }
     const v = (await ask(
       deps.runCodex({
         prompt: await presentationPrompt("proof_audit", {
@@ -736,9 +810,17 @@ export async function runProofAudit(
       }),
     )) as { verdict?: string; issues?: string[] } | null;
     const out = { verdict: v?.verdict ?? "unfaithful", issues: v?.issues ?? ["unparseable auditor output"] };
-    if (cacheable) {
-      cache[p.obj_id] = { key, ...out };
+    // Cache only a RENDERED verdict. An unparseable reply still fails closed for THIS pass
+    // (unfaithful → refine loop), but persisting it would brand the proof unfaithful forever:
+    // every re-run replays the hit, burns a high-effort refine whose only audit_issues input
+    // is the string "unparseable auditor output", and halts P2 blaming the mathematics —
+    // recoverable only by hand-deleting the cache entry (audit finding, 2026-08-26).
+    if (cacheable && typeof v?.verdict === "string") {
+      cache[p.obj_id] = { key, ...out }; // codex verdict only — see the hit path above
       await saveCache();
+    }
+    if (detIssues.length > 0) {
+      return { verdict: "unfaithful", issues: [...(out.issues ?? []), ...detIssues] };
     }
     return out;
   };

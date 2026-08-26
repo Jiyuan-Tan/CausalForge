@@ -1,0 +1,36 @@
+# Referee review
+
+**Recommendation:** major_revision
+**Overall score:** 7/10 — The paper delivers a substantial verified finite-sample minimax bracket, but publication requires clearer scope discipline, a corrected formalization trust boundary, and a substantially more readable exposition.
+
+The submission studies finite-sample ATE estimation with a finite discrete adjustment variable, arbitrary cell masses, fixed overlap, real outcomes under a second-moment envelope, and a known bounded heterogeneity radius. The main contribution is a constructive upper benchmark from polynomial and collision estimators, a same-class lower benchmark from binary embeddings, and a regime analysis identifying the matched endpoint, fixed-radius, saturation, and elbow cases. The verified statements support the core bracket, but the manuscript sometimes describes the result as a full minimax characterization and contains stale prose about literature results being formal dependencies. The contribution is promising, but the paper needs major revision in scope framing, verification disclosure, and readability before it is ready for publication.
+
+## Strengths
+- The main bracket is technically interesting and addresses a clear finite-sample gap between semiparametric ATE theory and sparse discrete-adjustment regimes.
+- The radius-indexed model class is well motivated and the known-radius selector gives an explicit constructive upper benchmark.
+- The comparison between polynomial rare-cell estimation and occupancy/collision estimation is conceptually useful and connected to the closest binary-outcome literature.
+- The verified theorem layer substantially increases confidence that the displayed formal claims are internally consistent.
+
+## Findings
+- **[major·prose] global** — The manuscript contains stale trust-boundary prose. The author footnote says: "where a result from the literature is a formal dependency, it enters as a published input rather than a Lean-checked step". The current verification contract lists no external dependencies and records the binary source-interface lemmas as checked declarations with faithful proof audits.
+  - *Fix:* Revise the author footnote and verification note to state the current scope affirmatively: the displayed formal statements and proofs, including the source-interface lemmas in the contract, are Lean-checked; citations provide attribution and statistical context. If any theorem-local publication input remains, list it explicitly with the required formalization-scope footnote at the use site.
+- **[major·prose] Related work** — The prose sometimes oversells a bracket as a full minimax characterization. The sentence "The contribution here is a finite-alphabet minimax characterization for scalar average treatment effect estimation under fixed overlap and a bounded heterogeneity radius" exceeds the delivered scope because the residual shrinking-radius wedge remains open between the product lower benchmark and the selector upper benchmark.
+  - *Fix:* Replace such language with an affirmative but qualified description, for example: "The contribution here is a finite-alphabet minimax bracket for scalar ATE estimation, with matching rates at the endpoints, fixed positive radii, saturation, and parametric-dominance regimes." Keep the shrinking-radius frontier discussion in the Future work/Open questions material.
+- **[major·structure] appendices** — The exposition is not yet suitable for a leading econometrics journal. The appendices reproduce long machine-generated proof scripts and multiple restricted/all-alphabet variants in a way that obscures the statistical argument and makes it hard to see which assumptions drive each rate.
+  - *Fix:* Restructure the paper so the main text and primary appendix give a human proof roadmap: isolate the polynomial upper, collision upper, exact lower, and radius-channel lower mechanisms; move low-level constant chasing and generated proof discharge to an online supplement; add a compact table or diagram summarizing the regimes and matched rates.
+- **[major·citation] Related work** — The closest competitor is cited, but the dedicated related-work section does not engage its concrete rate statements as directly as the paper's novelty requires. The Zeng--Balakrishnan--Han--Kennedy comparison should state the binary unrestricted, exact-homogeneity, and approximate-homogeneity rates and then map each to the present real-outcome radius-indexed bracket.
+  - *Fix:* Add an early paragraph in Related work giving the relevant binary rates and conditions, then state precisely which parts are transferred, extended, or compared algebraically in this paper.
+- **[minor·prose] abstract** — The abstract first uses the symbols n and d inside the displayed rates before defining them in prose after the display.
+  - *Fix:* Define the symbols before the first displayed rate, e.g. "where n is the sample size and d is the number of adjustment cells" before presenting the benchmark.
+- **[minor·statement] Lower bounds and binary embeddings** — The proposition "Affine subclass transfer" redefines binary classes in a compressed way: "Write \(\mathcal D_d^{\mathrm{bin}}(\epsilon)\) for the class of binary \(d\)-cell laws with overlap \(\epsilon\), ..." even though an earlier definition included consistency, exchangeability, arbitrary cell masses, binary outcomes, and arm means. This creates avoidable ambiguity about the source class used in the transfer.
+  - *Fix:* Do not redefine the class in the proposition. Refer back to the earlier binary source law definition with \(\cref{obj:synth_2}\), or restate the full law-class conditions in the proposition.
+- **[minor·other] Verification note** — The manuscript claims Lean verification but does not give enough reproducibility metadata in the paper itself: Lean version, repository or archive, commit hash, build command, and how the LaTeX object labels correspond to declarations.
+  - *Fix:* Add an artifact availability paragraph with the verification commit, Lean/toolchain version, build command, and a pointer to the generated declaration-label map.
+- **[nit·structure] Discussion, extensions, and limitations** — The residual wedge discussion is technically important, but the current text alternates between benchmark geometry, open construction questions, and limitations. This makes the status of the wedge harder to parse for readers.
+  - *Fix:* Keep the theorem-implied regime geometry in the main regime section and reserve the Future work subsection for the two open routes: sharper radius-constrained lower construction or improved estimator.
+
+## Questions for authors
+- Will the Lean artifact and generated LaTeX-to-declaration map be made publicly available at submission or only after acceptance?
+- Do the authors intend to claim an exact minimax rate anywhere beyond the endpoint, fixed-positive-radius, saturation, and elbow regimes?
+- Can the source-interface lemmas be presented as internally proved formal results while still clearly crediting the published binary constructions they adapt?
+

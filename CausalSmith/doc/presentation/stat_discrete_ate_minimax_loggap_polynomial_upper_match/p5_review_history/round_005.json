@@ -1,0 +1,128 @@
+{
+  "recommendation": "major_revision",
+  "score": 7.2,
+  "score_rationale": "The paper appears to deliver a meaningful and formally verified sharp-rate contribution, but the manuscript needs substantial exposition repair around theorem scope, implementability, order conventions, and stale/awkward prose before it reads like a publishable econometrics submission.",
+  "summary": "The submission establishes a sharp fixed-interior minimax rate for finite-alphabet ATE estimation under fixed overlap and constructs a computable ratio-polynomial hybrid estimator attaining the Zeng et al. lower-bound scale in the calibrated range. The verified results support the central mathematical claims, including the parametric interior, consistency frontier, near-randomization upper bound, and endpoint bracket. The contribution is significant for discrete-confounding benchmarks, but the manuscript as written is too proof-artifact-heavy and sometimes states implementation and scope in ways that will distract or mislead readers.",
+  "strengths": [
+    "The main fixed-interior minimax rate is clean, important, and well positioned against the closest discrete-covariate causal benchmark.",
+    "The estimator is constructive and mathematically explicit, not just an existence argument.",
+    "The related-work section engages the closest competitor's estimator collapse, plug-in upper rate, lower rate, and open logarithmic gap.",
+    "The endpoint and near-randomization results add useful perspective beyond the fixed-interior theorem.",
+    "The formalization-scope footnotes make the external lower-bound dependency transparent."
+  ],
+  "findings": [
+    {
+      "severity": "major",
+      "section": "Setup and assumptions",
+      "issue": "The paragraph “Order conventions for the risk” imports machine-totalization conventions into the statistical manuscript, including the sentence “a supremum over an empty family of reals, or over a family with no real upper bound, is assigned the value 0,” and the claim that “a division by zero returns 0.” This is mathematically nonstandard in an econometrics paper and can confuse the meaning of minimax risk and rates, even though the later statistical statements operate in nondegenerate ranges.",
+      "fix": "Move the Lean totalization discussion to a short verification-only appendix note, and replace the main-text paragraph with ordinary statistical conventions: for the stated ranges n>0, d>0, and 0<epsilon<=1/2, the experiment class is nonempty, tau(P) is bounded, and the minimax risk is the usual extended-real or finite risk. State explicitly that displayed rate claims are made only where n>0 and log n is used in its ordinary sense.",
+      "kind": "prose",
+      "finding_id": "nonstandard-totalization-in-main-text",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "Main results",
+      "issue": "The fixed-overlap hybrid calibration theorem states that the selector uses C_epsilon: “For the deterministic estimator \\widehat\\tau_{C_\\epsilon,\\epsilon}=...” This is an oracle-style selector because C_epsilon is an existence constant from the risk proof, not a computable or tabulated tuning parameter supplied with the procedure. The prose calls it a “deterministic selected estimator,” which may lead readers to infer practical implementability beyond the verified statement.",
+      "fix": "Clarify that the selected estimator is deterministic conditional on the proof constant C_epsilon and is used to state an attainable envelope, while the universally tuned hybrid itself remains the implementable procedure with no epsilon input. If the authors want a data-usable selector, add a theorem or implementation specifying explicit constants; otherwise keep the selector framed as a theoretical envelope device.",
+      "kind": "prose",
+      "finding_id": "oracle-selector-clarification",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "abstract",
+      "issue": "The abstract says “The upper bound is attained by a computable two-split hybrid estimator with universal numerical tuning,” but it does not state the upper-bound calibration range in the same sentence. The verified sharp hybrid upper bound requires fixed epsilon, n>=N_epsilon, d<=rho_epsilon n log n; outside that range the paper has the centered envelope and endpoint bracket, not the sharp hybrid rate.",
+      "fix": "Rewrite the sentence to include the range: “In this calibrated fixed-interior range, the upper bound is attained by...” This preserves the verified contribution and prevents the abstract from reading as an all-n,d sharp upper bound.",
+      "kind": "prose",
+      "finding_id": "abstract-upper-bound-range",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "Main results",
+      "issue": "The theorem statement for \\cref{obj:thm:sharp-minimax-fixed-interior} includes “for every n,d, every single-observation law P, and every sample law \\mu_n in the experiment class...” although the displayed inequalities concern the global minimax risk and a supremum over the class, not the particular P or \\mu_n. The extra quantifiers are formally harmless but rhetorically misleading.",
+      "fix": "Remove the unused P and \\mu_n quantifiers from the reader-facing theorem clauses, or state the class membership only where an estimatorwise expectation is evaluated. Keep the verified mathematical content unchanged.",
+      "kind": "statement",
+      "finding_id": "unused-global-risk-quantifiers",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "global",
+      "issue": "The paper contains very long proof bodies with implementation-model details and totalized arithmetic conventions in the main appendix, making the manuscript read like a formalization transcript rather than a journal article. This weakens self-contained statistical exposition because the key statistical ideas are buried under proof-engineering artifacts.",
+      "fix": "Compress proof-engineering details into a verification appendix or supplementary material; in the main appendix, present proof sketches organized around pilot classification, heavy ratio control, light polynomial approximation, factorial-moment variance, and aggregation. Keep formal theorem statements and verification footnotes, but make the statistical proof path readable to an econometrics audience.",
+      "kind": "structure",
+      "finding_id": "proof-artifact-heavy-presentation",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "Related work",
+      "issue": "The prose says Zeng et al. “record the resulting gap as open in both directions.” This is broadly supported by the supplied context, but the manuscript should give a precise citation locator or quotation-level paraphrase because this is an important novelty-positioning claim about the closest competitor.",
+      "fix": "Add a precise citation locator to the discussion following their Theorem 2 or their Discussion section, and phrase the point as their stated open logarithmic gap between the lower and available upper rates.",
+      "kind": "citation",
+      "finding_id": "closest-gap-locator",
+      "remedy": "citation_research"
+    },
+    {
+      "severity": "minor",
+      "section": "Discussion and extensions",
+      "issue": "The first paragraph repeats the main theorem almost verbatim and delays interpretive content. This creates redundancy with the abstract, introduction, and theorem commentary.",
+      "fix": "Shorten the repeated rate statement and use the discussion to interpret what the rate says for applied discrete adjustment, estimator choice, and comparison to standard same-sample plug-in procedures.",
+      "kind": "structure",
+      "finding_id": "discussion-repetition",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "Setup and assumptions",
+      "issue": "The estimator definition is technically complete but too dense for first reading. The Chebyshev polynomial, factorial-moment lift, split rule, and truncation are all introduced in one long formal definition before the reader has an intuitive algorithmic overview.",
+      "fix": "Precede the formal estimator definition with a short algorithmic display naming the inputs, pilot classification, heavy ratio branch, light polynomial branch, and clipping step; then let the formal definition provide exact constants and coefficients.",
+      "kind": "structure",
+      "finding_id": "estimator-definition-density",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "Verification note",
+      "issue": "The verification note says “The theorem statements and proofs are machine-checked in Lean 4,” but the theorem-local footnote for the main minimax result also says the lower side depends on a published conclusion whose proof is not formalized. Both statements are individually true, but adjacent readers may misread the first as certifying the cited source proof.",
+      "fix": "Rewrite the sentence as: “Lean checks the stated reductions, estimator bounds, and proof steps internal to this paper; theorem-local footnotes identify published results used as external mathematical inputs.”",
+      "kind": "prose",
+      "finding_id": "verification-scope-wording",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "Related work",
+      "issue": "The manuscript mentions RobinsRitov1997 only in the supplied related-work brief, not in the submitted related-work section. Given the paper’s emphasis on high-dimensional adjustment and the misleading behavior of ordinary likelihood or plug-in reasoning, this omission leaves a relevant conceptual predecessor underused.",
+      "fix": "Add a brief sentence in the high-dimensional or minimax-related-work discussion explaining how Robins and Ritov’s high-dimensional cautionary example relates conceptually to unrestricted discrete adjustment, while distinguishing the present sharp finite-alphabet minimax result.",
+      "kind": "citation",
+      "finding_id": "missing-robins-ritov-context",
+      "remedy": "citation_research"
+    },
+    {
+      "severity": "nit",
+      "section": "Setup and assumptions",
+      "issue": "In \\cref{obj:def:overlap-cone}, the displayed set uses “u=(...)” but the verification contract’s extracted statement shows a typo “\\nu=(...)” and “\\nu_{10}+u_{11}.” The submitted source appears correct, but this should be checked in the compiled manuscript/source to avoid a notation blemish.",
+      "fix": "Verify the compiled source uses a single symbol u throughout the overlap-cone definition and correct any lingering nu/u mixture.",
+      "kind": "prose",
+      "finding_id": "overlap-cone-symbol-consistency",
+      "remedy": "source_change"
+    },
+    {
+      "severity": "nit",
+      "section": "global",
+      "issue": "Several formal environment titles use title-like nouns rather than sentence-style prose, for example “Sharp fixed-interior minimax rate” is fine, but labels such as “Endpoint randomization bracket” and “Fixed-overlap hybrid calibration” should be checked consistently against the house rule for sentence case in all displayed headings and item labels.",
+      "fix": "Audit all section, paragraph, theorem-item, and appendix headings for sentence case: capitalize only the first word and proper nouns.",
+      "kind": "prose",
+      "finding_id": "sentence-case-audit",
+      "remedy": "rewrite"
+    }
+  ],
+  "questions_for_authors": [
+    "Can the constant C_epsilon used by the selected estimator be made explicit enough for implementation, or is the selector intended only as a theoretical upper-envelope device?",
+    "Will the final submitted version include a reproducible implementation of the hybrid estimator, or is computability meant solely in the real-arithmetic operation-count sense?",
+    "Can the authors provide a precise citation locator for where Zeng et al. state the logarithmic upper/lower gap as open?"
+  ]
+}

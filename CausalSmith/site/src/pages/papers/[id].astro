@@ -3,12 +3,14 @@ import { loadBundles, type Bundle } from "../../lib/bundles.js";
 import { bundleRoots, GITHUB_REPO, SERIES_NAME, SERIES_TAGLINE, sourceRef } from "../../lib/config.js";
 import SeoHead from "../../components/SeoHead.astro";
 import PaperComments from "../../components/PaperComments.astro";
+import ProofMap from "../../components/ProofMap.astro";
 import { renderTexCompact, renderLabel } from "../../lib/docmd.js";
 import { renderMath } from "../../lib/paperMath.js";
 import discussionNumbers from "../../lib/comments/discussions.json";
 import "../../styles/series.css";
 import "../../styles/paper.css";
 import "../../styles/comments.css";
+import "../../styles/proofmap.css";
 
 export async function getStaticPaths() {
   const bundles = await loadBundles(bundleRoots());
@@ -90,17 +92,28 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     />
   </head>
   <body>
-    {toc.length > 0 && (
-      <nav class="paper-toc" id="paper-toc" aria-label="Contents">
-        <div class="toc-head">Contents</div>
-        <ul>
-          {toc.map((t) => (
-            <li class={`toc-l${t.level}`}>
-              <a href={`#${t.id}`}>{t.text}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    {(toc.length > 0 || bundle.paperGraph) && (
+      <div class="paper-side" id="paper-side">
+        {toc.length > 0 && (
+          <nav class="paper-toc" id="paper-toc" aria-label="Contents">
+            <div class="toc-head">Contents</div>
+            <ul>
+              {toc.map((t) => (
+                <li class={`toc-l${t.level}`}>
+                  <a href={`#${t.id}`}>{t.text}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+        {bundle.paperGraph && (
+          <ProofMap
+            graph={bundle.paperGraph}
+            paperId={bundle.id}
+            worker={import.meta.env.PUBLIC_COMMENTS_WORKER ?? ""}
+          />
+        )}
+      </div>
     )}
     <article class="paper">
       <div class="paper-byline">
@@ -175,12 +188,18 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     <script>
       import { initDrawer } from "../../scripts/drawer.js";
       import { initComments } from "../../scripts/comments.js";
+      import { initProofMap } from "../../scripts/proofMap.js";
       import { katexOptions } from "../../lib/katexConfig.js";
       // Wire the drawer FIRST, and never behind a top-level `import katex` — a
       // failed katex load (e.g. a stale Vite optimize-deps chunk 504ing in dev)
       // would otherwise abort this whole module before initDrawer() runs, leaving
       // every formal block un-clickable. katex is loaded lazily below instead.
       initDrawer();
+      // Proof map — inert on a paper whose bundle carries no paper_graph.json,
+      // and read-only (graph + statements, no verify control) when no comments
+      // worker is configured. Runs after the drawer for the same reason as the
+      // comments layer: neither may cost the Lean drawer if it throws.
+      initProofMap();
       // Reader commentary — no-ops unless PUBLIC_COMMENTS_WORKER is set. Runs
       // after the drawer so a comments failure can never cost the Lean layer,
       // and after parsing so the sentence segmenter sees the whole body.

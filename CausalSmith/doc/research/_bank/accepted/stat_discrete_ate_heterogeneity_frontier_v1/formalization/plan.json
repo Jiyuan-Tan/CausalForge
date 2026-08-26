@@ -1,0 +1,917 @@
+{
+  "qid": "stat_discrete_ate_heterogeneity_frontier",
+  "specialization": "v1",
+  "cluster": "stat",
+  "target_subdirectory": "CausalSmith/Stat/STAT_DiscreteAteHeterogeneityFrontier_Research",
+  "namespace": "CausalSmith.Stat.DiscreteAteHeterogeneityFrontier",
+  "feasibility": "needs-new-infrastructure",
+  "env": [
+    {
+      "id": "S1",
+      "world": "A real-outcome observational experiment with a finite discrete confounder. One full-data unit is \\((X,A,Y(0),Y(1),Y)\\) with \\(X\\in\\{1,\\ldots,d\\}\\), \\(A\\in\\{0,1\\}\\) and real potential outcomes; the law \\(P\\) is determined by the cell masses \\(p_k=P(X=k)\\), the propensities \\(\\pi_k=P(A=1\\mid X=k)\\), and the arm-and-cell conditional outcome laws on \\(\\mathbb R\\). Consistency \\(Y=Y(A)\\) and conditional exchangeability \\((Y(0),Y(1))\\perp A\\mid X\\) hold, treatment satisfies fixed strong overlap \\(\\epsilon\\le\\pi_k\\le1-\\epsilon\\) on every positive-mass cell, and the outcome is controlled only through \\(|\\mu_{ak}|\\le M/2\\) and \\(E_P[(Y-\\mu_{ak})^2\\mid A=a,X=k]\\le M^2\\); no boundedness of \\(Y\\) is assumed. The observed record is \\(O=(X,A,Y)\\) with law \\(P_O\\), and the sample \\(O_1,\\ldots,O_n\\) is drawn from \\(Q_P^{(n)}=P_O^{\\otimes n}\\), with the same product construction at block size \\(m\\).",
+      "binds_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(M\\)",
+        "\\(\\sigma\\)",
+        "\\(c_{\\epsilon}\\)",
+        "\\(C_{\\epsilon}\\)",
+        "\\(i\\)",
+        "\\(j\\)",
+        "\\(k\\)",
+        "\\(a\\)",
+        "\\(X\\)",
+        "\\(A\\)",
+        "\\(Y\\)",
+        "\\(Y(a)\\)",
+        "\\(O\\)",
+        "\\(O_i\\)",
+        "\\(P\\)",
+        "\\(P_O\\)",
+        "\\(Q_P^{(n)}\\)",
+        "\\(p_k\\)",
+        "\\(\\pi_k\\)",
+        "\\(\\mu_{ak}\\)",
+        "\\(\\tau_k\\)",
+        "\\(\\tau(P)\\)",
+        "\\(\\delta_k\\)",
+        "\\(D_{ij}\\)",
+        "\\(N_{ij}\\)",
+        "\\(w_k\\)",
+        "\\(W_P\\)",
+        "\\(\\tau_{\\mathrm{col}}(P)\\)",
+        "\\(\\mathcal P_{d,\\epsilon,M,\\sigma}\\)",
+        "\\(\\mathcal P_{d,\\epsilon,M}^{\\mathrm{unr}}\\)",
+        "\\(\\mathcal E_{n,d,\\epsilon,M,\\sigma}\\)",
+        "\\(\\mathcal T_{n,M}\\)",
+        "\\(T_n^{\\mathrm{poly}}\\)",
+        "\\(T_n^{\\mathrm{col}}\\)",
+        "\\(\\widehat\\tau_n^{\\star}\\)",
+        "\\(r_{n,d,\\sigma}\\)",
+        "\\(\\mathsf R_{n,d,\\epsilon,M,\\sigma}\\)",
+        "\\(m\\)",
+        "\\(Q_P^{(m)}\\)"
+      ],
+      "binds_sampling_model": true,
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Sample",
+        "Causalean.Stat.Sample.PiTransport",
+        "Mathlib.Probability.ProbabilityMassFunction.Constructions",
+        "Mathlib.Probability.ProductMeasure",
+        "Mathlib.MeasureTheory.Integral.Bochner.Basic"
+      ],
+      "notes": "Search trace: read `grep '^## ' ../doc/API.md` section index and §8h `PO/`, §12 `Stat/`, §13sa `Estimation/MinimaxATE/`, §10z reusable minimax substrate; then `Glob CausalSmith/Stat/**/*.lean` and `lean_file_outline` on `CausalSmith/Stat/STAT_DiscreteAteMinimaxLoggap_Research/Basic.lean`. Result: the closest world is `CausalSmith.Stat.DiscreteAteMinimaxLoggap.DiscreteLaw` / `Obs d` (see S2), but that world is a PMF on `Fin d x Bool x Bool` -- a BINARY outcome. The frozen core is stated for real outcomes controlled only by a conditional second central moment (`ass:second-central-moment`), so the binary world is a strictly different abstraction and cannot carry the class; `Causalean/PO/` supplies measure-theoretic PO systems over general outcome spaces but no finite-cell arbitrary-mass discrete-confounder law with per-cell arm outcome measures. Mathlib side checked with `lean_leansearch` ('expectation of one over binomial count plus one') -- only `PMF.binomial`/`PMF.bernoulli`, no packaged experiment. Hence `bypass-justified`: local record type carrying `p : Fin d -> R`, `pi : Fin d -> R`, and `nu : Bool -> Fin d -> Measure R`, with `productLaw` built by `Measure.pi`, reusing Causalean's `Stat.Sample` product plumbing. The full-data layer adds the joint potential-outcome law used by `ass:consistency` / `ass:conditional-exchangeability`."
+    },
+    {
+      "id": "S2",
+      "world": "The binary-outcome discrete-confounder experiment of Zeng, Balakrishnan, Han and Kennedy: one unit is \\((X,A,B)\\) with \\(X\\in\\{1,\\ldots,d\\}\\) and \\(A,B\\in\\{0,1\\}\\), arbitrary cell masses, fixed overlap \\(\\epsilon\\le\\pi_k\\le1-\\epsilon\\), arm response means \\(\\eta_{ak}\\in[0,1]\\), and an \\(n\\)-fold product sampling law. This is the source experiment for the cited converse lemmas, and the affine map \\(B(a)\\mapsto M\\{B(a)-1/2\\}\\) together with the Bernoulli contraction channel embeds it into the ambient world \\(S1\\).",
+      "binds_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(k\\)",
+        "\\(a\\)",
+        "\\(p_k\\)",
+        "\\(\\pi_k\\)",
+        "\\(\\mu_{ak}\\)",
+        "\\(M\\)",
+        "\\(\\sigma\\)"
+      ],
+      "binds_sampling_model": false,
+      "disposition": "reuse",
+      "reuse": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.DiscreteLaw",
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LowerBound"
+      ],
+      "notes": "Highest-leverage reuse decision in the plan. The banked sibling paper `stat_discrete_ate_minimax_loggap_polynomial_upper_match` already formalizes exactly this binary source world: `DiscreteLaw d`, `Obs d`, `Overlap`, `Consistency`, `ConditionalExchangeability`, `observedMarginal`, `ateFunctional`, `productLaw`, `mse`, `worstCaseMSE`, `minimaxRisk`, `oneArmMinimaxRisk`, `ControlZeroLaw`, and the cited-gate Prop `ZengOneArmMinimaxLower` (verified by `lean_file_outline` on Basic.lean and `Grep ZengOneArmMinimaxLower` in Helpers/LowerBound.lean). Every binary-source lemma of the present core is stated in this world, so the embedding lemmas (`prop:zeng-class-inclusion-and-lower-transfer`, `lem:scaled-binary-exact-lower-transfer-all-d`, `thm:radius-channel-converse-all-d`) are bridges from S2 to S1 rather than fresh constructions."
+    }
+  ],
+  "nodes": {
+    "ass:consistency": {
+      "lean_kind": "assumption",
+      "lean_name": "Consistency",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "classification": "modeling",
+      "notes": "Modeling assumption; kept as a threaded Prop, never discharged. Search trace: `lean_file_outline CausalSmith/Stat/STAT_DiscreteAteMinimaxLoggap_Research/Basic.lean` finds `DiscreteAteMinimaxLoggap.Consistency : PotentialLaw d -> Prop` and `Causalean/doc/API.md` §8h `PO/` has `POSystem` consistency; neither type-fits (binary `FullObs d` there, measure-theoretic PO system here), so the analogue is re-stated for the real-outcome full-data law: `Y = Y(A)` a.s. Adaptation reference: `DiscreteAteMinimaxLoggap.Consistency` (Basic.lean:218)."
+    },
+    "ass:conditional-exchangeability": {
+      "lean_kind": "assumption",
+      "lean_name": "ConditionalExchangeability",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "classification": "modeling",
+      "notes": "Modeling assumption; threaded. Search trace: same outline as `ass:consistency`; `DiscreteAteMinimaxLoggap.ConditionalExchangeability` (Basic.lean:231) is the binary-world analogue to adapt, and `Causalean.Mathlib.CondIndep` / `Causalean/doc/API.md` §10c `IndepFun`/`CondIndepFun` plumbing supplies the conditional-independence vocabulary. Real-outcome atomic-cell version stated as factorization of the full-data mass over `(A, (Y(0),Y(1)))` given `X`."
+    },
+    "ass:overlap": {
+      "lean_kind": "assumption",
+      "lean_name": "Overlap",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "classification": "modeling",
+      "notes": "Modeling (identification) assumption; threaded, never discharged. Search trace: `DiscreteAteMinimaxLoggap.Overlap : R -> DiscreteLaw d -> Prop` (Basic.lean:195) and `Causalean/doc/API.md` §9a `SCM/ID/Overlap.lean`; the former is typed by the binary `DiscreteLaw`, the latter is a do-calculus Rule-2 overlap predicate, so neither type-fits the real-outcome law. Restated as `p k > 0 -> eps <= pi k /\\ pi k <= 1 - eps`, matching the support qualification of the core."
+    },
+    "ass:mean-normalization": {
+      "lean_kind": "assumption",
+      "lean_name": "MeanNormalization",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "classification": "modeling",
+      "notes": "Modeling (moment) assumption; threaded. Search trace: `lean_local_search` for `outcomeMean`/bounded-outcome predicates and the §12/§13 tables of `../doc/API.md` (`Estimation/ATE/`, `Estimation/MinimaxATE/`) return bounded-outcome envelopes tied to their own law structures, none over a finite-cell real-outcome law. Mathlib side (`lean_leansearch`) has no packaged conditional-mean envelope. Restated as `p k > 0 -> |mu a k| <= M/2`."
+    },
+    "ass:second-central-moment": {
+      "lean_kind": "assumption",
+      "lean_name": "SecondCentralMoment",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.MeasureTheory.Integral.Bochner.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "classification": "modeling",
+      "notes": "Modeling (moment) assumption; the single outcome-control hypothesis of the paper, threaded everywhere. Search trace: `../doc/API.md` §12 `Stat/`, §12' `Stat/Concentration/` and §10d' `Mathlib/IIDCenteredSum.lean` (conditional second-moment bound for centered i.i.d. sums) -- the last is a THEOREM about sums, not a law-class predicate, so no discharge is possible or wanted. Stated as `p k > 0 -> integral of (y - mu a k)^2 against the (a,k) outcome measure <= M^2`, i.e. a `Variance`/`MemLp 2` style envelope on each cell-arm outcome law."
+    },
+    "ass:approximate-homogeneity": {
+      "lean_kind": "assumption",
+      "lean_name": "ApproximateHomogeneity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "classification": "modeling",
+      "notes": "The paper's structural regime parameter; the whole result is indexed by it, so it is a modeling assumption and never a substrate fact. Search trace: `lean_local_search 'collision'` and a scan of `CausalSmith/Stat/STAT_DiscreteAteMinimaxLoggap_Research/` (which studies the UNRESTRICTED class) show no heterogeneity-radius predicate anywhere in the tree; Mathlib has none. Stated as `forall k, p k > 0 -> |tau k - tau P| <= sigma * M`."
+    },
+    "def:model-class": {
+      "lean_kind": "structure",
+      "lean_name": "ModelClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "members": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:overlap",
+        "ass:mean-normalization",
+        "ass:second-central-moment",
+        "ass:approximate-homogeneity"
+      ],
+      "notes": "One structure field per member Prop, typed by that member's `def`. Search trace: `DiscreteAteMinimaxLoggap.ExperimentClass` (Basic.lean:243) and `ClassLaw` (Basic.lean:361) are the analogous bundles to adapt, but they bundle the binary-world predicates plus `IidSampling`; the radius member has no analogue anywhere. Range parameters `0 < eps < 1/2`, `1 <= M`, `0 <= sigma <= 2` are carried as fields as well so the class is self-contained."
+    },
+    "def:unrestricted-class": {
+      "lean_kind": "structure",
+      "lean_name": "UnrestrictedClass",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "members": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:overlap",
+        "ass:mean-normalization",
+        "ass:second-central-moment"
+      ],
+      "notes": "The `sigma = 2` endpoint comparator; same five members as `ModelClass` minus the radius. `lem:scale-sanity` proves the two classes coincide at `sigma = 2`. Search trace as for `def:model-class`."
+    },
+    "def:sample-experiment": {
+      "lean_kind": "def",
+      "lean_name": "sampleExperiment",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Stat.Sample",
+        "Mathlib.Probability.ProductMeasure"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`Q_P^(n) = (observed marginal of P)^{otimes n}`, as `Measure.pi`; also instantiated at block size `m` for `lem:linear-mark-factorial-covariance`. Search trace: `DiscreteAteMinimaxLoggap.productLaw` (Basic.lean:155) and `finProductLaw_eq_map` (Basic.lean:180) are the exact analogues over the binary observation type, and `Causalean.Stat.Sample` / `Stat.Sample.PiTransport` supply the generic i.i.d. product plumbing; the observation type differs (real outcome), so the construction is re-instantiated rather than reused verbatim. `IsProbabilityMeasure` instance mirrors Basic.lean:161."
+    },
+    "def:ate-functional": {
+      "lean_kind": "def",
+      "lean_name": "ateFunctional",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`tau P = sum_k p_k (mu_1k - mu_0k)` over `Fin d`, with `tau_k` and `delta_k` as auxiliary abbreviations. The functional is scoped to the core parameter space `epsilon ∈ (0,1/2)` and the causal-identification domain carrying exactly consistency, conditional exchangeability, overlap, and supported-cell first-moment integrability: for every arm `a` and cell `k` with positive mass, `Integrable (fun y : ℝ => y) (outcomeLaw a k)`. `OutcomeScale`, mean normalization, the second-central-moment envelope, approximate homogeneity, `M`, and `sigma` remain estimation-class restrictions and are not part of this definition's domain. `ModelClass.identifiedLaw` and `UnrestrictedClass.identifiedLaw` supply the epsilon-range facts from their existing fields and derive the first-moment condition from their existing second-central-moment field. Search trace: `DiscreteAteMinimaxLoggap.ateFunctional` (Basic.lean:291) with `ateFunctional_eq_weighted_regression` (Basic.lean:298) and `ateFunctional_mem_interval` (Basic.lean:317) are the binary analogues, and `../doc/API.md` §9g `PO/ID/Exact/ATE.lean` / §13 `Estimation/ATE/` carry measure-theoretic backdoor ATE functionals; `Causalean.PO` ATE is at the wrong abstraction -- bypass-justified."
+    },
+    "def:collision-handle": {
+      "lean_kind": "def",
+      "lean_name": "collisionEstimator",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HeavyCell"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Estimators.lean",
+      "notes": "Total measurable map: cell-arm counts `N_ak`, sums `S_ak`, indicators `I_k`, denominator `R_n`, indicator-totalized ratios, clipped to `[-M,M]`, zero fallback at `R_n = 0`. Search trace: `Grep 'collision'` over the tree gives only `CausalSmith.Stat.TransportedLateStrengthFrontier.collisionKernel` / `collisionScale` (a LATE cell estimator, different estimand and denominator) and the sibling's `HeavyCell`/`Estimator` helpers, which build the analogous count-and-sum machinery for binary outcomes; Mathlib has no such object. Adaptation reference: `STAT_DiscreteAteMinimaxLoggap_Research/Helpers/Estimator.lean` + `HeavyCell.lean` (arm counts, indicator-totalized means)."
+    },
+    "def:polynomial-handle": {
+      "lean_kind": "def",
+      "lean_name": "polyEstimator",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.ShiftedChebyshev",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.FactorialMoments",
+        "Causalean.Stat.UStatistic.OrderM.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Estimators.lean",
+      "notes": "The tagged primary declaration is `noncomputable def polyEstimator (handle : PolynomialHandle) {n d : Nat} (M : Real) (sample : Fin n → Obs d) : Real := rawPolyEstimator handle.N handle.rho M sample`, whose unfolded body is the complete pilot-split heavy/light signed one-mark estimator with clipping and the exact zero fallback. The untagged dependent subtype `PolynomialHandle` carries exactly `N`, positive `rho`, and the positive-n/d active-branch degree certificate, with no analytic calibration fields; its untagged accessors expose those data. Consumers retain the frozen existential dependent-handle semantics."
+    },
+    "def:total-estimator": {
+      "lean_kind": "def",
+      "lean_name": "totalSelector",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/Estimators.lean",
+      "notes": "Deterministic three-branch selector on `(n,d,sigma)` with the displayed tie rule, hence total and measurable for every parameter triple. Search trace: `Grep` for selector/hybrid in `STAT_DiscreteAteMinimaxLoggap_Research/Helpers/HybridProgram.lean` shows the analogous two-branch hybrid program (there keyed on the alphabet regime, here on `h <= min(1,u)` vs `u < min(1,h)`); nothing to reuse verbatim, but the measurability boilerplate ports."
+    },
+    "def:least-favorable-handle": {
+      "lean_kind": "def",
+      "lean_name": "leastFavorableFamily",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic",
+        "Mathlib.Probability.ProbabilityMassFunction.Constructions"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/LowerTransfer.lean",
+      "notes": "Global handle-family predicate: the positive radial and exact cap constants are quantified immediately after `epsilon`, before every `n,d,M,sigma`, and each valid model-parameter tuple then supplies a pointwise two-family handle with the hypothesis-independent Bernoulli contraction kernel. The pointwise handle intrinsically requires `RadialCouplingCertificate` and `ExactCouplingCertificate`, so its channel and affine laws act on full-data couplings of the corresponding binary source laws. This enforces that the cap constants depend only on `epsilon`; class membership and separation remain downstream certificates."
+    },
+    "def:minimax-risk": {
+      "lean_kind": "def",
+      "lean_name": "minimaxRisk",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "notes": "`inf over measurable T : (Fin n -> Obs) -> [-M,M]` of `sup over P in ModelClass` of `mse`. Search trace: `DiscreteAteMinimaxLoggap.mse` (Basic.lean:353), `worstCaseMSE` (365), `minimaxRisk` (371), `minimaxRisk_mem_unitInterval` (384) and `mse_le_estimator_abs_sum_bound` (Helpers/LowerBound.lean:40) give the exact `ciInf`/`ciSup` boundedness pattern (including the subtlety that both suprema need a uniform bound); `Causalean/doc/API.md` §10z has coupling/testing substrate but no packaged minimax-risk functional. Real-outcome retyping forces a local copy; the `[-M,M]` codomain restriction supplies the boundedness witness directly."
+    },
+    "prop:ate-identification": {
+      "lean_kind": "theorem",
+      "lean_name": "ate_identification",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_AteIdentification.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "g-formula on finitely many atoms: integrability from `E[Y^2 | a,k] <= (5/2)M^2`, positivity of `P(A=a,X=k) >= p_k eps` from overlap, then consistency + conditional exchangeability cell by cell. `hyps` is the single class, which bundles all five dependency assumptions. Search trace: `../doc/API.md` §9g `PO/ID/Exact/ATE.lean` (`backdoor ATE identification`) is the measure-theoretic analogue -- it identifies `E[Y(a)]` under a general covariate `condDistrib` backdoor, at a different abstraction from a finite atomic cell decomposition; `DiscreteAteMinimaxLoggap.ateFunctional_eq_weighted_regression` is the binary in-tree analogue of this exact computation and is the reference F3 should adapt (gap: real outcome forces an integrability step the binary case does not need)."
+    },
+    "lem:scale-sanity": {
+      "lean_kind": "lemma",
+      "lean_name": "scale_sanity",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Basic.lean",
+      "hyps": [
+        "def:model-class",
+        "def:unrestricted-class"
+      ],
+      "notes": "Triangle inequality plus a convexity bound on `sum p_k = 1`, then class extensionality at `sigma = 2`. Search trace: analogue `DiscreteAteMinimaxLoggap.ateFunctional_mem_interval` (Basic.lean:317); Mathlib side `Finset.abs_sum_le_sum_abs` / `Finset.inner_mul_le_norm_mul_norm` checked via `lean_leansearch` -- routine, build-inline."
+    },
+    "lem:parametric-lower": {
+      "lean_kind": "lemma",
+      "lean_name": "parametric_lower",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Mathlib.InformationTheory.KullbackLeibler.Basic",
+        "Mathlib.Probability.ProbabilityMassFunction.Constructions"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/LowerTransfer.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "`def:minimax-risk` is a CONSTRUCTION the statement is stated over (it appears in the conclusion), not a hypothesis, so it is used rather than assumed; only the class is threaded. Explicit two-point construction on one cell, tensorized KL `<= 1/12`, Pinsker, then the testing-to-squared-loss conversion. Search trace: `../doc/API.md` §10z `Causalean.Stat.Minimax.MaximalCoupling` supplies `Stat.tvDist`, `Stat.overlap_ge_exp_neg_klBudget` (Bretagnolle-Huber) and `tvDist_eq_half_integral_abs_rnDeriv_sub`; Mathlib side confirmed by `lean_leansearch 'Pinsker inequality total variation bounded by Kullback-Leibler divergence'` -> `InformationTheory.klDiv` and companions in `Mathlib.InformationTheory.KullbackLeibler.Basic`. Adaptation reference for the two-point-to-risk step: `CausalSmith/Stat/STAT_DiscreteAteMinimaxLoggap_Research/Helpers/LowerBound.lean` and `STAT_DpCateMinimaxV1_Research/Helpers/TwoPointDivergenceAux.lean` (same Le Cam skeleton, different family). Small, build-inline."
+    },
+    "lem:zeng-binary-exact-homogeneity-lower": {
+      "lean_kind": "theorem",
+      "lean_name": "zengBinaryExactHomogeneityLower",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteHeterogeneityFrontier_Research.Helpers.ExactHomogeneityLower"
+      ],
+      "defer_tier": false,
+      "source": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "target_file": "Helpers/ExactHomogeneityLower.lean",
+      "hyps": [
+        "ass:overlap"
+      ],
+      "notes": "Source: cite:zeng-balakrishnan-han-kennedy-2024 (bibkey ZengBalakrishnanHanKennedy2024, arXiv:2405.00118v3), locator `Theorem 4 and Appendix C.8`. Cited external converse on the uniform-mass, exactly homogeneous binary subclass H_{n,d}^bin(eps). Encoded as a named `Prop` def over the S2 binary world (`DiscreteLaw`, `productLaw`, `mse`), threaded into `lem:scaled-binary-exact-lower-transfer-all-d` and its restricted corollary. `gate_class` read from D0 provenance (`status: cited`) -- not re-judged. NOT reconstructed as sub-lemmas. Search trace: `Grep 'Zeng' CausalSmith/Stat/STAT_DiscreteAteMinimaxLoggap_Research` returns only `ZengOneArmMinimaxLower` (Theorem 2), so the exact-homogeneity Theorem 4 interface does not yet exist in the tree and is minted here in the same style."
+    },
+    "lem:zeng-binary-one-arm-lower": {
+      "lean_kind": "theorem",
+      "lean_name": "zengOneArmMinimaxLower",
+      "disposition": "reuse",
+      "reuse": "CausalSmith.Stat.DiscreteAteMinimaxLoggap.zengOneArmMinimaxLower",
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteHeterogeneityFrontier_Research.Helpers.OneArmLowerDischarge"
+      ],
+      "defer_tier": false,
+      "source": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "target_file": "Helpers/OneArmLowerDischarge.lean",
+      "hyps": [
+        "ass:overlap"
+      ],
+      "notes": "Source: cite:zeng-balakrishnan-han-kennedy-2024 (bibkey ZengBalakrishnanHanKennedy2024, arXiv:2405.00118v3), locator `Theorem 2, Appendix C.5, Lemma 4, and Appendix D.2`. REUSE of an existing cited-gate interface: `ZengOneArmMinimaxLower (epsilon : R) : Prop` in `Helpers/LowerBound.lean:74` states, in the same binary control-zero world, `a_eps * minimaxRate n d <= oneArmMinimaxRisk n d epsilon` for `n >= N_eps` and `d <= b_eps n log n` -- exactly the frozen node (`1/n + d^2/(n^2 log^2 n)` is `minimaxRate n d` there; documented as the SAME source theorem, arXiv:2405.00118v3 Theorem 2 + Appendix C.5 + Lemma 4 + Appendix D.2). Signature confirmed by `Grep` with context. Threaded into `thm:radius-channel-converse(-all-d)` and `prop:zeng-class-inclusion-and-lower-transfer`. Still a gate: reusing the Prop does not discharge it."
+    },
+    "lem:zeng-usable-occupancy-reciprocal": {
+      "lean_kind": "theorem",
+      "lean_name": "zengUsableOccupancyReciprocal",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteHeterogeneityFrontier_Research.Helpers.OccupancyDischarge"
+      ],
+      "defer_tier": false,
+      "source": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "target_file": "Helpers/OccupancyDischarge.lean",
+      "hyps": [
+        "ass:overlap",
+        "def:model-class"
+      ],
+      "notes": "Source: cite:zeng-balakrishnan-han-kennedy-2024 (bibkey ZengBalakrishnanHanKennedy2024, arXiv:2405.00118v3), locator `Lemma 1 and Appendix C.7 (equation (26) and the reciprocal-occupancy display)`. Cited no-collision probability bound and the derived reciprocal-occupancy expectation. Stated over the AMBIENT world S1 (the two displays involve only `(X_i,A_i)`, i.e. the cell-and-arm marginal, which is common to S1 and S2), so no bridge is needed. Threaded into `lem:continuous-occupancy-collision-upper(-all-d)`. Search trace: `Grep 'occupancy|nocollision'` over `CausalSmith/Stat/**` and `../doc/API.md` §10a'''''''' `FiniteMarkedPoissonPartition` -- the latter has depoissonization and cell-occupancy laws but nothing proving this birthday/occupancy bound; Mathlib has no occupancy-collision estimate (`lean_leansearch`). Cited, so not built here."
+    },
+    "lem:zeng-binary-collision-upper": {
+      "lean_kind": "assumption",
+      "lean_name": "ZengBinaryCollisionUpper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": true,
+      "source": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "target_file": "Helpers/CitedGates.lean",
+      "hyps": [
+        "ass:overlap"
+      ],
+      "notes": "Source: cite:zeng-balakrishnan-han-kennedy-2024 (bibkey ZengBalakrishnanHanKennedy2024, arXiv:2405.00118v3), locator `Theorem 3 on page 11 and Appendix C.7`. The published binary collision-estimator bias/variance guarantee is used ONLY by the secondary `thm:published-binary-collision-comparison`. Encoded as a named `Prop` in the S2 binary world and threaded only into that consumer. `gate_class` fixed by D0 provenance (`status: cited`). This node is not needed for the paper's own upper bound, which is proved from scratch in `lem:continuous-occupancy-collision-upper-all-d`.",
+      "gate": true,
+      "gate_class": "cited"
+    },
+    "lem:linear-mark-factorial-covariance": {
+      "lean_kind": "lemma",
+      "lean_name": "linear_mark_factorial_covariance",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.FactorialMoments",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.ShiftedChebyshev",
+        "Causalean.Stat.UStatistic.OrderM.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/FactorialCovariance.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "The paper's one genuinely new weak-moment covariance step: variance of a sum of signed one-mark ordered factorial statistics under only a conditional second central moment. Build-inline crux -- the technique is already in the tree. Analogous-module search (technique words 'falling factorial', 'descFactorial', 'ordered distinct indices', 'Chebyshev coefficient'): `Helpers/FactorialMoments.lean` supplies `descFactorial_mul_identity`, `factorial_normalization` (`Causalean.Stat.injectiveTupleCount r m = m.descFactorial r`), `factorial_ratio_bound` (LITERALLY the note's display (3): `(m)_{r+s-H} / ((m)_r (m)_s) <= e / m^H` under `4 s^2 <= m`) and `factorial_cross_ratio_bound` (LITERALLY display (5): `|(m)_{r+s}/((m)_r (m)_s) - 1| <= 2 s^2 / m`); `Helpers/ShiftedChebyshev.lean` supplies `shiftedChebyshevExpansion` and `shiftedCoeff` for `g_{Kj}` and the `6^K` envelope; `Helpers/LightCellVariance.lean` carries the binary matching-partition bookkeeping. Gap to bridge: the mark is real, so the two marked positions may coincide and contribute `E[V^2 1{X=k,A=a}] <= (5/4) s_ak` (display (1)) instead of a bounded indicator -- that single diagonal term is the new content. Mathlib side checked (`lean_leansearch`): `Polynomial.Chebyshev.T` exists, no U-statistic covariance lemma of this shape."
+    },
+    "lem:continuous-ratio-polynomial-upper-all-d": {
+      "lean_kind": "lemma",
+      "lean_name": "continuous_ratio_polynomial_upper_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LightCell",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HeavyCell",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.PilotSandwich",
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HeavyCellMoments"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/PolynomialUpper/Assembly.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "The all-alphabet polynomial upper bound, including the saturated zero-fallback branch. Its public complexity conjunct is the family-level asymptotic predicate `PolynomialComplexityBound handle`, asserting one uniform `O(d K^2)` constant; the exact `128(d+1)(K+1)^2` certificate is retained only as an internal strengthening. Build-inline (the heaviest node in the plan; F2 should expect `Helpers/PolynomialUpper.lean` to split further into `PolynomialUpper/{Bias,LightVariance,Heavy,Assembly}.lean`). Analogous-module search by technique words ('pilot sandwich', 'heavy light', 'occupancy threshold', 'Chernoff union bound'): `Helpers/PilotSandwich.lean` + `Helpers/PilotConditioning.lean` give the event `A` that every pilot-heavy cell has `p_k >= B_-` and every pilot-light cell `p_k <= B_+`, with the binomial Chernoff union bound (display (7)-(8)); `Helpers/LightCell*.lean` (`LightCellRate`, `LightCellRateDeterministic`, `LightCellRatePilot`, `LightCellVariance`, `LightCellAssembly`) give the bias/variance completion-of-squares of displays (10)-(12); `Helpers/HeavyCell.lean` + `Helpers/HeavyCellMoments.lean` give displays (13)-(17), in particular `binomial_succ_reciprocal_sum` (exactly display (14): `E[(D+1)^{-1}] = (1 - (1-q)^{t+1})/((t+1)q)`), `inverse_count_indicator_le`, `binomial_inverse_count_bound`, `setBernoulli_inverse_ncard(_le)` and `exp_neg_le_inv_sq`. Gap to bridge: everything is re-derived with the real mark (only display (2), the conditional-variance envelope, replaces boundedness) and the empty-arm remainder terms `R_a` need the multinomial factorial moments in `Helpers/MultinomialMoments.lean`. Mathlib side (`lean_leansearch`): `PMF.binomial` only; no reciprocal-count expectation upstream, which is why the CausalSmith helper is the right base."
+    },
+    "lem:continuous-ratio-polynomial-upper": {
+      "lean_kind": "lemma",
+      "lean_name": "continuous_ratio_polynomial_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/PolynomialUpper/Assembly.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Restricted-range corollary: quantifier restriction of `lem:continuous-ratio-polynomial-upper-all-d` to `1 <= d <= c_eps n^2 / log(en)`, identifying the displayed estimator with `def:polynomial-handle` and preserving the same family-level `O(d K^2)` complexity predicate. One-line proof; no independent search needed beyond the all-d node."
+    },
+    "lem:continuous-occupancy-collision-upper-all-d": {
+      "lean_kind": "lemma",
+      "lean_name": "continuous_occupancy_collision_upper_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.HeavyCellMoments",
+        "Causalean.Mathlib.Probability.VarianceProd"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/OccupancyUpper.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Gate-consumer: its only non-elementary input is the CITED occupancy-reciprocal bound, which is threaded as a hypothesis, so this node is IN SCOPE and proved conditionally on the gate. Proof shape: conditional bias-variance on the sigma-field of `(X_i,A_i)`, convex combination of `delta_k` on `{R_n > 0}`, the binomial reciprocal estimate (display (4)) on ACTIVE cells only (`I_k = 1` forces `N_k >= 2`), then `e^{-b/x} <= C x` to absorb the exponential. Analogous-module search: `Helpers/HeavyCellMoments.lean` `binomial_inverse_count_bound` / `binomial_succ_reciprocal_sum` supply display (4) up to the two-arm conditioning, and `../doc/API.md` §10a''''' `Mathlib/Probability/VarianceProd.lean` (law of total variance on a product space) supplies the conditional variance decomposition; Mathlib side has `ProbabilityTheory.variance_def`/conditional-variance lemmas but nothing for indicator-totalized arm ratios (`lean_leansearch`)."
+    },
+    "lem:continuous-occupancy-collision-upper": {
+      "lean_kind": "lemma",
+      "lean_name": "continuous_occupancy_collision_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/OccupancyUpper.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Restricted-range corollary of the all-d occupancy lemma, identifying `T_n^{occ}` with `def:collision-handle`. The cited occupancy gate is threaded here too, since the corollary inherits it."
+    },
+    "lem:scaled-binary-exact-lower-transfer-all-d": {
+      "lean_kind": "lemma",
+      "lean_name": "scaled_binary_exact_lower_transfer_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/LowerTransfer.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "`def:minimax-risk` (construction, appears in the conclusion) and `lem:parametric-lower` (a lemma, USED in the small-`n` absorption step) are dependencies but not hypotheses; only the class and the cited gate are threaded. Gate-consumer, in scope. Affine embedding `Y(a) = M(B(a) - 1/2)` of the S2 uniform-mass exactly-homogeneous family into S1 on `d_0 = min(d, max(1, floor(b_eps n^2)))` positive-mass cells with zero mass elsewhere, invertible observed transformation, `M^2` loss scaling, then the cap argument and the small-`n` absorption via `lem:parametric-lower`. Analogous-module search: `Helpers/LowerBound.lean` `oneArmMinimaxRisk_le_minimaxRisk` and `ate_lower_bound_transfer` are the exact subclass-restriction pattern to adapt (`ciInf_mono` on estimators with the uniform `mse_le_estimator_abs_sum_bound` witness); the gap is the affine outcome relabelling plus the cell-cap embedding, neither of which appears there."
+    },
+    "lem:scaled-binary-exact-lower-transfer": {
+      "lean_kind": "lemma",
+      "lean_name": "scaled_binary_exact_lower_transfer",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/LowerTransfer.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "`def:minimax-risk` is the construction the bound is stated over, not a hypothesis. Restricted-range corollary: on `d <= b_eps n^2` with `b_eps <= 1` the cap is inactive. Inherits the cited exact-homogeneity gate."
+    },
+    "thm:radius-channel-converse-all-d": {
+      "lean_kind": "theorem",
+      "lean_name": "radius_channel_converse_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "Causalean.Mathlib.InformationTheory.CommonStatisticBernoulli",
+        "Causalean.Stat.Minimax.MaximalCoupling",
+        "Mathlib.InformationTheory.KullbackLeibler.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_RadiusChannelConverse.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "The theorem exports the lower bound together with a `RadialTargetRiskTransferCertificate` tied to the same `c_epsilon` and `bRad`. The certificate uses one common capped source, padding, embedding, and coupling for radial membership, realization-wise radius, total-variation data processing, exact sigma-scaled ATE separation, and the estimator-wise transferred radius lower bound; the displayed minimax inequality is therefore certified by the same realized channel witness."
+    },
+    "thm:radius-channel-converse": {
+      "lean_kind": "theorem",
+      "lean_name": "radius_channel_converse",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_RadiusChannelConverse.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "`def:sample-experiment` / `def:minimax-risk` are constructions the statement is stated over, and the transfer lemmas are used, not assumed. Restricted-range corollary of the all-d converse (cap inactive for `c_eps <= 1`). Its public second conjunct is a same-witness `RadialTargetRiskTransferCertificate` tied to `c_epsilon` and `bRad`, so the common capped source, padded channel, ambient radial membership, realization-wise radius, total-variation data processing, exact sigma-scaled ATE separation, and estimator-wise transferred radius risk all belong to the same realization that supplies the displayed lower bound."
+    },
+    "prop:zeng-class-inclusion-and-lower-transfer": {
+      "lean_kind": "theorem",
+      "lean_name": "zeng_class_inclusion_and_lower_transfer",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [
+        "CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Basic"
+      ],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_TwoSidedMinimaxBracket.lean",
+      "hyps": [
+        "def:model-class",
+        "def:unrestricted-class"
+      ],
+      "notes": "The provenance audit states the exact lower bound estimator-by-estimator on the restricted affine image `Phi(H_bin)` without the unrelated polynomial-handle cutoff, and pairs the radius lower term with a same-realization radial certificate containing capping, radius membership, total-variation data processing, target separation, and an estimator-wise risk-transfer witness on the channel image. The affine image is also proved strict, while the upper estimator remains uniform on the broader real-outcome class. The declaration lives with the two-sided theorem because it imports both the completed upper and converse chains."
+    },
+    "thm:robust-upper-construction-resolution-all-d": {
+      "lean_kind": "theorem",
+      "lean_name": "robust_upper_construction_resolution_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_RobustUpperConstruction.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Assembly: both component bounds from the two all-d upper lemmas, plus totality/measurability/`[-M,M]` membership of the two maps (all ratios indicator-totalized) and a common constant. Build-inline. Neither converse gate belongs here. The occupancy-reciprocal gate is absent from the frozen plan `hyps`, but is threaded as a transitive Lean Prop parameter because applying `lem:continuous-occupancy-collision-upper-all-d` requires its witness; this follows the persistent gate-threading directive without inserting the gate into plan `hyps`."
+    },
+    "thm:robust-upper-construction-resolution": {
+      "lean_kind": "theorem",
+      "lean_name": "robust_upper_construction_resolution",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_RobustUpperConstruction.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Restricted-range corollary of the all-d resolution theorem. No converse gate is threaded. The occupancy-reciprocal gate remains absent from plan `hyps` and appears only as the transitive Lean Prop parameter required by the conditional occupancy-upper input."
+    },
+    "thm:frontier-upper-all-d": {
+      "lean_kind": "theorem",
+      "lean_name": "frontier_upper_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_FrontierUpper.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Three exhaustive selector branches (`h <= min(1,u)`, `u < min(1,h)`, otherwise `u >= 1` and `h > 1` where the zero fallback has loss `tau(P)^2 <= M^2` by `lem:scale-sanity`), giving `n^{-1} + min(1,u,h)`. The headline risk theorem is unconditional on the published binary comparison; that citation is isolated in `thm:published-binary-collision-comparison`. Build-inline (pure case analysis over the two component bounds)."
+    },
+    "thm:frontier-upper": {
+      "lean_kind": "theorem",
+      "lean_name": "frontier_upper",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_FrontierUpper.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "Restricted-range corollary of `thm:frontier-upper-all-d`; the headline risk theorem is unconditional on the published binary comparison."
+    },
+    "thm:published-binary-collision-comparison": {
+      "lean_kind": "theorem",
+      "lean_name": "published_binary_collision_comparison",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_FrontierUpper.lean",
+      "hyps": [
+        "lem:zeng-binary-collision-upper"
+      ],
+      "delivery_role": "secondary",
+      "delivery_status": "deliver",
+      "delivery_reason": "Comparison-only citation packaging; no headline or headline-support theorem depends on it.",
+      "notes": "Secondary comparison-only theorem. It packages the cited Zeng binary collision guarantee with the independent algebraic PublishedCollisionComparison, whose pointwise and sequence clauses are restricted to n,d >= 1 and 0 <= sigma <= 2 as in the paper. No headline or headline-support theorem depends on this conditional citation."
+    },
+    "thm:two-sided-minimax-bracket-all-d": {
+      "lean_kind": "theorem",
+      "lean_name": "two_sided_minimax_bracket_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_TwoSidedMinimaxBracket.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "`def:minimax-risk` is the construction both inequalities are stated about, hence used and not assumed. Gate threading corrected: neither cited converse gate appears in this node's frozen `depends_on`; both reach the lower half through `thm:radius-channel-converse-all-d` (one-arm gate, its own premise) and, below that, `lem:scaled-binary-exact-lower-transfer-all-d` (exact-homogeneity gate, its own premise), so the delivered headline is still visibly conditional on both, via the premises of the lemmas it applies. Headline. Upper half: the selector is an admissible witness in the `ciInf` of `def:minimax-risk`, so `minimaxRisk <= worstCaseMSE(selector)`. Lower half: `thm:radius-channel-converse-all-d`. Both on the identical class. NO TAUTOLOGICAL CONJUNCTS: the comparison paragraph against the accepted-bank theorem `stat_discrete_ate_minimax_loggap.../thm:sharp-minimax-fixed-interior` and the `real outcomes are not novel` disclaimer are presentation-only narrative and are NOT encoded as theorem conjuncts; the honest formal content is exactly the two displayed inequalities. Build-inline; the `ciInf`-witness step follows `DiscreteAteMinimaxLoggap`'s `minimaxRisk` boundedness pattern."
+    },
+    "thm:two-sided-minimax-bracket": {
+      "lean_kind": "theorem",
+      "lean_name": "two_sided_minimax_bracket",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_TwoSidedMinimaxBracket.lean",
+      "hyps": [
+        "def:model-class"
+      ],
+      "notes": "`def:minimax-risk` is a construction, used not assumed. Restricted-range corollary of the all-d bracket (cap inactive for `c_eps <= 1`). Plan `hyps` stays unchanged; occupancy, one-arm, and exact-homogeneity appear only as transitive Lean Prop parameters, while binary-collision does not propagate."
+    },
+    "prop:endpoint-reductions-all-d": {
+      "lean_kind": "theorem",
+      "lean_name": "endpoint_reductions_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/RateAlgebra.lean",
+      "hyps": [],
+      "notes": "No hypotheses: the frozen `depends_on` is `lem:scale-sanity` + `thm:two-sided-minimax-bracket-all-d`, both LEMMAS/THEOREMS that are used, not assumed; the two classes enter only through `lem:scale-sanity`'s conclusion, so they are not hypotheses of this node. Pure rate algebra plus the class identity at `sigma = 2` from `lem:scale-sanity`; the only analytic input is `log(en)^2 <= 4n`. Search trace: `Grep 'RateAlgebra'` finds `STAT_DoseResponseMinimax_Research/Helpers/RateAlgebra.lean` and `STAT_TransportedLateStrengthFrontier_Research/Helpers/RateAlgebra.lean` -- same genre of `asymp`/order-comparison bookkeeping, different rates, so they are style references only; Mathlib supplies `Real.log_le_sub_one_of_pos` / `Real.log_le_sqrt`-type bounds (`lean_leansearch`). Small, build-inline."
+    },
+    "prop:endpoint-reductions": {
+      "lean_kind": "theorem",
+      "lean_name": "endpoint_reductions",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/RateAlgebra.lean",
+      "hyps": [],
+      "notes": "No hypotheses, exactly as in the all-d node: `depends_on` is `lem:scale-sanity`, `thm:two-sided-minimax-bracket`, `prop:endpoint-reductions-all-d`, all used rather than assumed. Restricted-range specialization of the all-d endpoint algebra (`min(1, d/n^2) = d/n^2` there)."
+    },
+    "thm:fixed-interior-tightness-and-shrinking-radius-gap-all-d": {
+      "lean_kind": "theorem",
+      "lean_name": "fixed_interior_tightness_and_shrinking_radius_gap_all_d",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_FixedInteriorTightness.lean",
+      "hyps": [],
+      "notes": "No plan hypotheses: the frozen `depends_on` contains only constructions and used theorems. The occupancy, one-arm, and exact-homogeneity gates are nevertheless threaded as transitive Lean Prop parameters along the actual reverse dependency closure of the upper and converse inputs, without adding them to plan `hyps`; the binary-collision comparison gate does not propagate here. Phase theorem: the triangular sandwich `(1/2)(b + min(u,s)) <= q <= b + min(u,s)`, the fixed-positive-radius equivalence, the three constant-free matching regimes, the equivalence `u <= b <-> d^2 <= nL^2 + dL^2`, the wedge localization, and the explicit divergence witness `d_n = n`, `sigma_n = L_n^{-1/2}` with ratio of order `L_n`. Elementary real algebra over the two proved benchmarks plus one asymptotic limit (`L_n^3 / n -> 0`). Build-inline; same genre as the `RateAlgebra`/`FrontierBracket` helpers in `STAT_DoseResponseMinimax_Research`."
+    },
+    "thm:fixed-interior-tightness-and-shrinking-radius-gap": {
+      "lean_kind": "theorem",
+      "lean_name": "fixed_interior_tightness_and_shrinking_radius_gap",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "T_FixedInteriorTightness.lean",
+      "hyps": [],
+      "notes": "No plan hypotheses, exactly as in the all-d phase theorem. The restricted theorem explicitly retains the quantified triangular-regime sandwich and product identity under `logEN n ^ 2 < d < n * logEN n`, specializes fixed-radius equivalence to the stated dimension range, and keeps the matching-elbow equivalence for every positive alphabet with no dimension cutoff, before the algebra, wedge, and divergence conclusions."
+    },
+    "oeq:shrinking-radius-frontier": {
+      "lean_kind": "def",
+      "lean_name": "ShrinkingRadiusFrontierQuestion",
+      "disposition": "define-local",
+      "reuse": null,
+      "modules": [],
+      "defer_tier": false,
+      "gate": false,
+      "target_file": "Helpers/RateAlgebra.lean",
+      "oeq_case": "B",
+      "notes": "OPEN question encoded as a dependency-free descriptive `String`, never proved and never consumed by a theorem. The payload preserves the definitions of `L`, `b`, and `u`, the residual wedge, both alternatives, the ATE-separation and total-variation desiderata, the ideal product benchmark, and the disclaimer that the existing hypothesis-independent channel yields only product separation and does not resolve the question. No logical moment predicate or matching degree is invented."
+    }
+  },
+  "citations": [
+    {
+      "id": "cite:zeng-balakrishnan-han-kennedy-2024",
+      "bibkey": "ZengBalakrishnanHanKennedy2024",
+      "title": "Causal Inference with High-dimensional Discrete Covariates",
+      "authors": "Zhenghao Zeng, Sivaraman Balakrishnan, Yanjun Han, and Edward H. Kennedy",
+      "year": 2024,
+      "locator": "Theorem 3 on page 11 and Appendix C.7",
+      "citation": "Zhenghao Zeng, Sivaraman Balakrishnan, Yanjun Han, and Edward H. Kennedy (2024; revised 2026). Causal Inference with High-dimensional Discrete Covariates. arXiv:2405.00118, version 3.",
+      "arxiv": "2405.00118v3",
+      "url": "https://arxiv.org/abs/2405.00118v3",
+      "nodes": [
+        "lem:zeng-binary-exact-homogeneity-lower",
+        "lem:zeng-binary-one-arm-lower",
+        "lem:zeng-usable-occupancy-reciprocal",
+        "lem:zeng-binary-collision-upper"
+      ],
+      "verbatim_statement": "\\begin{equation}\\label{eq:homogeneity}\n    \\sigma_n := \\max_{1 \\leq k \\leq d_n} |\\tau_k -\\psi|\n\\end{equation}\nas the maximal effect heterogeneity. Note that $\\sigma_n=0$ corresponds to the constant conditional average treatment effects and $\\sigma_n=2$ imposes no restriction on the model class. Our parameterization can interpolate between these two extremes as $\\sigma_n$ varies. \n\n\\subsection{Upper Bound}\n\nThe estimator we propose to take advantage of the effect homogeneity is \n\\begin{equation}\\label{eq:homo-est}\n    \\hat{\\tau} =  \\frac{\\sum_{k=1}^d \\hat{t}_k \\hat{\\tau}_k}{\\sum_{k=1}^d \\hat{t}_k}\n\\end{equation}\nwhere $\\hat{t}_k = \\hat{p}_kI( 0 < \\hat{\\pi}_k <1) $ is the indicator of whether both treated and untreated samples are observed in the $k$-th level and $\\hat{\\tau}_k = \\hat{\\mu}_{1k}-\\hat{\\mu}_{0k}$. The idea is to only estimate the CATE $\\tau_k$ within those categories with both treated and untreated units and take a weighted average over such categories.  We restrict our attention to these categories so that unbiased estimation of $(\\mu_{1k}, \\mu_{0k})$ (and hence $\\tau_k$) is possible. We again define $0/0=0$ if $\\sum_{k=1}^d \\hat{t}_k = 0$, i.e. there is no such category that contains both treated and untreated units. Clearly on the event $\\left\\{\\sum_{k=1}^d \\hat{t}_k = 0\\right\\}$, we cannot obtain any information on treatment effects from $\\hat{\\tau}$. Under appropriate scaling conditions, the probability of this ``adverse\" event converges to $0$ even in the case $n \\lesssim d$, as summarized in the following lemma.\n\n\\begin{lemma}\\label{lemma:nocollision}\nThe chance of having every category consist of either all treated or all untreated units (i.e., no collisions of any treated and untreated units at any category) is upper-bounded as \n\\[\n\\MP\\left(\\sum_{k=1}^d \\hat{t}_k = 0\\right) \\leq 2 \\exp\\left(-C (\\epsilon) \\frac{n^2}{n \\vee d} \\right)\n\\]\nwhere $C(\\epsilon)> 0$ is a constant depending on $\\epsilon$.\n\\end{lemma}\nThis lemma is not only critical to our analysis of $\\hat{\\tau}$ but also of independent interests in the literature of applied probability. It is closely related to the birthday problem \\citep{clevenson1991majorization} and can be viewed as the occupancy problem \\citep{wendl2003collision, nakata2014number} under a different sampling scheme. In the classic occupancy problem, the number of treated and untreated units are fixed first and then they are assigned to different categories of $X$ with probability vectors $\\bp^{\\text{T}}$ and $\\bp^{\\text{C}}$ separately. While in our setting people's covariates are first sampled, following which their treatment assignments are determined. Importantly, Lemma \\ref{lemma:nocollision} shows the probability that the denominator of $\\hat{\\tau}$ is $0$ vanishes even in the high-dimensional regime $n \\lesssim d$, as long as $d/n^2 \\rightarrow 0$. With Lemma \\ref{lemma:nocollision} we can derive the following theorem bounding the MSE of $\\hat{\\tau}$.\n\n\\begin{theorem}\\label{thm:homogeneity}\n    The bias and variance of $\\hat{\\tau}$ are bounded as \n    \\begin{equation*}\n        |\\ME[\\hat{\\tau}-\\psi]| \\leq \\sigma_n + 2 \\exp\\left( \n-C(\\epsilon)\\frac{n^2}{n \\vee d} \\right),\n    \\end{equation*}\n    \\[\n    \\operatorname{Var}(\\hat{\\tau}) \\lesssim  \\sigma_n^2  + \\frac{ d}{n^2} +\\frac{1}{n},\n    \\]\n    where $C(\\epsilon)$ and the constant behind ``$\\lesssim$\" depend on $\\epsilon$.\n    % If we further assume that there exists a constant $\\alpha \\in (0,1]$ such that $p_k \\geq \\alpha/d$ for all $k \\in [d]$, then in the regime $n\\leq \\frac{3\\epsilon(1-\\epsilon)d}{\\alpha}$, we have\n    % \\[\n    % \\ME \\left[ \\operatorname{Var}\\left(\\hat{\\tau} \\big| \\bX^n, \\bA^n\\right) \\right] \\leq \\frac{4d}{\\alpha^2 \\epsilon(1-\\epsilon)n^2} + \\frac{3}{2}\\exp \\left( - \\frac{\\alpha^2 \\epsilon(1-\\epsilon)n^2}{2d}\\right) + \\exp\\left(-C (\\epsilon) \\frac{n^2}{n \\vee d} \\right).\n    % \\]\n    As a consequence, the estimator $\\hat{\\tau}$ is consistent if $\\sigma_n \\rightarrow 0$ and $d/n^2 \\rightarrow 0$ in the regime $n \\lesssim d$. \n\\end{theorem}",
+      "attestation": {
+        "by": "main",
+        "note": "Transcribed by main from primary arXiv:2405.00118v3 source main.tex, estimator definition and Theorem 3; Appendix C.7 confirms the unscaled sigma_n^2 variance term. Source tar SHA-256 269eecfc45fa4067064ec029175c9cf38c69d895a8f0806854824e08f9245e88. [marker acknowledged: The citation macros in the included span occur only in the authors discussion of the general birthday/occupancy-problem context following their own Lemma 1; they do not credit Theorem 3 or its estimator statement to an upstream source.]",
+        "at": "2026-08-23T07:37:47.186Z"
+      }
+    }
+  ],
+  "file_plan": [
+    {
+      "file": "Helpers.lean",
+      "contents": "Thin barrel importing the shared helper dependency chain."
+    },
+    {
+      "file": "Basic.lean",
+      "contents": "S1 world (real-outcome discrete-confounder full-data and observed laws, product sampling law), the six assumption Props, `ModelClass` / `UnrestrictedClass`, `ateFunctional`, `sampleExperiment`, `minimaxRisk`, `scale_sanity`.",
+      "bypass_justified": "Causalean/PO/ supplies measure-theoretic PO systems over general outcome spaces and `CausalSmith.Stat.DiscreteAteMinimaxLoggap` supplies the finite-cell BINARY-outcome law; neither carries a finite-cell law with per-cell arm outcome MEASURES under a second-moment envelope, so the world is scaffolded locally over Mathlib + Causalean.Stat.Sample."
+    },
+    {
+      "file": "Helpers/RateAlgebra.lean",
+      "contents": "`r_{n,d,sigma}`, `b`, `u`, `s` abbreviations, `endpoint_reductions(_all_d)`, `ShrinkingRadiusFrontierQuestion`."
+    },
+    {
+      "file": "Helpers/CitedGates.lean",
+      "contents": "The four cited-gate Props: `ZengBinaryExactHomogeneityLower`, `ZengUsableOccupancyReciprocal`, `ZengBinaryCollisionUpper` (minted here) and the re-export of `CausalSmith.Stat.DiscreteAteMinimaxLoggap.ZengOneArmMinimaxLower` (reused)."
+    },
+    {
+      "file": "Helpers/Estimators.lean",
+      "contents": "`collisionEstimator`, the dependent `PolynomialHandle` with its definitionally raw `polyEstimator` companion, `totalSelector`, and their totality/measurability/range lemmas."
+    },
+    {
+      "file": "Helpers/FactorialCovariance.lean",
+      "contents": "`linear_mark_factorial_covariance` and its supporting matching-partition bookkeeping."
+    },
+    {
+      "file": "Helpers/PolynomialUpper.lean",
+      "contents": "Thin barrel importing the split polynomial-upper subsystem."
+    },
+    {
+      "file": "Helpers/PolynomialUpper/Bias.lean",
+      "contents": "Bias interface for the heavy/light signed one-mark program."
+    },
+    {
+      "file": "Helpers/PolynomialUpper/LightVariance.lean",
+      "contents": "Light-cell covariance/variance interface."
+    },
+    {
+      "file": "Helpers/PolynomialUpper/Heavy.lean",
+      "contents": "Heavy-cell and calibrated-fallback assembly interfaces."
+    },
+    {
+      "file": "Helpers/PolynomialUpper/Assembly.lean",
+      "contents": "`continuous_ratio_polynomial_upper_all_d` and its restricted corollary; split from the start because the projected Stage-3 proof exceeds 600 lines."
+    },
+    {
+      "file": "Helpers/OccupancyUpper.lean",
+      "contents": "`continuous_occupancy_collision_upper_all_d` and its restricted corollary."
+    },
+    {
+      "file": "Helpers/LowerTransfer.lean",
+      "contents": "`leastFavorableFamily`, `parametric_lower`, `scaled_binary_exact_lower_transfer(_all_d)`, `zeng_class_inclusion_and_lower_transfer`."
+    },
+    {
+      "file": "T_AteIdentification.lean",
+      "contents": "`ate_identification`."
+    },
+    {
+      "file": "T_RobustUpperConstruction.lean",
+      "contents": "`robust_upper_construction_resolution(_all_d)`."
+    },
+    {
+      "file": "T_FrontierUpper.lean",
+      "contents": "`frontier_upper(_all_d)`."
+    },
+    {
+      "file": "T_RadiusChannelConverse.lean",
+      "contents": "`radius_channel_converse(_all_d)`."
+    },
+    {
+      "file": "T_FixedInteriorTightness.lean",
+      "contents": "`fixed_interior_tightness_and_shrinking_radius_gap(_all_d)`."
+    },
+    {
+      "file": "T_TwoSidedMinimaxBracket.lean",
+      "contents": "`two_sided_minimax_bracket(_all_d)` -- the headline."
+    }
+  ],
+  "infrastructure_needed": [
+    {
+      "id": "lem:zeng-binary-exact-homogeneity-lower",
+      "kind": "autoid-lemma",
+      "description": "Cited substrate-gate: Zeng-Balakrishnan-Han-Kennedy Theorem 4 exact-homogeneity uniform-mass binary converse, assumed as a named Prop and threaded into the exact-homogeneity transfer.",
+      "effort": "large",
+      "gate": true,
+      "gate_class": "cited"
+    },
+    {
+      "id": "lem:zeng-binary-one-arm-lower",
+      "kind": "autoid-lemma",
+      "description": "Cited substrate-gate: Zeng et al. Theorem 2 binary one-arm converse; the interface already exists as `CausalSmith.Stat.DiscreteAteMinimaxLoggap.ZengOneArmMinimaxLower` and is reused, not rebuilt.",
+      "effort": "large",
+      "gate": true,
+      "gate_class": "cited"
+    },
+    {
+      "id": "lem:zeng-usable-occupancy-reciprocal",
+      "kind": "autoid-lemma",
+      "description": "Cited substrate-gate: Zeng et al. Lemma 1 no-collision probability bound and the Appendix C.7 reciprocal-occupancy expectation bound.",
+      "effort": "large",
+      "gate": true,
+      "gate_class": "cited"
+    },
+    {
+      "id": "lem:zeng-binary-collision-upper",
+      "kind": "autoid-lemma",
+      "description": "Cited substrate-gate: Zeng et al. Theorem 3 binary collision-estimator bias/variance guarantee, used only by the secondary published-comparison theorem.",
+      "effort": "large",
+      "gate": true,
+      "gate_class": "cited"
+    }
+  ],
+  "reuse_summary": {
+    "confirmed_reused_decls": [
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.DiscreteLaw",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ZengOneArmMinimaxLower"
+    ],
+    "confirmed_adaptation_references": [
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorial_ratio_bound",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorial_cross_ratio_bound",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.descFactorial_mul_identity",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.factorial_normalization",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.shiftedChebyshevExpansion",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.binomial_succ_reciprocal_sum",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.binomial_inverse_count_bound",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.setBernoulli_inverse_ncard_le",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.ate_lower_bound_transfer",
+      "CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmMinimaxRisk_le_minimaxRisk",
+      "Causalean.Stat.injectiveTupleCount",
+      "Causalean.Stat.tvDist",
+      "Causalean.Stat.overlap_ge_exp_neg_klBudget",
+      "Causalean.Stat.compressedCoordinateLaw_klDiv_le",
+      "Causalean.Mathlib.InformationTheory.commonStatisticBernoulliKernel",
+      "InformationTheory.klDiv"
+    ]
+  },
+  "decisions": [
+    "The brief carries no paper manifest / `state.theorems`, so the paper-scoped preamble is inert: no `local_id` is set on statement nodes and no `theorems` manifest is emitted.",
+    "The ambient world is scaffolded locally (bypass-justified) because the only in-tree finite-cell discrete-confounder world is binary-outcome, while the frozen core's defining feature is a real outcome under a conditional second-central-moment envelope; the binary world is reused as the SOURCE experiment S2 for every cited converse and every embedding.",
+    "All four `status: cited` statements are substrate-gates (`gate_class: cited`, fixed by D0 provenance), encoded as named Props and threaded into their direct consumers; consumers whose only Defer-tier difficulty is a gated dependency stay in scope and are proved conditionally.",
+    "No node is crux-Defer: the heaviest nodes (`lem:linear-mark-factorial-covariance`, `lem:continuous-ratio-polynomial-upper-all-d`) have a same-technique binary predecessor in `STAT_DiscreteAteMinimaxLoggap_Research/Helpers/` whose factorial-ratio, Chebyshev-coefficient, pilot-sandwich and binomial-reciprocal steps are already proved, so they are build-inline with an explicit adaptation gap recorded. Consequently no statement is dropped and there is no `deferred_conjecture`.",
+    "Gate threading preserves the frozen plan `hyps` exactly while adding transitive cited Prop parameters only in Lean along the actual reverse dependency closure. Exact-homogeneity and one-arm flow through their lower/converse consumers and downstream brackets/tightness; occupancy-reciprocal flows through occupancy-upper and upper consumers; binary-collision-upper is only the direct premise of the secondary published-binary-collision-comparison theorem and does not propagate to either frontier-upper theorem. No transitive gate is inserted into plan `hyps`.",
+    "The `thm:two-sided-minimax-bracket(-all-d)` comparison/scope paragraphs and the two route-specific negative calculations inside the OEQ's proof text are recorded as presentation-only narrative, not encoded as theorem conjuncts."
+  ],
+  "external_substrate_assumptions": []
+}

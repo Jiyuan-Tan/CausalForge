@@ -52,10 +52,14 @@ claims.
 |---|---|---|
 | P0 literature | `references.bib`, `references_raw.bib`, `p0_verification.json`, `related_work_brief.md` | verification drops: check raw vs kept; a high drop rate is a lookup defect, not hallucination (stage throws >40%) |
 | P1 plan | `outline.md`, `formal_layer.{json,tex}` (each block's `body` IS the freeze), `equivalence_cache.json` | outline/env validation throws with reasons; the statement audit refines frozen bodies toward Lean and halts on residual drift (see adjudication) |
-| P2 draft | `sections/*.tex`, `proofs/<T-id>.tex`, `front_matter.tex`, `paper.tex`, `proof_audit_cache.json` | lint throws on frozen-drift / objid-in-prose (fix the cached artifact, not paper.tex); the proof audit refines prose proofs toward Lean, halts on residual unfaithfulness |
+| P2 draft | `sections/*.tex`, `proofs/<T-id>.tex`, `front_matter.tex`, `paper.tex`, `proof_audit_cache.json` | lint throws on frozen-drift / objid-in-prose (fix the cached artifact, not paper.tex); `isolated-lemma` throws naming each lemma no proof cites (see below); the proof audit refines prose proofs toward Lean, halts on residual unfaithfulness |
 | P3 gates | `logs/reviews.jsonl`, `gate_cache.json` | prose-quality gates only (overclaim, citation support, rubric); auto-revise, max 2 rounds |
 | P4 emit | bundle files, `paper.pdf` | compile loop (codex fixes); `lean_snippets.json` badges; entry lint; undocumented Lean decls block the emit (docstrings are authored at F5 — add them to the sources, then `--from P4`) |
 | P5 review | `p5_review.json`, `p5_review.md` | codex referee on the final paper; handle per Mechanics item 4 |
+
+## Isolated-lemma halt — how to adjudicate
+
+P2 assembly and P4 hard-fail on any `lemmav` no proof body cites (`isolated-lemma: <label> (<obj_id>)`); theorems/propositions may stand alone, lemmas may not, and there is no exemption flag. The gate is a symptom detector — diagnose against the Lean before touching prose: find the lemma's decl in `presentation_crosswalk.json` and grep the run's Lean tree for consumers. (a) Consumers exist behind other paper items → the paper proof forgot the citation: add `\cref{obj:<lemma>}` in each consuming proof SOURCE (`proofs/<obj>.tex`) at the mathematically correct step — the sentence must read as mathematics, not just contain the cref. (b) Zero consumers anywhere → dead weight: remove the lemma (sections block, `outline.md` objs list, `formal_layer.json` block, its `proofs/*.tex` + cache key), and flag the bank node for removal so `--from P1` cannot resurrect it. (c) It is genuinely a standalone result → reclassify to a proposition (rare; justify from the mathematics, never to dodge the gate). Then re-enter `--from P2 --reassemble`.
 
 ## Equivalence adjudication — the orchestrator's MANUAL job
 

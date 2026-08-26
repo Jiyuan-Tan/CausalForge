@@ -99,6 +99,11 @@ hand-written declarations reusing one of these reserved leaves must pair this
 with a declaration-range check (see `entryFor?`). -/
 def isSyntheticCompanionLeaf (s : String) : Bool :=
   s == "congr_simp" || s == "eq_def" || s == "eq_unfold" ||
+  -- `deriving Fintype, DecidableEq` on a structure emits `<S>.proxyType` /
+  -- `<S>.proxyTypeEquiv` with no declaration range; indexing them tripped the
+  -- strict paper-index lint (line-zero / null-source) on a correct bundle
+  -- (2026-08-26).  Mirrored in `SYNTHETIC_COMPANION_RE` (paper_index_orphans.ts).
+  s == "proxyType" || s == "proxyTypeEquiv" ||
   (s.startsWith "eq_" && !(s.drop 3).isEmpty && (s.drop 3).all Char.isDigit)
 
 def shouldSkipDecl (env : Environment) (n : Name) : Bool :=
