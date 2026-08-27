@@ -299,6 +299,31 @@ describe("assumption table", () => {
 describe("tex2html (requires pandoc)", () => {
   // pandoc spawns are fast in plain node (~70ms) but can take ~10s each under
   // vitest worker threads on the cluster; budget accordingly.
+  it("replaces LaTeX-native picture environments with a placeholder instead of leaking coordinates", { timeout: 120_000 }, async () => {
+    // Observed live 2026-08-26: a phase-diagram figure authored with the packageless
+    // `picture` environment rendered on the web page as raw \put coordinate soup.
+    const tex = `\\begin{document}\\begin{figure}[t]\\centering
+\\begin{picture}(13.2,6.2)
+\\put(1.0,1.0){\\vector(1,0){10.7}}
+\\put(0.2,1.95){\\(b_{n,d}\\)}
+\\end{picture}
+\\caption{Schematic.}\\label{fig:x}\\end{figure}\\end{document}`;
+    const html = await tex2html(tex, [], new Set());
+    expect(html).toContain("Schematic diagram — see the PDF");
+    expect(html).not.toContain("13.2,6.2");
+    expect(html).not.toContain("10.7");
+    expect(html).toContain("Schematic."); // the caption survives
+    // The replacement runs AFTER comment stripping: a commented-out picture env must not
+    // swallow the live prose between its commented delimiters (audit, 2026-08-26).
+    const commented = `\\begin{document}
+% \\begin{picture}(3,3)
+This sentence is live prose between two commented delimiters.
+% \\end{picture}
+\\end{document}`;
+    const html2 = await tex2html(commented, [], new Set());
+    expect(html2).toContain("This sentence is live prose");
+    expect(html2).not.toContain("Schematic diagram — see the PDF");
+  });
   it("wraps anchored envs in data-objid divs and renders cites", { timeout: 120_000 }, async () => {
     const tex = `\\documentclass{article}\\begin{document}
 \\begin{abstract}We bound things \\citep{robins1994}.\\end{abstract}

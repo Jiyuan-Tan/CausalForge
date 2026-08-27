@@ -120,6 +120,16 @@ export async function tex2html(
   // comments out the closing delimiter and KaTeX warns or renders malformed math. Remove unescaped
   // comments before any block is stashed; escaped percentages (\\%) remain reader-visible.
   tex = stripLatexComments(tex);
+  // LaTeX-native `picture` environments compile in the PDF but have no HTML rendering:
+  // pandoc leaks their \put/\vector coordinate soup into the body text (observed live
+  // 2026-08-26 — the phase-diagram figure rendered as raw coordinate pairs). The
+  // surrounding figure's caption, label, and \cref links still render normally. AFTER
+  // comment stripping: a commented-out picture env spanning live prose would otherwise
+  // swallow that prose into the placeholder (audit, 2026-08-26).
+  tex = tex.replace(
+    /\\begin\{picture\}[\s\S]*?\\end\{picture\}/g,
+    "\\textit{[Schematic diagram — see the PDF version of this paper.]}",
+  );
   tex = renderCites(tex, bib);
 
   // A symbol `\leanref` whose display is inline math, nested inside a larger `\(…\)`/`\[…\]` display,

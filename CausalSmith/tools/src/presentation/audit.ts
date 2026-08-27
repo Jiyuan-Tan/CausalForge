@@ -791,6 +791,23 @@ export async function runProofAudit(
     // removed), so a baked-in "unfaithful + cite X" would replay after X stops being a lemma.
     if (cacheable && hit?.key === key) {
       if (detIssues.length === 0) return { verdict: hit.verdict, issues: hit.issues };
+      // A cached FAITHFUL on an unchanged proof is an affirmation — either codex's or, via the
+      // documented adjudication channel (flip `verdict`, keep `key`), the orchestrator's. The
+      // deterministic hint must not override it: it did, which made adjudication impossible and
+      // produced an unescapable halt — forced unfaithful → refiner rewrites → the rewrite drops
+      // an anchored `% lean:` step → discard guard throws it away → "input proof stands
+      // unaudited" → repeat forever (observed live 2026-08-26, thm:radius-channel-converse-all-d,
+      // ~2.5h of cycles). The hint keeps its teeth where it does the work — fresh audits and
+      // non-faithful cached verdicts — and P4's isolated-lemma gate remains the hard guard on
+      // lemmas no proof cites. Suppression is always announced, never silent.
+      if (hit.verdict === "faithful") {
+        // Neutral wording: the cached faithful may be codex's own prior verdict, not
+        // necessarily an operator adjudication (audit, 2026-08-26). Dedup: reruns hit
+        // this branch every pass and duplicate notes drown the state log.
+        const note = `P2: ${p.obj_id} — ${detIssues.length} missing-citation hint(s) suppressed by its cached faithful verdict; uncited lemmas remain guarded by the P4 isolated-lemma gate`;
+        if (!io.state.notes.includes(note)) io.state.notes.push(note);
+        return { verdict: hit.verdict, issues: hit.issues };
+      }
       return { verdict: "unfaithful", issues: [...(hit.issues ?? []), ...detIssues] };
     }
     const v = (await ask(

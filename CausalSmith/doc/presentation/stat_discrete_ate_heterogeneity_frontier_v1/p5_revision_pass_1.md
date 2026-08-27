@@ -1,28 +1,30 @@
 # Holistic revision pass 1
 
-- mode: reframe
-- source digest before: `77f71aa263f12cf1484776983e50cab4cc6e7a1c20c102f5a60fa384013fc4ab`
-- source digest after: `b880fbcb352437ecc0ee006c7d747a7b7160f452628e60f48e72f76db030c689`
+- mode: local
+- source digest before: `aa5e3618779c9e82f291002ec087620ccef271cffb9c778f6fff5a1198af7a80`
+- source digest after: `663d086e9289dafb5df8e8649c136c5221dfbab6a82b7e94484953ccd9998e2d`
 
 ## Reviser report
 
-Implemented the holistic rewrite pass in the authored sources.
+Implemented the P5 revision pass in the authored sources.
 
 Changed:
-- [front_matter.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/front_matter.tex): added first-use glosses for `\epsilon` and `M`, and reframed residual-wedge language as benchmark separation.
-- [sections/01_related_work.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/01_related_work.tex): replaced the “inherited/new” paragraph with a clearer source-vs-current-contribution distinction.
-- [sections/02_setup_and_assumptions.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/02_setup_and_assumptions.tex): added the requested benchmark notation table.
-- [sections/03_estimators_and_upper_bounds.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/03_estimators_and_upper_bounds.tex): added an upper-bound proof roadmap and explained the polynomial estimator aggregation/operation-count claim.
-- [sections/04_lower_bounds_and_binary_embeddings.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/04_lower_bounds_and_binary_embeddings.tex): added a lower-bound proof roadmap.
-- [sections/05_main_bracket_and_matched_regimes.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/05_main_bracket_and_matched_regimes.tex): reframed the residual wedge row as localized displayed-benchmark separation.
-- [sections/06_discussion_extensions_and_limitations.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/06_discussion_extensions_and_limitations.tex): renamed the printed section to `Discussion and limitations`.
-- [sections/07_appendix_a_published_binary_ingredients.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/07_appendix_a_published_binary_ingredients.tex) and [sections/10_appendix_d_verification_note.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/10_appendix_d_verification_note.tex): updated verification-boundary prose to match the current contract.
-- [proofs/lem:capped-exact-transport-package.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/proofs/lem:capped-exact-transport-package.tex) and [proofs/lem:zeng-usable-occupancy-reciprocal.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/proofs/lem:zeng-usable-occupancy-reciprocal.tex): translated implementation-ish proof wording into standard minimax/probability language.
+- [front_matter.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/front_matter.tex)
+- [sections/01_related_work.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/01_related_work.tex)
+- [sections/02_setup_and_assumptions.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/02_setup_and_assumptions.tex)
+- [sections/03_estimators_and_upper_bounds.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/03_estimators_and_upper_bounds.tex)
+- [sections/05_main_bracket_and_matched_regimes.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/05_main_bracket_and_matched_regimes.tex)
+- [sections/09_appendix_c_proofs_for_lower_bounds_and_regime_algebra.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/09_appendix_c_proofs_for_lower_bounds_and_regime_algebra.tex)
+- [sections/10_appendix_d_verification_note.tex](<repo-root>/CausalSmith/doc/presentation/stat_discrete_ate_heterogeneity_frontier_v1/sections/10_appendix_d_verification_note.tex)
 
-Verification:
-- Ran a local authored-source lint over 43 `.tex` files: clean for legacy refs, manual kind+`\cref`, and stale routed phrases.
-- I did not run official `causalsmith present ... --from P2 --reassemble --stop-after P3` because a separate active presentation run is still live in this same bundle, with a live Codex child. Running a second reassembly would violate the project’s no-overlap guidance.
+Addressed the routed rewrite findings: updated the verification commit, separated `\ell^{\mathrm{cap}}` from `\ell^{\mathrm{tri}}`, repaired the trust-boundary prose in authored text, narrowed the estimator calibration claim, renamed/scoped the residual-wedge table row, split the Zeng lower-bound comparison rows, clarified total computation as aggregation plus post-aggregation work, and introduced the benchmark-naming convention.
 
-Residual:
-- The stale author footnote exists only in derived `paper.tex`; per instructions I did not edit derived files. It needs regeneration or an upstream/source change outside the allowed authored-source list.
-- The outside-scope binary class restatement finding was not attempted, as requested.
+Verification performed:
+- `lake -d ../../.. build` succeeded.
+- `git diff --check` passed for changed files.
+- Authored-source scans are clean for stale commit text, old overclaim/table wording, forbidden `\ref`/`\eqref`/`\autoref`, and the prohibited negative contribution-framing patterns.
+- Paper-index check reported this bundle clean, though the repo-wide command still fails on unrelated bundles.
+
+Residuals:
+- The out-of-scope source-target notation finding for `thm:radius-channel-converse-all-d` was not attempted, per prompt.
+- A generated author footnote/trust-boundary phrase remains in derived `paper.tex` via an upstream pipeline template outside the editable list. I did not edit the derived file or pipeline source. The official P2/P4 reassembly command is currently blocked by an existing active run lock at PID `1770863`.

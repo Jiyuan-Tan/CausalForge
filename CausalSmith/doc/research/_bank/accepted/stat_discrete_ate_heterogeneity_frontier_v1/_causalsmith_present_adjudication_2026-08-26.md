@@ -166,3 +166,50 @@ caveats. One overflow warning (11 displays run off the page). The stage then har
 strict paper-index lint on two Lean-`deriving`-synthesized declarations
 (`BinaryFullObs.proxyType`, `BinaryFullObs.proxyTypeEquiv`) that carry no source position —
 reported to the main session as a pipeline gap in `SYNTHETIC_COMPANION_RE`; not a content defect.
+
+## Reopened revision cycle — baseline reconcile, edits, and the lost-bytes accounting
+
+**Baseline decision: ASSEMBLED the six drifted sources, did not revert.** The pre-existing
+sources-ahead hazard (`front_matter.tex` + `sections/{01,02,03,06,10}` carrying an aborted reviser
+pass) could not be reverted cleanly — the emitted paper is the only record of the pre-drift text and
+reversing the assembly is not reliable. The drifted edits were also on-target for the recurring
+findings (a far more precise verification note, a three-layer competitor breakdown). So they were
+assembled, after repairing the one structural violation that caused the original abort: the reviser
+had MOVED the frozen env `thm:published-binary-collision-comparison` out of Discussion into Related
+work, where its notation is not yet defined. It was moved back to the section the outline assigns
+it, with Related work keeping only `\cref`s.
+
+**Fixed this cycle** (presentation only, content frozen): abstract now states the known-radius
+selector and that ε, M, σ are fixed indices; theorem map at the end of the introduction; a "why
+these assumptions" paragraph; a note fixing the meaning of "frontier" (it names the selector
+benchmark, not a matched rate); a side-by-side ZBHK comparison table; the 401(k) applied lineage;
+a closed-form aggregate display for `U_{k,a,j}`; a practitioner-inputs paragraph; an inlined
+two-point derivation closing a genuine uncited-step gap in `prop:zeng-class-inclusion-…`; and the
+Binary-collision-comparison subsection promoted out of Discussion into the main bracket section
+(a finding repeated in three separate rounds).
+
+**Dismissed with reason:** (i) the `u_{n,d}` vs `ν_{n,d}` inconsistency — `\nu_{n,d}` occurs zero
+times in the sources, the frozen layer and `paper.tex`; raised twice, baseless both times.
+(ii) the request for a schematic phase diagram — figures have no faithfulness audit pipeline-wide
+and `picture` envs render as a web placeholder; the regime table carries the same information.
+(iii) the appendix-length finding — shipping every proof inline is what a verified-paper bundle is.
+
+**Self-inflicted, then corrected:** three paragraphs added early in the cycle (a
+"what is and is not delivered" framing block, a "determines the minimax rate everywhere except"
+sentence, and a second benchmark-notation block duplicating an existing table) were flagged by the
+next referee round as a framing-contract violation, an overclaim and redundancy respectively, and
+the pipeline's own revision pass removed all three. Score moved 6.8 → 6.5 across that round.
+
+**Round_007 bytes: lost, and why it matters.** Round_007 scored 8.0 (the only `minor_revision` in
+ten reviews) at 20:11. The pipeline's own P5 holistic revision pass then rewrote every authored
+source at 20:25–20:26 (`p5_revision_pass_1.md` mtime 20:25) and reassembled `paper.tex`, before any
+second read of those bytes. No per-round source snapshot exists in the bundle, so the 8.0 content is
+unrecoverable. The subsequent reviews (7.0, 6.6) scored the REVISED bytes. Two reads of
+byte-identical content differing by 0.4 is the usable result: the 8.0 is an outlier, and the honest
+level is ~6.8 ± 0.4.
+
+**Operational note for the pipeline (not a code change made here):** the orchestrator is told to
+snapshot sources before any P5 revision pass, but that pass fires *inside* an already-detached run,
+so there is no hook between launch and the rewrite. A per-round source snapshot, or a measurement
+mode that suppresses auto-revision, would make a "re-score these exact bytes" instruction
+executable. It currently is not.

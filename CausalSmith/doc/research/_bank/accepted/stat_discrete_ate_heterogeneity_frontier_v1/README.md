@@ -28,8 +28,8 @@ seeds_burned: []
 proof_attempt_summary: |
   The run proved source-clean all-alphabet upper and lower minimax bounds, including exact and unrestricted endpoints, every fixed positive radius, saturation, and both parametric-dominance elbows. It formalized the continuous-outcome heavy/light and collision estimators together with scaled-binary lower transfers. The shrinking-radius wedge remains open because the available radius channel gives a product-type separation rather than the minimum-type separation needed to close the bracket.
 banked_on: "2026-08-26"
-paper_score: 6.5
-paper_score_rationale: "The verified mathematical contribution is substantial, but the manuscript needs significant prose, scope, and presentation repair before it reads as a publishable econometrics submission."
+paper_score: 6.6
+paper_score_rationale: "Referee score of the kept bundle, as stamped by the pipeline from the last completed P5 review. Read it with the spread: the referee scored the SAME kept bytes twice, giving 7.0 (round_008) and 6.6 (round_009, the value stamped here), so single-read precision is about +/-0.4 at this level and the honest level is ~6.8. An 8.0 (the only minor_revision in ten reviews) was recorded at round_007 against a source state the pipeline's own P5 revision pass overwrote before it could be re-scored; those bytes are unrecoverable and the 8.0 is treated as an outlier, not as a kept version. Full trajectory: 6.5, 7.0, 6.5, 6.7, 6.8, 6.8, 6.5, 8.0, 7.0, 6.6. Standing substance of the review across rounds: the verified contribution is substantial and faithfully scoped, but the appendices read as machine output rather than an econometrics submission, which is inherent to shipping every proof inline."
 ---
 
 # stat_discrete_ate_heterogeneity_frontier / v1 — Accepted

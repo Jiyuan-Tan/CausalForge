@@ -1,29 +1,380 @@
 \begin{proof}[Proof of \cref{obj:lem:zeng-binary-one-arm-lower}]
-Fix \(\epsilon\in(0,1/2)\).  The proof uses the fixed-sample binary one-arm interface in which \(X\in\{1,\ldots,d\}\), \(A,Y\in\{0,1\}\), the control-arm response mean is zero, supported propensities lie in \([\epsilon,1-\epsilon]\), and the target is
+Fix an overlap constant \(\epsilon\in(0,1/2)\).  For sample size \(n\) and alphabet size \(d\), write \(\mathcal R_{n,d}(\epsilon)\) for the one-arm minimax risk above, namely
 \[
-\psi(P)=\sum_{k=1}^d p_k E_P[Y\mid A=1,X=k].
+\mathcal R_{n,d}(\epsilon)
+=
+\inf_{\widehat\psi}
+\sup_P
+E_{P^{\otimes n}}\left[
+\left\{\widehat\psi-
+\sum_{k=1}^d p_k E_P[Y\mid A=1,X=k]\right\}^2
+\right],
 \]
-The corresponding minimax risk is the one-arm risk used in the verified source layer. % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmMinimaxRisk
+where the infimum is over measurable fixed-sample estimators and the supremum ranges over the binary control-zero laws described above, with propensities in \([\epsilon,1-\epsilon]\).  Also write
+\[
+r_{n,d}:=\frac1n+\frac{d^2}{n^2(\log n)^2}.
+\]
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmMinimaxRisk
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.minimaxRate
 
-Let
+Set
 \[
-\kappa_\epsilon:=\min\left\{1,\frac{1-2\epsilon}{2\epsilon}\right\}.
+\kappa:=\min\left\{1,\frac{1-2\epsilon}{2\epsilon}\right\}.
 \]
-The checked overlap algebra gives \(0<\kappa_\epsilon\le1\) and keeps the shifted propensities inside the upper overlap endpoint:
+The overlap algebra gives
 \[
-\epsilon(1+\kappa_\epsilon)\le1-\epsilon .
+0<\kappa\le1,
+\qquad
+\epsilon(1+\kappa)\le 1-\epsilon .
 \]
 % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmOverlapShiftRatio_pos
 % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmOverlapShiftRatio_le_one
 % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.epsilon_mul_one_add_overlapShiftRatio_le
 
-The published large-alphabet construction, represented in the checked source layer, supplies constants and a sample cutoff depending only on \(\epsilon\).  On its high-dimensional range it yields the one-arm lower benchmark \(n^{-1}+d^2/\{n^2(\log n)^2\}\) up to an overlap-dependent constant. % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.zengOneArmMinimaxLower
+Let
+\[
+A_\epsilon:=\frac{\kappa^{14}}{4\cdot25600\,(153600000000000)^2},
+\qquad
+K_\epsilon:=\frac{10^{50}}{\kappa^{14}}.
+\]
+Both constants are positive.  Choose \(N_{0,\epsilon}\) so large that, for every \(n\ge N_{0,\epsilon}\),
+\[
+n\ge 400,
+\qquad
+(\log n)^4\le \frac{\kappa^{14}}{10^{50}}\,n .
+\]
+This is the elementary eventual domination of \((\log n)^4\) by \(n\).
 
-The verification artifact realizes this input through the shifted finite-grid prior and its calibrated signal calculation.  The proof-audit details of the grid, inverse-size tilt, good-event conditioning, product mixture comparison, and total-variation bound are kept in the Lean declarations named below; the paper uses their consequence as the binary source lower bound. % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmHighDimensional_shiftedPrior
+We first prove the high-dimensional branch.  Suppose that \(q\ge1\), \(n\ge N_{0,\epsilon}\), and
+\[
+K_\epsilon(\log n)^4\le q\le n\log n .
+\]
+Because \(K_\epsilon\ge1\) and \(n\ge400\), this implies \(q\ge2\).  Put \(m=q-1\), and define
+\[
+D_n:=\left\lceil \frac{8\log n}{\log 2}\right\rceil,
+\qquad
+s_n:=\frac{D_n}{128n},
+\qquad
+\rho_{\kappa,n}:=\frac{\kappa^5}{10^{10}D_n^2},
+\qquad
+\gamma_\kappa:=\frac{1}{10}\frac{2\kappa^2}{(1+\kappa)(2+\kappa)(3+\kappa)}.
+\]
+Thus \(D_n\ge1\), \(D_n\le20\log n\), and
+\[
+D_n\ge \frac{8\log n}{\log 2},
+\qquad
+\rho_{\kappa,n}>0,
+\qquad
+\frac{\kappa^2}{120}\le\gamma_\kappa\le1.
+\]
+Set
+\[
+\Delta:=m\,s_n\rho_{\kappa,n}\gamma_\kappa .
+\]
+The scalar hypotheses needed for the shifted construction are as follows:
+\[
+m s_n\rho_{\kappa,n}\le 1,
+\qquad
+2m/n^4\le 1/8,
+\qquad
+2\frac{m s_n^2}{(\Delta/16)^2}\le 1/32,
+\qquad
+(m s_n)^2 n^{-2}\le \Delta^2/32 .
+\]
+The first bound follows from \(m\le q\le n\log n\), \(\kappa^5\le1\), and \(D_n\ge8\log n/\log2\).  The second follows from \(m\le n\log n\le n^2\) and \(n>0\), with \(n\ge400\) supplying the remaining numerical slack.  For the third, \(m\ge q/2\ge K_\epsilon(\log n)^4/2\),
+\[
+\rho_{\kappa,n}\gamma_\kappa
+\ge
+\frac{\kappa^7}{1200000000000\,D_n^2},
+\qquad
+D_n^4\le 20^4(\log n)^4,
+\]
+give
+\[
+m\rho_{\kappa,n}^2\gamma_\kappa^2
+\ge 2\cdot 16^2\cdot 32,
+\]
+and therefore, using \(\Delta=m s_n\rho_{\kappa,n}\gamma_\kappa\),
+\[
+2\frac{m s_n^2}{(\Delta/16)^2}
+=
+\frac{2\cdot16^2}{m\rho_{\kappa,n}^2\gamma_\kappa^2}
+\le \frac1{32}.
+\]
+For the fourth, the same lower bound on \(\rho_{\kappa,n}\gamma_\kappa\), the upper bound on \(D_n\), and \((\log n)^4\le \kappa^{14}n/10^{50}\) give
+\[
+32\le n^2\rho_{\kappa,n}^2\gamma_\kappa^2,
+\]
+which is equivalent to \((m s_n)^2 n^{-2}\le\Delta^2/32\).  These real inequalities are exactly the nonnegative extended-real budget used for the two discarded good-event complements.
+
+We now construct the finite mixtures used in this branch.  Let \(a_{\kappa,n}:=\kappa^4/(10^{10}D_n^2)\), so \(\rho_{\kappa,n}=\kappa a_{\kappa,n}\).  The shifted grid consists of the three points \(a_{\kappa,n},2a_{\kappa,n},3a_{\kappa,n}\) and the \(2D_n+1\) affine Chebyshev mesh points on \([a_{\kappa,n},1]\).  Write these positive grid nodes as \(x_u\).  For a grid symbol \(u\), augmented by a null symbol \(\varnothing\), define
+\[
+p(u)=
+\begin{cases}
+0,&u=\varnothing,\\
+s_n x_u,&u\ne\varnothing,
+\end{cases}
+\qquad
+\pi(u)=
+\begin{cases}
+\epsilon,&u=\varnothing,\\
+\epsilon\left(1+\rho_{\kappa,n}/x_u\right),&u\ne\varnothing,
+\end{cases}
+\]
+and
+\[
+\mu(u)=
+\begin{cases}
+1,&u=\varnothing,\\
+x_u/(x_u+\rho_{\kappa,n}),&u\ne\varnothing,
+\end{cases}
+\qquad
+f(u):=p(u)\mu(u).
+\]
+The preceding overlap choice gives \(\pi(u)\in[\epsilon,1-\epsilon]\), and the grid construction gives \(0\le\mu(u)\le1\).
+
+Choose signed weights \(w\) on the positive grid with total mass zero and positive Jordan mass.  Let \(\omega_0\) and \(\omega_1\) be the normalized positive and negative Jordan parts of \(w\).  They have the same moments against the shifted reciprocal-monomial basis, and their shifted target expectations satisfy
+\[
+\gamma_\kappa
+\le
+\sum_u \omega_0(u)\frac{x_u}{x_u+\rho_{\kappa,n}}
+-
+\sum_u \omega_1(u)\frac{x_u}{x_u+\rho_{\kappa,n}} .
+\]
+Now inverse-tilt these two laws by the factor \(\rho_{\kappa,n}/x_u\) and put the remaining mass at \(\varnothing\):
+\[
+\nu_t(\{u\})=\omega_t(u)\frac{\rho_{\kappa,n}}{x_u},
+\qquad
+\nu_t(\{\varnothing\})=1-\sum_u\omega_t(u)\frac{\rho_{\kappa,n}}{x_u},
+\qquad  t=0,1 .
+\]
+Because \(\rho_{\kappa,n}\le x_u\) on the shifted grid, these are probability laws.  For every \(i+j+k\le D_n\), the test
+\[
+x\longmapsto x^{i+k}(x+\rho_{\kappa,n})^j/x
+\]
+is represented by that basis with degree at most \(D_n\).  The Jordan moment identities therefore transport through the inverse tilt to
+\[
+\int p(u)^i\{p(u)\pi(u)\}^j\{p(u)\pi(u)\mu(u)\}^k\,d\nu_0(u)
+=
+\int p(u)^i\{p(u)\pi(u)\}^j\{p(u)\pi(u)\mu(u)\}^k\,d\nu_1(u).
+\]
+The same inverse-tilt identities give common active mass and separated treated-functional atoms,
+\[
+\int p\,d\nu_0=\int p\,d\nu_1=s_n\rho_{\kappa,n},
+\qquad
+s_n\rho_{\kappa,n}\gamma_\kappa
+\le
+\int f\,d\nu_0-
+\int f\,d\nu_1 .
+\]
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.exists_oneArmShiftedInverseTiltPriors
+
+Let \(z=(z_1,\ldots,z_m)\) have product law \(\nu_t^{\otimes m}\) under side \(t\in\{0,1\}\), and set
+\[
+\theta_t:=m\int f\,d\nu_t,
+\qquad
+\alpha:=1-m s_n\rho_{\kappa,n},
+\qquad
+\delta:=\Delta/16 .
+\]
+By the first scalar budget, \(\alpha\ge0\).  Also \(\Delta>0\) by positivity of its factors, and the active-mass cap \(m s_n\rho_{\kappa,n}\le1\), together with \(\gamma_\kappa\le1\), gives \(\Delta\le1\).  Hence
+\[
+0<\delta<1,
+\qquad
+\delta\le \frac12 .
+\]
+Define the relaxed good event
+\[
+G_t:=\left\{z:
+0<\alpha+\sum_{i=1}^m p(z_i),\quad
+\left|\alpha+\sum_{i=1}^m p(z_i)-1\right|\le\delta,
+\quad
+\left|\sum_{i=1}^m f(z_i)-\theta_t\right|\le\delta
+\right\}.
+\]
+The two-statistic Chebyshev envelope, applied with the displayed \(0<\delta<1\), and the displayed budget give
+\[
+\nu_t^{\otimes m}(G_t^c)
+\le
+2\frac{m s_n^2}{\delta^2}
+\le \frac1{32},
+\qquad t=0,1,
+\]
+so each \(G_t\) has positive probability.
+
+For \(z\in G_t\), form a binary control-zero law \(P_{t,z}\) on \(q=m+1\) cells by assigning unnormalized cell masses \(\alpha,p(z_1),\ldots,p(z_m)\), anchor propensity \(\epsilon\), active propensities \(\pi(z_i)\), anchor treated mean zero, active treated means \(\mu(z_i)\), and then normalizing by \(S_z:=\alpha+\sum_i p(z_i)\).  The event \(G_t\) gives \(S_z>0\), the preceding bounds give the required overlap and binary means, and all control-arm means are zero.  Moreover
+\[
+\left|\psi(P_{t,z})-\theta_t\right|
+\le
+\left|S_z-1\right|+
+\left|\sum_{i=1}^m f(z_i)-\theta_t\right|
+\le 2\delta
+=\Delta/8 .
+\]
+The separation display for \(\nu_0,\nu_1\) gives
+\[
+\Delta\le |\theta_0-\theta_1|.
+\]
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmRelaxedLawOfGoodAtoms_target
+
+For each realization \(z\), let \(K_z\) be the product law of independent triple-counts over the anchor and active cells with Poisson rates
+\[
+(0,4n\alpha\epsilon,4n\alpha(1-\epsilon))
+\]
+on the anchor cell and
+\[
+(4n p(z_i)\pi(z_i)\mu(z_i),\ 4n p(z_i)\pi(z_i)(1-\mu(z_i)),\ 4n p(z_i)(1-\pi(z_i)))
+\]
+on active cell \(i\).  The logarithmic degree supplies, for every grid atom,
+\[
+4\{4n p(u)\}+2\log(n^2)
+\le (D_n+1)\log 2 .
+\]
+Together with the raw moment identities through degree \(D_n\), this Taylor budget bounds the one-coordinate mixed triple-Poisson total variation by \(2/n^4\).  Tensorization over the \(m\) active coordinates, with the common anchor law factored out, gives the unconditioned predictive bound
+\[
+\operatorname{TV}\left(
+\int K_z\,d\nu_0^{\otimes m}(z),
+\int K_z\,d\nu_1^{\otimes m}(z)
+\right)
+\le 2m/n^4\le 1/8 .
+\]
+After restricting \(\nu_t^{\otimes m}\) to \(G_t\) and renormalizing, the loss in total variation is bounded by the two discarded probabilities.  Hence the conditioned predictive mixtures satisfy
+\[
+\operatorname{TV}\left(
+\int_{G_0} K_z\,d\nu_0^{\otimes m}(z\mid G_0),
+\int_{G_1} K_z\,d\nu_1^{\otimes m}(z\mid G_1)
+\right)
+\le \frac14 .
+\]
+For every \(z\in G_t\), the Poissonized histogram generated from \(P_{t,z}\) at total intensity \(4nS_z\), after recording the three arm-outcome labels in each cell, maps to exactly the kernel \(K_z\).  Also \(S_z\ge1/2\), because \(\delta\le1/2\).  Therefore the total Poisson count \(N_z\sim\operatorname{Pois}(4nS_z)\) satisfies \(4nS_z\ge2n\), and the Poisson lower-tail bound gives \(\Pr\{N_z<n\}\le n^{-2}\).  Since \(|\theta_t|\le m s_n\), the last scalar budget yields
+\[
+\theta_t^2\Pr\{N_z<n\}
+\le
+(m s_n)^2 n^{-2}
+\le
+\Delta^2/32,
+\qquad (z\in G_t,
+\ t\in\{0,1\}).
+\]
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmHighDimensional_shiftedPrior
+
+We use the following finite-mixture testing reduction.  If two finite mixtures have side centers \(\theta_0,\theta_1\), all component targets lie within radius \(r\) of their side center, \(2s\le |\theta_0-\theta_1|\), their predictive total variation is at most \(c\), and the Poisson truncation penalty on each side is bounded by \(\eta\), then
+\[
+\frac{s^2\{(1-c)/2\}-2r^2-\eta}{2}
+\le
+\mathcal R_{n,q}(\epsilon).
+\]
+Apply this with
+\[
+s=\Delta/2,
+\qquad
+r=\Delta/8,
+\qquad
+c=1/4,
+\qquad
+\eta=\Delta^2/32 .
+\]
+The numerical identity
+\[
+\frac{(\Delta/2)^2\{(1-1/4)/2\}-2(\Delta/8)^2-\Delta^2/32}{2}
+=\frac{\Delta^2}{64}
+\]
+gives
+\[
+\frac{\Delta^2}{64}
+\le
+\mathcal R_{n,q}(\epsilon).
+\]
+The calibrated signal inequality
+\[
+\frac{\kappa^7}{153600000000000\, nD_n}
+\le s_n\rho_{\kappa,n}\gamma_\kappa
+\]
+and \(D_n\le20\log n\) imply
+\[
+\frac{\kappa^{14}}{25600(153600000000000)^2}
+\frac{m^2}{n^2(\log n)^2}
+\le \mathcal R_{n,q}(\epsilon).
+\]
+Since \(m\ge q/2\), this proves
+\[
+A_\epsilon\frac{q^2}{n^2(\log n)^2}
+\le \mathcal R_{n,q}(\epsilon)
+\]
+throughout the range \(K_\epsilon(\log n)^4\le q\le n\log n\).
 % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmCalibratedSignal_lower
 % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArmHighDimensional_rate_of_calibrated_signal
 
-For remaining finite-sample or small-alphabet cases, the checked one-arm parametric lower bound supplies the \(1/n\) contribution.  Combining this fallback with the high-dimensional range and reducing constants gives constants \(a_\epsilon,b_\epsilon>0\) and \(N_\epsilon\) such that, whenever \(n\ge N_\epsilon\), \(d\ge1\), and \(d\le b_\epsilon n\log n\), the displayed one-arm minimax lower bound holds. % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArm_parametric_lower
+The parametric component supplies the fixed-sample term.  Fix \(n\ge1\) and \(d\ge1\), and put
+\[
+\eta_n:=\frac{2/5}{\sqrt n}.
+\]
+Since \(\eta_n^2=4/(25n)\) and \(\eta_n\le2/5\), the two endpoint binary laws with propensity \(1/2\), treated means \(1/2\) and \(1/2+\eta_n\), and baseline control mean \(1/2\) are valid.  Deterministically replacing every control-arm outcome by zero preserves the treated functional and contracts total variation; it yields two control-zero laws \(Q_0,Q_1\) with overlap in \([\epsilon,1-\epsilon]\), treated functionals
+\[
+\psi(Q_0)=\frac12,
+\qquad
+\psi(Q_1)=\frac12+\eta_n,
+\]
+and product total variation at most \(1/2\).  The total-variation bound is calibrated by
+\[
+n\frac{(1/2)\eta_n^2}{(1/2)(1-1/2)}
+=\frac{8}{25}
+\le \log 2 .
+\]
+Applying the two-point testing inequality with half-separation \(\eta_n/2\) and total variation \(1/2\) gives
+\[
+\frac{1}{100n}
+=
+\left(\frac{\eta_n}{2}\right)^2\frac{1-1/2}{2}
+\le \mathcal R_{n,d}(\epsilon).
+\]
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.oneArm_parametric_lower
+
+Now choose \(N_\epsilon\) so large that \(n\ge N_\epsilon\) implies \(n\ge N_{0,\epsilon}\), \(n\ge3\), and
+\[
+(\log n)^6\le \frac{n}{K_\epsilon^2+1}.
+\]
+Set
+\[
+a_\epsilon:=\min\{1/200,A_\epsilon/2\},
+\qquad
+b_\epsilon:=1 .
+\]
+Then \(a_\epsilon,b_\epsilon>0\).  Fix \(n\ge N_\epsilon\), \(d\ge1\), and \(d\le b_\epsilon n\log n=n\log n\).  If
+\[
+K_\epsilon(\log n)^4\le d,
+\]
+the high-dimensional bound and the parametric bound give
+\[
+a_\epsilon\frac{d^2}{n^2(\log n)^2}
+\le \frac12\mathcal R_{n,d}(\epsilon),
+\qquad
+\frac{a_\epsilon}{n}
+\le \frac12\mathcal R_{n,d}(\epsilon),
+\]
+and hence \(a_\epsilon r_{n,d}\le\mathcal R_{n,d}(\epsilon)\).  In the complementary branch, \(d<K_\epsilon(\log n)^4\).  The choice of \(N_\epsilon\) gives
+\[
+K_\epsilon^2(\log n)^6\le n,
+\]
+so
+\[
+\frac{d^2}{n^2(\log n)^2}
+\le \frac1n,
+\qquad
+r_{n,d}\le \frac2n .
+\]
+Since \(a_\epsilon\le1/200\), the parametric lower bound yields
+\[
+a_\epsilon r_{n,d}
+\le \frac{1}{100n}
+\le \mathcal R_{n,d}(\epsilon).
+\]
+Thus for all \(n\ge N_\epsilon\), \(d\ge1\), and \(d\le b_\epsilon n\log n\),
+\[
+a_\epsilon\left\{\frac1n+\frac{d^2}{n^2(\log n)^2}\right\}
+\le \mathcal R_{n,d}(\epsilon),
+\]
+which is the asserted one-arm lower bound.
 % lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.zengOneArmMinimaxLower_of_highDimensional
-% lean: CausalSmith.Stat.DiscreteAteHeterogeneityFrontier.zengOneArmMinimaxLower
+% lean: CausalSmith.Stat.DiscreteAteMinimaxLoggap.zengOneArmMinimaxLower
 \end{proof}

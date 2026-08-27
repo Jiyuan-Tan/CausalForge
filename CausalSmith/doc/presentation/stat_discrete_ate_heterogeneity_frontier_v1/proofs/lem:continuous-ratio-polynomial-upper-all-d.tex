@@ -1,34 +1,125 @@
 \begin{proof}[Proof of \cref{obj:lem:continuous-ratio-polynomial-upper-all-d}]
-Fix \(0<\epsilon<1/2\).  The fixed-branch theorem supplies a constant \(C_{\epsilon}^{\mathrm{fix}}\) controlling the heavy-set plug-in and light-set polynomial error for every deterministic pilot-induced branch. % lean: polynomial_fixedBranch_uniform_bound
+Fix \(0<\epsilon<1/2\).  \Cref{obj:lem:polynomial-fixed-branch-risk} supplies a constant \(C_{\epsilon}^{\mathrm{fix}}>0\) for every deterministic heavy set \(H\) satisfying the heavy-band and light-scale eligibility inequalities. % lean: polynomial_fixedBranch_uniform_bound
 
-Choose a cutoff \(N_\epsilon\) large enough that the logarithmic degree satisfies \(2\le K_n\) and the logarithmic lower bounds used by the calibration hold for all \(n\ge N_\epsilon\). % lean: polynomialDegree_eventually_two
+Choose \(N_\epsilon\) large enough that, for all \(n\ge N_\epsilon\),
+\[
+8\le n,
+\qquad
+2\le K_n,
+\qquad
+240\le L:=\log(en).
+\]
+% lean: polynomialDegree_eventually_two
 % lean: logEN_eventually_ge_240
 
-With \(\rho_\epsilon=1\), the pair \((N_\epsilon,\rho_\epsilon)\) is a valid polynomial handle: in the active range \(N_\epsilon\le n\) and \(d\le\rho_\epsilon n\log(en)\), the handle certifies \(2\le K_n\). % lean: continuous_ratio_polynomial_upper_all_d
+Set \(\rho_\epsilon=1\).  The pair \((N_\epsilon,\rho_\epsilon)\) is a polynomial handle in the sense of \cref{obj:def:polynomial-handle}: whenever \(0<n\), \(0<d\), \(N_\epsilon\le n\), and \(d\le \rho_\epsilon nL\), the handle certifies \(2\le K_n\). % lean: continuous_ratio_polynomial_upper_all_d
 
-For every \(n,d,M\), the estimator defined by this handle is a measurable total statistic and is clipped into \([-M,M]\). % lean: polyEstimator_total_and_clipped
+For every \(n,d\ge1\) and \(M\ge1\), the estimator determined by this handle is measurable and takes values in \([-M,M]\). % lean: polyEstimator_total_and_clipped
 
-The operation bound follows from the aggregated implementation of \cref{obj:def:polynomial-handle}: after the pilot pass and the estimation-block aggregation, the light-cell program loops over cells, arms, and polynomial orders. This gives a post-aggregation arithmetic count bounded by \(C_{\mathrm{op}}(d+1)(K_n+1)^2\). % lean: polynomialComplexityBound
+The post-aggregation complexity certificate uses the aggregate table associated with \cref{obj:def:polynomial-handle}: pilot cell counts, estimation-block arm counts, and estimation-block arm outcome sums.  Consider arithmetic programs over this table in which constants and table reads have zero structural cost; arithmetic and comparison nodes have unit cost; a cell sum contributes \(d\) accumulator operations plus the costs of its cell bodies; an \(r\)-term polynomial-order sum contributes \(r\) accumulator operations plus the costs of its term bodies; a falling-factorial primitive of order \(q\) has cost \(q\); and a cell-subtraction primitive has cost one.  For every \(n,d\) and \(M\), there is such a post-aggregation program \(A_{n,d,M}\) computing the handle-indexed estimator on every sample and satisfying
+\[
+\operatorname{op}(A_{n,d,M})
+\le
+128(d+1)(K_n+1)^2.
+\]
+On the active branch, this program evaluates the heavy contribution, the Chebyshev light sums, the cell sum, and the clipping operation from the aggregate table; on the inactive branch, it is the constant-zero program.  Thus the complexity item holds with \(C_{\mathrm{op}}=128\). % lean: polynomialComplexityBound
 
-On the active range, condition on the pilot block.  The good pilot event places the empirical heavy set inside the deterministic heavy band and the light cells below the quarter-scale \(B/4\); the chosen degree and shift calibration meet the fixed-branch theorem's size hypotheses. % lean: polynomialPilotUpperBand_le_lightScale_quarter
+Now work on the active range \(N_\epsilon\le n\) and \(d\le nL\), and fix \(P\in\mathcal P_{d,\epsilon,M,\sigma}\) as in \cref{obj:def:model-class}.  With \(m_1=n-\lfloor n/2\rfloor\) and \(B=4096L/m_1\), condition on the pilot block.  The good pilot event is the simultaneous eligibility event
+\[
+\left\{
+\begin{array}{ll}
+128L/|I_0|\le p_k, & k\in\widehat{\mathcal H},\\
+p_k\le 512L/|I_0|, & k\in\widehat{\mathcal L}.
+\end{array}
+\right.
+\]
+On this event, the realized set \(H=\widehat{\mathcal H}\) is eligible with lower band \(128L/|I_0|\) and upper band \(512L/|I_0|\).  Since \(n\ge2\), the calibration gives \(512L/|I_0|\le B/4\), so the light-scale hypothesis of \cref{obj:lem:polynomial-fixed-branch-risk} holds for every \(k\notin H\).  The same active-range calibration gives
+\[
+4(K_n+2)^2\le m_1,
+\qquad
+\frac{4(K_n+2)}{m_1}\le \frac{3B}{4}.
+\]
+% lean: polynomialPilotUpperBand_le_lightScale_quarter
 % lean: polynomial_fixedBranch_size_condition
 % lean: polynomial_shift_condition
 
-Applying the fixed-branch risk theorem conditionally, and then integrating over the pilot block, gives the active-branch risk bound up to the calibrated polynomial rate. % lean: polynomial_fixedBranch_uniform_bound
-
-The deterministic branch expression produced by that calculation is bounded by
+Applying \cref{obj:lem:polynomial-fixed-branch-risk} conditionally on the pilot block, then using the uniform cardinality, total-mass, and missing-envelope bounds built into the fixed-branch simplification, gives for every eligible deterministic branch
 \[
-C_\epsilon M^2\left\{n^{-1}+\min(1,u_{n,d})\right\}
+\mathbb E\!\left[\Delta_H^2\mid I_0\right]
+\le R_{n,d}^{\mathrm{br}},
 \]
-after substituting \(K_n\asymp\log(en)\) and \(B\asymp \log(en)/n\). % lean: polynomial_uniformBranch_expression_le_rate
+where
+\[
+\begin{aligned}
+R_{n,d}^{\mathrm{br}}
+={}&8\left\{
+\frac{8}{m_1\epsilon}+\frac{6}{m_1}
++4\left(
+\frac{d}{\{((m_1-2)/2)\epsilon\}^2(128L/|I_0|)}
+\right)^2
+\right\}\\
+&+2\left\{
+\frac{C_{\epsilon}^{\mathrm{fix}}}{m_1}
++C_{\epsilon}^{\mathrm{fix}}6^{2K_n}
+\left(dB^2+\frac{d^2K_n^2B^2}{m_1}\right)
++\left(\frac{dB}{\epsilon K_n^2}\right)^2
+\right\}.
+\end{aligned}
+\]
+% lean: polynomial_fixedBranch_uniform_bound
 
-The complement of the good pilot event is exponentially small at the selected threshold, and clipping into \([-M,M]\) absorbs its contribution into the same benchmark. % lean: polynomialPilotGood_compl_probability_calibrated_le
+The rate algebra uses the concrete hypotheses \(8\le n\), \(2\le K_n\), and \(240\le L\) to bound this normalized deterministic-branch expression by
+\[
+R_{n,d}^{\mathrm{br}}
+\le
+D_\epsilon\left\{\frac1n+u_{n,d}\right\},
+\qquad
+u_{n,d}:=\frac{d^2}{n^2L^2},
+\]
+with
+\[
+D_\epsilon
+:=
+\frac{128}{\epsilon}+96+\frac{2}{\epsilon^4}
++4C_{\epsilon}^{\mathrm{fix}}
++6C_{\epsilon}^{\mathrm{fix}}8192^2
++2\left(\frac{32768}{\epsilon\alpha_0^2}\right)^2.
+\]
+% lean: polynomial_uniformBranch_expression_le_rate
+
+At the calibrated pilot bands, the bad-selector probability satisfies
+\[
+\mathbb P\{\text{the displayed pilot eligibility event fails}\}
+\le 2d\exp(-32L).
+\]
+The finite-selector inequality for the clipped normalized statistic therefore gives a normalized stream-risk bound with penalty \(4\cdot 2d\exp(-32L)=8d\exp(-32L)\).  Since the active range has \(d\le nL\) and the cutoff gives \(240\le L\),
+\[
+8d\exp(-32L)\le \frac1n.
+\]
+Thus the clipped normalized active-branch risk is bounded by
+\[
+(D_\epsilon+1)\left\{\frac1n+u_{n,d}\right\}.
+\]
+% lean: polynomialPilotGood_compl_probability_calibrated_le
 % lean: polynomial_bad_event_absorption
 
-Combining the good-event risk with the clipped bad-event bound gives the active-range mean-squared error bound for \(T_n^{\mathrm{poly}}\). % lean: polynomial_clipped_finiteSelector_risk
+Rescaling the clipped normalized bound by \(M^2\) gives
+\[
+\operatorname{MSE}_{P}(T_n^{\mathrm{poly}})
+\le
+M^2(D_\epsilon+1)\left\{\frac1n+u_{n,d}\right\}.
+\]
+On the active range with \(\rho_\epsilon=1\), \(d\le nL\) implies \(u_{n,d}\le1\), so this is the stated active-range bound with \(\min\{1,u_{n,d}\}=u_{n,d}\). % lean: polynomial_clipped_finiteSelector_risk
 % lean: mse_polyEstimator_le_of_clipped_stream
 % lean: continuous_ratio_polynomial_upper_all_d
 
-Outside the active range, the polynomial handle returns the zero estimator.  Since \(|\tau(P)|\le M\) under the model class and the benchmark is capped by \(1\), this fallback obeys the same all-alphabet bound after increasing the constant. % lean: polyEstimator_uncalibrated_rate
+It remains to cover the inactive branch of \cref{obj:def:polynomial-handle}.  There the estimator is the zero fallback and \cref{obj:def:model-class} gives \(|\tau(P)|\le M\), hence its mean-squared error is at most \(M^2\).  The fallback rate certificate splits the inactive condition into the two cases used by the handle: if \(n<N_\epsilon\), the finite cutoff makes a constant multiple of \(1/n\) at least one; if \(d>\rho_\epsilon nL\), then \(\min\{1,u_{n,d}\}\) is bounded below by \(\min\{1,\rho_\epsilon^2\}\).  A constant \(C_{\epsilon}^{\mathrm{fb}}>0\) therefore satisfies
+\[
+M^2
+\le
+C_{\epsilon}^{\mathrm{fb}}M^2
+\left\{\frac1n+\min\{1,u_{n,d}\}\right\}
+\]
+throughout the inactive branch.  Taking the final risk constant to dominate both \(C_{\epsilon}^{\mathrm{fb}}\) and \(D_\epsilon+1\) proves the all-alphabet risk bound. % lean: polyEstimator_uncalibrated_rate
 % lean: continuous_ratio_polynomial_upper_all_d
 \end{proof}

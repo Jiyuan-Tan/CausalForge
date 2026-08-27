@@ -319,7 +319,14 @@ export function parseJsonArrayLoose(text: string): unknown[] | null {
   return null;
 }
 
-/** Extracts the first parseable JSON object from model output. */
+/** Extracts the first parseable JSON object from model output.
+ *
+ *  CONVENTION for NEW dispatch sites: prefer a zod-validated boundary (the
+ *  `components.ts` pattern — schema.safeParse, throw on mismatch, never degrade)
+ *  over loose parsing. Every reply-boundary bug of 2026-08 (array-vs-object,
+ *  cached unparseable verdicts, silently dropped reviewer replies) lived in a
+ *  loose-parse call site; the existing sites are individually audited and stay,
+ *  but new ones should start from the strict pattern. */
 export function parseJsonLoose(text: string): unknown {
   const first = text.indexOf("{");
   const last = text.lastIndexOf("}");

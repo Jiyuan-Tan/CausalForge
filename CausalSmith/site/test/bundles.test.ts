@@ -130,7 +130,7 @@ describe("bundle loader", () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  it("orders papers best-first: score desc, unscored last, created-desc tiebreak", async () => {
+  it("orders papers best-first: score desc, unscored last, OLDEST-first tiebreak (standing flagship keeps the panel)", async () => {
     const root = await mkdtemp(join(tmpdir(), "site-bundles-"));
     const mk = async (id: string, patch: Record<string, unknown>) => {
       const dir = join(root, id);
@@ -147,9 +147,9 @@ describe("bundle loader", () => {
     await mk("mid", { score: 7.2, created: "2026-06-01" });
     await mk("best", { score: 9.1, created: "2026-05-01" }); // lower created but higher score → first
     await mk("unscored_new", { created: "2026-07-01" }); // no score → last despite newest
-    await mk("tie_old", { score: 7.2, created: "2026-05-15" }); // ties `mid` on score → older last
+    await mk("tie_old", { score: 7.2, created: "2026-05-15" }); // ties `mid` on score → OLDER first (a new paper must strictly beat the standing flagship, 2026-08-26)
     const bundles = await loadBundles([root]);
-    expect(bundles.map((b) => b.id)).toEqual(["best", "mid", "tie_old", "unscored_new"]);
+    expect(bundles.map((b) => b.id)).toEqual(["best", "tie_old", "mid", "unscored_new"]);
     await rm(root, { recursive: true, force: true });
   });
 

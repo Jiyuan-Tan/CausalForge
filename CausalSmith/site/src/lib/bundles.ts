@@ -234,12 +234,14 @@ export async function loadBundles(roots: string[]): Promise<Bundle[]> {
       }
     }
   }
-  // Best-first: highest P5 score on top, unscored papers last, recency as the tiebreak.
+  // Best-first: highest P5 score on top, unscored papers last. Ties break OLDEST-first
+  // (operator decision, 2026-08-26): the longer-standing paper keeps the flagship panel —
+  // a new paper must strictly beat it to take the featured slot, not merely tie it.
   bundles.sort((a, b) => {
     const sa = typeof a.meta.score === "number" ? a.meta.score : -Infinity;
     const sb = typeof b.meta.score === "number" ? b.meta.score : -Infinity;
     if (sa !== sb) return sb - sa;
-    return a.meta.created < b.meta.created ? 1 : -1;
+    return a.meta.created < b.meta.created ? -1 : 1;
   });
   return bundles;
 }

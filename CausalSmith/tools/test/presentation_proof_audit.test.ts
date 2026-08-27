@@ -219,3 +219,72 @@ describe("droppedLeanRoutes multi-marker lines", () => {
     ]);
   });
 });
+
+describe("proof-audit adjudication channel (flip verdict, keep key — the documented operator flow)", () => {
+  // Integration regression for 32fe2964: the deterministic missing-citation hint used to
+  // override a cached faithful verdict on EVERY hit, so the skill-documented adjudication
+  // channel was silently defeated and the halt was unescapable (observed live 2026-08-26,
+  // ~2.5h of cycles). Fixture: thm_adj's Lean proof invokes the citable lemma decl
+  // `help_bound`; its paper proof does not cite \cref{obj:lem_help}, so the hint fires on
+  // every pass.
+  it("honors an adjudicated faithful verdict on an unchanged proof: no dispatch, hint suppressed with a note", async () => {
+    await writeFile(
+      join(dir, "Lean", "Y.lean"),
+      ["theorem help_bound : True := by trivial", "", "theorem thm_adj : True := by", "  have h := help_bound", "  trivial", ""].join("\n"),
+      "utf8",
+    );
+    const proofBody = "\\begin{proof}[Proof of \\cref{obj:thm_adj}]No citation here.\\end{proof}";
+    await writeFile(join(dir, "proofs", "thm_adj.tex"), proofBody + "\n", "utf8");
+    await writeFile(
+      join(dir, "formal_layer.json"),
+      JSON.stringify({
+        blocks: [
+          { obj_id: "thm_adj", env: "theoremv", title: null, body: "Target statement." },
+          { obj_id: "lem_help", env: "lemmav", title: null, body: "Helper statement." },
+        ],
+      }),
+      "utf8",
+    );
+    let codexCalls = 0;
+    const countingCodex = async ({ prompt }: { prompt: string }) => {
+      codexCalls++;
+      if (prompt.includes("refined_proof")) {
+        return { stdout: JSON.stringify({ refined_proof: proofBody, changed: false, note: "" }), stderr: "" };
+      }
+      return { stdout: JSON.stringify({ theorem: "thm_adj", verdict: "unfaithful", issues: ["codex disagrees"] }), stderr: "" };
+    };
+    const adjIO = () =>
+      ({
+        outDir: dir,
+        ctx: { repoRoot: dir, qid: "q", spec: "v1", deps: { runCodex: countingCodex, runClaude: async () => "", dryRun: false } },
+        bank: { leanSubdir: "Lean", graph: { nodes: [{ id: "lem_help", lean: { decl_name: "help_bound" } }] } },
+        state: { notes: [] },
+      }) as unknown as StageIO;
+    const adjTargets = [{ obj_id: "thm_adj", isMain: true, lean: { file: "Y.lean", decl: "thm_adj" } }];
+
+    // Pass 1: codex judges unfaithful and the refine loop does not converge → one problem,
+    // cached codex verdict `unfaithful`.
+    const r1 = await runProofAudit(adjIO(), adjTargets);
+    expect(r1.problems.length).toBeGreaterThan(0);
+    const cachePath = join(dir, "proof_audit_cache.json");
+    const cache = JSON.parse(await readFile(cachePath, "utf8"));
+    expect(cache.thm_adj.verdict).toBe("unfaithful");
+    expect(codexCalls).toBeGreaterThan(0);
+
+    // Operator adjudication exactly as the skill prescribes: flip `verdict`, keep `key`.
+    cache.thm_adj.verdict = "faithful";
+    await writeFile(cachePath, JSON.stringify(cache), "utf8");
+
+    // Pass 2, inputs unchanged: the key must be STABLE across runs, the hit must be honored
+    // with ZERO model dispatches even though the missing-citation hint still fires, and the
+    // suppression must be recorded — never silent.
+    codexCalls = 0;
+    const io2 = adjIO();
+    const r2 = await runProofAudit(io2, adjTargets);
+    expect(r2.problems).toEqual([]);
+    expect(codexCalls).toBe(0);
+    expect((io2 as unknown as { state: { notes: string[] } }).state.notes.join("\n")).toMatch(
+      /thm_adj.*missing-citation hint\(s\) suppressed by its cached faithful verdict/,
+    );
+  });
+});

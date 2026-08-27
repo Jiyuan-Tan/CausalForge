@@ -1,0 +1,100 @@
+{
+  "recommendation": "major_revision",
+  "score": 7,
+  "score_rationale": "The verified mathematical contribution is substantial and potentially publishable, but the manuscript needs significant prose, notation, and reproducibility cleanup before it reads as a reliable journal submission.",
+  "summary": "The paper establishes a finite-sample minimax upper/lower bracket for scalar ATE estimation with discrete adjustment, real outcomes, fixed overlap, known scale, and known heterogeneity radius. The contribution is meaningful: it combines a polynomial rare-cell estimator, a collision estimator, and binary-to-real lower-bound transfers into a same-class bracket with matched regimes. The formal statements support the main mathematical claims, but several presentation choices obscure the exact scope and create avoidable trust-boundary and notation problems.",
+  "strengths": [
+    "The main bracket is stated over one common real-outcome model class, with the upper and lower benchmarks indexed by the same parameters.",
+    "The paper clearly identifies the regimes where the bracket gives exact-order rates and isolates the shrinking-radius wedge as future work.",
+    "The estimator construction is constructive in statistical form and usefully separates polynomial rare-cell information from crossed-cell collision information.",
+    "The related-work section engages the nearest discrete-adjustment competitor and states the relevant benchmark rates."
+  ],
+  "findings": [
+    {
+      "severity": "major",
+      "section": "Verification note",
+      "issue": "The manuscript reports the verification contract commit as `d110bd64f2651b9ae5401ca84bbb269b5a579546`, while the supplied current verification contract reports commit `462a124d29ae27887f711787ac2bc60f6b7e6e2f`.",
+      "fix": "Update the verification note to the current commit and ensure the toolchain/build command and contract filenames match the artifact distributed with the paper.",
+      "kind": "prose",
+      "finding_id": "stale-verification-commit",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "Setup and assumptions",
+      "issue": "The notation `\\ell_{n,d,\\sigma}` is used for different benchmarks: the setup table defines the product benchmark as `b_{n,d}+\\sigma^2u_{n,d}`, while the main all-alphabet bracket defines `\\ell_{n,d,\\sigma}` with capped terms `\\min\\{1,d/n^2\\}` and `\\min\\{1,u_{n,d}\\}`.",
+      "fix": "Use distinct notation, for example `\\ell^{\\mathrm{cap}}_{n,d,\\sigma}` for the all-alphabet converse and `\\ell^{\\mathrm{tri}}_{n,d,\\sigma}` for the triangular-region algebra, or define one global symbol and introduce local aliases explicitly.",
+      "kind": "prose",
+      "finding_id": "benchmark-notation-collision",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "Verification note",
+      "issue": "The author footnote and verification note suggest theorem-local dependence on cited inputs, for example: \"including any statement that is conditional on a published input\" and \"which cited inputs are used.\" The current verification contract lists no external dependencies for the main theorem objects and records the binary source lemmas as discharged checked declarations; only the binary collision comparison is conditional on its displayed hypothesis.",
+      "fix": "Revise the trust-boundary prose to state affirmatively that the displayed formal statements are checked in the artifact, that citations provide attribution and statistical context, and that the binary collision comparison is a conditional implication from the displayed published-collision hypothesis.",
+      "kind": "prose",
+      "finding_id": "stale-trust-boundary",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "Estimators and upper bounds",
+      "issue": "The implementation discussion says: \"A practitioner therefore needs \\(\\epsilon\\), \\(M\\), and \\(\\sigma\\); nothing else is tuned to the data.\" The verified upper bound supplies an existential overlap-dependent calibration handle, and the manuscript has not provided a fully numerical recipe for that handle.",
+      "fix": "Either give explicit usable calibration values for the handle and constants, or rewrite this passage to say that the theorem fixes an overlap-dependent calibration handle and the selector uses the known indices `n,d,M,\\sigma` without data tuning.",
+      "kind": "prose",
+      "finding_id": "practitioner-calibration-overclaim",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "major",
+      "section": "Lower bounds and binary embeddings",
+      "issue": "In `\\cref{obj:thm:radius-channel-converse-all-d}`, the statement says that for source laws `P_0,P_1`, `\\tau(P_1)-\\tau(P_0)=...`, and later writes an expectation under a source law `P`. This is confusing because `\\tau` and the MSE are real-outcome target objects after embedding.",
+      "fix": "Rewrite those displays as `\\tau(\\Psi(P_1))-\\tau(\\Psi(P_0))` and `E_{Q_{\\Psi(P)}^{(n)}}[(\\widehat\\tau-\\tau(\\Psi(P)))^2]`, matching the restricted theorem’s clearer notation.",
+      "kind": "statement",
+      "finding_id": "source-target-notation",
+      "remedy": "source_change"
+    },
+    {
+      "severity": "minor",
+      "section": "Main bracket and matched regimes",
+      "issue": "The table row \"Displayed benchmark separation\" may be read as a theorem-level minimax separation, while the verified result characterizes separation between the displayed selector and converse benchmarks in the residual wedge.",
+      "fix": "Rename the row to \"Displayed benchmark gap\" or \"Selector/converse benchmark gap\" and state in the caption that it summarizes the proved benchmark comparison, not an exact minimax rate.",
+      "kind": "prose",
+      "finding_id": "wedge-table-scope",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "Related work",
+      "issue": "The comparison table is useful, but the lower-row entry for Zeng et al. compresses several regime-specific lower results into one line, whereas the surrounding prose says their results are a benchmark suite by regime.",
+      "fix": "Split the Zeng et al. lower row into unrestricted, exact-homogeneous, and approximate-homogeneous entries, or add a table note that the displayed lower rate is the unrestricted benchmark and the exact-homogeneity rate is listed in the preceding paragraph.",
+      "kind": "prose",
+      "finding_id": "related-work-table-compression",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "minor",
+      "section": "Estimators and upper bounds",
+      "issue": "The text gives a post-aggregation operation count but also describes the whole procedure as five passes over arrays. A reader could miss that raw sample aggregation costs order `n` before the stated post-aggregation count applies.",
+      "fix": "State the total computational cost as aggregation over the sample plus the post-aggregation bound, for example `O(n+dK_n^2)` up to overlap-dependent constants.",
+      "kind": "prose",
+      "finding_id": "complexity-scope",
+      "remedy": "rewrite"
+    },
+    {
+      "severity": "nit",
+      "section": "global",
+      "issue": "Several formal labels use names such as \"frontier\" and \"wedge\" before the paper explains that these are benchmark names rather than solved minimax frontiers in every shrinking-radius sequence.",
+      "fix": "Introduce the naming convention once before the theorem map and use \"selector benchmark\" in prose whenever the distinction matters.",
+      "kind": "prose",
+      "finding_id": "benchmark-naming-clarity",
+      "remedy": "rewrite"
+    }
+  ],
+  "questions_for_authors": [
+    "Can the overlap-dependent polynomial calibration handle be made numerically explicit in the manuscript or supplement?",
+    "Do the authors intend `\\ell_{n,d,\\sigma}` to denote one global capped all-alphabet benchmark, or a local triangular-region product benchmark depending on context?",
+    "Will the replication bundle include the exact verification contract and presentation crosswalk corresponding to the commit cited in the final manuscript?"
+  ]
+}
