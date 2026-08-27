@@ -9,9 +9,10 @@
  * With the flag on it: segments the rendered body into sentences, reads the
  * paper's comment thread through the worker, re-anchors each stored quote
  * against the CURRENT text, renders the rail / archive / highlights, and runs
- * the select → compose → post flow. Reads go through the worker (a browser
- * cannot query Discussions anonymously); writes go browser → api.github.com
- * with the visitor's own token, which lives in sessionStorage and nowhere else.
+ * the select → compose → post flow. Reads AND writes both go through the
+ * worker, which owns the storage. The visitor's token — held in sessionStorage
+ * and nowhere else — is deliberately powerless: an identity document the worker
+ * checks with GitHub, never a credential that could write anything anywhere.
  *
  * Failure is always silent-and-degraded, never fatal: a dead worker leaves
  * "comments unavailable" in the rail head and a fully readable paper.
@@ -33,10 +34,6 @@ interface Config {
   worker: string;
   paperId: string;
   revision: string;
-  repo: string | null;
-  /** The paper's pre-provisioned discussion number, or null when the thread
-   *  has not been provisioned yet (commenting is closed on the paper). */
-  discussionNumber: number | null;
 }
 
 interface Pending {
@@ -77,15 +74,15 @@ interface State {
   /** The merged view (serverAll + local additions − deleted) that the rail
    *  renders. Never assigned directly; always via `rebuildAll`. */
   all: model.PlacedComment[];
-  discussionId: string | null;
-  discussionNumber: number | null;
   token: string | null;
   viewer: auth.Viewer | null;
   pending: Pending | null;
   tag: CommentTag;
   loadFailed: boolean;
-  /** True when the paper has no provisioned discussion (commenting closed). */
-  notProvisioned: boolean;
+  /** The worker served only part of the thread (per-author or per-thread cap).
+   *  Surfaced in the rail head: a silently shortened thread is indistinguishable
+   *  from a thread nobody wrote in. */
+  truncated: boolean;
   /** Anchored comments shown unanchored because of the per-page cap. */
   overflow: number;
   /** Transient rail-head message (delete failure, expired session). */
@@ -95,14 +92,6 @@ interface State {
 }
 
 class AuthExpired extends Error {}
-
-/** Shown in the composer when the paper's thread has not been provisioned. */
-const NOT_OPEN = "Commenting isn't open on this paper yet.";
-
-/** A visitor may post only into a maintainer-provisioned discussion. */
-function canPost(state: State): boolean {
-  return state.discussionId !== null;
-}
 
 /* ── Boot ────────────────────────────────────────────────────────────────── */
 
@@ -135,15 +124,10 @@ function readConfig(): Config | null {
   }
   const localhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
   if (url.protocol !== "https:" && !localhost) return null;
-  const n = data.discussionNumber;
-  const discussionNumber =
-    typeof n === "number" && Number.isInteger(n) && n > 0 ? n : null;
   return {
     worker: rawWorker.replace(/\/+$/, ""),
     paperId,
     revision: typeof data.revision === "string" ? data.revision : "",
-    repo: typeof data.github === "string" ? data.github : null,
-    discussionNumber,
   };
 }
 
@@ -173,14 +157,12 @@ function boot(): void {
     localReplies: new Map(),
     deleted: new Set(),
     all: [],
-    discussionId: null,
-    discussionNumber: cfg.discussionNumber,
     token: auth.readToken(),
     viewer: null,
     pending: null,
     tag: "none",
     loadFailed: false,
-    notProvisioned: cfg.discussionNumber === null,
+    truncated: false,
     overflow: 0,
     notice: null,
     expanded: new Set<string>(),
@@ -243,23 +225,14 @@ function ensureSegmented(state: State): void {
 
 async function load(state: State): Promise<void> {
   const { cfg } = state;
-  // A paper whose discussion has not been provisioned reads as empty and never
-  // hits the network: nothing to fetch, and posting stays disabled.
-  if (cfg.discussionNumber === null) {
-    state.notProvisioned = true;
-    refresh(state);
-    return;
-  }
   try {
     const res = await fetch(
-      `${cfg.worker}/api/comments?paper=${encodeURIComponent(cfg.paperId)}` +
-        `&n=${encodeURIComponent(String(cfg.discussionNumber))}`,
+      `${cfg.worker}/api/comments?paper=${encodeURIComponent(cfg.paperId)}`,
       { credentials: "omit" },
     );
     if (!res.ok) throw new Error(`worker ${res.status}`);
     const data = (await res.json()) as Partial<model.WorkerPayload>;
-    state.discussionId = typeof data.discussionId === "string" ? data.discussionId : null;
-    state.notProvisioned = state.discussionId === null;
+    state.truncated = data.truncated === true;
     const items = Array.isArray(data.comments) ? data.comments : [];
     state.loadFailed = false;
     if (items.length === 0) {
@@ -296,35 +269,54 @@ async function load(state: State): Promise<void> {
   refresh(state);
 }
 
-async function graphql(
+/**
+ * Send a write to the worker.
+ *
+ * The visitor's token goes no further than this: it is an identity document the
+ * worker checks with GitHub, not a repository credential — the comment is stored
+ * by the worker under the account it resolved from that token. That is why
+ * signing in asks for nothing but "verify your GitHub identity".
+ */
+async function workerWrite(
   state: State,
-  req: model.GraphqlRequest,
+  method: "POST" | "DELETE",
+  payload: Record<string, unknown>,
 ): Promise<Record<string, any>> {
   const token = state.token;
   if (!token) throw new AuthExpired("not signed in");
-  const res = await fetch("https://api.github.com/graphql", {
-    method: "POST",
+  const res = await fetch(`${state.cfg.worker}/api/comments`, {
+    method,
     credentials: "omit",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(req),
+    body: JSON.stringify({ paper: state.cfg.paperId, ...payload }),
   });
   if (res.status === 401) {
     signOut(state);
     throw new AuthExpired("session expired");
   }
-  const data = (await res.json()) as { data?: Record<string, any>; errors?: { message?: string }[] };
-  if (data.errors && data.errors.length > 0) {
-    throw new Error(String(data.errors[0]?.message ?? "GitHub rejected the request"));
+  const data = (await res.json().catch(() => ({}))) as Record<string, any>;
+  if (!res.ok) {
+    throw new Error(String(data.error ?? `request failed (${res.status})`));
   }
-  return data.data ?? {};
+  return data;
 }
 
+/**
+ * Resolve who is signed in.
+ *
+ * `GET /user` returns public profile fields and needs no permission at all, so
+ * it still works with the permissionless token this sign-in now issues.
+ */
 async function loadViewer(state: State): Promise<void> {
   try {
-    const data = await graphql(state, model.viewerQuery());
-    const v = data.viewer as auth.Viewer | undefined;
-    if (v && typeof v.login === "string") {
-      state.viewer = { login: v.login, avatarUrl: String(v.avatarUrl ?? "") };
+    const res = await fetch("https://api.github.com/user", {
+      credentials: "omit",
+      headers: { Authorization: `Bearer ${state.token ?? ""}`, Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) return;
+    const v = (await res.json()) as { login?: unknown; avatar_url?: unknown };
+    if (typeof v.login === "string") {
+      state.viewer = { login: v.login, avatarUrl: String(v.avatar_url ?? "") };
     }
   } catch {
     /* chip falls back to the plain signed-in label */
@@ -368,7 +360,7 @@ function refresh(state: State): void {
       const el = c.sids.length > 0 ? (state.sidEls.get(c.sids[0]) ?? null) : null;
       el?.scrollIntoView({ block: "center", behavior: "smooth" });
     },
-    // Cosmetic gate only — GitHub authorizes the mutation itself.
+    // Cosmetic gate only — the worker authorizes the delete itself.
     canDelete: (c) => model.ownsComment(c, state.viewer),
     onDelete: (c) => void remove(state, c),
     // Reply threads. Expansion is held on the controller so it survives the
@@ -392,7 +384,6 @@ function refresh(state: State): void {
   );
   view.renderRail(ui, groups, handlers);
   view.renderArchived(ui, groups.archived, handlers);
-  view.renderThreadLink(ui, state.cfg.repo, state.discussionNumber);
   ui.railCount.textContent = `· ${railHead(state, groups)}`;
   view.layoutRail(ui, groups.placed, state.sidEls);
 }
@@ -402,10 +393,10 @@ function railHead(state: State, groups: model.CommentGroups): string {
   if (state.notice) return state.notice;
   if (state.loadFailed) return "comments unavailable";
   const counts = model.countLabel(model.activeComments(groups));
-  if (state.overflow > 0) {
-    return `${counts} · ${state.overflow} shown unanchored (page limit)`;
-  }
-  return counts;
+  const notes = [];
+  if (state.overflow > 0) notes.push(`${state.overflow} shown unanchored (page limit)`);
+  if (state.truncated) notes.push("some comments not shown (size limit)");
+  return notes.length > 0 ? `${counts} · ${notes.join(" · ")}` : counts;
 }
 
 /**
@@ -418,26 +409,21 @@ function railHead(state: State, groups: model.CommentGroups): string {
  */
 async function reply(state: State, c: model.PlacedComment, text: string): Promise<void> {
   if (!state.token) throw new Error("Sign in with GitHub to reply.");
-  if (!state.discussionId) throw new Error("This thread is not open yet.");
   if (text.length > model.MAX_TEXT_CHARS) {
     throw new Error(`Too long — ${model.MAX_TEXT_CHARS} characters maximum.`);
   }
-  let created: Record<string, any>;
+  let posted: Record<string, any>;
   try {
-    created = await graphql(
-      state,
-      model.addReplyMutation(state.discussionId, c.id, model.serializeReply(text)),
-    );
+    posted = await workerWrite(state, "POST", model.newReplyPayload(state.cfg.paperId, c.id, text));
   } catch (err) {
     throw new Error(failureMessage("Could not post the reply", err));
   }
-  const posted = created.addDiscussionComment?.comment;
   const newReply: model.PlacedReply = {
     id: typeof posted?.id === "string" ? posted.id : `local-${Date.now()}`,
     login: state.viewer?.login ?? "you",
     avatarUrl: model.isSafeAvatarUrl(state.viewer?.avatarUrl) ? state.viewer!.avatarUrl : null,
     createdAt: typeof posted?.createdAt === "string" ? posted.createdAt : new Date().toISOString(),
-    text: model.serializeReply(text),
+    text: text.trim().slice(0, model.MAX_TEXT_CHARS),
   };
   // Held as an optimistic local addition, so a hydration batch overwriting
   // `serverAll` cannot drop it.
@@ -457,7 +443,7 @@ async function removeReply(
 ): Promise<void> {
   state.notice = null;
   try {
-    await graphql(state, model.deleteCommentMutation(r.id));
+    await workerWrite(state, "DELETE", { id: r.id });
     state.deleted.add(r.id);
     // Drop it from any optimistic local list too.
     const local = state.localReplies.get(c.id);
@@ -484,14 +470,14 @@ function failureMessage(prefix: string, err: unknown): string {
  * Delete one of the visitor's own comments.
  *
  * The button is only offered on the viewer's own cards, but that is not what
- * makes this safe: `deleteDiscussionComment` is authorized by GitHub, which
- * accepts it from the comment's author or a repo admin and rejects everyone
- * else. A failure simply re-renders — the card comes back.
+ * makes this safe: the worker re-checks that the comment was posted through it
+ * and carries this caller's stamped login, and refuses otherwise. A failure
+ * simply re-renders — the card comes back.
  */
 async function remove(state: State, c: model.PlacedComment): Promise<void> {
   state.notice = null;
   try {
-    await graphql(state, model.deleteCommentMutation(c.id));
+    await workerWrite(state, "DELETE", { id: c.id });
     state.deleted.add(c.id);
     // Drop an optimistic local copy too, so it does not reappear on rebuild.
     state.localComments = state.localComments.filter((x) => x.id !== c.id);
@@ -508,6 +494,7 @@ function renderIdentity(state: State): void {
   if (!state.token) {
     ui.idChip.hidden = true;
     ui.signIn.hidden = false;
+    ui.signInNote.hidden = false;
     ui.post.disabled = true;
     return;
   }
@@ -533,6 +520,7 @@ function renderIdentity(state: State): void {
   ui.idChip.appendChild(name);
   ui.idChip.hidden = false;
   ui.signIn.hidden = true;
+  ui.signInNote.hidden = true;
   ui.post.disabled = false;
 }
 
@@ -605,8 +593,8 @@ function openComposer(state: State): void {
   setTag(state, "none");
   ui.text.value = "";
   ui.counter.textContent = "";
-  setStatus(state, canPost(state) ? "" : NOT_OPEN);
-  ui.post.disabled = !state.token || !canPost(state);
+  setStatus(state, "");
+  ui.post.disabled = !state.token;
   ui.composer.hidden = false;
   const first = state.sidEls.get(pending.sids[0]) ?? null;
   const rect = (first ?? state.bodyRoot).getBoundingClientRect();
@@ -647,25 +635,21 @@ async function submit(state: State): Promise<void> {
     setStatus(state, `Too long — ${model.MAX_TEXT_CHARS} characters maximum.`);
     return;
   }
-  const discussionId = state.discussionId;
-  if (!discussionId) {
-    // The thread is maintainer-provisioned; a visitor never creates it.
-    setStatus(state, NOT_OPEN);
-    return;
-  }
   state.ui.post.disabled = true;
   setStatus(state, "Posting…");
   try {
     const anchor = makeAnchor(state.sentences, pending.start, pending.end);
-    const body = model.newCommentBody({
-      paper: state.cfg.paperId,
-      tag: state.tag,
-      text,
-      anchor,
-      revision: state.cfg.revision,
-    });
-    const data = await graphql(state, model.addCommentMutation(discussionId, body));
-    const comment = data.addDiscussionComment?.comment;
+    const comment = await workerWrite(
+      state,
+      "POST",
+      model.newCommentPayload({
+        paper: state.cfg.paperId,
+        tag: state.tag,
+        text,
+        anchor,
+        revision: state.cfg.revision,
+      }),
+    );
     // Optimistic: the worker's read is edge-cached for 60s, so the new comment
     // is drawn locally and picked up naturally on the next load rather than
     // busting a cache the whole site shares. It is held as a LOCAL addition so
@@ -691,14 +675,14 @@ async function submit(state: State): Promise<void> {
     if (err instanceof AuthExpired) {
       setStatus(state, "Session expired — sign in again.");
     } else {
-      // GitHub's error message (e.g. "Resource not accessible by integration")
-      // names the actual fix; it renders via textContent, so passing it through
+      // The worker's error message names the actual problem (thread not open,
+      // muted, rate limited); it renders via textContent, so passing it through
       // is safe.
       const detail = err instanceof Error && err.message ? ` (${err.message.slice(0, 140)})` : "";
       setStatus(state, `Could not post — please try again.${detail}`);
     }
   } finally {
-    state.ui.post.disabled = !state.token || !canPost(state);
+    state.ui.post.disabled = !state.token;
   }
 }
 

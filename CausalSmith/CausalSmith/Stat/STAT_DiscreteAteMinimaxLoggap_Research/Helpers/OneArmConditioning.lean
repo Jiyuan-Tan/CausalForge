@@ -1,11 +1,24 @@
 import Causalean.Stat.Minimax.TotalVariation
 import Mathlib.MeasureTheory.Measure.Real
 
+/-!
+# Total-variation cost of conditioning a prior
+
+This file records the total-variation facts used when a hard prior is restricted
+to a "good" event: the triangle inequality for total variation, and the bound
+saying that conditioning moves the prior predictive law by at most the discarded
+prior mass.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open MeasureTheory Causalean.Stat
 open scoped NNReal ENNReal
 
+/-- Total-variation distance between probability measures satisfies the triangle
+inequality: the distance from the first to the third is at most the sum of the two
+intermediate distances.  Used to chain conditioning losses together with the
+distance between the unconditioned priors. -/
 lemma tvDist_triangle' {Ω : Type*} [MeasurableSpace Ω]
     (P Q R : Measure Ω)
     [IsProbabilityMeasure P] [IsProbabilityMeasure Q] [IsProbabilityMeasure R] :

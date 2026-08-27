@@ -12,6 +12,10 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open MeasureTheory ProbabilityTheory
 
+/-- The per-observation mass statistic of the shifted one-arm product prior takes
+values in `[0, scale]`: it is the scale times a grid coordinate, and every grid
+coordinate lies between zero and one.  This range control is what the Chebyshev
+variance bound is read off from. -/
 lemma oneArmShifted_massAtom_mem_Icc
     {D : ℕ} {κ scale : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (hscale : 0 ≤ scale) (z : Option (Fin (2 * D + 4))) :
@@ -26,6 +30,10 @@ lemma oneArmShifted_massAtom_mem_Icc
         mul_le_of_le_one_right hscale
           (oneArmShiftedSelectionGrid_mem_Icc hκ hκ1 hD i).2⟩
 
+/-- The per-observation treated-functional statistic of the shifted one-arm product
+prior also takes values in `[0, scale]`, since it multiplies the mass statistic by
+the ratio `x / (x + a)`, which never exceeds one.  This range control feeds the
+matching Chebyshev variance bound. -/
 lemma oneArmShifted_functionalAtom_mem_Icc
     {D : ℕ} {κ scale : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (hscale : 0 ≤ scale) (z : Option (Fin (2 * D + 4))) :
@@ -53,6 +61,9 @@ lemma oneArmShifted_functionalAtom_mem_Icc
           _ ≤ scale := mul_le_of_le_one_right hscale
             (oneArmShiftedSelectionGrid_mem_Icc hκ hκ1 hD i).2⟩
 
+/-- Under any prior on the cell labels, the mass statistic has variance at most
+`scale²`, because it is supported in an interval of length `scale`.  This is the
+variance input to the Chebyshev deviation bound for the product prior. -/
 lemma oneArmShifted_massAtom_variance_le_sq
     {D : ℕ} {κ scale : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (hscale : 0 ≤ scale) [MeasurableSpace (Option (Fin (2 * D + 4)))]
@@ -69,6 +80,9 @@ lemma oneArmShifted_massAtom_variance_le_sq
     (Measurable.aemeasurable (measurable_of_finite _))
   nlinarith [sq_nonneg scale]
 
+/-- Under any prior on the cell labels, the treated-functional statistic likewise has
+variance at most `scale²`, again because it is supported in an interval of length
+`scale`.  This is the second variance input to the Chebyshev deviation bound. -/
 lemma oneArmShifted_functionalAtom_variance_le_sq
     {D : ℕ} {κ scale : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (hscale : 0 ≤ scale) [MeasurableSpace (Option (Fin (2 * D + 4)))]

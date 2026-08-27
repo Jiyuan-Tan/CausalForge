@@ -1,12 +1,11 @@
 ---
 import { loadBundles, type Bundle } from "../../lib/bundles.js";
-import { bundleRoots, GITHUB_REPO, SERIES_NAME, SERIES_TAGLINE, sourceRef } from "../../lib/config.js";
+import { bundleRoots, GITHUB_REPO, GITHUB_URL, PAPER_CITE, PAPER_URL, SERIES_NAME, SERIES_TAGLINE, sourceRef } from "../../lib/config.js";
 import SeoHead from "../../components/SeoHead.astro";
 import PaperComments from "../../components/PaperComments.astro";
 import ProofMap from "../../components/ProofMap.astro";
 import { renderTexCompact, renderLabel, titleCase } from "../../lib/docmd.js";
 import { renderMath } from "../../lib/paperMath.js";
-import discussionNumbers from "../../lib/comments/discussions.json";
 import "../../styles/series.css";
 import "../../styles/paper.css";
 import "../../styles/comments.css";
@@ -60,11 +59,6 @@ const paperData = {
   paperId: bundle.id,
   revision: bundle.commit,
   commentsWorker: import.meta.env.PUBLIC_COMMENTS_WORKER ?? "",
-  // The paper's pre-provisioned discussion number (from discussions.json, baked
-  // at build). null → not provisioned: the page reads empty and shows the
-  // "commenting isn't open" state, never creating a thread from a visitor.
-  discussionNumber:
-    (discussionNumbers as Record<string, number>)[bundle.id] ?? null,
 };
 
 // Formal-layer panel: objects already presented in the paper (a formal block or an inline
@@ -125,6 +119,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         {bundle.hasPdf && <> · <a href={`${base}/papers/${bundle.id}/paper.pdf`} data-astro-prefetch="false">PDF</a></>}
         {bundle.paperLib && <> · <a href={`${base}/papers/${bundle.id}/formalization`} data-astro-prefetch="false">Lean code</a></>}
         {bundle.slidesMd && <> · <a href={`${base}/papers/${bundle.id}/slides`}>Slides</a></>}
+        {" · "}
+        <a class="nav-external" href={PAPER_URL} title={PAPER_CITE} target="_blank" rel="noopener">CausalSmith on arXiv <span aria-hidden="true">↗</span></a>
+        {GITHUB_URL && <> · <a class="nav-external" href={GITHUB_URL} target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a></>}
       </div>
       <h1>{titleCase(bundle.meta.title)}</h1>
       <div id="paper-body" set:html={renderedBody} />

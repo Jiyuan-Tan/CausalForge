@@ -30,7 +30,7 @@ import { recordP2Assembly } from "../assembly_freshness.js";
 import { runProofAudit } from "../audit.js";
 import { extractFullDeclSource } from "../lean_extract.js";
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
-import type { FormalizationGraph } from "../graph_view.js";
+import { unconsumedStatementNodes, type FormalizationGraph } from "../graph_view.js";
 import { parseBib } from "../citations.js";
 import { resolveLeanDeclaration, resolvedLeanAbsolutePath } from "../declaration_resolver.js";
 import { loadBankNarrative, loadInformalDerivations } from "../bank.js";
@@ -166,6 +166,29 @@ export async function stageP2(io: StageIO): Promise<void> {
   if (io.ctx.deps.dryRun) {
     await writeFile(join(io.outDir, "p2.stub"), "dry-run\n");
     return;
+  }
+  // BALLAST GATE: an unconsumed frozen theorem/lemma enters the paper only with
+  // an explicit operator acknowledgment. A headline result is acknowledged once
+  // in ballast_review.json; motivation-only standard material is excised instead
+  // (nl.frozen=false in the bank graph). Fails CLOSED so ballast cannot slip
+  // into the presentation stages silently (two-category incident, 2026-08-27).
+  {
+    const ackPath = join(io.outDir, "ballast_review.json");
+    const acks = await readFile(ackPath, "utf8")
+      .then((raw) => (JSON.parse(raw) as { acknowledged?: Record<string, string> }).acknowledged ?? {})
+      .catch(() => ({}) as Record<string, string>);
+    const unconsumed = unconsumedStatementNodes(io.bank.graph, new Set(Object.keys(acks)));
+    {
+      const unacked = unconsumed.filter((n) => !acks[n.id]);
+      if (unacked.length > 0) {
+        throw new Error(
+          `P2 ballast gate: ${unacked.length} frozen statement(s) nothing consumes would enter the paper: ` +
+            `[${unacked.map((n) => n.id).join(", ")}]. For each: a delivered headline/benchmark is acknowledged ` +
+            `once in ${ackPath} under {"acknowledged": {"<id>": "<why it belongs>"}}; motivation-only standard ` +
+            `material is excised instead (set nl.frozen=false on the bank node and remove it from the outline).`,
+        );
+      }
+    }
   }
   const outlineRaw = await readFile(join(io.outDir, "outline.md"), "utf8");
   // Source of truth: the JSON formal layer. Envs are assembled MECHANICALLY from the blocks (via

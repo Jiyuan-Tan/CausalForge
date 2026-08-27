@@ -25,6 +25,8 @@ noncomputable def oneArmFiniteEventMass (ω : PMF α) (G : α → Prop)
     [DecidablePred G] : ℝ≥0∞ :=
   ∑ x with G x, ω x
 
+/-- The prior mass of an event and of its complement add up to one.  This is the
+bookkeeping identity behind the good/bad split of a finite prior. -/
 lemma oneArmFiniteEventMass_add_compl (ω : PMF α) (G : α → Prop)
     [DecidablePred G] :
     oneArmFiniteEventMass ω G + oneArmFiniteEventMass ω (fun x => ¬ G x) = 1 := by
@@ -32,11 +34,16 @@ lemma oneArmFiniteEventMass_add_compl (ω : PMF α) (G : α → Prop)
   rw [Finset.sum_filter_add_sum_filter_not]
   simpa only [tsum_fintype] using ω.tsum_coe
 
+/-- The prior mass of an event never exceeds one.  Used to rule out infinite values
+when normalizing by the mass of the good event. -/
 lemma oneArmFiniteEventMass_le_one (ω : PMF α) (G : α → Prop)
     [DecidablePred G] : oneArmFiniteEventMass ω G ≤ 1 := by
   have h := oneArmFiniteEventMass_add_compl ω G
   exact le_add_right (le_refl _) |>.trans_eq h
 
+/-- The finite-sum definition of an event's prior mass agrees with the measure the
+prior assigns to that event.  This bridges the combinatorial bookkeeping to the
+measure-theoretic statements about predictive laws. -/
 lemma oneArmFiniteEventMass_eq_toMeasure
     [MeasurableSpace α] [MeasurableSingletonClass α]
     (ω : PMF α) (G : α → Prop) [DecidablePred G] :
@@ -59,6 +66,8 @@ noncomputable def oneArmFiniteConditionedWeight
     (z : {x // G x}) : ℝ≥0∞ :=
   ω z.1 * (oneArmFiniteEventMass ω G)⁻¹
 
+/-- On an event of positive prior mass, the normalized weights sum to one over the
+event, so conditioning really does produce a probability distribution. -/
 lemma oneArmFiniteConditionedWeight_sum
     (ω : PMF α) (G : α → Prop) [DecidablePred G]
     (hG0 : oneArmFiniteEventMass ω G ≠ 0) :
@@ -77,6 +86,9 @@ noncomputable def oneArmFiniteConditionedMixture
     (_hG0 : oneArmFiniteEventMass ω G ≠ 0) (K : α → Measure Ω) : Measure Ω :=
   mixture (oneArmFiniteConditionedWeight ω G) (fun z => K z.1)
 
+/-- Mixing probability kernels against the conditioned weights yields a probability
+measure, since those weights sum to one.  This lets the conditioned predictive law
+be used wherever a probability measure is required. -/
 noncomputable instance oneArmFiniteConditionedMixture_isProbabilityMeasure
     [MeasurableSpace Ω] (ω : PMF α) (G : α → Prop) [DecidablePred G]
     (_hG0 : oneArmFiniteEventMass ω G ≠ 0) (K : α → Measure Ω)

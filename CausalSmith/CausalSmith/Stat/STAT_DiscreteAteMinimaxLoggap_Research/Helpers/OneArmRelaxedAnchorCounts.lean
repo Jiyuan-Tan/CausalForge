@@ -14,6 +14,10 @@ open MeasureTheory
 open Causalean.Mathlib.Probability.FiniteMarkedPoissonPartition
 open scoped BigOperators NNReal
 
+/-- Rescaling the Poisson intensity by the unnormalized total mass cancels the
+normalization: the intensity of the "treated with a success" cell attached to
+active covariate cell `i` equals `sampleScale · q i · π i · μ i`, the raw
+(unnormalized) rate. -/
 lemma oneArmRelaxedAnchored_active_treatedSuccess_rate
     {n m : ℕ} {epsilon anchor sampleScale : ℝ} (q pi mu : Fin m → ℝ)
     (he0 : 0 < epsilon) (hehalf : epsilon ≤ 1 / 2)
@@ -68,6 +72,10 @@ lemma oneArmRelaxedAnchored_active_treatedSuccess_rate
     oneArmAnchoredOutcomeMean]
   field_simp [ne_of_gt hS]
 
+/-- All three observation cells attached to an active covariate cell `i` have
+mass-rescaled intensities equal to their raw rates: `sampleScale · q i · π i · μ i`
+for treated-success, `sampleScale · q i · π i · (1 − μ i)` for treated-failure,
+and `sampleScale · q i · (1 − π i)` for control. -/
 lemma oneArmRelaxedAnchored_active_rates
     {n m : ℕ} {epsilon anchor sampleScale : ℝ} (q pi mu : Fin m → ℝ)
     (he0 : 0 < epsilon) (hehalf : epsilon ≤ 1 / 2)
@@ -169,6 +177,12 @@ lemma oneArmRelaxedAnchored_active_rates
     simp [raw, oneArmRelaxedAnchoredMass, oneArmAnchoredPropensity]
     field_simp [ne_of_gt hS]
 
+/-- The three observation cells attached to the deterministic anchor have
+mass-rescaled intensities `0` for treated-success (the anchor's treated mean is
+zero), `sampleScale · anchor · ε` for treated-failure, and
+`sampleScale · anchor · (1 − ε)` for control.  Since these do not depend on the
+active configuration, the anchor contributes the same counts under both
+hypotheses. -/
 lemma oneArmRelaxedAnchored_anchor_rates
     {n m : ℕ} {epsilon anchor sampleScale : ℝ} (q pi mu : Fin m → ℝ)
     (he0 : 0 < epsilon) (hehalf : epsilon ≤ 1 / 2)

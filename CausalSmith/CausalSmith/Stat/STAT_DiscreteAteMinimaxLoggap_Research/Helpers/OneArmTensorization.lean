@@ -1,6 +1,15 @@
 import Causalean.Stat.Minimax.TotalVariation
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
+/-!
+# Total-variation tools for discrete predictive laws
+
+Generic bounds used to compare the two predictive distributions: total variation
+contracts under measurable maps, is dominated by the full `ℓ¹` distance between
+probability masses, and that `ℓ¹` distance splits into a finite region plus the
+leftover mass on its complement.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open MeasureTheory
@@ -20,6 +29,8 @@ lemma tvDist_map_le
     Measure.map_apply hf A.2]
   exact Causalean.Stat.abs_measureReal_sub_le_tvDist (A.2.preimage hf)
 
+/-- The measure of a measurable set under the distribution attached to a
+probability mass function is the sum of the masses of its points. -/
 lemma pmf_toMeasure_real_apply
     {α : Type*} [MeasurableSpace α] (p : PMF α) {A : Set α}
     (hA : MeasurableSet A) :
@@ -95,6 +106,9 @@ lemma tsum_abs_sub_le_sum_add_compl
   · exact habs.subtype _
   · exact (hf.add hg).subtype _
 
+/-- Specialization of the splitting bound to two probability mass functions: the
+full `ℓ¹` distance is at most the `ℓ¹` distance restricted to a chosen finite
+set plus the total mass both put outside that set. -/
 lemma tsum_abs_pmf_sub_le_sum_add_compl
     {α : Type*} (p q : PMF α) (S : Finset α) :
     ∑' x, |(p x).toReal - (q x).toReal| ≤

@@ -22,11 +22,17 @@ control.  The impossible control-success atom is grouped with control. -/
 def oneArmObservationTripleLabel {d : ℕ} (z : Obs d) : Fin d × Fin 3 :=
   (z.1, if z.2.1 then if z.2.2 then 0 else 1 else 2)
 
+/-- The measurable partition of the observation alphabet that records, for each
+observation, its category together with which of the three sufficient outcomes
+(treated-success, treated-failure, control) it realises. -/
 def oneArmObservationTriplePartition (d : ℕ) :
     FiniteMeasurablePartition (Obs d) (Fin d × Fin 3) where
   cell := oneArmObservationTripleLabel
   measurable_cell := measurable_of_finite _
 
+/-- Under the one-arm configuration law, the probability that an observation
+falls in category r and is a treated success equals p(r)·π(r)·μ(r): the category
+weight times the treatment probability times the success probability. -/
 lemma oneArmObservationTriplePartition_cellMass_treatedSuccess
     {d : ℕ} (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -53,6 +59,8 @@ lemma oneArmObservationTriplePartition_cellMass_treatedSuccess
   simp [oneArmConfigurationLaw, oneArmConfigurationAtom]
   exact mul_nonneg (mul_nonneg (hp r).1 (hpi r).1) (hmu r).1
 
+/-- Under the one-arm configuration law, the probability that an observation
+falls in category r and is a treated failure equals p(r)·π(r)·(1 − μ(r)). -/
 lemma oneArmObservationTriplePartition_cellMass_treatedFailure
     {d : ℕ} (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -80,6 +88,9 @@ lemma oneArmObservationTriplePartition_cellMass_treatedFailure
   exact mul_nonneg (mul_nonneg (hp r).1 (hpi r).1)
     (sub_nonneg.mpr (hmu r).2)
 
+/-- Under the one-arm configuration law, the probability that an observation
+falls in category r and is untreated equals p(r)·(1 − π(r)); because control
+outcomes are identically zero, the two control atoms merge into this one cell. -/
 lemma oneArmObservationTriplePartition_cellMass_control
     {d : ℕ} (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -119,6 +130,8 @@ noncomputable def markedOneArmTripleCounts {d : ℕ}
     (s : FiniteSample (Obs d × ℝ)) : Fin d × Fin 3 → ℕ :=
   fun j => ((oneArmObservationTriplePartition d).restrictCell j s).count
 
+/-- The map sending a marked finite sample to its vector of category-by-outcome
+counts is measurable, so it can be pushed forward along the sampling law. -/
 lemma measurable_markedOneArmTripleCounts {d : ℕ} :
     Measurable (markedOneArmTripleCounts :
       FiniteSample (Obs d × ℝ) → Fin d × Fin 3 → ℕ) := by
@@ -188,6 +201,8 @@ lemma triplePoissonPMF_toMeasure_eq_pi
   rw [triplePoissonPMF_apply]
   simp [Fin.prod_univ_succ, mul_assoc]
 
+/-- Regroups a flat count vector indexed by category/outcome pairs into a family
+of three-outcome count vectors, one per category. -/
 def curryOneArmTripleCounts {d : ℕ}
     (c : Fin d × Fin 3 → ℕ) : Fin d → Fin 3 → ℕ :=
   fun k j => c (k, j)

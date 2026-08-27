@@ -25,18 +25,6 @@ For fixed interior overlap, and in the calibrated range \(n\ge N_\epsilon\), \(d
 
 ---
 
-## A Two-Category Warning Example
-
-- Take two equally likely covariate categories.
-- Treatment is rare in category 1 and common in category 2 when \(\epsilon\) is small.
-- Treated potential outcomes differ across categories, while control potential outcomes are zero.
-- The causal ATE is a covariate-adjusted object, not the raw treated-control contrast.
-- This example motivates adjustment before the high-dimensional rate question.
-
-@formal prop:two-category-confounding
-
----
-
 ## Setup: The Observed Experiment
 
 - One observation is \(O=(X,A,Y)\).
@@ -112,7 +100,7 @@ For fixed interior overlap, and in the calibrated range \(n\ge N_\epsilon\), \(d
 
 - The first term, \(1/n\), is the ordinary sampling cost.
 - The second term, \(d^2/(n^2(\log n)^2)\), is the cost of unrestricted discrete confounding.
-- In the two-category example, \(d\) is fixed, so the theorem lands in the parametric regime.
+- With \(d\) fixed, the theorem lands in the parametric regime.
 - With growing \(d\), the same theorem allows parametric risk through \(d=O(\sqrt n\log n)\).
 - Consistency holds exactly along sequences with \(d/(n\log n)\to0\), within the theorem’s displayed dimension range.
 

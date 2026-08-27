@@ -15,9 +15,17 @@ open MeasureTheory ProbabilityTheory Causalean.Stat
 open Causalean.Mathlib.Probability.FiniteMarkedPoissonPartition
 open scoped BigOperators ENNReal NNReal
 
+/-- Equips the label alphabet used by the product priors — a finite cell index plus
+a distinguished inactive label — with the discrete σ-algebra, in which every subset
+is measurable.  This is the ambient measurability convention for the assembly in
+this file. -/
 local instance headlineOptionMeasurableSpace (N : ℕ) :
     MeasurableSpace (Option (Fin N)) := ⊤
 
+/-- Recording, for each observation, its cell together with which of the three
+sufficient outcomes (treated success, treated failure, control) it realizes pushes
+a discrete observation law forward to a probability measure on labels.  This is the
+instance that lets the label law be used as a probability measure in the assembly. -/
 noncomputable local instance headlineTripleLabelLaw_isProbabilityMeasure
     {d : ℕ} (P : DiscreteLaw d) :
     IsProbabilityMeasure

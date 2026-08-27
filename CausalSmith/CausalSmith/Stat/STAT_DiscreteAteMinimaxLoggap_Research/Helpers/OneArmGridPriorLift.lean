@@ -9,11 +9,15 @@ Elementary range facts needed to inverse-tilt the finite approximation priors.
 
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
+/-- The pole offset is strictly positive once the degree parameter is at least one.
+This keeps every denominator of the form `x + a` away from zero. -/
 lemma oneArmPoleScale_pos {n : ℕ} (hn : 1 ≤ n) : 0 < oneArmPoleScale n := by
   unfold oneArmPoleScale
   have hn0 : (0 : ℝ) < n := by exact_mod_cast (Nat.zero_lt_of_lt hn)
   positivity
 
+/-- Three times the pole offset is still at most one, so the three boundary-layer
+grid points all fit inside the unit interval. -/
 lemma oneArmPoleScale_three_le_one {n : ℕ} (hn : 1 ≤ n) :
     3 * oneArmPoleScale n ≤ 1 := by
   unfold oneArmPoleScale
@@ -22,6 +26,9 @@ lemma oneArmPoleScale_three_le_one {n : ℕ} (hn : 1 ≤ n) :
   have hnR : (1 : ℝ) ≤ n := by exact_mod_cast hn
   nlinarith [sq_nonneg ((n : ℝ) - 1)]
 
+/-- Every point of the selected grid, boundary-layer or mesh, lies between the pole
+offset and one.  This is the range fact the prior lift needs so that grid values can
+serve as cell masses. -/
 lemma oneArmSelectionGrid_mem_Icc {n : ℕ} (hn : 1 ≤ n)
     (i : Fin (2 * n + 4)) :
     oneArmSelectionGrid n i ∈ Set.Icc (oneArmPoleScale n) 1 := by
@@ -40,10 +47,14 @@ lemma oneArmSelectionGrid_mem_Icc {n : ℕ} (hn : 1 ≤ n)
     simp only [hi, if_false]
     apply oneArmAffineMeshNode_mem_Icc hn
 
+/-- Every point of the selected grid is strictly positive, so the reciprocal basis
+function and the division by a grid coordinate are always well defined. -/
 lemma oneArmSelectionGrid_pos {n : ℕ} (hn : 1 ≤ n)
     (i : Fin (2 * n + 4)) : 0 < oneArmSelectionGrid n i :=
   (oneArmPoleScale_pos hn).trans_le (oneArmSelectionGrid_mem_Icc hn i).1
 
+/-- A grid point shifted by the pole offset is strictly positive, so the shifted
+denominator `x + a` never vanishes on the grid. -/
 lemma oneArmSelectionGrid_add_pole_pos {n : ℕ} (hn : 1 ≤ n)
     (i : Fin (2 * n + 4)) :
     0 < oneArmSelectionGrid n i + oneArmPoleScale n :=
@@ -62,6 +73,10 @@ basis.  The final coordinate is harmless when `P` has degree at most `n`. -/
 noncomputable def oneArmPolynomialDivCoeff (n : ℕ) (P : Polynomial ℝ) :
     Fin (n + 2) → ℝ := fun j => P.coeff j.1
 
+/-- A polynomial of degree at most `n` splits as its constant term plus `x` times the
+polynomial whose coefficients are the original ones shifted down by one.  Dividing
+this identity by `x` is what expresses `P(x)/x` as a reciprocal term plus an honest
+polynomial, matching the selection basis. -/
 lemma oneArmPolynomial_eq_constant_add_X_mul_divPolynomial
     (n : ℕ) (P : Polynomial ℝ) (hdeg : P.natDegree ≤ n) :
     P = Polynomial.C (P.coeff 0) + Polynomial.X *
@@ -104,6 +119,10 @@ lemma oneArmPolynomial_eq_constant_add_X_mul_divPolynomial
           Polynomial.coeff_C_mul_X_pow]
         rw [if_neg (fun h => hexp h.symm)]
 
+/-- Read against the coefficients given by the polynomial's own coefficients, the
+selection basis evaluates at each grid point to `P(x)/x`.  So every function of the
+form "polynomial of degree at most `n` divided by `x`" is a test function that the
+matched priors agree on. -/
 lemma oneArmSelectionBasis_represents_polynomial_div
     {n : ℕ} (hn : 1 ≤ n) (P : Polynomial ℝ) (hdeg : P.natDegree ≤ n)
     (i : Fin (2 * n + 4)) :

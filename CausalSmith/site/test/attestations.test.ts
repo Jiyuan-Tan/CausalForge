@@ -27,13 +27,32 @@ function fakeKv() {
     async delete(key: string) {
       store.delete(key);
     },
-    async list({ prefix = "", limit = 1000 }: { prefix?: string; limit?: number }) {
-      const keys = [...store.keys()]
-        .filter((k) => k.startsWith(prefix))
-        .sort()
-        .slice(0, limit)
-        .map((name) => ({ name }));
-      return { keys, list_complete: true };
+    // Paginates and HONOURS both `limit` and `cursor`, like the real one, and
+    // only claims `list_complete` when it really is. The previous version did
+    // neither: it ignored the cursor and always reported complete, which made a
+    // listing bug in shared code (`selectKeys`) undetectable from this suite —
+    // results were byte-identical whether or not the worker's cursor loop
+    // worked at all. A double that flatters the code under test is worse than
+    // no test.
+    async list({
+      prefix = "",
+      limit = 1000,
+      cursor,
+    }: {
+      prefix?: string;
+      limit?: number;
+      cursor?: string;
+    }) {
+      const all = [...store.keys()].filter((k) => k.startsWith(prefix)).sort();
+      const start = cursor ? Number(cursor) : 0;
+      const page = all.slice(start, start + limit);
+      const end = start + page.length;
+      const complete = end >= all.length;
+      return {
+        keys: page.map((name) => ({ name })),
+        list_complete: complete,
+        cursor: complete ? undefined : String(end),
+      };
     },
   };
 }
@@ -79,6 +98,11 @@ const del = (env: Env, token: string, body: unknown) =>
 const list = (env: Env, paper = PAPER) =>
   call(env, `/api/attestations?paper=${encodeURIComponent(paper)}`);
 
+/** A stable fake numeric id per login — records are keyed on the id, never the
+ *  login, because GitHub frees a username the moment an account is renamed. */
+const idFor = (login: string) =>
+  [...login].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) % 100000, 7) + 100000;
+
 /** GitHub `/user`: a token of the form `tok-<login>` authenticates that login. */
 function stubGithub() {
   vi.stubGlobal(
@@ -92,6 +116,7 @@ function stubGithub() {
       return new Response(
         JSON.stringify({
           login: m[1],
+          id: idFor(m[1]),
           avatar_url: `https://avatars.githubusercontent.com/u/${m[1].length}?v=4`,
         }),
         { status: 200 },
@@ -107,7 +132,11 @@ describe("GET /api/attestations", () => {
   it("returns an empty list for a paper nobody has verified", async () => {
     const res = await list(makeEnv());
     expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ paper: PAPER, attestations: [] });
+    await expect(res.json()).resolves.toEqual({
+      paper: PAPER,
+      attestations: [],
+      truncated: false,
+    });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(ORIGIN);
   });
 
@@ -221,6 +250,47 @@ describe("POST /api/attestations", () => {
   });
 });
 
+describe("a paper with more readers than one listing page", () => {
+  it("enumerates past the first page and does not serve simply the smallest keys", async () => {
+    // Covers `selectKeys`, which is shared with the comments endpoint. A bug
+    // here shipped once already because this suite's KV double ignored the
+    // cursor and always claimed the listing was complete.
+    const env = makeEnv();
+    const kv = env.ATTESTATIONS!;
+    const realList = kv.list.bind(kv);
+    let calls = 0;
+    kv.list = async (opts: Parameters<typeof realList>[0]) => {
+      calls++;
+      return realList(opts);
+    };
+    const ids: number[] = [];
+    for (let i = 0; i < 1500; i++) {
+      const id = 100000000 + i;
+      ids.push(id);
+      await kv.put(
+        `att:${PAPER}:${id}`,
+        JSON.stringify({
+          login: `r${i}`,
+          avatarUrl: null,
+          marks: { "thm:1": "2026-08-20T00:00:00Z" },
+        }),
+      );
+    }
+    const res = await list(env);
+    const body = (await res.json()) as { attestations: { login: string }[]; truncated: boolean };
+
+    expect(calls).toBeGreaterThan(1);
+    expect(body.truncated).toBe(true);
+    expect(body.attestations).toHaveLength(500);
+
+    const served = new Set(body.attestations.map((a) => 100000000 + Number(a.login.slice(1))));
+    const smallest = new Set(ids.slice(0, 500));
+    const overlap = [...served].filter((id) => smallest.has(id)).length;
+    // Head-of-sorted-listing selection would make this exactly 500.
+    expect(overlap).toBeLessThan(500);
+  });
+});
+
 describe("DELETE /api/attestations", () => {
   it("withdraws the caller's own mark and nobody else's", async () => {
     const env = makeEnv();
@@ -243,7 +313,7 @@ describe("DELETE /api/attestations", () => {
     const env = makeEnv();
     await post(env, "tok-saskia-v", { paper: PAPER, objId: "lem:a" });
     expect([...env.ATTESTATIONS!.store.keys()]).toEqual([
-      `att:${PAPER}:saskia-v`,
+      `att:${PAPER}:${idFor("saskia-v")}`,
     ]);
     await del(env, "tok-saskia-v", { paper: PAPER, objId: "lem:a" });
     expect(env.ATTESTATIONS!.store.size).toBe(0);

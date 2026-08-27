@@ -8,7 +8,7 @@ import { parseOutline, reconcileXrefAdvisories } from "../stage_util.js";
 import { parseAnchoredEnvs, lintAnchors, lintClarity, lintDefinitionOrder, lintNegativeContributionFraming, lintNestedMathDelimiters, lintReferences, repairObjRefs } from "../tex_anchors.js";
 import { FormalLayerSource, normalizeCitedScopeFootnotes, paperEnvMismatches } from "../formal_layer.js";
 import { parseNoteBlocks } from "../note_parser.js";
-import { SYNTHETIC_COMPANION_RE } from "../paper_index_orphans.js";
+import { SYNTHETIC_COMPANION_RE, externallyConsumedModules, findOrphanPaperModules } from "../paper_index_orphans.js";
 import { parseBib, verifyEntry, defaultLookup, citedKeys, canonicalizeBibEntry, UNREACHABLE } from "../citations.js";
 import { buildBundle, buildProseEntries, buildFormalLayer, buildSymbolRealizations, assumptionTable } from "../emit.js";
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
@@ -340,6 +340,31 @@ export async function stageP4(io: StageIO): Promise<void> {
             ? [entry.module]
             : [],
         ),
+        // Physical-tree modules neither the crosswalk nor a prior index reaches
+        // would otherwise never be indexed — the blind spot check_paper_indexes'
+        // orphan-module gate fails on. Include them EXCEPT modules a SIBLING
+        // development imports: those are the sibling's proof machinery banked
+        // into this namespace (e.g. a follow-up paper extending this substrate),
+        // and this paper neither uses nor should display them.
+        ...(await (async () => {
+          const orphans = (
+            await findOrphanPaperModules(
+              join(io.ctx.repoRoot, io.bank.leanSubdir),
+              modPrefix,
+              new Set(
+                (priorIndex?.entries ?? []).flatMap((e) =>
+                  typeof e.module === "string" ? [e.module] : [],
+                ),
+              ),
+            )
+          ).map((o) => o.module);
+          const foreign = await externallyConsumedModules(
+            io.ctx.repoRoot,
+            io.bank.leanSubdir,
+            new Set(orphans),
+          );
+          return orphans.filter((m) => !foreign.has(m));
+        })()),
       ],
     ),
   ].sort();

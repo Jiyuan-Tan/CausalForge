@@ -18,19 +18,28 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 open MeasureTheory ProbabilityTheory
 open scoped BigOperators ENNReal NNReal
 
+/-- Reorders the coordinates of an ordered sample by a permutation of the index
+set. -/
 def permuteFiniteSample {n : ℕ} {X : Type*}
     (σ : Equiv.Perm (Fin n)) (x : Fin n → X) : Fin n → X :=
   fun i => x (σ i)
 
+/-- The symmetrized version of an estimator: its average value over all
+reorderings of the sample coordinates. -/
 noncomputable def finitePermutationAverage {n : ℕ} {X : Type*}
     (est : (Fin n → X) → ℝ) (x : Fin n → X) : ℝ :=
   (∑ σ : Equiv.Perm (Fin n), est (permuteFiniteSample σ x)) /
     Fintype.card (Equiv.Perm (Fin n))
 
+/-- The histogram of an ordered sample: the number of coordinates taking each
+value of the alphabet. -/
 def finiteSampleHistogram {n : ℕ} {X : Type*} [DecidableEq X]
     (x : Fin n → X) (a : X) : ℕ :=
   Fintype.card {i : Fin n // x i = a}
 
+/-- The bijection identifying sample positions with pairs consisting of the value
+observed there and the position's place among all positions carrying that value —
+i.e. the partition of the index set into level sets of the sample. -/
 def finiteSampleFiberEquiv {n : ℕ} {X : Type*} (x : Fin n → X) :
     Fin n ≃ Σ a : X, {i : Fin n // x i = a} where
   toFun i := ⟨x i, i, rfl⟩
@@ -65,6 +74,8 @@ lemma exists_perm_of_finiteSampleHistogram_eq
     ((ef (y i)) ⟨i, rfl⟩).2
   simpa [σ, finiteSampleFiberEquiv] using hi
 
+/-- The symmetrized estimator is invariant under reordering of the sample: the
+permutation average of a reordered sample equals that of the original. -/
 lemma finitePermutationAverage_permute
     {n : ℕ} {X : Type*} (est : (Fin n → X) → ℝ)
     (τ : Equiv.Perm (Fin n)) (x : Fin n → X) :
@@ -84,6 +95,9 @@ lemma finitePermutationAverage_permute
   funext i
   simp [R, permuteFiniteSample]
 
+/-- Two samples with the same histogram give the symmetrized estimator the same
+value, so the symmetrized estimator depends on the data only through the counts.
+This is what makes the histogram a sufficient statistic for it. -/
 lemma finitePermutationAverage_eq_of_histogram_eq
     {n : ℕ} {X : Type*} [Fintype X] [DecidableEq X]
     (est : (Fin n → X) → ℝ) {x y : Fin n → X}
@@ -92,14 +106,20 @@ lemma finitePermutationAverage_eq_of_histogram_eq
   obtain ⟨σ, hσ⟩ := exists_perm_of_finiteSampleHistogram_eq h
   rw [← hσ, finitePermutationAverage_permute]
 
+/-- The set of count vectors that actually arise as the histogram of some sample
+of the given size — the range of the histogram map. -/
 def FiniteSampleHistogramSpace (n : ℕ) (X : Type*) [DecidableEq X] :=
   Set.range (@finiteSampleHistogram n X _)
 
+/-- An arbitrarily chosen ordered sample realizing a given achievable
+histogram. -/
 noncomputable def finiteSampleOfHistogram
     {n : ℕ} {X : Type*} [DecidableEq X]
     (h : FiniteSampleHistogramSpace n X) : Fin n → X :=
   Classical.choose h.2
 
+/-- The chosen representative sample does have the histogram it was chosen
+for. -/
 lemma finiteSampleOfHistogram_spec
     {n : ℕ} {X : Type*} [DecidableEq X]
     (h : FiniteSampleHistogramSpace n X) :
@@ -113,6 +133,9 @@ noncomputable def finiteHistogramEstimator
     (est : (Fin n → X) → ℝ) (h : FiniteSampleHistogramSpace n X) : ℝ :=
   finitePermutationAverage est (finiteSampleOfHistogram h)
 
+/-- Evaluating the histogram-indexed estimator at the histogram of a sample
+returns the symmetrized estimator at that sample, regardless of which
+representative sample the histogram was resolved to. -/
 lemma finiteHistogramEstimator_apply
     {n : ℕ} {X : Type*} [Fintype X] [DecidableEq X]
     (est : (Fin n → X) → ℝ) (x : Fin n → X) :
@@ -121,9 +144,12 @@ lemma finiteHistogramEstimator_apply
   apply finitePermutationAverage_eq_of_histogram_eq
   exact finiteSampleOfHistogram_spec _
 
+/-- The total number of observations recorded by a count vector, i.e. the sum of
+its entries. -/
 def histogramTotal {X : Type*} [Fintype X] (c : X → ℕ) : ℕ :=
   ∑ a, c a
 
+/-- The counts in the histogram of a sample of size n add up to n. -/
 lemma histogramTotal_finiteSampleHistogram
     {n : ℕ} {X : Type*} [Fintype X] [DecidableEq X]
     (x : Fin n → X) :
@@ -135,15 +161,20 @@ lemma histogramTotal_finiteSampleHistogram
     (s := Finset.univ) (t := Finset.univ) (f := x) (by simp)]
   simp
 
+/-- The set of ordered samples — of length equal to the count vector's total —
+whose histogram is exactly that count vector. -/
 def HistogramFiber {X : Type*} [Fintype X] [DecidableEq X]
     (c : X → ℕ) :=
   {x : Fin (histogramTotal c) → X // finiteSampleHistogram x = c}
 
+/-- A histogram fibre is a finite set, so one can average over it. -/
 noncomputable instance histogramFiberFintype
     {X : Type*} [Fintype X] [DecidableEq X] (c : X → ℕ) :
     Fintype (HistogramFiber c) :=
   Fintype.ofInjective Subtype.val Subtype.val_injective
 
+/-- Keeps the first n coordinates of a sample drawn from a histogram fibre whose
+total is at least n. -/
 def retainedHistogramPrefix {n : ℕ} {X : Type*} [Fintype X] [DecidableEq X]
     {c : X → ℕ} (h : n ≤ histogramTotal c)
     (x : HistogramFiber c) : Fin n → X :=
@@ -188,6 +219,8 @@ lemma retainedHistogramAverage_sq_sub_le
       (f := fun x : HistogramFiber c =>
         est (retainedHistogramPrefix h x) - theta))
 
+/-- The i.i.d. probability of an ordered sample under a given atom-mass vector:
+the product of the masses of its coordinates. -/
 def finiteProductWeight {n : ℕ} {X : Type*}
     (p : X → ℝ) (x : Fin n → X) : ℝ :=
   ∏ i, p (x i)
@@ -204,21 +237,31 @@ lemma finiteProductWeight_eq_of_histogram_eq
   simpa using
     (σ.prod_comp Finset.univ (fun i => p (x i)) (by simp)).symm
 
+/-- All samples in one histogram fibre carry the same i.i.d. probability, so the
+sampling law is uniform on each fibre. -/
 lemma finiteProductWeight_histogramFiber_constant
     {X : Type*} [Fintype X] [DecidableEq X]
     (p : X → ℝ) (c : X → ℕ) (x y : HistogramFiber c) :
     finiteProductWeight p x.1 = finiteProductWeight p y.1 :=
   finiteProductWeight_eq_of_histogram_eq p (x.2.trans y.2.symm)
 
+/-- The set of ordered samples of a prescribed length N whose histogram is a
+given count vector.  Unlike the fibre indexed by the count total, the length is
+fixed in advance. -/
 def FixedHistogramFiber (N : ℕ) {X : Type*} [DecidableEq X]
     (c : X → ℕ) :=
   {x : Fin N → X // finiteSampleHistogram x = c}
 
+/-- A fixed-length histogram fibre is a finite set, so one can average over
+it. -/
 noncomputable instance fixedHistogramFiberFintype
     (N : ℕ) {X : Type*} [Fintype X] [DecidableEq X] (c : X → ℕ) :
     Fintype (FixedHistogramFiber N c) :=
   Fintype.ofInjective Subtype.val Subtype.val_injective
 
+/-- The count-table estimator: the uniform average of the original n-sample
+estimator over all length-N samples with the given histogram, each truncated to
+its first n coordinates. -/
 noncomputable def fixedHistogramAverage
     {n N : ℕ} {X : Type*} [Fintype X] [DecidableEq X]
     (est : (Fin n → X) → ℝ) (h : n ≤ N) (c : X → ℕ) : ℝ := by
@@ -434,6 +477,9 @@ noncomputable def finiteSampleHistogramEstimator
     fixedHistogramAverage est h (finiteSampleHistogram s.points)
   else 0
 
+/-- Singletons are measurable in the space of finite samples over a discrete
+alphabet, which is what allows count-level estimators to be handled as measurable
+functions of the sample. -/
 noncomputable instance finiteSampleMeasurableSingletonClass
     {X : Type*} [MeasurableSpace X] [MeasurableSingletonClass X] :
     MeasurableSingletonClass (FiniteSample X) where
@@ -451,6 +497,8 @@ noncomputable instance finiteSampleMeasurableSingletonClass
       ext y
       simp [hNM]
 
+/-- The histogram-averaged estimator is a measurable function of the finite
+sample, so its risk integrals are well defined. -/
 lemma measurable_finiteSampleHistogramEstimator
     {n : ℕ} {X : Type*} [Fintype X] [MeasurableSpace X]
     [MeasurableSingletonClass X] [DecidableEq X]
@@ -729,6 +777,9 @@ lemma histogramFiber_weighted_retainedAverage_sq_le
     ← Finset.mul_sum]
   nlinarith
 
+/-- Jensen's inequality for the symmetrization: the squared error of the
+permutation-averaged estimator is at most the average of the squared errors over
+permutations. -/
 lemma finitePermutationAverage_sq_sub_le
     {n : ℕ} {X : Type*} (est : (Fin n → X) → ℝ)
     (theta : ℝ) (x : Fin n → X) :

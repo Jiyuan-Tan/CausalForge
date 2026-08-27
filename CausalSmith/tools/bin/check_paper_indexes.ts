@@ -57,7 +57,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { findOrphanPaperModules, SYNTHETIC_COMPANION_RE } from "../src/presentation/paper_index_orphans.js";
+import { externallyConsumedModules, findOrphanPaperModules, SYNTHETIC_COMPANION_RE } from "../src/presentation/paper_index_orphans.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
 
 /** Severities that fail `--strict`. Everything else is informational. */
@@ -340,7 +340,17 @@ async function lintBundle(
     // index, so P4 never passes it to the extractor. Detect that blind spot
     // from the physical run tree, but spare comment-only/private-only modules.
     const runDir = path.join(csRoot, subdir);
-    for (const orphan of await findOrphanPaperModules(runDir, prefix, entryModules)) {
+    const orphans = await findOrphanPaperModules(runDir, prefix, entryModules);
+    // A module a SIBLING development imports is that sibling's proof machinery
+    // banked into this namespace (follow-up runs extend earlier substrates);
+    // it is deliberately absent from THIS paper's index.
+    const foreign = await externallyConsumedModules(
+      csRoot,
+      subdir,
+      new Set(orphans.map((o) => o.module)),
+    );
+    for (const orphan of orphans) {
+      if (foreign.has(orphan.module)) continue;
       add(
         "orphan-module",
         orphan.module,

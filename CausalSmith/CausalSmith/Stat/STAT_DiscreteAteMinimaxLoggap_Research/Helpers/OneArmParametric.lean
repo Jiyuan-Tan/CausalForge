@@ -2,6 +2,15 @@ import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.Endpoint
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.OneArmFuzzyReduction
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.OneArmTensorization
 
+/-!
+# Parametric component of the one-arm lower bound
+
+This file zeroes out control outcomes in an arbitrary observed-data law, checks
+that this leaves the treated functional and every overlap condition intact, and
+uses the resulting control-zero pair to obtain the parametric `1/n` term of the
+minimax lower bound.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open MeasureTheory
@@ -11,6 +20,8 @@ open scoped ENNReal BigOperators
 def eraseControlOutcome {d : ℕ} (z : Obs d) : Obs d :=
   (z.1, z.2.1, z.2.1 && z.2.2)
 
+/-- Erasing the control-arm outcome is a measurable operation on observations, so
+it can be pushed forward along laws and sampling distributions. -/
 lemma measurable_eraseControlOutcome {d : ℕ} :
     Measurable (@eraseControlOutcome d) := measurable_of_finite _
 
@@ -18,6 +29,9 @@ lemma measurable_eraseControlOutcome {d : ℕ} :
 noncomputable def eraseControlLaw {d : ℕ} (P : DiscreteLaw d) : DiscreteLaw d :=
   ⟨P.pmf.map eraseControlOutcome⟩
 
+/-- The atom masses of the control-zeroed law: treated atoms keep their original
+mass, the control-success atom has mass zero, and the control-failure atom
+collects the whole control mass of its category. -/
 lemma eraseControlLaw_jointMass {d : ℕ} (P : DiscreteLaw d)
     (k : Fin d) (a y : Bool) :
     jointMass (eraseControlLaw P) k a y =
@@ -32,32 +46,47 @@ lemma eraseControlLaw_jointMass {d : ℕ} (P : DiscreteLaw d)
   simp only [Fintype.sum_ite_eq]
   rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)]
 
+/-- Zeroing the control outcomes leaves the marginal distribution of the category
+unchanged. -/
 lemma eraseControlLaw_cellMass {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     cellMass (eraseControlLaw P) k = cellMass P k := by
   simp [cellMass, eraseControlLaw_jointMass, armMass]
 
+/-- Zeroing the control outcomes leaves the joint probability of a category and
+treatment unchanged. -/
 lemma eraseControlLaw_armMass_true {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     armMass (eraseControlLaw P) k true = armMass P k true := by
   simp [armMass, eraseControlLaw_jointMass]
 
+/-- Zeroing the control outcomes leaves the propensity score of every category
+unchanged, so overlap conditions transfer verbatim to the control-zero law. -/
 lemma eraseControlLaw_propensity {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     propensity (eraseControlLaw P) k = propensity P k := by
   simp [propensity, eraseControlLaw_cellMass, eraseControlLaw_armMass_true]
 
+/-- After the erasure the control outcome regression is identically zero in every
+category — this is exactly the defining property of a control-zero law. -/
 lemma eraseControlLaw_outcomeMean_false {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     outcomeMean (eraseControlLaw P) false k = 0 := by
   simp [outcomeMean, armMass, eraseControlLaw_jointMass]
 
+/-- The treated outcome regression is untouched by the erasure. -/
 lemma eraseControlLaw_outcomeMean_true {d : ℕ} (P : DiscreteLaw d) (k : Fin d) :
     outcomeMean (eraseControlLaw P) true k = outcomeMean P true k := by
   simp [outcomeMean, armMass, eraseControlLaw_jointMass]
 
+/-- The treated-arm functional of the control-zeroed law equals the category-mass
+weighted average of the ORIGINAL law's treated outcome regression, so the target
+parameter is preserved by the erasure. -/
 lemma eraseControlLaw_treatedFunctional {d : ℕ} (P : DiscreteLaw d) :
     treatedFunctional (eraseControlLaw P) =
       ∑ k, cellMass P k * outcomeMean P true k := by
   unfold treatedFunctional
   simp_rw [eraseControlLaw_cellMass, eraseControlLaw_outcomeMean_true]
 
+/-- Promotes any law satisfying the experiment-class overlap conditions to a
+member of the control-zero subclass, by erasing its control outcomes; the
+overlap requirements survive because propensities and category masses do. -/
 noncomputable def eraseControlLaw_controlZero
     {n d : ℕ} {epsilon : ℝ} (P : DiscreteLaw d)
     (hclass : ExperimentClass n epsilon P (productLaw P n)) :
@@ -71,12 +100,18 @@ noncomputable def eraseControlLaw_controlZero
     rwa [eraseControlLaw_cellMass] at hk
   · exact eraseControlLaw_outcomeMean_false P
 
+/-- The observation measure of the control-zeroed law is the pushforward of the
+original observation measure under the outcome-erasing map. -/
 lemma obsLaw_eraseControlLaw {d : ℕ} (P : DiscreteLaw d) :
     obsLaw (eraseControlLaw P) = (obsLaw P).map eraseControlOutcome := by
   unfold obsLaw eraseControlLaw
   exact (PMF.toMeasure_map eraseControlOutcome P.pmf
     measurable_eraseControlOutcome).symm
 
+/-- The n-fold i.i.d. law of the control-zeroed model is the pushforward of the
+original n-fold law under coordinatewise outcome erasure.  This is what lets a
+total-variation bound between the original sampling laws be transported to the
+control-zero pair by the data-processing inequality. -/
 lemma productLaw_eraseControlLaw {n d : ℕ} (P : DiscreteLaw d) :
     productLaw (eraseControlLaw P) n =
       (productLaw P n).map
@@ -88,6 +123,9 @@ lemma productLaw_eraseControlLaw {n d : ℕ} (P : DiscreteLaw d) :
     (f := fun _ : Fin n => eraseControlOutcome)
     (fun _ => measurable_eraseControlOutcome.aemeasurable)).symm
 
+/-- For the null member of the two-point parametric family, whose treated
+outcome regression is constant at g, the control-zeroed treated functional equals
+g. -/
 lemma eraseControl_endpointParametricLaw_treated
     {d : ℕ} [Nonempty (Fin d)] {g : ℝ}
     (hv : Causalean.Estimation.MinimaxATE.ValidDGP
@@ -109,6 +147,9 @@ lemma eraseControl_endpointParametricLaw_treated
   rw [← Finset.sum_mul, cellMass_sum]
   ring
 
+/-- For the perturbed member of the two-point parametric family the control-zeroed
+treated functional equals g + δ, so the two hypotheses are separated by exactly
+the perturbation δ. -/
 lemma eraseControl_endpointParametricPertLaw_treated
     {d : ℕ} [Nonempty (Fin d)] {g delta : ℝ}
     (hv : Causalean.Estimation.MinimaxATE.ValidDGP

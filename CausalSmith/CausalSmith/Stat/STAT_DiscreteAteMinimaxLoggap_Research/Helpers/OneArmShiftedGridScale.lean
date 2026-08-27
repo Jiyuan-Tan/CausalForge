@@ -10,22 +10,36 @@ as the shifted three-point signal.
 
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
+/-- The smallest positive node of the overlap-shifted approximation grid,
+`κ⁴ / (10¹⁰ D²)`.  Shrinking it like `κ⁴` and like `1/D²` keeps the polynomial
+variation across the three small nodes on the same `κ²` scale as the
+three-point signal being obstructed. -/
 noncomputable def oneArmShiftedNodeScale (κ : ℝ) (D : ℕ) : ℝ :=
   κ ^ 4 / (10000000000 * (D : ℝ) ^ 2)
 
+/-- The location of the pole of the rational target, placed at `κ` times the
+smallest grid node.  It therefore sits just below the grid, at a distance
+calibrated by the overlap ratio `κ`. -/
 noncomputable def oneArmShiftedPoleScale (κ : ℝ) (D : ℕ) : ℝ :=
   κ * oneArmShiftedNodeScale κ D
 
+/-- The smallest grid node is strictly positive whenever the overlap ratio is
+positive and the degree budget is at least one. -/
 lemma oneArmShiftedNodeScale_pos {κ : ℝ} {D : ℕ}
     (hκ : 0 < κ) (hD : 1 ≤ D) : 0 < oneArmShiftedNodeScale κ D := by
   unfold oneArmShiftedNodeScale
   have hDR : (0 : ℝ) < D := by exact_mod_cast (Nat.zero_lt_of_lt hD)
   positivity
 
+/-- The pole location is strictly positive whenever the overlap ratio is
+positive and the degree budget is at least one. -/
 lemma oneArmShiftedPoleScale_pos {κ : ℝ} {D : ℕ}
     (hκ : 0 < κ) (hD : 1 ≤ D) : 0 < oneArmShiftedPoleScale κ D := by
   exact mul_pos hκ (oneArmShiftedNodeScale_pos hκ hD)
 
+/-- Three times the smallest grid node is still at most one, so the three
+special nodes used by the three-point obstruction all lie inside the unit
+interval. -/
 lemma oneArmShiftedNodeScale_three_le_one {κ : ℝ} {D : ℕ}
     (hκ0 : 0 ≤ κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D) :
     3 * oneArmShiftedNodeScale κ D ≤ 1 := by

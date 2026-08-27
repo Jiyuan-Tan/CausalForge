@@ -51,6 +51,68 @@ export function renderedNodes(g: FormalizationGraph): GraphNode[] {
   return g.nodes.filter((n) => n.nl.frozen && envForNode(n) !== null);
 }
 
+/** Frozen theorem-family (theorem/lemma) nodes NOTHING consumes: no `proof-uses`
+ *  or `statement-uses` in-edge, and no other node's statement/proof text mentions
+ *  their id. A headline result legitimately has no consumer, so consumers of this
+ *  list must let an operator acknowledge entries — but ballast (motivation-only
+ *  standard material) must not silently enter the paper (two-category incident,
+ *  2026-08-27). */
+export function unconsumedStatementNodes(
+  g: FormalizationGraph,
+  /** Operator-acknowledged ids (ballast_review.json): an acknowledged headline is
+   *  a LEGITIMATE sink, so definitions it consumes are not ballast. */
+  acknowledged: ReadonlySet<string> = new Set(),
+): GraphNode[] {
+  // Boundary-aware id match: `thm:frontier-upper` must not count as consumed
+  // merely because `thm:frontier-upper-all-d` is mentioned somewhere.
+  const mentions = (text: string, id: string): boolean =>
+    new RegExp(`(?<![A-Za-z0-9-])${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9-])`).test(
+      text,
+    );
+  const textOf = (n: GraphNode): string => JSON.stringify([n.nl, n.proof]);
+  const theoremFamily = (n: GraphNode): boolean => n.kind === "theorem" || n.kind === "lemma";
+  const frozen = (n: GraphNode): boolean =>
+    n.provenance === "from-note" && Boolean(n.nl.frozen) && envForNode(n) !== null;
+
+  // Consumers of an id: proof-/statement-uses edge sources, plus formal-content
+  // nodes (never setup/gate narration — prose narrating an example is not
+  // consumption; that laundering hid the two-category pair, 2026-08-27) whose
+  // statement/proof text mentions the id. Text consumption is theorem-family
+  // for claims; definitions may also be kept alive by other definitions.
+  const consumersOf = (id: string, textKinds: (m: GraphNode) => boolean): string[] => [
+    ...g.edges
+      .filter((e) => (e.kind === "proof-uses" || e.kind === "statement-uses") && e.to === id)
+      .map((e) => e.from),
+    ...g.nodes.filter((m) => m.id !== id && textKinds(m) && mentions(textOf(m), id)).map((m) => m.id),
+  ];
+
+  // Pass 1 — a theorem-family claim with ZERO consumers. A lemma feeding a
+  // headline is consumed (the headline's in-edge/text counts even though the
+  // headline itself is a candidate) — only a claim nothing at all uses flags.
+  const flagged = new Set(
+    g.nodes
+      .filter(
+        (n) =>
+          frozen(n) &&
+          theoremFamily(n) &&
+          consumersOf(n.id, theoremFamily).filter((c) => c !== n.id).length === 0,
+      )
+      .map((n) => n.id),
+  );
+
+  // Pass 2 — a definition whose every consumer is flagged ballast (its only
+  // reason to exist is the ballast it feeds) rides along.
+  const formalContent = (m: GraphNode): boolean => m.kind !== "setup" && m.kind !== "gate";
+  const ballastDefs = g.nodes.filter((n) => {
+    if (!frozen(n) || n.kind !== "definition") return false;
+    const consumers = consumersOf(n.id, formalContent).filter((c) => c !== n.id);
+    return consumers.length > 0 && consumers.every((c) => flagged.has(c) && !acknowledged.has(c));
+  });
+
+  const byId = new Map(g.nodes.map((n) => [n.id, n]));
+  return [...[...flagged].map((id) => byId.get(id)!), ...ballastDefs];
+}
+
 /** Outgoing statement-uses targets of a node id (as nodes). */
 function statementUsesTargets(g: FormalizationGraph, id: string): GraphNode[] {
   const byId = new Map(g.nodes.map((n) => [n.id, n]));

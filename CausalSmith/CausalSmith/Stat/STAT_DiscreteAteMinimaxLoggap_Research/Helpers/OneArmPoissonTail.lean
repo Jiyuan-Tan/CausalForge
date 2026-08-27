@@ -151,6 +151,10 @@ noncomputable def tripleCountTaylorRemainder
         expSeriesTail (sampleScale * p) (D + 1 - k)) +
     expSeriesTail (sampleScale * p) (D + 1) * Real.exp (sampleScale * p)
 
+/-- Summing the three-count remainder over all count triples with a given total
+collapses the propensity and success-rate dependence: the result equals the
+purely scalar remainder at the category intensity.  The three sufficient counts
+therefore behave like a single Poisson count for tail purposes. -/
 lemma tripleCountTaylorRemainder_eq_countTaylorRemainder
     (sampleScale p pi mu : ℝ) (D : ℕ) :
     tripleCountTaylorRemainder sampleScale p pi mu D =

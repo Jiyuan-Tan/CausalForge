@@ -1,6 +1,17 @@
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.OneArmSignedPrior
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
+/-!
+# Lifting a prior on positive nodes to a one-arm hard prior
+
+This file performs the inverse-size tilt that reweights a prior on strictly
+positive interpolation nodes and appends a zero atom, then reads off the cell
+mass, propensity and treated outcome mean of the lifted one-arm configuration.
+The tilt is chosen so that the observable moments of the lifted prior reduce to
+rational tests of the original prior, which the signed interpolation weights
+annihilate.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open scoped ENNReal BigOperators
@@ -11,6 +22,10 @@ noncomputable def inverseTiltWeight {ι : Type*} [Fintype ι]
   | none => 1 - ∑ i, (ω i).toReal * (a / x i)
   | some i => (ω i).toReal * (a / x i)
 
+/-- All tilted weights are nonnegative provided the shift a is nonnegative and no
+larger than any node.  Each positive node then receives a weight scaled by a
+factor a/x in the unit interval, so the leftover mass assigned to the new zero
+atom cannot go negative. -/
 lemma inverseTiltWeight_nonneg {ι : Type*} [Fintype ι]
     (ω : PMF ι) (x : ι → ℝ) {a : ℝ} (ha : 0 ≤ a)
     (hx : ∀ i, a ≤ x i) : ∀ z, 0 ≤ inverseTiltWeight ω x a z := by
@@ -34,6 +49,8 @@ lemma inverseTiltWeight_nonneg {ι : Type*} [Fintype ι]
       unfold inverseTiltWeight
       linarith
 
+/-- The tilted weights sum to one, since the zero atom is defined to absorb
+exactly the mass the tilt removes from the positive nodes. -/
 lemma inverseTiltWeight_sum {ι : Type*} [Fintype ι]
     (ω : PMF ι) (x : ι → ℝ) (a : ℝ) :
     ∑ z, inverseTiltWeight ω x a z = 1 := by
@@ -49,6 +66,8 @@ noncomputable def inverseTiltPMF {ι : Type*} [Fintype ι]
     rw [← ENNReal.ofReal_sum_of_nonneg (fun z _ => hweight z), inverseTiltWeight_sum]
     simp
 
+/-- The atom masses of the tilted prior, read as real numbers, are exactly the
+tilted weights it was built from. -/
 lemma inverseTiltPMF_toReal {ι : Type*} [Fintype ι]
     (ω : PMF ι) (x : ι → ℝ) (a : ℝ)
     (hweight : ∀ z, 0 ≤ inverseTiltWeight ω x a z) (z : Option ι) :
@@ -85,6 +104,9 @@ noncomputable def liftedOutcomeMean {ι : Type*}
   | none => 1
   | some i => x i / (x i + a)
 
+/-- At a positive node, the joint probability of the category and treatment in
+the lifted configuration is scale·ε·(x + a): the inverse-size factor in the
+propensity cancels the node in the cell mass and leaves an additive shift. -/
 lemma lifted_arm_mass {ι : Type*} {scale epsilon a : ℝ} {x : ι → ℝ}
     (i : ι) (hxi : x i ≠ 0) :
     liftedCellMass scale x (some i) * liftedPropensity epsilon a x (some i) =
@@ -92,6 +114,9 @@ lemma lifted_arm_mass {ι : Type*} {scale epsilon a : ℝ} {x : ι → ℝ}
   simp only [liftedCellMass, liftedPropensity]
   field_simp
 
+/-- At a positive node, the joint probability of the category, treatment and a
+successful outcome in the lifted configuration is scale·ε·x — linear in the node,
+so the observable treated-success intensities are affine in the node value. -/
 lemma lifted_treated_success_mass {ι : Type*} {scale epsilon a : ℝ} {x : ι → ℝ}
     (i : ι) (hxi : x i ≠ 0) (hxia : x i + a ≠ 0) :
     liftedCellMass scale x (some i) * liftedPropensity epsilon a x (some i) *
@@ -101,6 +126,10 @@ lemma lifted_treated_success_mass {ι : Type*} {scale epsilon a : ℝ} {x : ι �
   simp only [liftedOutcomeMean]
   field_simp
 
+/-- The contribution of a positive node to the treated functional — its cell mass
+times its treated outcome mean — is scale·x²/(x + a).  Unlike the observable
+intensities this is a strictly convex function of the node, which is the source
+of the separation between the two priors. -/
 lemma lifted_functional_atom {ι : Type*} {scale a : ℝ} {x : ι → ℝ}
     (i : ι) (hxia : x i + a ≠ 0) :
     liftedCellMass scale x (some i) * liftedOutcomeMean a x (some i) =
@@ -116,6 +145,9 @@ noncomputable def liftedTripleMoment {ι : Type*}
     (liftedCellMass scale x z * liftedPropensity epsilon a x z *
       liftedOutcomeMean a x z) ^ k
 
+/-- The added zero atom contributes nothing to any observable moment of positive
+total degree, because its lifted cell mass is zero; only the positive nodes are
+seen by the moment-matching argument. -/
 lemma liftedTripleMoment_none {ι : Type*} {scale epsilon a : ℝ} {x : ι → ℝ}
     {i j k : ℕ} (hdeg : 0 < i + j + k) :
     liftedTripleMoment scale epsilon a x i j k none = 0 := by

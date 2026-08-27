@@ -19,12 +19,19 @@ open MeasureTheory ProbabilityTheory Causalean.Stat
 open Causalean.Mathlib.Probability.FiniteMarkedPoissonPartition
 open scoped BigOperators ENNReal NNReal
 
+/-- The law of the observed triple label under a discrete law is a probability
+measure, being the pushforward of the observation law along a measurable map on
+a finite space. -/
 noncomputable local instance shiftedTripleLabelLaw_isProbabilityMeasure
     {d : ℕ} (P : DiscreteLaw d) :
     IsProbabilityMeasure
       (Measure.map oneArmObservationTripleLabel (obsLaw P)) :=
   Measure.isProbabilityMeasure_map (measurable_of_finite _).aemeasurable
 
+/-- The propensity produced by lifting the shifted grid through the inverse tilt
+lies in the admissible overlap band `[ε, 1 − ε]` at every cell, including the
+"no cell" value, provided the inflated overlap level `ε·(1 + κ)` stays below
+`1 − ε`. -/
 lemma oneArmShiftedLiftedPropensity_mem_Icc
     {D : ℕ} {epsilon κ : ℝ}
     (he0 : 0 < epsilon) (hoverlap : epsilon * (1 + κ) ≤ 1 - epsilon)
@@ -42,6 +49,8 @@ lemma oneArmShiftedLiftedPropensity_mem_Icc
       (oneArmShiftedSelectionGrid_mem_Icc hκ hκ1 hD i).1 hκ.le
   · exact hoverlap
 
+/-- The outcome mean produced by lifting the shifted grid lies in `[0,1]` at
+every cell, so it is a legitimate success probability. -/
 lemma oneArmShiftedLiftedOutcomeMean_mem_Icc
     {D : ℕ} {κ : ℝ} (hD : 1 ≤ D) (hκ : 0 < κ) (hκ1 : κ ≤ 1) :
     ∀ z : Option (Fin (2 * D + 4)),

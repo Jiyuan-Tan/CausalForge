@@ -295,21 +295,7 @@ For a real-outcome finite-cell law \(P\) indexed by \(k=1,\ldots,d\) and an over
 \]
 \end{definitionv}
 
-\begin{propositionv}{prop:ate-identification}[ATE g-formula identification]
-For every dimension \(d\), overlap parameter \(\epsilon\), envelope level \(M\), radius \(\sigma\), and every \(P\in\mathcal P_{d,\epsilon,M,\sigma}\) in the sense of \cref{obj:def:model-class}, the average treatment effect functional \(\tau(P)\) of \cref{obj:def:ate-functional} equals the full-data causal contrast and is identified from the observed margin by the finite-cell g-formula:
-\[
-\tau(P)
-=
-\int \{Y(1)-Y(0)\}\,dP
-=
-\sum_{k=1}^{d} p_k
-\left\{
-E_P[Y\mid A=1,X=k]-E_P[Y\mid A=0,X=k]
-\right\}.
-\]
-\end{propositionv}
-
-\Cref{obj:prop:ate-identification} separates causal identification from the finite-sample estimation problem. Under the stated conditions, the minimax analysis can target the observed-data g-formula representation of the full-data causal contrast, in the tradition of adjustment and g-computation arguments \citep{Rubin1974,RosenbaumRubin1983,Robins1994,ImbensRubin2015}.
+Under these conditions \(\tau(P)\) coincides with the full-data causal contrast \(\int\{Y(1)-Y(0)\}\,dP\) and is identified from the observed margin by the standard finite-cell g-computation argument \citep{Rubin1974,RosenbaumRubin1983,Robins1994,ImbensRubin2015}; the minimax analysis targets this observed-data functional throughout.
 
 For the risk statements, estimators are clipped to the natural scale implied by the mean normalization. The selector benchmark used later is
 \[
@@ -4278,7 +4264,7 @@ u_{t,d_t}\longrightarrow0,\qquad
 
 This appendix records the scope of the machine-checked mathematical layer supporting the paper. The formalization covers the finite-cell observed-data model, the radius-indexed real-outcome classes, the estimators, the embeddings used for lower bounds, the selector risk bound, the endpoint reductions, the all-alphabet minimax bracket, and the regime-localization algebra. The displayed binary source lemmas are checked declarations in the current artifact; \citet{ZengBalakrishnanHanKennedy2024} supplies their statistical origin and attribution. Other citations supply source motivation and statistical context.
 
-The setup objects are represented by \cref{obj:ass:consistency,obj:ass:conditional-exchangeability,obj:ass:overlap,obj:ass:mean-normalization,obj:ass:approximate-homogeneity,obj:ass:second-central-moment}, together with the model, experiment, target, and risk definitions in \cref{obj:def:model-class,obj:def:unrestricted-class,obj:def:sample-experiment,obj:def:ate-functional,obj:def:minimax-risk}. The identification and scale-normalization steps are represented by \cref{obj:prop:ate-identification,obj:lem:scale-sanity}. These statements fix the statistical experiment whose minimax risk is studied throughout the paper.
+The setup objects are represented by \cref{obj:ass:consistency,obj:ass:conditional-exchangeability,obj:ass:overlap,obj:ass:mean-normalization,obj:ass:approximate-homogeneity,obj:ass:second-central-moment}, together with the model, experiment, target, and risk definitions in \cref{obj:def:model-class,obj:def:unrestricted-class,obj:def:sample-experiment,obj:def:ate-functional,obj:def:minimax-risk}. The scale-normalization step is represented by \cref{obj:lem:scale-sanity}. These statements fix the statistical experiment whose minimax risk is studied throughout the paper.
 
 The constructive side is represented by the estimator definitions in \cref{obj:def:polynomial-handle,obj:def:collision-handle,obj:def:total-estimator} and by the risk guarantees in \cref{obj:thm:robust-upper-construction-resolution-all-d,obj:thm:frontier-upper-all-d}. The lower-bound side is represented by the embedding and least-favorable constructions in \cref{obj:def:least-favorable-handle,obj:synth_4,obj:synth_7}, the binary-to-real transfer in \cref{obj:prop:zeng-class-inclusion-and-lower-transfer}, the exact-homogeneity lower transfer in \cref{obj:lem:scaled-binary-exact-lower-transfer-all-d}, and the radius-channel converse in \cref{obj:thm:radius-channel-converse-all-d}. The binary source lemmas in \cref{obj:lem:binary-exact-collision-lower,obj:lem:zeng-binary-exact-homogeneity-lower,obj:lem:zeng-binary-one-arm-lower,obj:lem:zeng-usable-occupancy-reciprocal} are checked declarations with faithful proof audits in the verification contract, while \citet{ZengBalakrishnanHanKennedy2024} supplies their origin and statistical context.
 
@@ -4288,132 +4274,6 @@ The anchored theorem, proposition, lemma, definition, and assumption statements 
 
 
 \section{Proofs of the main results}\label{sec:deferred-proofs}
-
-\begin{proof}[Proof of \cref{obj:prop:ate-identification}]
-\begin{enumerate}
-\item
-For each cell \(k=1,\ldots,d\), set
-\[
-p_k=P(X=k);
-\]
-when \(d=0\), all sums below are empty.  When \(p_k>0\), let \(\pi_k=P(A=1\mid X=k)\).  The finite-cell law carries an arm-cell outcome law \(\nu_{ak}\) for every arm \(a\in\{0,1\}\) and every cell, including cells with \(p_k=0\), and its totalized mean is
-\[
-\mu_{ak}:=\int y\,d\nu_{ak}(y).
-\]
-For every supported cell and every Borel set \(\mathfrak A\subseteq\mathbb R\), the observed arm-cell factorization is
-\[
-P_O(X=k,A=a,Y\in\mathfrak A)
-=
-p_k
-\begin{cases}
-\pi_k, & a=1,\\
-1-\pi_k, & a=0
-\end{cases}
-\nu_{ak}(\mathfrak A).
-\]
-If \(p_k>0\), \cref{obj:ass:overlap} and \(\epsilon>0\) make the displayed scalar positive for both arms.  Hence, on supported cells, \(\nu_{ak}\) is the observed conditional law of \(Y\) given \((A=a,X=k)\), and \(\mu_{ak}\) is the corresponding observed conditional mean.  If \(p_k=0\), then \(P_O(X=k)=0\); the totalized law \(\nu_{ak}\) and mean \(\mu_{ak}\) enter the finite formula below only through terms multiplied by \(p_k\). % lean: observed_arm_outcome_measure
-
-\item
-Fix \(a\in\{0,1\}\) and a supported cell \(k\), so \(p_k>0\).  By \cref{obj:ass:consistency}, on \(\{X=k,A=a\}\),
-\[
-Y(a)=Y
-\quad\text{almost surely}.
-\]
-Together with the observed arm-cell factorization, this gives, for every Borel \(\mathfrak A\),
-\[
-P(X=k,A=a,Y(a)\in\mathfrak A)
-=
-p_k
-\begin{cases}
-\pi_k, & a=1,\\
-1-\pi_k, & a=0
-\end{cases}
-\nu_{ak}(\mathfrak A).
-\]
-Applying \cref{obj:ass:conditional-exchangeability} in cell \(k\) to the potential-outcome event \(\{Y(a)\in\mathfrak A\}\) yields
-\[
-P(X=k,A=a,Y(a)\in\mathfrak A)\,P(X=k)
-=
-P(X=k,A=a)\,P(X=k,Y(a)\in\mathfrak A).
-\]
-Here \(P(X=k)=p_k\), and \(P(X=k,A=a)\) is \(p_k\pi_k\) when \(a=1\) and \(p_k(1-\pi_k)\) when \(a=0\).  The same overlap argument makes this arm-cell probability positive, so cancellation gives
-\[
-P(X=k,Y(a)\in\mathfrak A)=p_k\nu_{ak}(\mathfrak A).
-\]
-Equivalently,
-\[
-\mathcal L_P(Y(a);\,X=k)=p_k\,\nu_{ak},
-\]
-where the left side is the pushforward of the full-data law restricted to \(\{X=k\}\). % lean: full_cell_potential_measure
-
-\item
-The preceding restricted-law identity supplies the full-data integrability.  On supported cells, \cref{obj:ass:second-central-moment} gives integrability of \(y\mapsto (y-\mu_{ak})^2\) under \(\nu_{ak}\).  Thus \(y-\mu_{ak}\) is square-integrable, hence integrable, and adding the finite constant \(\mu_{ak}\) gives first-moment integrability of \(y\mapsto y\) under \(\nu_{ak}\).  The restricted-law identity transfers this integrability to \(Y(a)\) on each supported cell.  If \(p_k=0\), the full-data mass of \(\{X=k\}\) is \(0\), so the corresponding restricted measure is the zero measure.  Since there are finitely many cells,
-\[
-Y(1)\in L^1(P),\qquad Y(0)\in L^1(P).
-\]
-% lean: full_potential_integrable
-
-\item
-For every \(a\in\{0,1\}\) and every cell \(k\),
-\[
-\int_{\{X=k\}}Y(a)\,dP
-=
-p_k\int y\,d\nu_{ak}(y)
-=
-p_k\mu_{ak}.
-\]
-On supported cells this is the integral form of the restricted-law identity in the second step and the defining integral for \(\mu_{ak}\).  On zero-mass cells, the restricted measure is zero and \(p_k=0\), so both sides vanish. % lean: full_potential_cell_integral
-
-\item
-Apply the finite-fiber decomposition of the integral to the measurable finite-valued map \(X\).  Using the integrability just established,
-\[
-\int Y(1)\,dP
-=
-\sum_{k=1}^{d}\int_{\{X=k\}}Y(1)\,dP,
-\qquad
-\int Y(0)\,dP
-=
-\sum_{k=1}^{d}\int_{\{X=k\}}Y(0)\,dP.
-\]
-Therefore
-\[
-\begin{aligned}
-\int\{Y(1)-Y(0)\}\,dP
-&=
-\sum_{k=1}^{d}
-\left\{
-\int_{\{X=k\}}Y(1)\,dP
--
-\int_{\{X=k\}}Y(0)\,dP
-\right\}\\
-&=
-\sum_{k=1}^{d}p_k(\mu_{1k}-\mu_{0k}).
-\end{aligned}
-\]
-By \cref{obj:def:ate-functional},
-\[
-\tau(P)=\sum_{k=1}^{d}p_k(\mu_{1k}-\mu_{0k}),
-\]
-so
-\[
-\tau(P)
-=
-\int\{Y(1)-Y(0)\}\,dP.
-\]
-On supported cells, the first step identifies \(\mu_{ak}\) with \(E_P[Y\mid A=a,X=k]\); cells with \(p_k=0\) contribute \(0\) to the totalized sum.  Thus, when conditional expectations on zero-mass arm-cell events are chosen to equal the totalized means \(\mu_{ak}\), the same equality is written as
-\[
-\tau(P)
-=
-\int\{Y(1)-Y(0)\}\,dP
-=
-\sum_{k=1}^{d}p_k
-\left\{
-E_P[Y\mid A=1,X=k]-E_P[Y\mid A=0,X=k]
-\right\}.
-\]
-The observed margin determines this finite-cell formula: \(p_k=P_O(X=k)\), and on every supported cell \cref{obj:ass:overlap} gives positive observed mass in both arms, so the observed conditional laws determine the two arm-cell means.  Zero-mass cells have weight \(p_k=0\). % lean: ate_identification
-\end{enumerate}
-\end{proof}
 
 \begin{proof}[Proof of \cref{obj:lem:scale-sanity}]
 Fix \(P\in\mathcal P_{d,\epsilon,M}^{\mathrm{unr}}\).  Since \(M\ge1\), we have \(M\ge0\).  For every supported cell \(k\),

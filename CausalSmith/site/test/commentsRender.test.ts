@@ -10,7 +10,6 @@ import {
   renderArchived,
   renderHighlights,
   renderRail,
-  renderThreadLink,
   type CardHandlers,
   type CommentsUi,
 } from "../src/scripts/comments/render.js";
@@ -26,7 +25,6 @@ const SHELL = `
   <aside class="cs-rail" id="cs-rail">
     <div class="cs-rail-head">
       Reader commentary <span id="cs-rail-count"></span>
-      <a id="cs-rail-thread" href="#" hidden>thread</a>
     </div>
     <div id="cs-rail-cards"></div>
     <div id="cs-rail-general"></div>
@@ -46,6 +44,7 @@ const SHELL = `
     <p id="cs-status"></p>
     <span id="cs-idchip"></span>
     <button id="cs-signin"></button>
+    <p id="cs-signin-note"></p>
     <button id="cs-cancel"></button>
     <button id="cs-post"></button>
   </div>
@@ -478,20 +477,5 @@ describe("renderHighlights", () => {
     ).toBe(true);
     expect(lit).toEqual(new Set(["b0-s1"]));
     expect(ui.root).toBeTruthy();
-  });
-});
-
-describe("renderThreadLink", () => {
-  it("links the discussion only for a well-formed repo and number", () => {
-    const { ui } = mount();
-    renderThreadLink(ui, "Jiyuan-Tan/CausalSmith", 12);
-    expect(ui.railThread.hidden).toBe(false);
-    expect(ui.railThread.getAttribute("href")).toBe(
-      "https://github.com/Jiyuan-Tan/CausalSmith/discussions/12",
-    );
-    renderThreadLink(ui, "evil.com/x/../y", 12);
-    expect(ui.railThread.hidden).toBe(true);
-    renderThreadLink(ui, "owner/repo", null);
-    expect(ui.railThread.hidden).toBe(true);
   });
 });

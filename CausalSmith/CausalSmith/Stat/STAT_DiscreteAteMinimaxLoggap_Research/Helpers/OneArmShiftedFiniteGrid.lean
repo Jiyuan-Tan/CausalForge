@@ -14,25 +14,42 @@ open Polynomial
 open Causalean.Mathlib.Analysis.EhlichZellerMesh
 open Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality
 
+/-- The `j`-th Chebyshev–Ehlich–Zeller mesh node of order `2D`, rescaled by the
+affine map that sends `[-1, 1]` onto the interval from the smallest grid node
+`a` to `1`.  These are the oversampling nodes on which polynomial approximation
+error is controlled. -/
 noncomputable def oneArmShiftedAffineMeshNode (κ : ℝ) (D j : ℕ) : ℝ :=
   let a := oneArmShiftedNodeScale κ D
   (1 + a) / 2 + (1 - a) / 2 * czNode (2 * D) j
 
+/-- The finite approximation grid of `2D + 4` points: the three special small
+nodes `a`, `2a`, `3a` (where `a` is the smallest grid node) that carry the
+three-point obstruction, followed by the `2D + 1` affine Chebyshev mesh nodes
+that pin down the polynomial's size on the whole interval. -/
 noncomputable def oneArmShiftedSelectionGrid (κ : ℝ) (D : ℕ) :
     Fin (2 * D + 4) → ℝ := fun i =>
   if i.1 < 3 then (i.1 + 1 : ℕ) * oneArmShiftedNodeScale κ D
   else oneArmShiftedAffineMeshNode κ D (i.1 - 3)
 
+/-- The target function evaluated on the grid: at a node `x` it is the value
+`x / (x + b)` of the rational function with pole at `-b`, where `b` is the
+calibrated pole location.  This is the function the reciprocal-plus-polynomial
+space must fail to approximate. -/
 noncomputable def oneArmShiftedSelectionTarget (κ : ℝ) (D : ℕ) :
     Fin (2 * D + 4) → ℝ := fun i =>
   oneArmShiftedSelectionGrid κ D i /
     (oneArmShiftedSelectionGrid κ D i + oneArmShiftedPoleScale κ D)
 
+/-- The approximating family on the grid, indexed by `D + 2` functions: the
+reciprocal `1/x` together with the monomials `1, x, …, x^D`.  Its span is the
+set of functions a prior can match through its reciprocal moment and its first
+`D` ordinary moments. -/
 noncomputable def oneArmShiftedSelectionBasis (κ : ℝ) (D : ℕ) :
     Fin (D + 2) → Fin (2 * D + 4) → ℝ := fun j i =>
   if j.1 = 0 then (oneArmShiftedSelectionGrid κ D i)⁻¹
   else (oneArmShiftedSelectionGrid κ D i) ^ (j.1 - 1)
 
+/-- Every affine mesh node lies between the smallest grid node and `1`. -/
 lemma oneArmShiftedAffineMeshNode_mem_Icc
     {κ : ℝ} {D j : ℕ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D) :
     oneArmShiftedAffineMeshNode κ D j ∈
@@ -53,16 +70,22 @@ lemma oneArmShiftedAffineMeshNode_mem_Icc
       (div_nonneg (sub_nonneg.mpr ha1) (by norm_num : (0 : ℝ) ≤ 2))
     linarith
 
+/-- The first three grid points are exactly `a`, `2a` and `3a`, where `a` is the
+smallest grid node. -/
 lemma oneArmShiftedSelectionGrid_special (κ : ℝ) (D : ℕ) (r : Fin 3) :
     oneArmShiftedSelectionGrid κ D ⟨r.1, by omega⟩ =
       ((r.1 + 1 : ℕ) : ℝ) * oneArmShiftedNodeScale κ D := by
   simp [oneArmShiftedSelectionGrid, r.2]
 
+/-- Past the three special points, grid point number `j + 3` is the `j`-th
+affine mesh node. -/
 lemma oneArmShiftedSelectionGrid_mesh (κ : ℝ) (D j : ℕ) (hj : j ≤ 2 * D) :
     oneArmShiftedSelectionGrid κ D ⟨j + 3, by omega⟩ =
       oneArmShiftedAffineMeshNode κ D j := by
   simp [oneArmShiftedSelectionGrid]
 
+/-- Every point of the finite grid — special or mesh — lies between the smallest
+grid node and `1`. -/
 lemma oneArmShiftedSelectionGrid_mem_Icc
     {κ : ℝ} {D : ℕ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (i : Fin (2 * D + 4)) :
@@ -84,6 +107,11 @@ lemma oneArmShiftedSelectionGrid_mem_Icc
     simp only [hi, if_false]
     exact oneArmShiftedAffineMeshNode_mem_Icc hκ hκ1 hD
 
+/-- A degree-`D` polynomial that approximates the rational-plus-reciprocal
+target to within `e` at every affine mesh node is uniformly bounded on the whole
+interval from the smallest node to `1`, by twice `1 + |alpha/a| + e`.  This is
+the Ehlich–Zeller oversampling step: control at `2D + 1` mesh points upgrades to
+control everywhere. -/
 lemma oneArmShifted_mesh_polynomial_bound
     {D : ℕ} (hD : 1 ≤ D) {κ alpha e : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1)
     {P : Polynomial ℝ} (hdeg : P.natDegree ≤ D)
@@ -312,6 +340,9 @@ theorem oneArmShiftedSelectionGrid_approximation_lower
   change S / 20 ≤ e
   nlinarith [hobs, hSge, hSle]
 
+/-- A linear combination of the basis functions splits at each grid point into
+the reciprocal term `c₀ / x` plus the value at `x` of the polynomial whose
+coefficients are the remaining entries of `c`. -/
 lemma oneArmShiftedSelectionBasis_sum_eq
     (κ : ℝ) (D : ℕ) (c : Fin (D + 2) → ℝ) (i : Fin (2 * D + 4)) :
     ∑ j, c j * oneArmShiftedSelectionBasis κ D j i =
@@ -381,6 +412,10 @@ theorem oneArmShiftedSelectionGrid_bestError_lower
   rw [oneArmShiftedSelectionBasis_sum_eq] at hi
   simpa [P, sub_eq_add_neg, div_eq_mul_inv, add_assoc, add_comm, add_left_comm] using hi
 
+/-- The constant function `1` lies in the span of the basis: taking the
+coefficient vector that selects the degree-zero monomial reproduces `1` at every
+grid point.  This is what lets the Jordan decomposition of a signed weight
+vector be normalized into two probability measures. -/
 lemma oneArmShiftedSelectionBasis_contains_one (κ : ℝ) (D : ℕ) :
     finiteGridBasisEval (oneArmShiftedSelectionBasis κ D)
       (oneArmSelectionConstantCoeff D) = fun _ => 1 := by

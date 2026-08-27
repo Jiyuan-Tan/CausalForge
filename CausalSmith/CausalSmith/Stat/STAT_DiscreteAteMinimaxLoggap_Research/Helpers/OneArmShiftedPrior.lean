@@ -19,6 +19,9 @@ on `[a,1]`. -/
 noncomputable def oneArmShiftedExterior (a b : ℝ) : ℝ :=
   (1 + a + 2 * b) / (1 - a)
 
+/-- The exterior point sits strictly outside the standard interval: its
+standard coordinate exceeds `1` whenever the grid endpoint lies in `(0,1)` and
+the shift is positive. -/
 lemma oneArmShiftedExterior_gt_one {a b : ℝ}
     (ha0 : 0 < a) (ha1 : a < 1) (hb0 : 0 < b) :
     1 < oneArmShiftedExterior a b := by
@@ -26,6 +29,9 @@ lemma oneArmShiftedExterior_gt_one {a b : ℝ}
   rw [lt_div_iff₀ (sub_pos.mpr ha1)]
   linarith
 
+/-- The affine map carrying the standard interval `[-1,1]` onto `[a,1]` sends
+the exterior standard coordinate back to `-b`, confirming that it is the correct
+preimage of the pole. -/
 lemma oneArmLobatto_affine_shiftedExterior {a b : ℝ} (ha1 : a < 1) :
     (1 + a) / 2 - ((1 - a) / 2) * oneArmShiftedExterior a b = -b := by
   unfold oneArmShiftedExterior
@@ -181,6 +187,7 @@ noncomputable def oneArmShiftedScale (n : ℕ) (κ : ℝ) : ℝ :=
   (Real.cosh ((n : ℝ)⁻¹) - 1) /
     (Real.cosh ((n : ℝ)⁻¹) + 1 + 2 * κ)
 
+/-- The calibrated grid endpoint is strictly positive. -/
 lemma oneArmShiftedScale_pos {n : ℕ} (hn : 1 ≤ n) {κ : ℝ} (hκ : 0 < κ) :
     0 < oneArmShiftedScale n κ := by
   have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hn)
@@ -188,6 +195,8 @@ lemma oneArmShiftedScale_pos {n : ℕ} (hn : 1 ≤ n) {κ : ℝ} (hκ : 0 < κ) 
   unfold oneArmShiftedScale
   positivity
 
+/-- The calibrated grid endpoint is strictly below `1`, so the grid interval
+`[a,1]` is nondegenerate. -/
 lemma oneArmShiftedScale_lt_one {n : ℕ} (hn : 1 ≤ n) {κ : ℝ} (hκ : 0 < κ) :
     oneArmShiftedScale n κ < 1 := by
   have hc0 : 0 < Real.cosh ((n : ℝ)⁻¹) := Real.cosh_pos _
@@ -246,6 +255,11 @@ lemma oneArmShiftedScale_lower {n : ℕ} (hn : 1 ≤ n)
         ((Real.cosh 1 + 1) * (Real.cosh 1 + 1 + 2 * κ)) := by
       gcongr
 
+/-- The calibration works as intended: with grid endpoint `a` chosen by the
+formula above and shift `b = κ·a`, the standard coordinate of the exterior point
+is exactly `cosh(1/n)`.  Since the degree-`n` Chebyshev polynomial then
+evaluates to `cosh 1`, the Lagrange mass at the pole is bounded by an absolute
+constant. -/
 lemma oneArmShiftedExterior_scale (n : ℕ) (hn : 1 ≤ n) {κ : ℝ} (hκ : 0 < κ) :
     oneArmShiftedExterior (oneArmShiftedScale n κ)
       (κ * oneArmShiftedScale n κ) = Real.cosh ((n : ℝ)⁻¹) := by
@@ -289,16 +303,23 @@ upper overlap endpoint for every `epsilon < 1/2`. -/
 noncomputable def oneArmOverlapShiftRatio (epsilon : ℝ) : ℝ :=
   min 1 ((1 - 2 * epsilon) / (2 * epsilon))
 
+/-- The overlap shift ratio is strictly positive for every overlap level
+strictly between `0` and `1/2`. -/
 lemma oneArmOverlapShiftRatio_pos {epsilon : ℝ}
     (he0 : 0 < epsilon) (hehalf : epsilon < 1 / 2) :
     0 < oneArmOverlapShiftRatio epsilon := by
   unfold oneArmOverlapShiftRatio
   exact lt_min (by norm_num) (div_pos (by linarith) (by positivity))
 
+/-- The overlap shift ratio never exceeds `1`. -/
 lemma oneArmOverlapShiftRatio_le_one (epsilon : ℝ) :
     oneArmOverlapShiftRatio epsilon ≤ 1 := by
   exact min_le_left _ _
 
+/-- The defining property of the overlap shift ratio: the inflated overlap
+level `ε·(1 + κ)` still lies below the upper overlap endpoint `1 − ε`, for every
+`0 < ε < 1/2`.  This is exactly what keeps the tilted propensity inside the
+admissible overlap band. -/
 lemma epsilon_mul_one_add_overlapShiftRatio_le {epsilon : ℝ}
     (he0 : 0 < epsilon) (hehalf : epsilon < 1 / 2) :
     epsilon * (1 + oneArmOverlapShiftRatio epsilon) ≤ 1 - epsilon := by

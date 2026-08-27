@@ -290,7 +290,18 @@ export function buildFormalLayer(
 ): FormalLayer {
   const leanByObj = new Map(crosswalk.map((c) => [c.obj_id, c.lean]));
   const items = graph.nodes
-    .filter((n) => n.provenance === "from-note" && !isUndeliveredNode(n) && FORMAL_LAYER_KIND_ORDER.includes(n.kind as never))
+    .filter(
+      (n) =>
+        n.provenance === "from-note" &&
+        !isUndeliveredNode(n) &&
+        // An operator can excise a ballast object from the published paper by
+        // clearing nl.frozen while keeping the bank node + Lean proof; the
+        // demotion keeps it off the web panel too (two-category incident,
+        // 2026-08-27). Schema-native: a custom marker key would be stripped
+        // by the graph parse.
+        n.nl.frozen !== false &&
+        FORMAL_LAYER_KIND_ORDER.includes(n.kind as never),
+    )
     .map((n) => {
       // Join key = NODE id (matches the crosswalk + the paper's data-objid so the panel row opens
       // the drawer); the alias is shown only as the human-facing label.

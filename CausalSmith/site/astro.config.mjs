@@ -57,4 +57,16 @@ export default defineConfig({
     copyBundlePdfs(),
     sitemap({ filter: (page) => !/\.(json|pdf)$/.test(page) }),
   ],
+  vite: {
+    server: {
+      // Build output and worker state are not site source, and watching them is
+      // actively harmful here: both get created and removed under this
+      // directory (a `wrangler deploy` writes `.wrangler/tmp`, a build writes
+      // `dist*`), and on NFS a directory that vanishes mid-scan surfaces as a
+      // stale handle (ESTALE) which Vite's watcher raises as an unhandled error
+      // and dies on. Deploying the worker or running a build alongside the dev
+      // server would otherwise kill it.
+      watch: { ignored: ["**/.wrangler/**", "**/dist/**", "**/dist-*/**"] },
+    },
+  },
 });

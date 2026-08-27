@@ -90,12 +90,18 @@ noncomputable def finitePoissonCountReconstruction
     Measure (FiniteSample X) :=
   Measure.map (fun z : ℕ → X => streamToFiniteSample (n, z)) (iidStreamLaw P)
 
+/-- The prefix reconstruction kernel depends measurably on the count it is given.
+This is the measurability side condition required before the kernel can be composed
+with the Poisson count law. -/
 lemma measurable_finitePoissonCountReconstruction
     {X : Type*} [MeasurableSpace X]
     (P : Measure X) [IsProbabilityMeasure P] :
     Measurable (finitePoissonCountReconstruction P) := by
   exact measurable_of_countable _
 
+/-- For each count, the prefix reconstruction produces a probability measure on
+finite samples, being the pushforward of an iid stream law.  This is the other side
+condition needed to treat the reconstruction as a Markov kernel. -/
 noncomputable instance finitePoissonCountReconstruction_isProbabilityMeasure
     {X : Type*} [MeasurableSpace X]
     (P : Measure X) [IsProbabilityMeasure P] (n : ℕ) :

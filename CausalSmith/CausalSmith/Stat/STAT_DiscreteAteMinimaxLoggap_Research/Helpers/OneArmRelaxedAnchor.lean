@@ -11,15 +11,22 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open scoped BigOperators
 
+/-- The unnormalized mass vector on m+1 covariate cells obtained by prepending a
+deterministic anchor cell, carrying mass `anchor`, to the m random active cells
+whose masses are `q`.  Cell 0 is the anchor and cell `i+1` carries mass `q i`. -/
 noncomputable def oneArmRelaxedAnchoredMass {m : ℕ}
     (anchor : ℝ) (q : Fin m → ℝ) : Fin (m + 1) → ℝ :=
   Fin.cases anchor q
 
+/-- The total mass of the anchored vector is the anchor mass plus the total mass
+of the active cells. -/
 lemma oneArmRelaxedAnchoredMass_sum {m : ℕ} (anchor : ℝ) (q : Fin m → ℝ) :
     ∑ r, oneArmRelaxedAnchoredMass anchor q r = anchor + ∑ i, q i := by
   rw [Fin.sum_univ_succ]
   simp [oneArmRelaxedAnchoredMass]
 
+/-- If the anchor mass and every active-cell mass are nonnegative, then so is
+every entry of the anchored mass vector. -/
 lemma oneArmRelaxedAnchoredMass_nonneg {m : ℕ} {anchor : ℝ}
     (q : Fin m → ℝ) (ha : 0 ≤ anchor) (hq : ∀ i, 0 ≤ q i) :
     ∀ r, 0 ≤ oneArmRelaxedAnchoredMass anchor q r := by
@@ -115,6 +122,11 @@ noncomputable def oneArmRelaxedLawOfGoodAtoms
     he0 hehalf ha (fun i => hq (z.1 i)) z.2.1
     (fun i => hpi (z.1 i)) (fun i => hmu (z.1 i))
 
+/-- For any realization in the relaxed good event, the treated functional of the
+law built from it lies within `massRadius + targetRadius` of the design target
+`theta`: the normalization error is controlled by the mass defect and the raw
+active target is within `targetRadius` of `theta` by definition of the good
+event. -/
 lemma oneArmRelaxedLawOfGoodAtoms_target
     {alpha : Type*} {n m : ℕ}
     {epsilon anchor theta massRadius targetRadius : ℝ}

@@ -15,6 +15,8 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 open MeasureTheory Causalean.Stat
 open scoped NNReal ENNReal BigOperators
 
+/-- The iid product prior assigns to a coordinate vector the product of the
+one-coordinate prior probabilities of its entries. -/
 lemma oneArmFiniteIidPMF_apply {α : Type*} [Fintype α]
     [MeasurableSpace α] [MeasurableSingletonClass α]
     (ω : PMF α) (m : ℕ) (z : Fin m → α) :
@@ -32,6 +34,7 @@ noncomputable def oneArmCountIidMeasure
     Measure (Fin m → β) :=
   Measure.pi fun _ : Fin m => q.toMeasure
 
+/-- The iid product of a countable mass function is a probability measure. -/
 noncomputable instance oneArmCountIidMeasure_isProbabilityMeasure
     {β : Type*} [MeasurableSpace β] (q : PMF β) (m : ℕ) :
     IsProbabilityMeasure (oneArmCountIidMeasure q m) := by

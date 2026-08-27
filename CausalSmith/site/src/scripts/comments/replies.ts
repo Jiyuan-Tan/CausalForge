@@ -1,7 +1,7 @@
 /**
  * The reply thread under a comment card.
  *
- * GitHub Discussions threads exactly one level deep — a top-level comment and
+ * Threads are exactly one level deep — a top-level comment and
  * its replies — and that is precisely what this exposes. Replies carry no tag
  * and no anchor: they inherit the passage their parent is attached to.
  *

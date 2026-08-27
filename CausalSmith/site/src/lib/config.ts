@@ -29,5 +29,22 @@ export function sourceRef(commit: string): string {
   return GITHUB_REF ?? commit;
 }
 
+/**
+ * Repository home page, for the "Source" link every page's header carries; null
+ * when no repo is configured, in which case the link is omitted rather than
+ * pointed at a guess.
+ */
+export const GITHUB_URL: string | null = GITHUB_REPO ? `https://github.com/${GITHUB_REPO}` : null;
+
+/**
+ * The paper describing the project itself, linked from every page header next to
+ * the repository. Unlike the repo link this is a fixed citation, not a build
+ * input: it names one published preprint, so an env override would only ever be
+ * a way to point readers at the wrong one.
+ */
+export const PAPER_URL = "https://arxiv.org/abs/2607.22511";
+export const PAPER_CITE =
+  "Tan & Syrgkanis, CausalSmith: A Formally Grounded, Self-Improving Agentic Framework for Automated Research in Causal Inference (arXiv:2607.22511)";
+
 export const SERIES_NAME = "CausalSmith";
 export const SERIES_TAGLINE = "AI Causal Scientist";

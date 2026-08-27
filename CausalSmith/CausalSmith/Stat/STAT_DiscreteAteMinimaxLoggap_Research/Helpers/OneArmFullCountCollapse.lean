@@ -16,6 +16,10 @@ noncomputable def tripleCountLow (D : ℕ) : Finset (Fin 3 → ℕ) :=
   (Fintype.piFinset fun _ : Fin 3 => Finset.range (D + 1)).filter
     (fun c => c 0 + c 1 + c 2 ≤ D)
 
+/-- A triple of counts belongs to the low-count set exactly when its three entries
+sum to at most `D`; the per-coordinate range restriction in the definition is
+automatic.  This is the membership rule used to split count space into a low part
+and its complement. -/
 lemma mem_tripleCountLow_iff {D : ℕ} {c : Fin 3 → ℕ} :
     c ∈ tripleCountLow D ↔ c 0 + c 1 + c 2 ≤ D := by
   simp only [tripleCountLow, Finset.mem_filter, Fintype.mem_piFinset,

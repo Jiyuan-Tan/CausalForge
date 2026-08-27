@@ -12,6 +12,9 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 noncomputable def oneArmShiftedJordanGap (κ : ℝ) : ℝ :=
   (2 * κ ^ 2 / ((1 + κ) * (2 + κ) * (3 + κ))) / 10
 
+/-- For a shift parameter `κ` between zero and one, the explicit Jordan separation
+is at least `κ² / 120`.  This clean polynomial lower bound is what the downstream
+rate accounting uses in place of the exact rational expression. -/
 lemma oneArmShiftedJordanGap_lower {κ : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) :
     κ ^ 2 / 120 ≤ oneArmShiftedJordanGap κ := by
   have hdenpos : 0 < (1 + κ) * (2 + κ) * (3 + κ) := by positivity

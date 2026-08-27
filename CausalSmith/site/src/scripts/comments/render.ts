@@ -4,7 +4,7 @@
  * Every node here is built with `createElement` + `textContent` + `setAttribute`.
  * There is no `innerHTML` anywhere in this file, and there must never be: all of
  * the strings involved (comment text, author logins, quotes, dates) come from a
- * public GitHub Discussion that anyone may write into. `src` is set on an avatar
+ * store any signed-in visitor may write into. `src` is set on an avatar
  * only after the URL has been checked against GitHub's avatar host; anything
  * else falls back to drawn initials.
  *
@@ -39,7 +39,6 @@ export interface CommentsUi {
   root: HTMLElement;
   rail: HTMLElement;
   railCount: HTMLElement;
-  railThread: HTMLAnchorElement;
   railCards: HTMLElement;
   railGeneral: HTMLElement;
   railEmpty: HTMLElement;
@@ -57,6 +56,7 @@ export interface CommentsUi {
   status: HTMLElement;
   idChip: HTMLElement;
   signIn: HTMLButtonElement;
+  signInNote: HTMLElement;
   cancel: HTMLButtonElement;
   post: HTMLButtonElement;
 }
@@ -74,7 +74,6 @@ export function queryUi(): CommentsUi | null {
       root: need("cs-comments"),
       rail: need("cs-rail"),
       railCount: need("cs-rail-count"),
-      railThread: need<HTMLAnchorElement>("cs-rail-thread"),
       railCards: need("cs-rail-cards"),
       railGeneral: need("cs-rail-general"),
       railEmpty: need("cs-rail-empty"),
@@ -92,6 +91,7 @@ export function queryUi(): CommentsUi | null {
       status: need("cs-status"),
       idChip: need("cs-idchip"),
       signIn: need<HTMLButtonElement>("cs-signin"),
+      signInNote: need("cs-signin-note"),
       cancel: need<HTMLButtonElement>("cs-cancel"),
       post: need<HTMLButtonElement>("cs-post"),
     };
@@ -148,7 +148,7 @@ function byline(c: PlacedComment, whenText: string): HTMLElement {
 export interface CardHandlers extends ReplyHandlers {
   onHover(c: PlacedComment, on: boolean): void;
   onActivate(c: PlacedComment): void;
-  /** Whether to OFFER deletion. Cosmetic — GitHub decides who may delete. */
+  /** Whether to OFFER deletion. Cosmetic — the worker decides who may delete. */
   canDelete?(c: PlacedComment): boolean;
   onDelete?(c: PlacedComment): void;
 }
@@ -257,21 +257,6 @@ export function renderArchived(
   for (const c of archived) ui.archivedList.appendChild(buildArchivedCard(c, handlers));
 }
 
-/** Point the rail head's thread link at the paper's discussion, when there is one. */
-export function renderThreadLink(
-  ui: CommentsUi,
-  repo: string | null,
-  discussionNumber: number | null,
-): void {
-  const okRepo = typeof repo === "string" && /^[\w.-]{1,64}\/[\w.-]{1,64}$/.test(repo);
-  const okNumber = typeof discussionNumber === "number" && Number.isInteger(discussionNumber);
-  if (!okRepo || !okNumber) {
-    ui.railThread.hidden = true;
-    return;
-  }
-  ui.railThread.setAttribute("href", `https://github.com/${repo}/discussions/${discussionNumber}`);
-  ui.railThread.hidden = false;
-}
 
 function cardFor(ui: CommentsUi, id: string): HTMLElement | null {
   for (const card of Array.from(ui.root.querySelectorAll<HTMLElement>(".cs-card"))) {

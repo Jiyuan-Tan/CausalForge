@@ -14,10 +14,13 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 open ProbabilityTheory
 open scoped NNReal ENNReal BigOperators
 
+/-- The real-valued atom masses of any probability mass function form a summable
+family. -/
 lemma pmf_toReal_summable {alpha : Type*} (p : PMF alpha) :
     Summable (fun x => (p x).toReal) :=
   ENNReal.summable_toReal p.tsum_coe_ne_top
 
+/-- The real-valued atom masses of a probability mass function sum to one. -/
 lemma tsum_pmf_toReal_eq_one {alpha : Type*} (p : PMF alpha) :
     ∑' x, (p x).toReal = 1 := by
   rw [← ENNReal.tsum_toReal_eq (fun x => p.apply_ne_top x), p.tsum_coe]
@@ -29,6 +32,9 @@ noncomputable def triplePoissonPMF (lam11 lam10 lam0 : ℝ≥0) : PMF (Fin 3 →
     (poissonPMF lam10).bind fun c10 =>
       (poissonPMF lam0).map fun c0 => ![c11, c10, c0]
 
+/-- The probability that the three sufficient counts take a prescribed triple of
+values factors into the product of the three individual Poisson probabilities,
+confirming that the construction really is a law of independent counts. -/
 lemma triplePoissonPMF_apply (lam11 lam10 lam0 : ℝ≥0) (c : Fin 3 → ℕ) :
     triplePoissonPMF lam11 lam10 lam0 c =
       poissonPMF lam11 (c 0) * poissonPMF lam10 (c 1) * poissonPMF lam0 (c 2) := by
@@ -109,6 +115,9 @@ noncomputable def mixedTriplePoissonPMF {ι : Type*} [Fintype ι]
     (ω : PMF ι) (lam11 lam10 lam0 : ι → ℝ≥0) : PMF (Fin 3 → ℕ) :=
   ω.bind fun r => triplePoissonPMF (lam11 r) (lam10 r) (lam0 r)
 
+/-- The mixture's probability of a prescribed count triple is the prior-weighted
+average, over the finite parameter index, of the corresponding products of three
+Poisson probabilities. -/
 lemma mixedTriplePoissonPMF_apply {ι : Type*} [Fintype ι]
     (ω : PMF ι) (lam11 lam10 lam0 : ι → ℝ≥0) (c : Fin 3 → ℕ) :
     mixedTriplePoissonPMF ω lam11 lam10 lam0 c =

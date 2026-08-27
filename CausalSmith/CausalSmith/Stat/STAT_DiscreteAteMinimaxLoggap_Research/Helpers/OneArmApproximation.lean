@@ -82,11 +82,17 @@ noncomputable def oneArmAffinePoly (P : Polynomial ℝ) (a : ℝ) : Polynomial �
   P.comp (Polynomial.C ((1 + a) / 2) +
     Polynomial.C ((1 - a) / 2) * Polynomial.X)
 
+/-- The reparametrized polynomial evaluated at a reference point `y` agrees with
+the original polynomial evaluated at the corresponding point of `[a, 1]`.  This is
+the computation rule for the affine change of variables. -/
 lemma oneArmAffinePoly_eval (P : Polynomial ℝ) (a y : ℝ) :
     (oneArmAffinePoly P a).eval y =
       P.eval ((1 + a) / 2 + (1 - a) / 2 * y) := by
   simp [oneArmAffinePoly]
 
+/-- The affine reparametrization does not raise the degree: a polynomial of degree
+at most `n` stays of degree at most `n`.  Needed so that Bernstein/Szegő-type
+bounds can be invoked at the same degree after the change of variables. -/
 lemma oneArmAffinePoly_natDegree_le (P : Polynomial ℝ) (a : ℝ) (n : ℕ)
     (hdeg : P.natDegree ≤ n) :
     (oneArmAffinePoly P a).natDegree ≤ n := by

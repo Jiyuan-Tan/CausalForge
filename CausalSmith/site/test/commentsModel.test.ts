@@ -5,7 +5,6 @@
 
 import { describe, expect, it } from "vitest";
 import { makeAnchor, type SentenceRef } from "../src/lib/comments/anchor.js";
-import { parseComment, serializeComment } from "../src/lib/comments/schema.js";
 import * as model from "../src/scripts/comments/model.js";
 import {
   MAX_ANCHOR_COUNT,
@@ -13,11 +12,8 @@ import {
   MAX_EXACT_CHARS,
   MAX_TEXT_CHARS,
   activeComments,
-  addCommentMutation,
-  addReplyMutation,
   archivedNote,
   countLabel,
-  deleteCommentMutation,
   driftNote,
   formatWhen,
   groupComments,
@@ -25,14 +21,14 @@ import {
   initialsOf,
   isSafeAvatarUrl,
   mergeComments,
-  newCommentBody,
+  newCommentPayload,
   ownsComment,
   placeComments,
   placeCommentsAsync,
   placeCommentsBudgeted,
   placeReplies,
   replyCountLabel,
-  serializeReply,
+  newReplyPayload,
   sanitizeAnchor,
   snapNote,
   truncate,
@@ -50,21 +46,25 @@ function refs(texts: string[] = SENTENCES): SentenceRef[] {
   return texts.map((text, i) => ({ id: `b0-s${i}`, text }));
 }
 
-function fetched(over: Partial<FetchedComment> & { body: string }): FetchedComment {
+function fetched(over: Partial<FetchedComment>): FetchedComment {
   return {
     id: over.id ?? "C_1",
-    body: over.body,
+    text: over.text ?? "Body text.",
     createdAt: over.createdAt ?? "2026-08-21T10:00:00Z",
-    url: over.url ?? "https://github.com/o/r/discussions/1#discussioncomment-1",
-    author: over.author ?? { login: "j-metrics", avatarUrl: "https://avatars.githubusercontent.com/u/1?v=4" },
+    author:
+      "author" in over
+        ? over.author!
+        : { login: "j-metrics", avatarUrl: "https://avatars.githubusercontent.com/u/1?v=4" },
+    tag: over.tag,
+    anchor: over.anchor,
+    revision: over.revision,
+    replies: over.replies,
   };
 }
 
-function anchoredBody(start: number, end: number, tag: "none" | "verified" | "problem" = "none") {
-  return serializeComment({
-    meta: { v: 1, paper: "wp7", tag, anchor: makeAnchor(refs(), start, end), revision: "abc1234" },
-    text: "Body text.",
-  });
+/** The worker's stored fields for a comment anchored to sentences start..end. */
+function anchoredFields(start: number, end: number, tag: "none" | "verified" | "problem" = "none") {
+  return { tag, anchor: makeAnchor(refs(), start, end), revision: "abc1234", text: "Body text." };
 }
 
 describe("sanitizeAnchor", () => {
@@ -94,7 +94,7 @@ describe("sanitizeAnchor", () => {
 
 describe("placeComments", () => {
   it("anchors an untouched quote and reports the sentences it covers", () => {
-    const placed = placeComments([fetched({ body: anchoredBody(1, 3) })], "wp7", refs());
+    const placed = placeComments([fetched({ ...anchoredFields(1, 3) })], "wp7", refs());
     expect(placed).toHaveLength(1);
     expect(placed[0].kind).toBe("anchored");
     expect(placed[0].sids).toEqual(["b0-s1", "b0-s2"]);
@@ -105,51 +105,52 @@ describe("placeComments", () => {
   });
 
   it("marks a reworded passage as drifted", () => {
-    const body = anchoredBody(2, 3, "verified");
+    const fields = anchoredFields(2, 3, "verified");
     const edited = refs([
       SENTENCES[0],
       SENTENCES[1],
       "The separation constant may be taken as C = 4√2, an absolute constant.",
       SENTENCES[3],
     ]);
-    const placed = placeComments([fetched({ body })], "wp7", edited);
+    const placed = placeComments([fetched(fields)], "wp7", edited);
     expect(placed[0].kind).toBe("drifted");
     expect(placed[0].sids).toEqual(["b0-s2"]);
   });
 
   it("archives a quote that no longer exists anywhere", () => {
-    const body = anchoredBody(2, 3, "problem");
+    const fields = anchoredFields(2, 3, "problem");
     const rewritten = refs([SENTENCES[0], SENTENCES[1], "Nothing like the old sentence at all.", SENTENCES[3]]);
-    const placed = placeComments([fetched({ body })], "wp7", rewritten);
+    const placed = placeComments([fetched(fields)], "wp7", rewritten);
     expect(placed[0].kind).toBe("archived");
     expect(placed[0].sids).toEqual([]);
     // The archive still shows what the passage used to say.
     expect(placed[0].quote).toBe(SENTENCES[2]);
   });
 
-  it("renders a hand-written GitHub reply as a general comment", () => {
+  it("renders an unanchored comment at page level", () => {
     const placed = placeComments(
-      [fetched({ body: "Just replying from github.com, no metadata header." })],
+      [fetched({ text: "A page-level comment with no anchor." })],
       "wp7",
       refs(),
     );
     expect(placed[0].kind).toBe("general");
     expect(placed[0].tag).toBe("none");
-    expect(placed[0].text).toBe("Just replying from github.com, no metadata header.");
+    expect(placed[0].text).toBe("A page-level comment with no anchor.");
   });
 
   it("degrades a hostile anchor to a general comment instead of hanging", () => {
-    const hostile = serializeComment({
-      meta: {
-        v: 1,
-        paper: "wp7",
-        tag: "problem",
-        anchor: { exact: "x".repeat(50000), prefix: "", suffix: "", count: 100000 },
-      },
-      text: "boom",
-    });
     const started = Date.now();
-    const placed = placeComments([fetched({ body: hostile })], "wp7", refs());
+    const placed = placeComments(
+      [
+        fetched({
+          tag: "problem",
+          text: "boom",
+          anchor: { exact: "x".repeat(50000), prefix: "", suffix: "", count: 100000 },
+        }),
+      ],
+      "wp7",
+      refs(),
+    );
     expect(placed[0].kind).toBe("general");
     expect(Date.now() - started).toBeLessThan(500);
   });
@@ -158,7 +159,7 @@ describe("placeComments", () => {
     const placed = placeComments(
       [
         fetched({
-          body: "hi",
+          text: "hi",
           author: { login: "evil", avatarUrl: "javascript:alert(1)" },
         }),
       ],
@@ -168,9 +169,9 @@ describe("placeComments", () => {
     expect(placed[0].avatarUrl).toBeNull();
   });
 
-  it("survives a missing author and a body that is not a string", () => {
+  it("survives a missing author and a text that is not a string", () => {
     const placed = placeComments(
-      [{ id: "C_x", body: undefined as unknown as string, createdAt: "", url: "", author: null }],
+      [{ id: "C_x", text: undefined as unknown as string, createdAt: "", author: null }],
       "wp7",
       refs(),
     );
@@ -183,9 +184,9 @@ describe("grouping, ordering and counts", () => {
   const groups = () => {
     const placed = placeComments(
       [
-        fetched({ id: "c3", body: anchoredBody(3, 4, "problem"), createdAt: "2026-08-20T00:00:00Z" }),
-        fetched({ id: "c1", body: anchoredBody(0, 1, "verified"), createdAt: "2026-08-19T00:00:00Z" }),
-        fetched({ id: "cg", body: "page level", createdAt: "2026-08-18T00:00:00Z" }),
+        fetched({ id: "c3", ...anchoredFields(3, 4, "problem"), createdAt: "2026-08-20T00:00:00Z" }),
+        fetched({ id: "c1", ...anchoredFields(0, 1, "verified"), createdAt: "2026-08-19T00:00:00Z" }),
+        fetched({ id: "cg", text: "page level", createdAt: "2026-08-18T00:00:00Z" }),
       ],
       "wp7",
       refs(),
@@ -209,8 +210,8 @@ describe("grouping, ordering and counts", () => {
   it("counts plural problems and drops empty groups", () => {
     const placed = placeComments(
       [
-        fetched({ id: "p1", body: anchoredBody(0, 1, "problem") }),
-        fetched({ id: "p2", body: anchoredBody(1, 2, "problem") }),
+        fetched({ id: "p1", ...anchoredFields(0, 1, "problem") }),
+        fetched({ id: "p2", ...anchoredFields(1, 2, "problem") }),
       ],
       "wp7",
       refs(),
@@ -224,7 +225,7 @@ describe("grouping, ordering and counts", () => {
       "We study the ATE under a weak-overlap condition.",
       ...SENTENCES.slice(1),
     ]);
-    const placed = placeComments([fetched({ body: anchoredBody(0, 1, "verified") })], "wp7", edited);
+    const placed = placeComments([fetched({ ...anchoredFields(0, 1, "verified") })], "wp7", edited);
     expect(placed[0].kind).toBe("drifted");
     expect(countLabel(placed)).toBe("1 total");
   });
@@ -234,9 +235,9 @@ describe("highlightPlan", () => {
   it("gives each sentence one highlight, strongest tag winning", () => {
     const placed = placeComments(
       [
-        fetched({ id: "a", body: anchoredBody(1, 2, "none") }),
-        fetched({ id: "b", body: anchoredBody(1, 2, "problem") }),
-        fetched({ id: "c", body: anchoredBody(2, 3, "verified") }),
+        fetched({ id: "a", ...anchoredFields(1, 2, "none") }),
+        fetched({ id: "b", ...anchoredFields(1, 2, "problem") }),
+        fetched({ id: "c", ...anchoredFields(2, 3, "verified") }),
       ],
       "wp7",
       refs(),
@@ -256,11 +257,8 @@ describe("highlightPlan", () => {
     ]);
     const placed = placeComments(
       [
-        fetched({ id: "drift", body: anchoredBody(1, 2, "none") }),
-        fetched({ id: "exact", body: serializeComment({
-          meta: { v: 1, paper: "wp7", tag: "none", anchor: makeAnchor(edited, 1, 2) },
-          text: "current",
-        }) }),
+        fetched({ id: "drift", ...anchoredFields(1, 2, "none") }),
+        fetched({ id: "exact", tag: "none", anchor: makeAnchor(edited, 1, 2), text: "current" }),
       ],
       "wp7",
       edited,
@@ -306,7 +304,7 @@ describe("notes and labels", () => {
 describe("replies", () => {
   const withReplies = (replies: unknown) =>
     placeComments(
-      [{ ...fetched({ body: "parent" }), replies } as never],
+      [{ ...fetched({ text: "parent" }), replies } as never],
       "wp7",
       refs(),
     )[0];
@@ -315,9 +313,8 @@ describe("replies", () => {
     const c = withReplies([
       {
         id: "R_1",
-        body: "Agreed — the constant checks out.",
+        text: "Agreed — the constant checks out.",
         createdAt: "2026-08-22T09:00:00Z",
-        url: "https://github.com/o/r/discussions/1#discussioncomment-9",
         author: { login: "s-reader", avatarUrl: "https://avatars.githubusercontent.com/u/2?v=4" },
       },
     ]);
@@ -328,21 +325,24 @@ describe("replies", () => {
   });
 
   it("defaults to an empty thread when the worker sends none", () => {
-    expect(placeComments([fetched({ body: "hi" })], "wp7", refs())[0].replies).toEqual([]);
+    expect(placeComments([fetched({ text: "hi" })], "wp7", refs())[0].replies).toEqual([]);
     expect(withReplies(undefined).replies).toEqual([]);
     expect(withReplies("not an array").replies).toEqual([]);
   });
 
-  it("strips a metadata header someone attached to a reply on github.com", () => {
-    const smuggled = serializeComment({
-      meta: { v: 1, paper: "wp7", tag: "verified", anchor: makeAnchor(refs(), 0, 1) },
-      text: "Just a reply, really.",
-    });
+  it("gives a reply no tag and no anchor of its own", () => {
+    // A reply inherits its parent's placement. Even if the worker ever sent
+    // these fields, a reply must not be able to claim a passage.
     const c = withReplies([
-      { id: "R_2", body: smuggled, createdAt: "", url: "", author: null },
+      {
+        id: "R_2",
+        text: "Just a reply, really.",
+        tag: "verified",
+        anchor: makeAnchor(refs(), 0, 1),
+        createdAt: "",
+        author: null,
+      },
     ]);
-    // Only the readable remainder survives — no tag, no anchor, nothing a reply
-    // could use to claim a passage of its own.
     expect(c.replies[0].text).toBe("Just a reply, really.");
     expect(c.replies[0]).not.toHaveProperty("tag");
     expect(c.replies[0]).not.toHaveProperty("anchor");
@@ -353,9 +353,8 @@ describe("replies", () => {
     const c = withReplies([
       {
         id: "R_3",
-        body: '<script>alert(1)</script><img src=x onerror=alert(1)>',
+        text: '<script>alert(1)</script><img src=x onerror=alert(1)>',
         createdAt: "",
-        url: "",
         author: { login: "evil", avatarUrl: "javascript:alert(1)" },
       },
     ]);
@@ -364,28 +363,13 @@ describe("replies", () => {
   });
 
   it("drops malformed entries instead of rendering junk", () => {
-    expect(placeReplies([null, { body: "no id" }, 7], "wp7")).toEqual([]);
+    expect(placeReplies([null, { text: "no id" }, 7])).toEqual([]);
   });
 
-  it("posts a reply as bare text — no metadata header", () => {
-    const body = serializeReply("  Agreed.  ");
-    expect(body).toBe("Agreed.");
-    expect(body).not.toContain("causalsmith:comment");
-    expect(serializeReply("x".repeat(20000)).length).toBe(MAX_TEXT_CHARS);
-  });
-
-  it("passes both ids and the body as GraphQL variables", () => {
-    const req = addReplyMutation('D_1") { x } #', 'DC_2") { y } #', 'body") { z } #');
-    expect(req.query).toContain("addDiscussionComment");
-    expect(req.query).toContain("$replyToId: ID!");
-    expect(req.query).not.toContain("{ x }");
-    expect(req.query).not.toContain("{ y }");
-    expect(req.query).not.toContain("{ z }");
-    expect(req.variables).toEqual({
-      discussionId: 'D_1") { x } #',
-      replyToId: 'DC_2") { y } #',
-      body: 'body") { z } #',
-    });
+  it("posts a reply as its text plus the parent it answers", () => {
+    const payload = newReplyPayload("wp7", "abc123", "  Agreed.  ");
+    expect(payload).toEqual({ paper: "wp7", parentId: "abc123", text: "Agreed." });
+    expect(newReplyPayload("wp7", "abc123", "x".repeat(20000)).text.length).toBe(MAX_TEXT_CHARS);
   });
 
   it("labels the collapsed toggle", () => {
@@ -395,7 +379,7 @@ describe("replies", () => {
 });
 
 describe("ownsComment", () => {
-  const mine = () => placeComments([fetched({ body: "hi" })], "wp7", refs())[0];
+  const mine = () => placeComments([fetched({ text: "hi" })], "wp7", refs())[0];
 
   it("offers nothing while no viewer is loaded", () => {
     expect(ownsComment(mine(), null)).toBe(false);
@@ -412,7 +396,7 @@ describe("ownsComment", () => {
     expect(ownsComment(mine(), { login: "someone-else" })).toBe(false);
     // A comment whose author GitHub could not resolve is nobody's to delete.
     const ghost = placeComments(
-      [{ id: "g", body: "hi", createdAt: "", url: "", author: null }],
+      [{ id: "g", text: "hi", createdAt: "", author: null }],
       "wp7",
       refs(),
     )[0];
@@ -421,47 +405,54 @@ describe("ownsComment", () => {
 });
 
 describe("outgoing wire format", () => {
-  it("round-trips through the schema with the anchor and revision attached", () => {
+  it("sends the anchor and revision as structured fields", () => {
     const anchor = makeAnchor(refs(), 0, 2);
-    const body = newCommentBody({
+    expect(
+      newCommentPayload({
+        paper: "wp7",
+        tag: "verified",
+        text: "Checked against the Lean declaration.",
+        anchor,
+        revision: "d2bf655",
+      }),
+    ).toEqual({
       paper: "wp7",
       tag: "verified",
       text: "Checked against the Lean declaration.",
       anchor,
       revision: "d2bf655",
     });
-    const parsed = parseComment(body, "wp7");
-    expect(parsed.meta.tag).toBe("verified");
-    expect(parsed.meta.anchor).toEqual(anchor);
-    expect(parsed.meta.revision).toBe("d2bf655");
-    expect(parsed.text).toBe("Checked against the Lean declaration.");
+  });
+
+  it("omits an absent anchor and revision rather than sending nulls", () => {
+    expect(newCommentPayload({ paper: "wp7", tag: "none", text: "hi" })).toEqual({
+      paper: "wp7",
+      tag: "none",
+      text: "hi",
+    });
   });
 
   it("caps the posted text length", () => {
-    const body = newCommentBody({ paper: "wp7", tag: "none", text: "x".repeat(20000) });
-    expect(parseComment(body, "wp7").text.length).toBe(10000);
+    expect(
+      newCommentPayload({ paper: "wp7", tag: "none", text: "x".repeat(20000) }).text,
+    ).toHaveLength(10000);
   });
 
-  it("passes user text as a GraphQL VARIABLE, never spliced into the query", () => {
-    const body = newCommentBody({ paper: "wp7", tag: "none", text: 'a") { evil } #' });
-    const req = addCommentMutation("D_kwDO", body);
-    expect(req.query).not.toContain("evil");
-    expect(req.variables).toEqual({ discussionId: "D_kwDO", body });
-    expect(req.query).toContain("$body: String!");
+  it("never names an author — the worker resolves that from the token", () => {
+    const payload = newCommentPayload({ paper: "wp7", tag: "none", text: "hi" });
+    expect(payload).not.toHaveProperty("author");
+    expect(payload).not.toHaveProperty("login");
   });
 
-  it("passes the comment id to the delete mutation as a variable", () => {
-    const req = deleteCommentMutation('DC_evil") { x } #');
-    expect(req.query).toContain("deleteDiscussionComment");
-    expect(req.query).toContain("$id: ID!");
-    expect(req.query).not.toContain("evil");
-    expect(req.variables).toEqual({ id: 'DC_evil") { x } #' });
-  });
-
-  it("exposes no way for the client to create a discussion", () => {
-    // Threads are maintainer-provisioned; the client must not be able to create
-    // one (that would make a random visitor the thread owner).
-    expect((model as Record<string, unknown>).createDiscussionMutation).toBeUndefined();
+  it("exposes no way for the client to write to GitHub at all", () => {
+    // Comments no longer live in a repository, so the browser holds no
+    // credential GitHub would accept for anything. A leftover mutation builder
+    // would be a live path back to writing as the visitor.
+    const m = model as Record<string, unknown>;
+    expect(m.createDiscussionMutation).toBeUndefined();
+    expect(m.addCommentMutation).toBeUndefined();
+    expect(m.addReplyMutation).toBeUndefined();
+    expect(m.deleteCommentMutation).toBeUndefined();
   });
 });
 
@@ -470,16 +461,12 @@ describe("placement is bounded against a flood of comments", () => {
   // for re-anchoring, and exactly what a DoS attempt would post en masse.
   function junkComment(i: number): FetchedComment {
     const junk = `zzz ${"q".repeat(400)} ${i}`.slice(0, MAX_EXACT_CHARS);
-    const body = serializeComment({
-      meta: {
-        v: 1,
-        paper: "wp7",
-        tag: "none",
-        anchor: { exact: junk, prefix: "", suffix: "", count: MAX_ANCHOR_COUNT },
-      },
+    return fetched({
+      id: `C_${i}`,
+      tag: "none",
+      anchor: { exact: junk, prefix: "", suffix: "", count: MAX_ANCHOR_COUNT },
       text: `comment ${i}`,
     });
-    return fetched({ id: `C_${i}`, body });
   }
 
   const flood = (n: number) => Array.from({ length: n }, (_, i) => junkComment(i));

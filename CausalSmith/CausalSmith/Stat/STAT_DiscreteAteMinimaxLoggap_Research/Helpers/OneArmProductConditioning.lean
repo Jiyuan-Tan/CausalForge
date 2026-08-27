@@ -21,6 +21,8 @@ noncomputable def oneArmFiniteIidMeasure {α : Type*} [Fintype α]
     [MeasurableSpace α] (ω : PMF α) (m : ℕ) : Measure (Fin m → α) :=
   Measure.pi (fun _ : Fin m => ω.toMeasure)
 
+/-- The iid product measure built from a finite probability mass function is
+itself a probability measure. -/
 noncomputable instance oneArmFiniteIidMeasure_isProbabilityMeasure
     {α : Type*} [Fintype α] [MeasurableSpace α]
     (ω : PMF α) (m : ℕ) : IsProbabilityMeasure (oneArmFiniteIidMeasure ω m) := by
@@ -33,6 +35,9 @@ noncomputable def oneArmFiniteIidPMF {α : Type*} [Fintype α]
     (ω : PMF α) (m : ℕ) : PMF (Fin m → α) :=
   (oneArmFiniteIidMeasure ω m).toPMF
 
+/-- The discrete mass function attached to the iid product prior induces exactly
+the iid product measure it came from, so the two views may be used
+interchangeably. -/
 lemma oneArmFiniteIidPMF_toMeasure {α : Type*} [Fintype α]
     [MeasurableSpace α] [MeasurableSingletonClass α]
     (ω : PMF α) (m : ℕ) :
@@ -108,12 +113,16 @@ lemma oneArmProduct_mass_functional_bad_le {ι : Type*} [Fintype ι]
 noncomputable def oneArmNormalizedMass {d : ℕ} (p : Fin d → ℝ) : Fin d → ℝ :=
   fun r => p r / ∑ t, p t
 
+/-- Normalizing a nonnegative mass vector with strictly positive total leaves
+every coordinate nonnegative. -/
 lemma oneArmNormalizedMass_nonneg {d : ℕ} (p : Fin d → ℝ)
     (hp : ∀ r, 0 ≤ p r) (hS : 0 < ∑ r, p r) :
     ∀ r, 0 ≤ oneArmNormalizedMass p r := by
   intro r
   exact div_nonneg (hp r) hS.le
 
+/-- Every coordinate of the normalized mass vector is at most one, since a single
+nonnegative summand cannot exceed the total. -/
 lemma oneArmNormalizedMass_le_one {d : ℕ} (p : Fin d → ℝ)
     (hp : ∀ r, 0 ≤ p r) (hS : 0 < ∑ r, p r) :
     ∀ r, oneArmNormalizedMass p r ≤ 1 := by
@@ -121,6 +130,8 @@ lemma oneArmNormalizedMass_le_one {d : ℕ} (p : Fin d → ℝ)
   rw [oneArmNormalizedMass, div_le_one hS]
   exact Finset.single_le_sum (fun i _ => hp i) (Finset.mem_univ r)
 
+/-- The normalized mass vector sums to one, so it is a valid category
+distribution. -/
 lemma oneArmNormalizedMass_sum {d : ℕ} (p : Fin d → ℝ)
     (hS : 0 < ∑ r, p r) :
     ∑ r, oneArmNormalizedMass p r = 1 := by
@@ -180,22 +191,34 @@ therefore fills the unused mass with one deterministic anchor, rather than
 renormalizing the active cells.
 -/
 
+/-- Extends a vector of active-cell masses by one extra anchor cell carrying all
+the leftover mass, so the resulting vector of length one more is a probability
+vector without rescaling the active cells. -/
 noncomputable def oneArmAnchoredMass {m : ℕ} (q : Fin m → ℝ) : Fin (m + 1) → ℝ :=
   Fin.cases (1 - ∑ i, q i) q
 
+/-- Extends the active cells' propensities by giving the anchor cell propensity
+exactly ε, the smallest value overlap allows. -/
 noncomputable def oneArmAnchoredPropensity {m : ℕ} (epsilon : ℝ)
     (pi : Fin m → ℝ) : Fin (m + 1) → ℝ :=
   Fin.cases epsilon pi
 
+/-- Extends the active cells' treated outcome means by giving the anchor cell
+treated mean zero, so the anchor contributes nothing to the treated
+functional. -/
 noncomputable def oneArmAnchoredOutcomeMean {m : ℕ}
     (mu : Fin m → ℝ) : Fin (m + 1) → ℝ :=
   Fin.cases 0 mu
 
+/-- The anchor-completed mass vector sums to one by construction. -/
 lemma oneArmAnchoredMass_sum {m : ℕ} (q : Fin m → ℝ) :
     ∑ r, oneArmAnchoredMass q r = 1 := by
   rw [Fin.sum_univ_succ]
   simp [oneArmAnchoredMass]
 
+/-- If the active masses are nonnegative and do not overshoot one, every
+coordinate of the anchor-completed vector — the anchor included — is
+nonnegative. -/
 lemma oneArmAnchoredMass_nonneg {m : ℕ} (q : Fin m → ℝ)
     (hq : ∀ i, 0 ≤ q i) (hS : ∑ i, q i ≤ 1) :
     ∀ r, 0 ≤ oneArmAnchoredMass q r := by
@@ -203,6 +226,8 @@ lemma oneArmAnchoredMass_nonneg {m : ℕ} (q : Fin m → ℝ)
   refine Fin.cases ?_ (fun i => hq i) r
   simp [oneArmAnchoredMass, sub_nonneg.mpr hS]
 
+/-- Under the same hypotheses every coordinate of the anchor-completed vector is
+at most one, so the vector is a genuine category distribution. -/
 lemma oneArmAnchoredMass_le_one {m : ℕ} (q : Fin m → ℝ)
     (hq : ∀ i, 0 ≤ q i) (hS : ∑ i, q i ≤ 1) :
     ∀ r, oneArmAnchoredMass q r ≤ 1 := by
@@ -237,6 +262,9 @@ noncomputable def oneArmAnchoredControlZero
     norm_num
   · exact oneArmAnchoredMass_sum q
 
+/-- The treated functional of the anchor-completed control-zero law is exactly the
+active cells' mass-weighted average treated outcome, with no contribution from
+the anchor. -/
 lemma oneArmAnchoredControlZero_functional
     {n m : ℕ} {epsilon : ℝ} (q pi mu : Fin m → ℝ)
     (he0 : 0 < epsilon) (hehalf : epsilon ≤ 1 / 2)

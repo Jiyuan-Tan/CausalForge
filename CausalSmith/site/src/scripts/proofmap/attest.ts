@@ -9,11 +9,11 @@
  *
  * Storage is the comments worker (`/api/attestations`), which is also where the
  * GitHub sign-in already lives, so a reader who can comment can attest with no
- * extra ceremony. Unlike a comment, a write goes THROUGH the worker rather than
- * browser → api.github.com: an attestation is our own record, not a GitHub
- * object, so the worker authenticates the visitor's token, resolves the login
- * itself, and keys the record by that. A reader can therefore only ever create
- * or withdraw their OWN mark.
+ * extra ceremony. The write goes THROUGH the worker: the visitor's token is an
+ * identity document, not a credential, so the worker authenticates it, resolves
+ * the login itself, and keys the record by that. A reader can therefore only
+ * ever create or withdraw their OWN mark. Comments now work the same way — this
+ * endpoint was the pattern the comment writes were later modelled on.
  *
  * Everything here is DOM-free and network-only, so the controller's logic can
  * be tested against a stubbed `fetch`.

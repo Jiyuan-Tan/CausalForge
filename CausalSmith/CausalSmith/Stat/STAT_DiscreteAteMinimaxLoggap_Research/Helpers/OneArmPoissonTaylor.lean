@@ -3,6 +3,16 @@ import Mathlib.Analysis.SpecialFunctions.Exponential
 import Mathlib.Analysis.Normed.Group.FunctionSeries
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
+/-!
+# Taylor expansion of the triple-count Poisson atoms
+
+This file expands the exponential factor of a triple-count Poisson atom into a
+truncated Taylor polynomial in the three observable intensities, controls the
+discarded remainder by a positive exponential-series tail, and shows that two
+priors matching all monomial moments up to a fixed degree produce identical
+truncated predictive masses.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open scoped BigOperators
@@ -21,6 +31,9 @@ noncomputable def triplePoissonTaylorPolynomial (t : ℕ) (sampleScale : ℝ)
   (MvPolynomial.C (sampleScale ^ c 2 / (Nat.factorial (c 2) : ℝ)) *
     (MvPolynomial.X 0 - MvPolynomial.X 1) ^ c 2)
 
+/-- The Taylor-term polynomial has total degree at most the Taylor order plus the
+total count, so a moment-matching budget of that size suffices to annihilate it.
+This is the degree bookkeeping that drives the whole moment-matching argument. -/
 lemma triplePoissonTaylorPolynomial_totalDegree_le (t : ℕ) (sampleScale : ℝ)
     (c : Fin 3 → ℕ) :
     (triplePoissonTaylorPolynomial t sampleScale c).totalDegree ≤
@@ -189,22 +202,36 @@ noncomputable def triplePoissonCoefficient (sampleScale p pi mu : ℝ)
   (sampleScale * p * pi * (1 - mu)) ^ c 1 / (Nat.factorial (c 1) : ℝ) *
   (sampleScale * p * (1 - pi)) ^ c 2 / (Nat.factorial (c 2) : ℝ)
 
+/-- The exact probability that the three sufficient counts equal a given triple,
+for one category with mass p, propensity π and treated success rate μ: the
+Poisson power/factorial coefficient times the exponential of minus the total
+category intensity. -/
 noncomputable def triplePoissonMass (sampleScale p pi mu : ℝ)
     (c : Fin 3 → ℕ) : ℝ :=
   Real.exp (-(sampleScale * p)) *
     triplePoissonCoefficient sampleScale p pi mu c
 
+/-- The triple-count atom mass with its exponential factor replaced by the first
+L terms of the exponential series.  Unlike the exact mass, this is a polynomial
+in the observable intensities, so it is killed by moment matching. -/
 noncomputable def triplePoissonTaylorMass (L : ℕ)
     (sampleScale p pi mu : ℝ) (c : Fin 3 → ℕ) : ℝ :=
   (∑ t ∈ Finset.range L,
       (-(sampleScale * p)) ^ t / (Nat.factorial t : ℝ)) *
     triplePoissonCoefficient sampleScale p pi mu c
 
+/-- The single term of Taylor order t in the expansion of a triple-count atom
+mass: the tth exponential-series coefficient of minus the category intensity
+times the Poisson power/factorial coefficient. -/
 noncomputable def triplePoissonTaylorTerm (t : ℕ)
     (sampleScale p pi mu : ℝ) (c : Fin 3 → ℕ) : ℝ :=
   (-(sampleScale * p)) ^ t / (Nat.factorial t : ℝ) *
     triplePoissonCoefficient sampleScale p pi mu c
 
+/-- Evaluating the Taylor-term polynomial at the observable coordinates
+(p, p·π, p·π·μ) returns exactly the corresponding Taylor term of the atom mass.
+This is the bridge from analytic remainder control to polynomial moment
+matching. -/
 lemma triplePoissonTaylorPolynomial_eval (t : ℕ) (sampleScale p pi mu : ℝ)
     (c : Fin 3 → ℕ) :
     MvPolynomial.eval ![p, p * pi, p * pi * mu]
@@ -221,6 +248,8 @@ lemma triplePoissonTaylorPolynomial_eval (t : ℕ) (sampleScale p pi mu : ℝ)
   simp only [mul_pow]
   ring
 
+/-- The truncated atom mass is the sum of its individual Taylor terms of orders
+0 through L−1. -/
 lemma triplePoissonTaylorMass_eq_sum_terms (L : ℕ)
     (sampleScale p pi mu : ℝ) (c : Fin 3 → ℕ) :
     triplePoissonTaylorMass L sampleScale p pi mu c =
@@ -229,6 +258,9 @@ lemma triplePoissonTaylorMass_eq_sum_terms (L : ℕ)
   unfold triplePoissonTaylorMass triplePoissonTaylorTerm
   rw [Finset.sum_mul]
 
+/-- The Poisson power/factorial coefficient of a count triple is nonnegative
+whenever the sample scale and category mass are nonnegative and the propensity
+and success rate lie in the unit interval. -/
 lemma triplePoissonCoefficient_nonneg
     {sampleScale p pi mu : ℝ} (hs : 0 ≤ sampleScale) (hp : 0 ≤ p)
     (hpi : pi ∈ Set.Icc (0 : ℝ) 1) (hmu : mu ∈ Set.Icc (0 : ℝ) 1)
@@ -243,6 +275,9 @@ lemma triplePoissonCoefficient_nonneg
     exact mul_nonneg (mul_nonneg hs hp) (sub_nonneg.mpr hpi.2)
   positivity
 
+/-- Truncating the exponential series at order L changes a triple-count atom mass
+by at most the Poisson power/factorial coefficient times the positive
+exponential-series tail of the category intensity from order L on. -/
 lemma abs_triplePoissonMass_sub_taylor_le
     {sampleScale p pi mu : ℝ} (hs : 0 ≤ sampleScale) (hp : 0 ≤ p)
     (hpi : pi ∈ Set.Icc (0 : ℝ) 1) (hmu : mu ∈ Set.Icc (0 : ℝ) 1)
@@ -264,11 +299,16 @@ noncomputable def mixedTriplePoissonMass
     (sampleScale : ℝ) (p pi mu : ι → ℝ) (c : Fin 3 → ℕ) : ℝ :=
   ∑ r, (ω r).toReal * triplePoissonMass sampleScale (p r) (pi r) (mu r) c
 
+/-- Prior average of the Taylor-truncated triple-count atom masses over a finite
+parameter prior — the polynomial surrogate of the prior predictive mass. -/
 noncomputable def mixedTriplePoissonTaylorMass
     {ι : Type*} [Fintype ι] (ω : PMF ι) (L : ℕ)
     (sampleScale : ℝ) (p pi mu : ι → ℝ) (c : Fin 3 → ℕ) : ℝ :=
   ∑ r, (ω r).toReal * triplePoissonTaylorMass L sampleScale (p r) (pi r) (mu r) c
 
+/-- The prior-averaged truncated mass is the sum over Taylor orders 0 through
+L−1 of the prior-averaged individual Taylor terms, which is the form in which
+moment matching is applied one order at a time. -/
 lemma mixedTriplePoissonTaylorMass_eq_sum_terms
     {ι : Type*} [Fintype ι] (ω : PMF ι) (L : ℕ)
     (sampleScale : ℝ) (p pi mu : ι → ℝ) (c : Fin 3 → ℕ) :
@@ -362,6 +402,9 @@ lemma mixedTriplePoissonTaylorMass_eq_of_moments
     ω₀ ω₁ sampleScale p₀ pi₀ mu₀ p₁ pi₁ mu₁ D t c hmoment
   omega
 
+/-- Averaging over the prior, the gap between the exact predictive mass of a
+count triple and its Taylor-truncated surrogate is at most the prior average of
+the per-parameter remainder bounds. -/
 lemma abs_mixedTriplePoissonMass_sub_taylor_le
     {ι : Type*} [Fintype ι] (ω : PMF ι)
     {sampleScale : ℝ} (p pi mu : ι → ℝ)

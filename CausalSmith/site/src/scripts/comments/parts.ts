@@ -77,8 +77,8 @@ export function cardButton(
  * "Delete? Yes / No" — no `window.confirm`, and no dialog to position.
  *
  * Shown only where the caller says the signed-in viewer is the author, and even
- * then it is a convenience: `deleteDiscussionComment` is authorized by GitHub,
- * which refuses anyone who is not the author or a repo admin.
+ * then it is a convenience: the worker re-checks the comment's stamped author
+ * against the caller and refuses anyone else.
  */
 export function deleteControl(what: string, onConfirm: () => void): HTMLElement {
   const wrap = document.createElement("span");

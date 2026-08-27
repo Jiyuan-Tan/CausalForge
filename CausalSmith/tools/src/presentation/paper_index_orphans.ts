@@ -16,6 +16,76 @@ const execFileAsync = promisify(execFile);
  * the set is empty, i.e. every file is treated as tracked — the strict
  * behaviour is unchanged.
  */
+/**
+ * Of `candidates` (fully-qualified module names under `subdir`), the subset that
+ * some .lean file OUTSIDE `subdir` imports. A sibling development may extend an
+ * earlier run's substrate directory (e.g. a follow-up paper banking helper
+ * modules into it); a module consumed only by that sibling is the SIBLING's
+ * proof machinery, not part of this paper's development — it must neither be
+ * indexed onto this paper's page nor fail this paper's orphan gate.
+ */
+export async function externallyConsumedModules(
+  csRoot: string,
+  subdir: string,
+  candidates: ReadonlySet<string>,
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (candidates.size === 0) return out;
+  const files = (await readdir(csRoot, { recursive: true }))
+    .map(String)
+    .filter(
+      (f) =>
+        f.endsWith(".lean") &&
+        !f.startsWith(subdir) &&
+        !f.startsWith(".lake") &&
+        !f.includes(`${path.sep}.lake${path.sep}`) &&
+        !f.includes(`${path.sep}tmp${path.sep}`),
+    );
+  for (const f of files) {
+    let text: string;
+    try {
+      text = await readFile(path.join(csRoot, f), "utf8");
+    } catch {
+      continue;
+    }
+    for (const line of text.split("\n")) {
+      if (!line.startsWith("import ")) continue;
+      const mod = line.slice("import ".length).trim();
+      if (candidates.has(mod)) out.add(mod);
+    }
+  }
+  // Transitive closure: a candidate a consumed candidate imports is consumed
+  // too — the sibling's proof chain reaches it through its entry modules.
+  const candidateImports = new Map<string, string[]>();
+  for (const mod of candidates) {
+    const rel = `${mod.replaceAll(".", path.sep)}.lean`;
+    let text: string;
+    try {
+      text = await readFile(path.join(csRoot, rel), "utf8");
+    } catch {
+      continue;
+    }
+    candidateImports.set(
+      mod,
+      text
+        .split("\n")
+        .filter((l) => l.startsWith("import "))
+        .map((l) => l.slice("import ".length).trim())
+        .filter((m) => candidates.has(m)),
+    );
+  }
+  const queue = [...out];
+  while (queue.length > 0) {
+    for (const dep of candidateImports.get(queue.pop()!) ?? []) {
+      if (!out.has(dep)) {
+        out.add(dep);
+        queue.push(dep);
+      }
+    }
+  }
+  return out;
+}
+
 async function untrackedFilesIn(dir: string): Promise<Set<string>> {
   try {
     const { stdout } = await execFileAsync(

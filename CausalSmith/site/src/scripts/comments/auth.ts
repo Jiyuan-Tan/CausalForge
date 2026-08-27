@@ -1,10 +1,15 @@
 /**
  * GitHub sign-in for the paper-page commenter.
  *
- * The visitor's token never touches this repo's servers beyond the one-shot
- * code exchange in the worker: the popup posts it back with `postMessage`, and
- * it is held in `sessionStorage` for the tab's lifetime only. Three things make
- * that safe, and all three are load-bearing:
+ * The token this issues carries NO permissions — the sign-in App requests none,
+ * so it identifies its owner and can do nothing else on GitHub. That is what
+ * keeps the consent screen to "verify your GitHub identity"; an App asking for
+ * any repository permission gets GitHub's "Act on your behalf" note instead.
+ *
+ * The token never touches this repo's servers beyond the one-shot code exchange
+ * in the worker: the popup posts it back with `postMessage`, and it is held in
+ * `sessionStorage` for the tab's lifetime only. Three things make that safe,
+ * and all three are load-bearing:
  *
  *   1. A fresh `crypto.getRandomValues` nonce goes out with the login request
  *      and must come back in the payload, so a message from an unrelated (or

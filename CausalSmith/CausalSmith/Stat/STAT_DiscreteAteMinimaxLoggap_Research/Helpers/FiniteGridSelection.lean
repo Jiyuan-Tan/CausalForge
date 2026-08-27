@@ -2,15 +2,35 @@ import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.OneArmApp
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.FiniteGridBestApproximation
 import Causalean.Mathlib.Analysis.EhlichZellerMesh.Mesh
 
+/-!
+# Selected finite grid for the one-arm approximation obstruction
+
+This file builds the explicit finite grid used by the one-arm hard-prior
+construction — three boundary-layer points near the pole together with an
+oversampled Chebyshev--Lobatto mesh of the remaining interval — and shows that on
+this grid the propensity-type target `x / (x + a)` cannot be approximated to
+better than a fixed constant by the span of the reciprocal and the monomials up
+to degree `n`.  The resulting positive best-approximation error is converted into
+a pair of Jordan priors matching all of those test functions.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open Polynomial
 open Causalean.Mathlib.Analysis.EhlichZellerMesh
 open Causalean.Mathlib.Analysis.FiniteDimL1LinfDuality
 
+/-- The pole offset `a = 1 / (10¹⁰ n²)` used throughout the one-arm construction.
+It is the amount by which the propensity-type target `x / (x + a)` is shifted away
+from a genuine singularity at the origin; the inverse-square dependence on `n` is
+calibrated so that a degree-`n` polynomial cannot resolve the boundary layer. -/
 noncomputable def oneArmPoleScale (n : ℕ) : ℝ :=
   1 / (10000000000 * (n : ℝ) ^ 2)
 
+/-- The `j`-th node of a Chebyshev--Lobatto mesh of order `2n`, mapped by the
+increasing affine change of variables that carries `[-1, 1]` onto the interval
+`[a, 1]` from the pole offset up to one.  These are the interior mesh points of
+the selected grid. -/
 noncomputable def oneArmAffineMeshNode (n j : ℕ) : ℝ :=
   let a := oneArmPoleScale n
   (1 + a) / 2 + (1 - a) / 2 * czNode (2 * n) j
@@ -21,6 +41,9 @@ noncomputable def oneArmSelectionGrid (n : ℕ) : Fin (2 * n + 4) → ℝ := fun
   if i.1 < 3 then (i.1 + 1 : ℕ) * oneArmPoleScale n
   else oneArmAffineMeshNode n (i.1 - 3)
 
+/-- Every Chebyshev--Lobatto node lies in the interval `[-1, 1]`, being a cosine
+value.  This is the range fact that lets the affine change of variables land the
+mesh inside the intended interval. -/
 lemma czNode_mem_Icc (k j : ℕ) : czNode k j ∈ Set.Icc (-1 : ℝ) 1 := by
   constructor
   · dsimp [czNode]
@@ -28,6 +51,9 @@ lemma czNode_mem_Icc (k j : ℕ) : czNode k j ∈ Set.Icc (-1 : ℝ) 1 := by
   · dsimp [czNode]
     linarith [Real.neg_one_le_cos (Real.pi * j / k)]
 
+/-- Once the degree parameter `n` is at least one, every affine mesh node lies
+between the pole offset `a` and one.  In particular the nodes stay strictly to the
+right of the pole, so the target and the reciprocal are finite there. -/
 lemma oneArmAffineMeshNode_mem_Icc {n j : ℕ} (hn : 1 ≤ n) :
     oneArmAffineMeshNode n j ∈ Set.Icc (oneArmPoleScale n) 1 := by
   let a := oneArmPoleScale n
@@ -49,15 +75,25 @@ lemma oneArmAffineMeshNode_mem_Icc {n j : ℕ} (hn : 1 ≤ n) :
       (div_nonneg (sub_nonneg.mpr ha1) (by norm_num : (0 : ℝ) ≤ 2))
     linarith
 
+/-- The polynomial obtained from `P` by precomposing with the affine map that sends
+`[-1, 1]` onto `[a, 1]`.  Rewriting a polynomial on the working interval as a
+polynomial on the reference interval is what lets the Chebyshev norming
+inequalities be applied. -/
 noncomputable def oneArmAffinePolynomial (n : ℕ) (P : Polynomial ℝ) : Polynomial ℝ :=
   let a := oneArmPoleScale n
   P.comp (Polynomial.C ((1 + a) / 2) + Polynomial.C ((1 - a) / 2) * Polynomial.X)
 
+/-- The rescaled polynomial evaluated at a reference point `t` agrees with the
+original polynomial evaluated at the corresponding point of `[a, 1]`.  This is the
+computation rule for the affine change of variables. -/
 @[simp] lemma oneArmAffinePolynomial_eval (n : ℕ) (P : Polynomial ℝ) (t : ℝ) :
     (oneArmAffinePolynomial n P).eval t =
       P.eval ((1 + oneArmPoleScale n) / 2 + (1 - oneArmPoleScale n) / 2 * t) := by
   simp [oneArmAffinePolynomial]
 
+/-- The affine change of variables does not raise the degree: a polynomial of
+degree at most `n` stays of degree at most `n` after rescaling.  Needed so that
+the Chebyshev norming inequality can be applied at the same degree. -/
 lemma oneArmAffinePolynomial_natDegree_le {n : ℕ} {P : Polynomial ℝ}
     (hdeg : P.natDegree ≤ n) :
     (oneArmAffinePolynomial n P).natDegree ≤ n := by
@@ -81,6 +117,12 @@ lemma oneArmAffinePolynomial_natDegree_le {n : ℕ} {P : Polynomial ℝ}
         _ = P.natDegree := Nat.mul_one _
         _ ≤ n := hdeg
 
+/-- A degree-`n` polynomial that approximates the shifted target `x/(x+a) + α/x`
+to within `e` at every node of the twice-oversampled mesh is uniformly bounded by
+`2(1 + |α/a| + e)` on the whole interval `[a, 1]`.  Oversampling is what upgrades
+control at finitely many nodes to control everywhere, via the Ehlich--Zeller
+norming inequality; the resulting envelope feeds the three-point variation
+argument. -/
 lemma oneArm_mesh_polynomial_bound
     {n : ℕ} (hn : 1 ≤ n) {alpha e : ℝ} {P : Polynomial ℝ}
     (hdeg : P.natDegree ≤ n)
@@ -181,11 +223,17 @@ lemma oneArm_mesh_polynomial_bound
         (by ring)
     _ = 2 * (1 + |alpha / oneArmPoleScale n| + e) := by rfl
 
+/-- The first three points of the selected grid are the boundary-layer points
+`a`, `2a` and `3a`.  These are the points on which the three-point rational
+obstruction is run. -/
 lemma oneArmSelectionGrid_special (n : ℕ) (r : Fin 3) :
     oneArmSelectionGrid n
         ⟨r.1, by omega⟩ = ((r.1 + 1 : ℕ) : ℝ) * oneArmPoleScale n := by
   simp [oneArmSelectionGrid, r.2]
 
+/-- Past the three boundary-layer points, the selected grid is exactly the affine
+Chebyshev--Lobatto mesh: the point at index `j + 3` is the `j`-th mesh node.
+This is the indexing bridge between the grid and the mesh bounds. -/
 lemma oneArmSelectionGrid_mesh (n j : ℕ) (hj : j ≤ 2 * n) :
     oneArmSelectionGrid n
         ⟨j + 3, by omega⟩ = oneArmAffineMeshNode n j := by
@@ -323,14 +371,23 @@ noncomputable def oneArmSelectionBasis (n : ℕ) :
   if j.1 = 0 then (oneArmSelectionGrid n i)⁻¹
   else (oneArmSelectionGrid n i) ^ (j.1 - 1)
 
+/-- The target function `x / (x + a)` sampled on the selected grid.  This is the
+propensity-shaped quantity the hard prior must separate, and the object whose
+best approximation error is bounded below. -/
 noncomputable def oneArmSelectionTarget (n : ℕ) : Fin (2 * n + 4) → ℝ := fun i =>
   oneArmSelectionGrid n i / (oneArmSelectionGrid n i + oneArmPoleScale n)
 
+/-- The polynomial part of a coefficient vector for the selection basis: the
+reciprocal coefficient is discarded and the remaining coefficients are read as the
+coefficients of `1, x, …, xⁿ`.  This splits an arbitrary element of the
+approximation space into a reciprocal term plus an honest polynomial. -/
 noncomputable def oneArmSelectionPolynomial (n : ℕ) (c : Fin (n + 2) → ℝ) :
     Polynomial ℝ :=
   ∑ j, if j.1 = 0 then 0
     else Polynomial.C (c j) * Polynomial.X ^ (j.1 - 1)
 
+/-- The polynomial part of any selection-basis coefficient vector has degree at
+most `n`, so the degree-`n` approximation-theory bounds apply to it. -/
 lemma oneArmSelectionPolynomial_natDegree_le
     (n : ℕ) (c : Fin (n + 2) → ℝ) :
     (oneArmSelectionPolynomial n c).natDegree ≤ n := by
@@ -342,6 +399,10 @@ lemma oneArmSelectionPolynomial_natDegree_le
   · simp
   · exact (Polynomial.natDegree_C_mul_X_pow_le (c j) (j.1 - 1)).trans (by omega)
 
+/-- A linear combination of the selection basis evaluated at a grid point equals
+the reciprocal term `c₀ / x` plus the value of the polynomial part at that point.
+This is the explicit decomposition of the approximation space into "one pole plus
+a polynomial". -/
 lemma oneArmSelectionBasis_sum_eq
     (n : ℕ) (c : Fin (n + 2) → ℝ) (i : Fin (2 * n + 4)) :
     ∑ j, c j * oneArmSelectionBasis n j i =
@@ -386,6 +447,10 @@ lemma oneArmSelectionBasis_sum_eq
           rw [oneArmSelectionPolynomial, Polynomial.eval_finset_sum]
     _ = _ := rfl
 
+/-- On the selected grid, the target `x / (x + a)` cannot be approximated in the
+uniform norm to better than `1/1000` by any combination of the reciprocal and the
+monomials of degree at most `n`.  This fixed positive gap, uniform in `n`, is the
+approximation obstruction that the hard prior is built on. -/
 theorem oneArmSelectionGrid_bestError_lower (n : ℕ) (hn : 1 ≤ n) :
     1 / 1000 ≤ finiteGridBestError
       (finiteGridBasisEval (oneArmSelectionBasis n)) (oneArmSelectionTarget n) := by
@@ -404,9 +469,16 @@ theorem oneArmSelectionGrid_bestError_lower (n : ℕ) (hn : 1 ≤ n) :
   simpa [oneArmSelectionTarget, P, sub_eq_add_neg, div_eq_mul_inv, add_assoc,
     add_comm, add_left_comm] using hi
 
+/-- The coefficient vector that selects the constant function out of the selection
+basis: weight one on the degree-zero monomial and zero elsewhere.  It witnesses
+that the approximation space contains constants. -/
 def oneArmSelectionConstantCoeff (n : ℕ) : Fin (n + 2) → ℝ := fun j =>
   if j.1 = 1 then 1 else 0
 
+/-- The constant function one lies in the span of the selection basis.  This is the
+hypothesis the Jordan-decomposition machinery needs in order to conclude that the
+dual witness has zero total mass and therefore splits into two probability
+measures. -/
 lemma oneArmSelectionBasis_contains_one (n : ℕ) :
     finiteGridBasisEval (oneArmSelectionBasis n)
       (oneArmSelectionConstantCoeff n) = fun _ => 1 := by

@@ -19,6 +19,10 @@ def oneArmTripleRepresentative {d : ℕ} (u : Fin d × Fin 3) : Obs d :=
   (u.1, if u.2 = 0 then true else if u.2 = 1 then true else false,
     if u.2 = 0 then true else false)
 
+/-- Labelling an observation and then taking the canonical representative
+returns the original observation, for every observation other than a
+control-arm success.  Since that one atom carries no mass under a control-zero
+law, the three-label channel is lossless there. -/
 lemma oneArmTripleRepresentative_label_of_not_controlSuccess
     {d : ℕ} (z : Obs d) (hz : ¬ (z.2.1 = false ∧ z.2.2 = true)) :
     oneArmTripleRepresentative (oneArmObservationTripleLabel z) = z := by

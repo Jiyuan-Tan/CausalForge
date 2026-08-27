@@ -255,6 +255,8 @@ grid on `[a,1]`. -/
 noncomputable def oneArmLobattoExterior (a : ℝ) : ℝ :=
   (1 + 3 * a) / (1 - a)
 
+/-- Every Chebyshev–Lobatto node of the grid lies between the left endpoint `a`
+and `1`. -/
 lemma oneArmLobattoNode_in_Icc {n i : ℕ} {a : ℝ} (ha0 : 0 < a) (ha1 : a < 1) :
     oneArmLobattoNode n a i ∈ Set.Icc a 1 := by
   have hnode := Polynomial.Chebyshev.node_mem_Icc (n := n) (i := i)
@@ -267,6 +269,8 @@ lemma oneArmLobattoNode_in_Icc {n i : ℕ} {a : ℝ} (ha0 : 0 < a) (ha1 : a < 1)
   unfold oneArmLobattoNode
   constructor <;> linarith
 
+/-- The first `n + 1` grid nodes are pairwise distinct, so the barycentric
+weights and Lagrange bases attached to them are well defined. -/
 lemma oneArmLobattoNode_injectiveOn (n : ℕ) {a : ℝ} (ha1 : a < 1) :
     Set.InjOn (oneArmLobattoNode n a) (Finset.Iic n) := by
   intro i hi j hj hij
@@ -279,12 +283,17 @@ lemma oneArmLobattoNode_injectiveOn (n : ℕ) {a : ℝ} (ha1 : a < 1) :
   have hj' : j ∈ Finset.range (n + 1) := by simpa [Nat.range_succ_eq_Iic] using hj
   exact (Polynomial.Chebyshev.strictAntiOn_node n).injOn hi' hj' hnodes
 
+/-- The exterior point lies strictly outside the standard interval: its standard
+coordinate exceeds `1` whenever the left endpoint lies in `(0,1)`. -/
 lemma oneArmLobattoExterior_gt_one {a : ℝ} (ha0 : 0 < a) (ha1 : a < 1) :
     1 < oneArmLobattoExterior a := by
   unfold oneArmLobattoExterior
   rw [lt_div_iff₀ (sub_pos.mpr ha1)]
   linarith
 
+/-- The affine map carrying the standard interval onto `[a,1]` sends the
+exterior standard coordinate back to `-a`, confirming that it is the correct
+preimage of the exterior evaluation point. -/
 lemma oneArmLobatto_affine_exterior {a : ℝ} (ha1 : a < 1) :
     (1 + a) / 2 - ((1 - a) / 2) * oneArmLobattoExterior a = -a := by
   unfold oneArmLobattoExterior
@@ -428,6 +437,7 @@ lemma oneArmLobatto_normalized_rational_gap (n : ℕ) (hn : 1 ≤ n) {a : ℝ}
 noncomputable def oneArmChebyshevScale (n : ℕ) : ℝ :=
   (Real.cosh ((n : ℝ)⁻¹) - 1) / (Real.cosh ((n : ℝ)⁻¹) + 3)
 
+/-- The calibrated scale is strictly positive for every `n ≥ 1`. -/
 lemma oneArmChebyshevScale_pos {n : ℕ} (hn : 1 ≤ n) :
     0 < oneArmChebyshevScale n := by
   have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hn)
@@ -436,6 +446,8 @@ lemma oneArmChebyshevScale_pos {n : ℕ} (hn : 1 ≤ n) :
   unfold oneArmChebyshevScale
   positivity
 
+/-- The calibrated scale is strictly below `1`, so the grid interval `[a,1]` is
+nondegenerate. -/
 lemma oneArmChebyshevScale_lt_one {n : ℕ} (hn : 1 ≤ n) :
     oneArmChebyshevScale n < 1 := by
   have hcosh0 : 0 < Real.cosh ((n : ℝ)⁻¹) := Real.cosh_pos _
@@ -487,6 +499,8 @@ lemma oneArmChebyshevScale_lower {n : ℕ} (hn : 1 ≤ n) :
       rw [mul_assoc]
       exact mul_le_mul_of_nonneg_left hprod (by linarith)
 
+/-- With the calibrated scale as the left grid endpoint, the standard coordinate
+of the exterior point is exactly `cosh(1/n)`. -/
 lemma oneArmLobattoExterior_chebyshevScale {n : ℕ} (hn : 1 ≤ n) :
     oneArmLobattoExterior (oneArmChebyshevScale n) =
       Real.cosh ((n : ℝ)⁻¹) := by
@@ -497,6 +511,10 @@ lemma oneArmLobattoExterior_chebyshevScale {n : ℕ} (hn : 1 ≤ n) :
   field_simp [hden]
   ring
 
+/-- At the calibrated scale the degree-`n` Chebyshev polynomial evaluates at the
+exterior point to the absolute constant `cosh 1`, using `T_n(cosh t) = cosh(nt)`
+with `t = 1/n`.  This is what makes the total Lagrange mass at the exterior
+point bounded uniformly in `n`. -/
 lemma chebyshev_eval_oneArmExterior_eq_cosh_one {n : ℕ} (hn : 1 ≤ n) :
     (Polynomial.Chebyshev.T ℝ (n : ℤ)).eval
         (oneArmLobattoExterior (oneArmChebyshevScale n)) = Real.cosh 1 := by

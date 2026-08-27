@@ -1,5 +1,15 @@
 import CausalSmith.Stat.STAT_DiscreteAteMinimaxLoggap_Research.Helpers.LowerBound
 
+/-!
+# Deterministic one-arm configurations
+
+This file turns a triple of cell probabilities, propensities and treated outcome
+means into an explicit discrete observation law whose control outcome is
+identically zero, and reads off its cell masses, propensities, outcome means and
+treated functional.  These laws are the members of the control-zero class that the
+hard priors are supported on.
+-/
+
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
 open scoped ENNReal BigOperators
@@ -12,6 +22,9 @@ noncomputable def oneArmConfigurationAtom {d : ℕ}
     else p z.1 * pi z.1 * (1 - mu z.1)
   else if z.2.2 then 0 else p z.1 * (1 - pi z.1)
 
+/-- When the cell probabilities, propensities and outcome means all lie in the unit
+interval, every configuration atom is nonnegative.  This is one of the two
+conditions making the atoms a genuine probability mass function. -/
 lemma oneArmConfigurationAtom_nonneg {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -24,6 +37,10 @@ lemma oneArmConfigurationAtom_nonneg {d : ℕ}
   · exact mul_nonneg (mul_nonneg (hp _).1 (hpi _).1) (sub_nonneg.mpr (hmu _).2)
   · exact mul_nonneg (hp _).1 (sub_nonneg.mpr (hpi _).2)
 
+/-- Once the cell probabilities sum to one, the configuration atoms sum to one over
+all observations, since within each cell the treated and control branches recombine
+to the cell probability.  Together with nonnegativity this makes the atoms a
+probability mass function. -/
 lemma oneArmConfigurationAtom_sum {d : ℕ}
     (p pi mu : Fin d → ℝ) (hp_sum : ∑ r, p r = 1) :
     ∑ z : Obs d, oneArmConfigurationAtom p pi mu z = 1 := by
@@ -52,6 +69,9 @@ noncomputable def oneArmConfigurationLaw {d : ℕ}
         oneArmConfigurationAtom_sum p pi mu hp_sum]
       simp
 
+/-- The joint probability that the configuration law assigns to a cell, treatment
+and outcome is exactly the corresponding configuration atom.  This is the unfolding
+rule from which all the summary quantities below are computed. -/
 lemma oneArmConfigurationLaw_jointMass {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -64,6 +84,9 @@ lemma oneArmConfigurationLaw_jointMass {d : ℕ}
   rw [PMF.ofFintype_apply, ENNReal.toReal_ofReal]
   exact oneArmConfigurationAtom_nonneg p pi mu hp hpi hmu (r, a, y)
 
+/-- The marginal probability of a cell under the configuration law is the cell
+probability it was built from.  The configuration parameters are therefore read
+back unchanged from the law. -/
 lemma oneArmConfigurationLaw_cellMass {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -77,6 +100,9 @@ lemma oneArmConfigurationLaw_cellMass {d : ℕ}
     oneArmConfigurationAtom, Bool.false_eq_true, if_false, if_true]
   ring
 
+/-- In any cell of positive probability, the conditional probability of treatment
+under the configuration law is the propensity it was built from.  This is what lets
+overlap restrictions be imposed directly on the configuration parameters. -/
 lemma oneArmConfigurationLaw_propensity {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -92,6 +118,9 @@ lemma oneArmConfigurationLaw_propensity {d : ℕ}
   field_simp [ne_of_gt hpr]
   ring
 
+/-- In a cell that has positive probability and positive propensity, the mean
+outcome among the treated equals the outcome mean the configuration was built
+from.  This identifies the treated regression function of the law. -/
 lemma oneArmConfigurationLaw_outcomeMean_true {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -107,6 +136,9 @@ lemma oneArmConfigurationLaw_outcomeMean_true {d : ℕ}
   field_simp [ne_of_gt hpr, ne_of_gt hpir]
   ring
 
+/-- The mean outcome among the controls is identically zero in every cell: the
+configuration puts no mass on a control unit with outcome one.  This is exactly the
+control-zero restriction that defines the class. -/
 lemma oneArmConfigurationLaw_outcomeMean_false {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)
@@ -120,6 +152,9 @@ lemma oneArmConfigurationLaw_outcomeMean_false {d : ℕ}
     oneArmConfigurationAtom, Bool.false_eq_true, if_false]
   simp
 
+/-- When every propensity is strictly positive, the treated functional of the
+configuration law is the weighted average `∑ᵣ pᵣ μᵣ` of the treated outcome means.
+This is the estimand the hard priors must separate. -/
 lemma oneArmConfigurationLaw_treatedFunctional {d : ℕ}
     (p pi mu : Fin d → ℝ)
     (hp : ∀ r, p r ∈ Set.Icc (0 : ℝ) 1)

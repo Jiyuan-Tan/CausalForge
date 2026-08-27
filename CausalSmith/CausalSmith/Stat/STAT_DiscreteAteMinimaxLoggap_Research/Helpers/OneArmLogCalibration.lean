@@ -13,10 +13,17 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 noncomputable def oneArmLogDegree (n : ℕ) : ℕ :=
   Nat.ceil (8 * Real.log n / Real.log 2)
 
+/-- The chosen degree is at least the real number it rounds up, namely
+8·log n / log 2 (base-2 logarithm scaled by 8), whenever the sample size is at
+least 2.  This is the lower half of the ceiling sandwich used to convert degree
+budgets into logarithmic rates. -/
 lemma oneArmLogDegree_lower {n : ℕ} (hn : 2 ≤ n) :
     8 * Real.log n / Real.log 2 ≤ (oneArmLogDegree n : ℝ) := by
   exact Nat.le_ceil _
 
+/-- The chosen degree is strictly less than 8·log n / log 2 plus one, for sample
+size at least 2.  This is the upper half of the ceiling sandwich, so the degree
+never exceeds its target by more than a single unit. -/
 lemma oneArmLogDegree_upper {n : ℕ} (hn : 2 ≤ n) :
     (oneArmLogDegree n : ℝ) < 8 * Real.log n / Real.log 2 + 1 := by
   apply Nat.ceil_lt_add_one
@@ -25,6 +32,8 @@ lemma oneArmLogDegree_upper {n : ℕ} (hn : 2 ≤ n) :
   have hlogn : 0 ≤ Real.log n := Real.log_nonneg hn1
   positivity
 
+/-- The chosen degree is strictly positive once the sample size is at least 2,
+so the moment-matching construction always has at least one moment to match. -/
 lemma oneArmLogDegree_pos {n : ℕ} (hn : 2 ≤ n) :
     0 < oneArmLogDegree n := by
   apply Nat.ceil_pos.mpr

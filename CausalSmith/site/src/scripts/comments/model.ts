@@ -3,14 +3,14 @@
  *
  * Everything here is DOM-free and side-effect-free: it turns the worker's read
  * payload into placed, grouped, ordered comments, decides which highlight a
- * sentence gets, writes the label strings, and builds the GraphQL bodies the
- * browser posts. The controller (`../comments.ts`) does the rest.
+ * sentence gets, writes the label strings, and composes the body the browser
+ * hands to the worker. The controller (`../comments.ts`) does the rest.
  *
  * The hostile-input boundary lives here too: comment metadata comes from a
- * public GitHub Discussion, so anyone can write it. `parseComment` already
- * never throws; `sanitizeAnchor` additionally caps the fields whose size drives
- * re-anchoring cost, so a comment claiming a 10,000-sentence quote cannot make
- * the page do quadratic work.
+ * store any signed-in visitor can write to, so treat every field as hostile.
+ * `sanitizeAnchor` caps the fields whose size drives re-anchoring cost, so a
+ * comment claiming a 10,000-sentence quote cannot make the page do quadratic
+ * work, and every string reaches the DOM through `textContent`.
  */
 
 import {
@@ -20,13 +20,12 @@ import {
   type PreparedSentences,
   type SentenceRef,
 } from "../../lib/comments/anchor.js";
-import {
-  parseComment,
-  serializeComment,
-  SCHEMA_VERSION,
-  type CommentMeta,
-  type CommentTag,
-} from "../../lib/comments/schema.js";
+import { type CommentTag } from "../../lib/comments/schema.js";
+
+/** The three tags a comment may carry; anything else degrades to "none". */
+function isCommentTag(t: unknown): t is CommentTag {
+  return t === "none" || t === "verified" || t === "problem";
+}
 
 /** Anchors wider than this are refused (the composer never makes one). */
 export const MAX_ANCHOR_COUNT = 8;
@@ -58,31 +57,32 @@ export interface GithubAuthor {
 }
 
 /**
- * A reply as the worker hands it over. GitHub Discussions threads exactly one
- * level deep — a reply has no replies of its own, and none of the metadata a
- * top-level comment carries (no tag, no anchor: it inherits its parent's).
+ * A reply as the worker hands it over. Threads are exactly one level deep — a
+ * reply has no replies of its own, and none of the metadata a top-level comment
+ * carries (no tag, no anchor: it inherits its parent's).
  */
 export interface FetchedReply {
   id: string;
-  body: string;
+  text: string;
   createdAt: string;
-  url: string;
   author: GithubAuthor | null;
 }
 
 export interface FetchedComment {
   id: string;
-  body: string;
+  text: string;
   createdAt: string;
-  url: string;
   author: GithubAuthor | null;
+  tag?: unknown;
+  anchor?: unknown;
+  revision?: unknown;
   replies?: FetchedReply[];
 }
 
 export interface WorkerPayload {
-  discussionId: string | null;
-  discussionNumber: number | null;
   comments: FetchedComment[];
+  /** The worker served only part of the thread; the rail says so. */
+  truncated?: boolean;
 }
 
 export interface PlacedReply {
@@ -155,21 +155,20 @@ function placeOne(
   allowAnchor: boolean,
   prepared: PreparedSentences,
 ): { comment: PlacedComment; usedBudget: boolean; overflow: boolean } {
-  const parsed = parseComment(typeof item.body === "string" ? item.body : "", paper);
-  const anchor = sanitizeAnchor(parsed.meta.anchor);
+  const anchor = sanitizeAnchor(item.anchor);
   const comment: PlacedComment = {
     id: item.id,
     login: item.author?.login ?? "ghost",
     avatarUrl: isSafeAvatarUrl(item.author?.avatarUrl) ? item.author!.avatarUrl : null,
     createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
-    tag: parsed.meta.tag,
-    text: parsed.text.slice(0, MAX_RENDER_CHARS),
+    tag: isCommentTag(item.tag) ? item.tag : "none",
+    text: typeof item.text === "string" ? item.text.slice(0, MAX_RENDER_CHARS) : "",
     kind: "general",
     sids: [],
     quote: anchor ? anchor.exact : "",
-    revision: parsed.meta.revision ?? null,
+    revision: typeof item.revision === "string" && item.revision ? item.revision : null,
     order: Number.MAX_SAFE_INTEGER,
-    replies: placeReplies(item.replies, paper),
+    replies: placeReplies(item.replies),
   };
   if (anchor && !allowAnchor) {
     // Over the per-page cap: shown as a general comment, not re-anchored.
@@ -223,13 +222,18 @@ export function placeCommentsBudgeted(
   const prepared = prepareSentences(sentences);
   let budget = maxAnchored;
   let overflow = 0;
-  for (const item of items) {
+  // Newest first, because that is who the budget should be spent on: the worker
+  // serves the newest 100 comments, so iterating in wire order would hand the
+  // re-anchor budget to the oldest of them and push the most recent — the ones
+  // a returning reader came back for — into the unanchored "general" group.
+  for (const item of [...items].reverse()) {
     if (!item || typeof item.id !== "string") continue;
     const r = placeOne(item, paper, sentences, budget > 0, prepared);
     if (r.usedBudget) budget--;
     if (r.overflow) overflow++;
     placed.push(r.comment);
   }
+  placed.reverse();
   return { placed, overflow };
 }
 
@@ -254,7 +258,10 @@ export async function placeCommentsAsync(
   let budget = maxAnchored;
   let overflow = 0;
   let sinceYield = 0;
-  for (const item of items) {
+  // Newest first, for the budget reason in `placeCommentsBudgeted`. Callers are
+  // handed wire order at every step; the rail re-sorts anyway, but a batch that
+  // arrives reversed would still be a surprising thing to expose.
+  for (const item of [...items].reverse()) {
     if (!item || typeof item.id !== "string") continue;
     const r = placeOne(item, paper, sentences, budget > 0, prepared);
     if (r.usedBudget) budget--;
@@ -262,23 +269,18 @@ export async function placeCommentsAsync(
     placed.push(r.comment);
     if (++sinceYield >= batchSize) {
       sinceYield = 0;
-      onBatch(placed, false);
+      onBatch(placed.slice().reverse(), false);
       await new Promise((resolve) => setTimeout(resolve));
     }
   }
+  placed.reverse();
   onBatch(placed, true);
   return { placed, overflow };
 }
 
-/**
- * Normalize the worker's replies.
- *
- * A reply is plain text by design, but someone can always answer on github.com
- * with a body that happens to carry a metadata header — `parseComment` strips
- * it and hands back the readable remainder either way, so nothing invented on
- * GitHub can smuggle a tag or an anchor in through a reply.
- */
-export function placeReplies(items: unknown, paper: string): PlacedReply[] {
+/** Normalize the worker's replies. A reply carries no tag and no anchor: it
+ *  inherits its parent's. */
+export function placeReplies(items: unknown): PlacedReply[] {
   if (!Array.isArray(items)) return [];
   const out: PlacedReply[] = [];
   for (const item of items as FetchedReply[]) {
@@ -288,10 +290,7 @@ export function placeReplies(items: unknown, paper: string): PlacedReply[] {
       login: item.author?.login ?? "ghost",
       avatarUrl: isSafeAvatarUrl(item.author?.avatarUrl) ? item.author!.avatarUrl : null,
       createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
-      text: parseComment(typeof item.body === "string" ? item.body : "", paper).text.slice(
-        0,
-        MAX_RENDER_CHARS,
-      ),
+      text: typeof item.text === "string" ? item.text.slice(0, MAX_RENDER_CHARS) : "",
     });
   }
   return out;
@@ -469,90 +468,45 @@ export function formatWhen(iso: string): string {
 /* ── Outgoing wire format ────────────────────────────────────────────────── */
 
 /**
- * The Discussion comment body for a new comment.
+ * The payload for a new comment.
  *
- * ALWAYS built through `serializeComment`, so the metadata header is the one
- * the parser expects and the visitor's text is never spliced into markup.
+ * Structured fields, not a serialized document: the worker stores them as they
+ * are and re-validates every one, so nothing here is a security boundary — it
+ * is the composer's own bounds, applied before a pointless round trip. The
+ * author is deliberately absent; the worker resolves that from the token and
+ * would overwrite anything sent.
  */
-export function newCommentBody(args: {
+export function newCommentPayload(args: {
   paper: string;
   tag: CommentTag;
   text: string;
   anchor?: Anchor | null;
   revision?: string | null;
-}): string {
-  const meta: CommentMeta = { v: SCHEMA_VERSION, paper: args.paper, tag: args.tag };
-  if (args.anchor) meta.anchor = args.anchor;
-  if (args.revision) meta.revision = args.revision;
-  return serializeComment({ meta, text: args.text.slice(0, MAX_TEXT_CHARS) });
-}
-
-export interface GraphqlRequest {
-  query: string;
-  variables: Record<string, unknown>;
-}
-
-const COMMENT_FIELDS = "id body createdAt author { login avatarUrl }";
-
-export function addCommentMutation(discussionId: string, body: string): GraphqlRequest {
-  return {
-    query:
-      `mutation($discussionId: ID!, $body: String!) {` +
-      ` addDiscussionComment(input: {discussionId: $discussionId, body: $body})` +
-      ` { comment { ${COMMENT_FIELDS} } } }`,
-    variables: { discussionId, body },
+}): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    paper: args.paper,
+    tag: args.tag,
+    text: args.text.slice(0, MAX_TEXT_CHARS),
   };
+  if (args.anchor) payload.anchor = args.anchor;
+  if (args.revision) payload.revision = args.revision;
+  return payload;
 }
 
-// NOTE: there is deliberately no `createDiscussion` here. Threads are
-// pre-provisioned by the maintainer (see comments-worker/provision.mjs), so a
-// visitor's browser never creates — and never owns — a paper's discussion.
-
-/**
- * A reply's body is exactly what the visitor typed.
- *
- * No metadata header: replies inherit their parent's tag and anchor, and a bare
- * body is what reads well in the GitHub Discussions thread.
- */
-export function serializeReply(text: string): string {
-  return text.trim().slice(0, MAX_TEXT_CHARS);
+/** A reply carries only its text and its parent; it inherits tag and anchor. */
+export function newReplyPayload(paper: string, parentId: string, text: string) {
+  return { paper, parentId, text: text.trim().slice(0, MAX_TEXT_CHARS) };
 }
 
-export function addReplyMutation(
-  discussionId: string,
-  replyToId: string,
-  body: string,
-): GraphqlRequest {
-  return {
-    query:
-      `mutation($discussionId: ID!, $replyToId: ID!, $body: String!) {` +
-      ` addDiscussionComment(input: {discussionId: $discussionId, replyToId: $replyToId,` +
-      ` body: $body}) { comment { ${COMMENT_FIELDS} } } }`,
-    variables: { discussionId, replyToId, body },
-  };
-}
-
-export function deleteCommentMutation(commentId: string): GraphqlRequest {
-  return {
-    query:
-      `mutation($id: ID!) {` +
-      ` deleteDiscussionComment(input: {id: $id}) { comment { id } } }`,
-    variables: { id: commentId },
-  };
-}
-
-export function viewerQuery(): GraphqlRequest {
-  return { query: "query { viewer { login avatarUrl } }", variables: {} };
-}
 
 /**
  * Whether to OFFER the delete control on a comment.
  *
- * Convenience only, and deliberately so: the real authorization happens on
- * GitHub, which accepts `deleteDiscussionComment` from the comment's author or
- * a repo admin and rejects everyone else. Hiding the button spares readers a
- * control that would fail; it is not what stops anyone deleting someone else's
- * comment. No viewer loaded → no button (we cannot know whose it is).
+ * Convenience only, and deliberately so: the real authorization happens in the
+ * worker, which re-reads the comment's stamped author and refuses anyone else.
+ * Hiding the button spares readers a control that would fail; it is not what
+ * stops anyone deleting someone else's comment. No viewer loaded → no button
+ * (we cannot know whose it is).
  */
 export function ownsComment(c: { login: string }, viewer: { login?: string } | null): boolean {
   const login = viewer?.login;

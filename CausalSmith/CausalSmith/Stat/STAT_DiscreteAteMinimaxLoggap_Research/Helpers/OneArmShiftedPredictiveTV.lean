@@ -11,6 +11,9 @@ namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 open MeasureTheory Causalean.Stat
 open scoped BigOperators NNReal ENNReal
 
+/-- The discrete σ-algebra on the option type `Option (Fin N)`, in which every
+subset is measurable.  It is the ambient measurable structure used here for the
+lifted grid label augmented with a "no cell" value. -/
 local instance shiftedOptionMeasurableSpace (N : ℕ) :
     MeasurableSpace (Option (Fin N)) := ⊤
 

@@ -4,7 +4,6 @@
 
 **Contribution statement.** The paper characterizes the fixed-interior minimax mean-squared-error rate for average treatment effect estimation with unrestricted finite-alphabet covariates under bounded overlap and constructs a computable balanced ratio-polynomial hybrid estimator attaining this rate for \(n\ge N_\epsilon\) and \(d\le\rho_\epsilon n\log n\).
 
-env_overrides: prop:two-category-confounding=propositionv
 
 # Notation
 
@@ -32,12 +31,6 @@ notation_gaps: \(q_{aky}\)=joint category--treatment--outcome cell mass used in 
 \(q_k\) | \(q_k\) | four-cell vector of joint treatment--outcome masses for category \(k\) | def:ate-functional
 \(\mathsf R_{n,d,\epsilon}\) | \(\mathsf R_{n,d,\epsilon}\) | minimax mean-squared-error risk | def:minimax-risk
 \(\widehat\tau\) | \(\widehat\tau\) | measurable estimator based on \(O_1,\ldots,O_n\) | def:minimax-risk
-\(\mu_{01}\) | \(\mu_{01}\) | control mean in category \(1\) for the two-category witness | def:two-category-witness
-\(\mu_{02}\) | \(\mu_{02}\) | control mean in category \(2\) for the two-category witness | def:two-category-witness
-\(\mu_{11}\) | \(\mu_{11}\) | treated mean in category \(1\) for the two-category witness | def:two-category-witness
-\(\mu_{12}\) | \(\mu_{12}\) | treated mean in category \(2\) for the two-category witness | def:two-category-witness
-\((Y(0),Y(1))=(0,\mathbf 1\{X=1\})\) | \((Y(0),Y(1))=(0,\mathbf 1\{X=1\})\) | full-data potential-outcome construction for the two-category witness | def:two-category-witness
-\(\mathsf{Bernoulli}(\pi_k)\) | \(\mathsf{Bernoulli}(\pi_k)\) | treatment assignment rule in the two-category witness, drawing \(A\) given \(X=k\) | def:two-category-witness
 \(\widehat\tau_{\mathrm{ctr}}\) | \(\widehat\tau_{\mathrm{ctr}}\) | centered endpoint estimator | synth_10
 \(I_0=\{1,\ldots,\lfloor n/2\rfloor\}\) | \(I_0=\{1,\ldots,\lfloor n/2\rfloor\}\) | first deterministic half-sample split | def:sample-splits
 \(I_1=\{\lfloor n/2\rfloor+1,\ldots,n\}\) | \(I_1=\{\lfloor n/2\rfloor+1,\ldots,n\}\) | second deterministic half-sample split | def:sample-splits
@@ -129,9 +122,10 @@ bib: ZengBalakrishnanHanKennedy2024, Hahn1998, HiranoImbensRidder2003, RobinsRot
 
 ## section: Setup and assumptions
 
-This section introduces the iid observational sampling framework, fixed overlap, the product-law experiment class, the overlap cone, the cell contribution \(\phi\), the ATE functional \(\tau(P)\), the minimax risk, and the balanced ratio-polynomial hybrid estimator used in the main theorem. It then records the potential-outcome assumptions and the two-category construction as a compact example separating the causal estimand from the naive observed contrast.
+This section introduces the iid observational sampling framework, fixed overlap, the product-law experiment class, the overlap cone, the cell contribution \(\phi\), the ATE functional \(\tau(P)\), the minimax risk, and the balanced ratio-polynomial hybrid estimator used in the main theorem. It then records the potential-outcome assumptions identifying the category-adjusted estimand.
 
-objs: synth_7, ass:iid-sampling, ass:overlap, def:experiment-class, def:overlap-cone, def:cell-functional, def:ate-functional, def:minimax-risk, def:sample-splits, synth_3, def:hybrid-estimator-handle, ass:consistency, ass:conditional-exchangeability, def:two-category-witness, prop:two-category-confounding
+objs: synth_7, ass:iid-sampling, ass:overlap, def:experiment-class, def:overlap-cone, def:cell-functional, def:ate-functional, def:minimax-risk, def:sample-splits, synth_3, def:hybrid-estimator-handle, ass:consistency, ass:conditional-exchangeability
+
 
 bib: Rubin1974, RosenbaumRubin1983, RobinsRitov1997
 

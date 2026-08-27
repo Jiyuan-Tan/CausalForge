@@ -46,8 +46,7 @@ TL;DR: Under fixed overlap, real outcomes, and a known bound on cell-effect hete
 - The target \(\tau(P)\) is the population-weighted average of the cell effects.
 - The radius bound controls \(\delta_k=\tau_k-\tau(P)\) on supported cells.
 - Risk is mean squared error, uniformly over the model class.
-
-@formal prop:ate-identification
+- Under the potential-outcome assumptions, \(\tau(P)\) is the standard adjusted causal contrast, identified by the usual g-computation argument.
 
 ---
 

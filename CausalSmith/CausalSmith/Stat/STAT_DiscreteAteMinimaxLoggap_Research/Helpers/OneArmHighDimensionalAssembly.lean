@@ -17,6 +17,8 @@ open MeasureTheory ProbabilityTheory Causalean.Stat
 open Causalean.Mathlib.Probability.FiniteMarkedPoissonPartition
 open scoped BigOperators ENNReal NNReal
 
+/-- Coarsening an observation law to its category-and-sufficient-outcome label
+again yields a probability measure. -/
 noncomputable local instance oneArmTripleLabelLaw_isProbabilityMeasure
     {d : ℕ} (P : DiscreteLaw d) :
     IsProbabilityMeasure
@@ -28,16 +30,23 @@ def uncurryOneArmTripleCounts {d : ℕ}
     (c : Fin d → Fin 3 → ℕ) : Fin d × Fin 3 → ℕ :=
   fun u => c u.1 u.2
 
+/-- Regrouping a flat count table by category and then flattening it again
+returns the original table. -/
 lemma uncurryOneArmTripleCounts_curry {d : ℕ}
     (c : Fin d × Fin 3 → ℕ) :
     uncurryOneArmTripleCounts (curryOneArmTripleCounts c) = c := by
   rfl
 
+/-- Flattening a category-indexed family of triple counts and then regrouping it
+returns the original family; together with the converse identity this makes the
+two representations interchangeable. -/
 lemma curryOneArmTripleCounts_uncurry {d : ℕ}
     (c : Fin d → Fin 3 → ℕ) :
     curryOneArmTripleCounts (uncurryOneArmTripleCounts c) = c := by
   rfl
 
+/-- Pushing a finite mixture of measures forward along a measurable map gives the
+mixture, with the same weights, of the pushed-forward components. -/
 lemma map_finiteMixture
     {ι Ω Ξ : Type*} [Fintype ι] [MeasurableSpace Ω] [MeasurableSpace Ξ]
     (w : ι → ℝ≥0∞) (K : ι → Measure Ω) (f : Ω → Ξ)
@@ -191,6 +200,10 @@ private lemma tvDist_conditionedPredictive_le_badMassENN
   exact mul_le_of_le_one_right ENNReal.toReal_nonneg
     (abs_measureReal_sub_le_one (μ := QE) (ν := QB) A.1)
 
+/-- Conditioning two prior mixtures on their respective good events costs at most
+the two priors' bad-event probabilities: the total variation between the
+conditioned mixtures is at most the total variation between the unconditioned
+mixtures plus those two masses. -/
 lemma tvDist_two_finiteConditionedMixtures_le
     {α₀ α₁ Ω : Type*} [Fintype α₀] [Fintype α₁]
     [MeasurableSpace Ω]
@@ -457,6 +470,11 @@ lemma map_finiteSampleHistogram_relaxedAnchored_eq_pi
       oneArmRelaxedAnchored_active_rates q pi mu he0 hehalf ha hq hS
         hpi hmu hscale i j
 
+/-- Poissonized sampling from a relaxed-anchor control-zero configuration, reduced
+to its category-by-category triple counts, has exactly the law of independent
+categories each carrying three independent Poisson counts, with rates equal to
+the sample scale times the treated-success, treated-failure and control masses of
+that category. -/
 lemma map_curry_histogram_relaxedAnchored_eq_pi
     {n m : ℕ} {epsilon anchor sampleScale : ℝ} (q pi mu : Fin m → ℝ)
     (he0 : 0 < epsilon) (hehalf : epsilon ≤ 1 / 2)

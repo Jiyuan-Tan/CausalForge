@@ -6,7 +6,6 @@ import {
   similarity,
   type SentenceRef,
 } from "../src/lib/comments/anchor.js";
-import { parseComment, serializeComment } from "../src/lib/comments/schema.js";
 
 function refs(texts: string[]): SentenceRef[] {
   return texts.map((text, i) => ({ id: `b-${i}`, text }));
@@ -146,58 +145,5 @@ describe("makeAnchor / reanchor", () => {
     expect(reanchor(a, []).state).toBe("archived");
     expect(() => makeAnchor(doc, 2, 2)).toThrow();
     expect(() => makeAnchor(doc, -1, 1)).toThrow();
-  });
-});
-
-describe("comment schema", () => {
-  const anchor = {
-    exact: "The separation constant is C = 4√2.",
-    prefix: "two-point method.",
-    suffix: "Summing the contributions",
-    count: 1,
-  };
-
-  it("round-trips an anchored tagged comment", () => {
-    const body = serializeComment({
-      meta: { v: 1, paper: "stat_discrete_ate", tag: "verified", anchor, revision: "d2bf655f" },
-      text: "Checked against the Lean declaration — constants match.",
-    });
-    const parsed = parseComment(body, "stat_discrete_ate");
-    expect(parsed.meta.tag).toBe("verified");
-    expect(parsed.meta.anchor).toEqual(anchor);
-    expect(parsed.meta.revision).toBe("d2bf655f");
-    expect(parsed.text).toBe("Checked against the Lean declaration — constants match.");
-  });
-
-  it("keeps the metadata header invisible-ish: body still starts with an HTML comment", () => {
-    const body = serializeComment({
-      meta: { v: 1, paper: "p", tag: "none" },
-      text: "Plain remark.",
-    });
-    expect(body.startsWith("<!-- causalsmith:comment v1\n")).toBe(true);
-    expect(body).toContain("\n-->\n\nPlain remark.");
-  });
-
-  it("degrades a hand-written GitHub reply to an untagged page-level comment", () => {
-    const parsed = parseComment("Nice paper! Typo in (3.1).", "p");
-    expect(parsed.meta.tag).toBe("none");
-    expect(parsed.meta.anchor).toBeUndefined();
-    expect(parsed.text).toBe("Nice paper! Typo in (3.1).");
-  });
-
-  it("degrades malformed or hostile headers without throwing", () => {
-    const junk = "<!-- causalsmith:comment v1\n{not json\n-->\n\nhello";
-    expect(parseComment(junk, "p").text).toBe(junk.trim());
-    const badTag = serializeComment({
-      meta: { v: 1, paper: "p", tag: "none" },
-      text: "x",
-    }).replace('"tag":"none"', '"tag":"admin"');
-    expect(parseComment(badTag, "p").meta.tag).toBe("none");
-    const badAnchor = "<!-- causalsmith:comment v1\n" +
-      JSON.stringify({ v: 1, paper: "p", tag: "problem", anchor: { exact: "", count: 0 } }) +
-      "\n-->\n\ntext";
-    const p = parseComment(badAnchor, "p");
-    expect(p.meta.tag).toBe("problem");
-    expect(p.meta.anchor).toBeUndefined();
   });
 });

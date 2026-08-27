@@ -10,12 +10,16 @@ can be inverse-tilted and their approximation gap becomes a functional gap.
 
 namespace CausalSmith.Stat.DiscreteAteMinimaxLoggap
 
+/-- Every point of the shifted selection grid is strictly positive. -/
 lemma oneArmShiftedSelectionGrid_pos
     {κ : ℝ} {D : ℕ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (i : Fin (2 * D + 4)) : 0 < oneArmShiftedSelectionGrid κ D i :=
   (oneArmShiftedNodeScale_pos hκ hD).trans_le
     (oneArmShiftedSelectionGrid_mem_Icc hκ hκ1 hD i).1
 
+/-- The pole location never exceeds any grid point, since it is `κ ≤ 1` times
+the smallest grid node.  This is the condition making the inverse tilt a valid
+(nonnegative) reweighting. -/
 lemma oneArmShiftedPole_le_grid
     {κ : ℝ} {D : ℕ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (i : Fin (2 * D + 4)) :
@@ -26,6 +30,8 @@ lemma oneArmShiftedPole_le_grid
     nlinarith
   exact hb_a.trans (oneArmShiftedSelectionGrid_mem_Icc hκ hκ1 hD i).1
 
+/-- Inverse tilting any prior on the shifted grid by the pole produces
+nonnegative weights, so the tilted object is again a valid distribution. -/
 lemma oneArmShiftedSelectionGrid_inverseTiltWeight_nonneg
     (D : ℕ) { κ : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1) (hD : 1 ≤ D)
     (ω : PMF (Fin (2 * D + 4))) :
@@ -35,6 +41,9 @@ lemma oneArmShiftedSelectionGrid_inverseTiltWeight_nonneg
     (oneArmShiftedPoleScale_pos hκ hD).le
     (oneArmShiftedPole_le_grid hκ hκ1 hD)
 
+/-- For a polynomial of degree at most `D`, the function `P(x)/x` lies in the
+span of the reciprocal-monomial basis: evaluating the basis at the coefficient
+vector extracted from `P` reproduces `P(x)/x` at every grid point. -/
 lemma oneArmShiftedSelectionBasis_represents_polynomial_div
     {D : ℕ} (hD : 1 ≤ D) {κ : ℝ} (hκ : 0 < κ) (hκ1 : κ ≤ 1)
     (P : Polynomial ℝ) (hdeg : P.natDegree ≤ D) (i : Fin (2 * D + 4)) :
