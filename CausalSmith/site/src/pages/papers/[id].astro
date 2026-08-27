@@ -4,13 +4,14 @@ import { bundleRoots, GITHUB_REPO, SERIES_NAME, SERIES_TAGLINE, sourceRef } from
 import SeoHead from "../../components/SeoHead.astro";
 import PaperComments from "../../components/PaperComments.astro";
 import ProofMap from "../../components/ProofMap.astro";
-import { renderTexCompact, renderLabel } from "../../lib/docmd.js";
+import { renderTexCompact, renderLabel, titleCase } from "../../lib/docmd.js";
 import { renderMath } from "../../lib/paperMath.js";
 import discussionNumbers from "../../lib/comments/discussions.json";
 import "../../styles/series.css";
 import "../../styles/paper.css";
 import "../../styles/comments.css";
 import "../../styles/proofmap.css";
+import "katex/dist/katex.min.css";
 
 export async function getStaticPaths() {
   const bundles = await loadBundles(bundleRoots());
@@ -48,8 +49,9 @@ const paperData = {
   commit: bundle.commit,
   ref: sourceRef(bundle.commit),
   leanSubdir: bundle.leanSubdir,
-  entries: bundle.entries,
-  snippets: bundle.snippets,
+  // entries + Lean snippets are multi-MB: they live in a sibling static JSON
+  // (paper-data.json.ts) that drawer.ts fetches lazily, keeping this page light.
+  dataUrl: `${base}/papers/${bundle.id}/paper-data.json`,
   leanPage: bundle.paperLib ? `${base}/papers/${bundle.id}/formalization` : null,
   leanAnchors,
   // Reader-commentary config. `commentsWorker` is the feature flag: unset (the
@@ -82,13 +84,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 <html lang="en">
   <head>
     <SeoHead
-      title={`${bundle.meta.title} · ${SERIES_NAME}`}
-      description={bundle.meta.tldr ?? `${bundle.meta.title} — a ${SERIES_NAME} working paper in ${bundle.meta.area}, with every theorem, assumption, and lemma machine-verified in Lean 4.`}
+      title={`${titleCase(bundle.meta.title)} · ${SERIES_NAME}`}
+      description={bundle.meta.tldr ?? `${titleCase(bundle.meta.title)} — a ${SERIES_NAME} working paper in ${bundle.meta.area}, with every theorem, assumption, and lemma machine-verified in Lean 4.`}
       ogType="article"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
     />
   </head>
   <body>
@@ -124,10 +122,11 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         )}
         pinned commit
         <code>{bundle.commit.slice(0, 7)}</code>
-        {bundle.hasPdf && <> · <a href={`${base}/papers/${bundle.id}/paper.pdf`}>PDF</a></>}
-        {bundle.paperLib && <> · <a href={`${base}/papers/${bundle.id}/formalization`}>Lean code</a></>}
+        {bundle.hasPdf && <> · <a href={`${base}/papers/${bundle.id}/paper.pdf`} data-astro-prefetch="false">PDF</a></>}
+        {bundle.paperLib && <> · <a href={`${base}/papers/${bundle.id}/formalization`} data-astro-prefetch="false">Lean code</a></>}
+        {bundle.slidesMd && <> · <a href={`${base}/papers/${bundle.id}/slides`}>Slides</a></>}
       </div>
-      <h1>{bundle.meta.title}</h1>
+      <h1>{titleCase(bundle.meta.title)}</h1>
       <div id="paper-body" set:html={renderedBody} />
 
       {bundle.formalLayer && bundle.formalLayer.groups.length > 0 && (
@@ -184,7 +183,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       <div class="drawer-body" id="drawer-body"></div>
     </aside>
 
-    <script type="application/json" id="paper-data" set:html={JSON.stringify(paperData)} />
+    <script type="application/json" id="paper-data" set:html={JSON.stringify(paperData).replace(/</g, "\\u003c")} />
     <script>
       import { initDrawer } from "../../scripts/drawer.js";
       import { initComments } from "../../scripts/comments.js";
@@ -211,8 +210,15 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       // #<objId> deep link (e.g. from the Lean page's "in the paper" badge):
       // scroll to and flash the matching formal block
       {
-        const hash = decodeURIComponent(location.hash.slice(1));
-        const t = hash && document.querySelector(`[data-objid="${hash.replace(/"/g, "")}"]`);
+        // Guarded: a malformed hash (%zz → decodeURIComponent throws; trailing
+        // backslash → invalid selector) must not abort the rest of this script.
+        let hash = "";
+        try {
+          hash = decodeURIComponent(location.hash.slice(1));
+        } catch {
+          /* malformed percent-encoding: ignore the hash */
+        }
+        const t = hash && document.querySelector(`[data-objid="${hash.replace(/[\\"]/g, "")}"]`);
         if (t) {
           t.scrollIntoView({ block: "center" });
           t.classList.add("flash");
@@ -236,6 +242,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
               if (!link) continue;
               active?.classList.remove("active");
               link.classList.add("active");
+              link.scrollIntoView({ block: "nearest" }); // keep highlight visible in a long TOC
               active = link;
             }
           },

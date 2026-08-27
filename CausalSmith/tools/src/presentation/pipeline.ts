@@ -88,6 +88,8 @@ export interface PaperCtx {
    * a citable step rather than being mis-rendered.
    */
   promoteAgain?: boolean;
+  /** P6 only: regenerate slides.md even over hand edits (which are otherwise kept). */
+  refreshSlides?: boolean;
 }
 
 export interface StageIO {

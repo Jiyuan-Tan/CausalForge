@@ -23,7 +23,7 @@ import { MODELS } from "../models.js";
 
 function usage(): never {
   console.error(
-    "usage: causalsmith present <qid> <spec> [--resume] [--auto] [--dry-run] [--revise] [--reassemble] [--refresh-frozen-bodies] [--promote-again] [--reuse-existing-proofs-for-audit] [--refresh-statement-audit] [--stop-after P0..P5] [--from P0..P5] [--max-p5-reviews N]",
+    "usage: causalsmith present <qid> <spec> [--resume] [--auto] [--dry-run] [--revise] [--reassemble] [--refresh-frozen-bodies] [--promote-again] [--reuse-existing-proofs-for-audit] [--refresh-statement-audit] [--stop-after P0..P5] [--from P0..P6] [--max-p5-reviews N] [--slides] [--refresh-slides]",
   );
   process.exit(2);
 }
@@ -43,9 +43,13 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   let refreshStatementAudit = false;
   let reuseExistingProofsForAudit = false;
   let maxP5Reviews: number | undefined;
+  let slides = false;
+  let refreshSlides = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--resume") resume = true;
+    else if (a === "--slides") slides = true;
+    else if (a === "--refresh-slides") refreshSlides = true;
     else if (a === "--auto") auto = true;
     else if (a === "--dry-run") dryRun = true;
     else if (a === "--revise") revise = true;
@@ -76,6 +80,10 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   const [qid, spec] = positional;
   const parsedStop = stopAfter === undefined ? undefined : PaperStage.parse(stopAfter);
   const parsedFrom = from === undefined ? undefined : PaperStage.parse(from);
+  if (parsedStop === "P6") {
+    console.error("P6 (slides) is not part of the P0–P5 loop — run it with --slides (or --from P6) after P5 settles");
+    process.exit(2);
+  }
   if (refreshFrozenBodies && parsedFrom !== "P1") {
     console.error("--refresh-frozen-bodies requires --from P1 (it releases the audit-frozen bodies before the layer is re-planned)");
     process.exit(2);
@@ -116,6 +124,46 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   const runLogsDir = ensureLogsDir(repoRoot, qid, spec);
   const logFile = join(runLogsDir, "agent_calls.log");
   const deps = withAgentLogging(baseDeps, logFile);
+
+  // P6 — slides. Deliberately OUTSIDE runPaperPipeline: it is terminal and optional,
+  // runs only once the paper is settled (P5 completed, nothing pending), and must
+  // never join the P0–P5 revision loop's cache fan-out. One codex call; slides.md is
+  // an authored source whose hand edits survive re-runs (see stages/p6_slides.ts).
+  if (slides || refreshSlides || parsedFrom === "P6") {
+    if (resume || auto || revise || reassembleP2 || refreshFrozenBodies || promoteAgain ||
+        refreshStatementAudit || reuseExistingProofsForAudit || stopAfter || maxP5Reviews ||
+        (from !== undefined && parsedFrom !== "P6")) usage();
+    const { loadBankEntry } = await import("./bank.js");
+    const { loadPaperState, savePaperState } = await import("./state.js");
+    const { stageP6 } = await import("./stages/p6_slides.js");
+    const outDir = presentationDir(repoRoot, qid, spec);
+    await withRunHeartbeatAt(runLogsDir, qid, spec, async () => {
+      const state = await loadPaperState(outDir, qid, spec);
+      if (!state) throw new Error("P6 requires an existing presentation run — run the paper pipeline first");
+      // "P5 settled" = the referee has reviewed the CURRENT emitted paper and nothing is
+      // mid-flight. A post-P5 `--from P4` re-emit legitimately leaves stage_completed=P4,
+      // so the review file (P5 archives every pass) plus a P4/P5 boundary is the check —
+      // not stage_completed === "P5" alone.
+      const reviewed = await readFile(join(outDir, "p5_review.json"), "utf8").then(() => true, () => false);
+      if (!reviewed || state.checkpoint_pending || !(state.stage_completed === "P4" || state.stage_completed === "P5")) {
+        throw new Error(
+          `P6 runs only after P5 is settled (stage_completed=${state.stage_completed}, ` +
+            `checkpoint_pending=${state.checkpoint_pending ?? "none"}, p5_review.json ${reviewed ? "present" : "absent"}) — finish the paper first`,
+        );
+      }
+      const bank = await loadBankEntry(repoRoot, qid, spec);
+      await stageP6({
+        ctx: { repoRoot, qid, spec, deps, outDir, refreshSlides },
+        state,
+        bank,
+        outDir,
+      });
+      await savePaperState(outDir, state);
+      const note = state.notes.filter((n) => n.startsWith("P6:")).at(-1);
+      console.log(`${note ?? "P6: done"}\nCHECKPOINT (slides): read ${outDir}/slides.md for CLARITY — hand-edit it directly; edits are preserved.`);
+    });
+    return;
+  }
 
   if (refreshStatementAudit) {
     if (reuseExistingProofsForAudit || resume || auto || dryRun || revise || stopAfter || from || maxP5Reviews) usage();

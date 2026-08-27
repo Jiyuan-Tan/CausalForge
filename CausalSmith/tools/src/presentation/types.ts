@@ -21,7 +21,7 @@ export const CrosswalkEntry = z.object({
 export type CrosswalkEntry = z.infer<typeof CrosswalkEntry>;
 export const Crosswalk = z.array(CrosswalkEntry);
 
-export const PaperStage = z.enum(["P0", "P1", "P2", "P3", "P4", "P5"]);
+export const PaperStage = z.enum(["P0", "P1", "P2", "P3", "P4", "P5", "P6"]);
 export type PaperStage = z.infer<typeof PaperStage>;
 
 export const PaperState = z.object({

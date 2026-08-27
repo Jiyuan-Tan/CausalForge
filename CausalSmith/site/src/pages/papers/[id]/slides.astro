@@ -1,0 +1,600 @@
+---
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { loadBundles, type Bundle } from "../../../lib/bundles.js";
+import { bundleRoots, SERIES_NAME } from "../../../lib/config.js";
+import SeoHead from "../../../components/SeoHead.astro";
+import { parseSlidesMd, renderFormalBody, renderSlideProse, safeFigureSvg, titleCase } from "../../../lib/slides.js";
+import { renderTexLine } from "../../../lib/docmd.js";
+import "../../../styles/tokens.css";
+import "../../../styles/fonts.css";
+import "katex/dist/katex.min.css";
+
+export async function getStaticPaths() {
+  const bundles = await loadBundles(bundleRoots());
+  return bundles
+    .filter((b) => b.slidesMd)
+    .map((b) => ({ params: { id: b.id }, props: { bundle: b } }));
+}
+
+const { bundle } = Astro.props as { bundle: Bundle };
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const deck = parseSlidesMd(bundle.slidesMd!);
+
+// Frozen statement bodies come from the SOURCE formal_layer.json ({commit, blocks});
+// display labels ("Theorem 2") come from the web layer when present. The deck only
+// points at obj_ids — the audited body is injected here, never re-authored.
+const source = JSON.parse(await readFile(join(bundle.dir, "formal_layer.json"), "utf8")) as {
+  blocks: { obj_id: string; alias?: string | null; kind: string; title: string; body: string }[];
+};
+const bodies = new Map(source.blocks.map((b) => [b.obj_id, b]));
+const webLabels = new Map<string, string>();
+for (const g of bundle.formalLayer?.groups ?? []) {
+  for (const it of g.items) webLabels.set(it.obj_id, it.label);
+}
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const labelFor = (objId: string): string => {
+  const b = bodies.get(objId);
+  const web = webLabels.get(objId);
+  // A block with no upstream alias gets a web label embedding the raw obj_id
+  // ("Theorem thm:foo-bar") — fall back to the bare kind rather than show it.
+  if (web && !web.includes(objId)) return web;
+  return b ? `${cap(b.kind)}${b.alias ? ` ${b.alias}` : ""}` : objId;
+};
+const paperAnchor = (objId: string): string => `${base}/papers/${bundle.id}/#obj-${objId}`;
+
+// Figure assets: read + sanitize at build time; a missing or rejected asset
+// renders a labeled placeholder, never a build failure.
+const figureSvgs = new Map<string, string | null>();
+for (const slide of deck.slides) {
+  for (const block of slide.blocks) {
+    if (block.kind !== "figure" || figureSvgs.has(block.name)) continue;
+    const raw = await readFile(join(bundle.dir, "slides_assets", `${block.name}.svg`), "utf8").catch(() => null);
+    figureSvgs.set(block.name, raw === null ? null : safeFigureSvg(raw));
+  }
+}
+---
+
+<html lang="en">
+  <head>
+    <SeoHead
+      title={`${titleCase(deck.talkTitle)} — slides · ${SERIES_NAME}`}
+      description={`Seminar slides for ${titleCase(bundle.meta.title)}`}
+      ogType="article"
+    />
+  </head>
+  <body class="deck-body">
+    <nav class="deck-nav">
+      <a id="deck-back" href={`${base}/papers/${bundle.id}/`}>← paper</a>
+      <span class="deck-count" aria-live="polite"><span id="deck-cur">1</span> / {deck.slides.length}</span>
+      <span class="deck-keys" aria-hidden="true">←/→ to navigate</span>
+    </nav>
+    <div class="deck-progress" aria-hidden="true"><i id="deck-bar"></i></div>
+    <main class="deck">
+      {deck.slides.map((slide, i) => (
+        <section class={`slide${i === 0 ? " slide-title" : ""}`} id={`s${i + 1}`} data-n={i + 1}>
+          <div class="slide-inner">
+          {i === 0 ? (
+            <>
+              <p class="title-kicker">{SERIES_NAME} · seminar slides</p>
+              <h1 set:html={renderTexLine(titleCase(slide.title))} />
+            </>
+          ) : (
+            <h2 set:html={renderTexLine(titleCase(slide.title))} />
+          )}
+          {slide.blocks.map((block) =>
+            block.kind === "prose" ? (
+              <div class="slide-prose" set:html={renderSlideProse(block.md)} />
+            ) : block.kind === "formal" && bodies.has(block.objId) ? (
+              <figure class="slide-formal" tabindex="0">
+                <figcaption>
+                  <a href={paperAnchor(block.objId)}>{labelFor(block.objId)}</a>
+                  {bodies.get(block.objId)!.title && <span class="formal-title"> ({bodies.get(block.objId)!.title})</span>}
+                </figcaption>
+                <div set:html={renderFormalBody(bodies.get(block.objId)!.body, (id) =>
+                  bodies.has(id) ? { href: paperAnchor(id), label: labelFor(id) } : null,
+                )} />
+              </figure>
+            ) : block.kind === "figure" ? (
+              <figure class="slide-figure">
+                {figureSvgs.get(block.name) ? (
+                  <div class="slide-figure-svg" tabindex="0" role="button" aria-label="zoom figure" set:html={figureSvgs.get(block.name)!} />
+                ) : (
+                  <div class="slide-figure-missing">[figure "{block.name}" unavailable]</div>
+                )}
+                <figcaption><span class="chip chip-fig">illustrative</span> <span set:html={renderTexLine(block.caption)} /></figcaption>
+              </figure>
+            ) : block.kind === "informal" ? (
+              <p class="slide-informal">
+                <a class="chip" href={paperAnchor(block.objId)} title="plain-language restatement — click for the audited statement">informal · {labelFor(block.objId)}</a>
+                <span set:html={renderTexLine(block.text)} />
+              </p>
+            ) : (
+              <p class="slide-missing">[missing statement: {block.objId}]</p>
+            ),
+          )}
+          {i === 0 && (
+            <p class="title-paper-link">
+              slides for <a href={`${base}/papers/${bundle.id}/`} set:html={renderTexLine(titleCase(bundle.meta.title))} />
+            </p>
+          )}
+          </div>
+        </section>
+      ))}
+    </main>
+    <!-- One viewport-fixed pager: a per-slide absolute nav scrolls with a tall
+         slide's content and ends up mid-screen (operator report 2026-08-27). -->
+    <nav class="deck-step" aria-label="Slide navigation">
+      <a id="step-prev" href="#s1" title="previous slide">‹</a>
+      <span class="step-n"><span id="step-cur">1</span> / {deck.slides.length}</span>
+      <a id="step-next" href="#s2" title="next slide">›</a>
+    </nav>
+
+    <style is:global>
+      /* Height flows as percentages from the root: `100vh` disagrees with the real
+         canvas in embedded viewers, leaving the deck ending mid-page with dead
+         space below; the percentage chain tracks the actual rendering area. */
+      html { height: 100%; }
+      .deck-body {
+        margin: 0;
+        height: 100%;
+        background: var(--parchment);
+        color: var(--ink);
+        font-family: Charter, Georgia, "Times New Roman", serif;
+      }
+      .deck-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 5;
+        display: flex;
+        gap: 1.2rem;
+        align-items: baseline;
+        padding: 0.55rem 1.2rem;
+        font-family: system-ui, sans-serif;
+        font-size: var(--fs-xs);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        background: color-mix(in srgb, var(--parchment) 90%, transparent);
+        backdrop-filter: blur(3px);
+      }
+      .deck-nav a { color: var(--ink-faint); text-decoration: none; }
+      .deck-nav a:hover { color: var(--accent); }
+      .deck-count { margin-left: auto; font-variant-numeric: tabular-nums; }
+      .deck-keys { color: var(--ink-ghost); text-transform: none; letter-spacing: 0; }
+      /* Deck progress: a hairline cardinal bar directly under the nav. */
+      .deck-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 6;
+        height: 3px;
+        background: transparent;
+        pointer-events: none;
+      }
+      .deck-progress i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--accent-bright);
+        transition: width 0.25s ease;
+      }
+      .deck {
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        /* The cardinal progress bar is the position indicator — hide the native
+           horizontal scrollbar (scrolling itself still works). */
+        scrollbar-width: none;
+      }
+      .deck::-webkit-scrollbar { display: none; }
+      .slide {
+        position: relative;
+        box-sizing: border-box;
+        flex: 0 0 100%;
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+        padding: 4rem clamp(1.5rem, 12vw, 12rem);
+        border-right: 1px solid var(--rule);
+      }
+      /* margin:auto centering works in every browser: centers short content and
+         lets tall content scroll from the top (the `safe center` keyword some
+         browsers drop left slides top-pinned with dead space below). */
+      .slide-inner { margin: auto 0; width: 100%; }
+      .slide h1 {
+        font-size: clamp(2rem, 4.2vw, 2.9rem);
+        line-height: 1.18;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 0.6rem 0 1.4rem;
+      }
+      /* Slide titles carry the site's cardinal accent bar underneath. */
+      .slide h2 {
+        font-size: 1.75rem;
+        line-height: 1.25;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        margin: 0 0 1.5rem;
+        padding-bottom: 0.55rem;
+        position: relative;
+      }
+      .slide h2::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 3.2rem;
+        height: 3px;
+        background: var(--accent-bright);
+        border-radius: 2px;
+      }
+      .slide-title { text-align: center; }
+      .title-kicker {
+        font-family: system-ui, sans-serif;
+        font-size: var(--fs-xs);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 1.2rem;
+      }
+      /* Title slide's TL;DR pitch line reads as a lede between hairline rules. */
+      .slide-title .slide-prose {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 1.1rem 0;
+        border-top: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+        font-style: italic;
+        font-size: 1.12rem;
+        color: var(--ink-soft);
+      }
+      .title-paper-link { margin-top: 3rem; font-size: var(--fs-body-s); color: var(--ink-faint); }
+      .title-paper-link a { color: var(--accent-deep); text-decoration: none; }
+      .title-paper-link a:hover { text-decoration: underline; }
+      .slide-prose { font-size: 1.18rem; line-height: 1.6; }
+      .slide-prose ul { padding-left: 1.35rem; margin: 0.6rem 0; list-style: none; }
+      .slide-prose li { margin: 0.55rem 0; position: relative; }
+      .slide-prose li::before {
+        content: "—";
+        position: absolute;
+        left: -1.35rem;
+        color: var(--accent-muted);
+      }
+      .slide-formal {
+        margin: 1.2rem 0;
+        padding: 1rem 1.3rem;
+        border: 1px solid var(--rule-soft);
+        border-left: 3px solid var(--accent);
+        border-radius: var(--r-card);
+        background: var(--paper);
+        box-shadow: 0 1px 3px rgba(26, 26, 26, 0.05);
+        font-size: 1.02rem;
+        line-height: 1.5;
+        /* A long statement scrolls INSIDE its box (operator decision 2026-08-27:
+           scrollable capped box, not folds, not free expansion beyond the slide);
+           the wheel handler scrolls the block while the cursor is over it.
+           position:relative is LOAD-BEARING: KaTeX's hidden MathML spans are
+           absolutely positioned, and without a positioned figure they anchor to
+           the slide, escape this box's clipping, and stretch the slide's scroll
+           area with phantom empty space (slide-13 incident, 2026-08-27). */
+        position: relative;
+        max-height: 52vh;
+        overflow: auto;
+      }
+      .slide-formal figcaption {
+        font-family: system-ui, sans-serif;
+        font-size: var(--fs-xs);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.55rem;
+      }
+      .slide-formal figcaption a { color: inherit; text-decoration: none; }
+      .slide-formal figcaption a:hover { text-decoration: underline; }
+      .formal-title { text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
+      /* Cross-references inside injected statement bodies link back to the paper. */
+      .slide-formal .formal-ref {
+        color: var(--accent-deep);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--accent-muted);
+      }
+      .slide-formal .formal-ref:hover { border-bottom-style: solid; }
+      /* Print must show complete statements even though the screen caps them. */
+      @media print { .slide-formal { max-height: none; overflow: visible; } }
+      .slide-informal {
+        font-size: 1.14rem;
+        line-height: 1.55;
+        margin: 1.1rem 0;
+        padding: 0.85rem 1.1rem;
+        background: var(--parchment-deep);
+        border-radius: var(--r-card);
+        color: var(--ink);
+      }
+      .slide-informal .chip {
+        display: inline-block;
+        font-family: system-ui, sans-serif;
+        font-size: var(--fs-2xs);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-wash);
+        border-radius: var(--r-pill);
+        padding: 0.12rem 0.62rem;
+        margin-right: 0.55rem;
+        text-decoration: none;
+        vertical-align: 0.12em;
+      }
+      .slide-informal .chip:hover { text-decoration: underline; }
+      .slide-missing { color: var(--sorry); font-family: var(--code-font, monospace); }
+      .deck-step {
+        position: fixed;
+        bottom: 0.7rem;
+        right: 1.2rem;
+        z-index: 5;
+        display: flex;
+        gap: 0.7rem;
+        align-items: baseline;
+        font-family: system-ui, sans-serif;
+        font-size: 0.95rem;
+        color: var(--ink-ghost);
+        background: color-mix(in srgb, var(--parchment) 85%, transparent);
+        border-radius: var(--r-pill);
+        padding: 0.15rem 0.6rem;
+      }
+      .deck-step a {
+        color: var(--ink-soft);
+        text-decoration: none;
+        font-size: 1.5rem;
+        line-height: 1;
+        padding: 0 0.3rem;
+      }
+      .deck-step a:hover { color: var(--accent); }
+      .deck-step a.step-off { opacity: 0.25; pointer-events: none; }
+      .deck-step .step-n { font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+      /* Figures sit in a framed paper card so schematics read as exhibits. */
+      .slide-figure { margin: 1.3rem 0; }
+      /* Figures share the slide's own background so schematics sit in the page
+         rather than on a white card; the hairline frame still bounds the zoom target. */
+      .slide-figure-svg {
+        cursor: zoom-in;
+        background: transparent;
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--r-frame);
+        padding: 0.9rem 1rem;
+        transition: border-color 0.15s ease;
+      }
+      .slide-figure-svg:hover { border-color: var(--ink-ghost); }
+      .slide-figure-svg svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+      .fig-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(30, 30, 28, 0.55);
+        cursor: zoom-out;
+      }
+      .fig-lightbox svg {
+        width: min(94vw, 1600px);
+        max-height: 92vh;
+        height: auto;
+        background: var(--parchment);
+        border-radius: 10px;
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+      .slide-figure-missing {
+        border: 1px dashed var(--rule);
+        color: var(--ink-faint);
+        font-family: var(--code-font, monospace);
+        padding: 2rem;
+        text-align: center;
+      }
+      .slide-figure figcaption {
+        margin-top: 0.6rem;
+        font-size: var(--fs-body-s);
+        color: var(--ink-faint);
+        text-align: center;
+        max-width: 46rem;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .slide-figure .chip {
+        display: inline-block;
+        font-family: system-ui, sans-serif;
+        font-size: var(--fs-2xs);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        background: var(--parchment-deep);
+        border: 1px solid var(--rule-soft);
+        border-radius: var(--r-pill);
+        padding: 0.08rem 0.55rem;
+        margin-right: 0.4rem;
+        vertical-align: 0.1em;
+      }
+      .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.2rem 0; }
+      @media print {
+        .deck-nav, .deck-progress, .deck-step { display: none; }
+        .deck { display: block; height: auto; overflow: visible; }
+        .slide { width: auto; height: auto; overflow: visible; page-break-after: always; border-right: none; padding: 2rem 3rem; }
+        .deck-body { background: #fff; }
+      }
+    </style>
+
+    <script>
+      // Keyboard deck navigation: ←/→ (and j/k, space) move between slides; the
+      // URL hash tracks the current slide (#/3) so a position is shareable.
+      const deckEl = document.querySelector(".deck") as HTMLElement;
+      const slideEls = Array.from(document.querySelectorAll<HTMLElement>(".slide"));
+      const cur = document.getElementById("deck-cur")!;
+      const bar = document.getElementById("deck-bar")!;
+      const stepCur = document.getElementById("step-cur")!;
+      const stepPrev = document.getElementById("step-prev") as HTMLAnchorElement;
+      const stepNext = document.getElementById("step-next") as HTMLAnchorElement;
+      let n = 1;
+      const clamp = (x: number) => Math.min(Math.max(x, 1), slideEls.length);
+      const show = (x: number, jump = true) => {
+        n = clamp(x);
+        if (jump) slideEls[n - 1].scrollIntoView({ behavior: "auto", inline: "start", block: "nearest" });
+        cur.textContent = String(n);
+        stepCur.textContent = String(n);
+        stepPrev.href = `#s${Math.max(1, n - 1)}`;
+        stepNext.href = `#s${Math.min(slideEls.length, n + 1)}`;
+        stepPrev.classList.toggle("step-off", n === 1);
+        stepNext.classList.toggle("step-off", n === slideEls.length);
+        bar.style.width = `${(n / slideEls.length) * 100}%`;
+        history.replaceState(null, "", `#/${n}`);
+      };
+      stepPrev.addEventListener("click", (e) => { e.preventDefault(); show(n - 1); });
+      stepNext.addEventListener("click", (e) => { e.preventDefault(); show(n + 1); });
+      bar.style.width = `${100 / slideEls.length}%`; // initial fill; show() keeps it current
+      if (n === 1) stepPrev.classList.add("step-off");
+      if (n === slideEls.length) stepNext.classList.add("step-off");
+      // Live deep links: editing the hash to #/7 after load also navigates
+      // (show() uses replaceState, which never re-fires hashchange).
+      addEventListener("hashchange", () => {
+        const m = /^#\/(\d+)$/.exec(location.hash);
+        if (m) show(Number(m[1]));
+      });
+      const fromHash = /^#\/(\d+)$/.exec(location.hash);
+      if (fromHash) show(Number(fromHash[1]));
+      // The back link returns to wherever the reader came from (landing page,
+      // paper page, …) when they arrived from within the site; direct/external
+      // visitors keep the default paper-page destination. Slide changes use
+      // replaceState, so history.back() always leaves the deck.
+      try {
+        const backEl = document.getElementById("deck-back")!;
+        if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) {
+          backEl.textContent = "← back";
+          backEl.addEventListener("click", (e) => {
+            e.preventDefault();
+            history.back();
+          });
+        }
+      } catch {
+        /* malformed referrer: keep the default link */
+      }
+      // Click a figure to zoom it full-screen; click again (or Esc) to close.
+      let lightboxOpener: HTMLElement | null = null;
+      const closeLightbox = () => {
+        document.querySelector(".fig-lightbox")?.remove();
+        lightboxOpener?.focus();
+        lightboxOpener = null;
+      };
+      document.querySelectorAll<HTMLElement>(".slide-figure-svg").forEach((fig) => {
+        const open = () => {
+          closeLightbox();
+          const box = document.createElement("div");
+          box.className = "fig-lightbox";
+          box.setAttribute("role", "dialog");
+          box.setAttribute("aria-modal", "true");
+          box.setAttribute("aria-label", "figure, zoomed");
+          box.tabIndex = -1;
+          box.innerHTML = fig.innerHTML;
+          box.addEventListener("click", closeLightbox);
+          document.body.appendChild(box);
+          lightboxOpener = fig;
+          box.focus();
+        };
+        fig.addEventListener("click", open);
+        fig.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+        });
+      });
+      addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { closeLightbox(); return; }
+        if (document.querySelector(".fig-lightbox")) return; // lightbox open: keys stay inert
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        // A focused theorem block (tabindex=0) keeps native arrow/page scrolling
+        // so its capped content stays keyboard-reachable; Tab out to page again.
+        if (e.target instanceof Element && e.target.closest(".slide-formal, .slide-figure-svg")) return;
+        if (e.key === " " && e.shiftKey) {
+          e.preventDefault();
+          show(n - 1);
+        } else if (["ArrowRight", "ArrowDown", "PageDown", "j", " "].includes(e.key)) {
+          e.preventDefault();
+          show(n + 1);
+        } else if (["ArrowLeft", "ArrowUp", "PageUp", "k"].includes(e.key)) {
+          e.preventDefault();
+          show(n - 1);
+        } else if (e.key === "Home") { e.preventDefault(); show(1); }
+        else if (e.key === "End") { e.preventDefault(); show(slideEls.length); }
+      });
+      // Mouse wheel turns pages — EXCEPT while the cursor is over content that can
+      // still scroll in that direction (a tall theorem/lemma block, a wide formula,
+      // or the slide's own overflow). Walk up from the hovered element; the first
+      // scrollable ancestor that can consume the delta keeps native scrolling, and
+      // only when nothing can absorb it does the wheel page.
+      const canConsume = (start: EventTarget | null, dx: number, dy: number): boolean => {
+        for (
+          let node = start instanceof Element ? start : null;
+          node && node !== deckEl;
+          node = node.parentElement
+        ) {
+          if (!(node instanceof HTMLElement)) continue;
+          const cs = getComputedStyle(node);
+          // 3px edge tolerance: under browser zoom / fractional DPI scaling,
+          // scrollTop maxes out short of scrollHeight - clientHeight, and a
+          // 1px tolerance leaves a block "never at bottom" — it then consumes
+          // every wheel event and the page can never turn (slide-12 report).
+          if (dy !== 0 && /(auto|scroll)/.test(cs.overflowY) && node.scrollHeight > node.clientHeight + 4) {
+            const atTop = node.scrollTop <= 1;
+            const atBottom = node.scrollTop + node.clientHeight >= node.scrollHeight - 3;
+            if ((dy > 0 && !atBottom) || (dy < 0 && !atTop)) return true;
+          }
+          if (dx !== 0 && /(auto|scroll)/.test(cs.overflowX) && node.scrollWidth > node.clientWidth + 4) {
+            const atLeft = node.scrollLeft <= 1;
+            const atRight = node.scrollLeft + node.clientWidth >= node.scrollWidth - 3;
+            if ((dx > 0 && !atRight) || (dx < 0 && !atLeft)) return true;
+          }
+        }
+        return false;
+      };
+      let wheelAt = 0;
+      deckEl.addEventListener(
+        "wheel",
+        (e) => {
+          // deltaMode normalization: Firefox mouse wheels report LINE deltas
+          // (deltaMode 1, |deltaY|≈3) — unscaled they die on the magnitude
+          // threshold below and the deck becomes unturnable by wheel.
+          const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
+          const rawY = e.deltaY * scale;
+          const rawX = e.deltaX * scale;
+          const dominant = Math.abs(rawY) >= Math.abs(rawX) ? rawY : rawX;
+          const dy = Math.abs(rawY) >= Math.abs(rawX) ? rawY : 0;
+          const dx = dy === 0 ? rawX : 0;
+          if (canConsume(e.target, dx, dy)) return; // inner content scrolls natively
+          e.preventDefault();
+          const now = Date.now();
+          if (now - wheelAt < 450 || Math.abs(dominant) < 15) return; // debounce momentum
+          wheelAt = now;
+          show(n + (dominant > 0 ? 1 : -1));
+        },
+        { passive: false },
+      );
+      // Scroll (trackpad/touch) keeps the counter honest without re-snapping.
+      const obs = new IntersectionObserver(
+        (entries) => {
+          for (const en of entries) {
+            if (en.isIntersecting) show(Number((en.target as HTMLElement).dataset.n), false);
+          }
+        },
+        { root: deckEl, threshold: 0.6 },
+      );
+      slideEls.forEach((s) => obs.observe(s));
+    </script>
+  </body>
+</html>

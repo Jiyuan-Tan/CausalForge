@@ -80,6 +80,9 @@ export interface Bundle {
    *  object with its NL + Lean + status, for the web-only correspondence panel. (Distinct from the
    *  SOURCE `formal_layer.json` `{commit, blocks}` that the pipeline reads/writes.) */
   formalLayer: { commit: string; groups: { kind: string; items: FormalLayerItem[] }[] } | null;
+  /** Optional seminar deck source (slides.md, authored by P6) — parsed and rendered
+   *  by the /papers/[id]/slides page. Absent for papers without a deck. */
+  slidesMd: string | null;
   /** Optional proof map (paper_graph.json, emitted by P4) — the paper's
    *  theorem/proposition/lemma blocks plus one edge per "this proof cites that
    *  result", powering the in-page Proof map panel. Bundles emitted before the
@@ -122,6 +125,9 @@ export async function loadBundle(dir: string, id: string): Promise<Bundle> {
       formalLayer = null; // optional artifact (older bundles predate the Formal-layer panel)
     }
   }
+
+  // Slides, like the proof map, are decoration over the paper, never a gate.
+  const slidesMd = await readFile(join(dir, "slides.md"), "utf8").catch(() => null);
 
   // The proof map is decoration over the paper, never a gate: an artifact that
   // is absent, unreadable, or malformed costs the reader the panel and nothing
@@ -194,6 +200,7 @@ export async function loadBundle(dir: string, id: string): Promise<Bundle> {
     hasPdf,
     paperLib,
     formalLayer,
+    slidesMd,
     paperGraph,
   };
 }

@@ -84,6 +84,31 @@ function inline(s: string, compact = false): string {
   );
 }
 
+/** Words left lowercase in Title Case unless first/last: articles, coordinating
+ *  conjunctions, and short prepositions. */
+const TITLE_MINOR = new Set([
+  "a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet",
+  "as", "at", "by", "in", "of", "on", "per", "to", "up", "via", "vs",
+  "with", "from", "into", "over", "under", "onto", "than", "when",
+]);
+
+/** Title Case for paper and slide titles (site-wide convention, operator decision
+ *  2026-08-27): capitalize each principal word; minor words stay lowercase except
+ *  in first/last position. Existing capitals (acronyms like ATE, proper names) and
+ *  math spans (tokens containing a backslash) are never altered. */
+export function titleCase(title: string): string {
+  const words = title.split(/\s+/).filter(Boolean);
+  return words
+    .map((w, i) => {
+      if (w.includes("\\")) return w; // math token — leave verbatim
+      const bare = w.toLowerCase().replace(/[^a-z]/g, "");
+      const minor = TITLE_MINOR.has(bare) && i !== 0 && i !== words.length - 1;
+      if (minor) return w.toLowerCase();
+      return /^[a-z]/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+    })
+    .join(" ");
+}
+
 /** Renders a one-line TeX-bearing string (paper title/abstract) to HTML:
  *  $…$ math via KaTeX, `\ref{obj:X}` flattened to the plain id (the index
  *  page has no label targets), everything else escaped. */

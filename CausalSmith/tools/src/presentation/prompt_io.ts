@@ -50,7 +50,11 @@ export async function promptFingerprint(...names: string[]): Promise<string> {
 export const promptContractFiles = (name: string): string[] =>
   VERDICT_ONLY_PROMPTS.has(name)
     ? ["contract_digest"]
-    : ["prose_style_contract", "cross_reference_contract"];
+    : name === "p6_slides"
+      ? ["prose_style_contract"] // markdown deck: the \cref contract does not apply
+      : name === "p6_figure"
+        ? [] // SVG output: neither prose contract applies
+        : ["prose_style_contract", "cross_reference_contract"];
 
 export async function presentationPrompt(
   name: string,

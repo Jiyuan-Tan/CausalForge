@@ -48,8 +48,12 @@ interface PaperData {
   /** Ref source links resolve against (see `sourceRef` in lib/config). */
   ref: string;
   leanSubdir: string;
-  entries: Entry[];
-  snippets: Record<string, Snippet>;
+  /** URL of the heavy per-statement payload (entries + Lean snippets). The
+   *  multi-MB payload lives in a sibling static JSON, not the page HTML. */
+  dataUrl?: string;
+  /** Inline fallback for pages built before the dataUrl split. */
+  entries?: Entry[];
+  snippets?: Record<string, Snippet>;
   /** Per-paper Lean development page (null when the bundle has no index). */
   leanPage?: string | null;
   /** objId → anchor of the decl's card on the Lean development page. */
@@ -160,17 +164,53 @@ export function initDrawer(): void {
   const dataEl = document.getElementById("paper-data");
   if (!dataEl) return;
   const data: PaperData = JSON.parse(dataEl.textContent ?? "{}");
-  const byId = new Map(data.entries.map((e) => [e.obj_id, e]));
+  // The per-statement payload is fetched once, lazily: warmed on idle so a
+  // click rarely waits, but never on the page's critical path.
+  type Heavy = { byId: Map<string, Entry>; snippets: Record<string, Snippet> };
+  let heavyP: Promise<Heavy> | null = null;
+  const loadHeavy = (): Promise<Heavy> =>
+    (heavyP ??= (data.entries && data.snippets
+      ? Promise.resolve({ entries: data.entries, snippets: data.snippets })
+      : fetch(data.dataUrl!).then((r) => {
+          if (!r.ok) throw new Error(`paper-data fetch failed: ${r.status}`);
+          return r.json() as Promise<{ entries: Entry[]; snippets: Record<string, Snippet> }>;
+        })
+    )
+      .then((d) => ({ byId: new Map(d.entries.map((e) => [e.obj_id, e])), snippets: d.snippets }))
+      // A transient failure must not be cached for the page's lifetime: clear
+      // the memo so the next click (or idle retry) fetches again.
+      .catch((err: unknown) => {
+        heavyP = null;
+        throw err;
+      }));
+  // Warm the multi-MB payload only on reader INTENT (hovering/focusing any
+  // formal block) — an unconditional idle warm charges every visitor ~3.4MB
+  // they may never use, while intent still beats the click by enough to hide
+  // the fetch latency on same-origin gzip.
+  const warm = () => void loadHeavy().catch(() => {});
+  document.addEventListener("pointerover", intentWarm, { passive: true });
+  document.addEventListener("focusin", intentWarm);
+  function intentWarm(ev: Event): void {
+    if (!(ev.target instanceof Element) || !ev.target.closest("[data-objid]")) return;
+    document.removeEventListener("pointerover", intentWarm);
+    document.removeEventListener("focusin", intentWarm);
+    warm();
+  }
   const drawer = document.getElementById("drawer")!;
   const scrim = document.getElementById("drawer-scrim")!;
   const titleEl = document.getElementById("drawer-title")!;
   const subEl = document.getElementById("drawer-sub")!;
   const bodyEl = document.getElementById("drawer-body")!;
   let openBlock: Element | null = null;
+  drawer.setAttribute("role", "dialog");
+  drawer.setAttribute("aria-modal", "true");
+  drawer.tabIndex = -1;
 
   const close = () => {
     document.body.classList.remove("drawer-visible");
     drawer.setAttribute("aria-hidden", "true");
+    // Restore focus to the block that opened the drawer (keyboard flow).
+    if (openBlock instanceof HTMLElement) openBlock.focus();
     openBlock?.classList.remove("drawer-open");
     openBlock = null;
   };
@@ -190,7 +230,21 @@ export function initDrawer(): void {
     return ` · <a href="${href}">view in Lean development</a>`;
   };
 
-  const open = (objId: string, block: Element) => {
+  const open = async (objId: string, block: Element) => {
+    let heavy: Heavy;
+    try {
+      heavy = await loadHeavy();
+    } catch {
+      // Surface the failure instead of a silently dead click; retried next click.
+      titleEl.textContent = "Lean details unavailable";
+      subEl.textContent = "could not load statement data — check the connection and click again";
+      bodyEl.innerHTML = "";
+      document.body.classList.add("drawer-visible");
+      drawer.setAttribute("aria-hidden", "false");
+      drawer.focus();
+      return;
+    }
+    const { byId, snippets } = heavy;
     const e = byId.get(objId);
     if (!e) return;
     openBlock?.classList.remove("drawer-open");
@@ -206,7 +260,7 @@ export function initDrawer(): void {
     // If a very fast click beat katex loading, re-render the title once it lands.
     if (!katex) void katexReady.then(() => openBlock === block && setTitle());
 
-    const snip = data.snippets[objId];
+    const snip = snippets[objId];
     if (snip?.components?.length) {
       // composite object: several Lean pieces jointly formalize the statement
       subEl.innerHTML = `formalized by ${snip.components.length} Lean component${snip.components.length === 1 ? "" : "s"} · ${esc(snip.file)}`;
@@ -277,19 +331,32 @@ export function initDrawer(): void {
     }
     document.body.classList.add("drawer-visible");
     drawer.setAttribute("aria-hidden", "false");
+    drawer.focus();
   };
 
   for (const block of document.querySelectorAll("[data-objid]")) {
     const objId = (block as HTMLElement).dataset.objid!;
-    block.addEventListener("click", () => {
+    if (block instanceof HTMLElement) {
+      block.setAttribute("role", "button");
+      if (!block.hasAttribute("tabindex")) block.tabIndex = 0;
+    }
+    block.addEventListener("click", (ev) => {
+      // A click on a link INSIDE the block (e.g. an objref cross-reference)
+      // must navigate only — not also slide the drawer open.
+      if (ev.target instanceof Element && ev.target.closest("a")) return;
       // A click that ends a text selection (e.g. selecting a passage to leave
       // a margin comment on) must not open the drawer.
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed) return;
-      open(objId, block);
+      void open(objId, block);
     });
     block.addEventListener("keydown", (ev) => {
-      if ((ev as KeyboardEvent).key === "Enter") open(objId, block);
+      const e = ev as KeyboardEvent;
+      if (e.target instanceof Element && e.target.closest("a")) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        void open(objId, block);
+      }
     });
   }
   scrim.addEventListener("click", close);

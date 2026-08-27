@@ -46,6 +46,10 @@ export default defineConfig({
   site: process.env.SITE_URL ?? "https://example.github.io",
   base: process.env.SITE_BASE ?? "/",
   output: "static",
+  // Hover-prefetch every internal link: the paper page is ~1.5MB of build-time
+  // KaTeX markup, so starting the fetch on hover makes paper↔slides jumps feel
+  // instant instead of click-then-wait.
+  prefetch: { prefetchAll: true, defaultStrategy: "hover" },
   // The sitemap is how search engines discover the library and paper pages —
   // nothing outside the site links to them. Data endpoints and the PDF routes
   // are not pages, so they stay out of it.

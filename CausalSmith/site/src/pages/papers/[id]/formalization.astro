@@ -23,8 +23,9 @@ import {
 } from "../../../lib/leanStatement.js";
 import LeanStatement from "../../../components/LeanStatement.astro";
 import SeoHead from "../../../components/SeoHead.astro";
-import { renderDoc, nlOf, renderTexLine } from "../../../lib/docmd.js";
+import { renderDoc, nlOf, renderTexLine, titleCase } from "../../../lib/docmd.js";
 import "../../../styles/library.css";
+import "katex/dist/katex.min.css";
 
 export async function getStaticPaths() {
   const bundles = await loadBundles(bundleRoots());
@@ -141,13 +142,9 @@ const structuredOf = (text: string | null, kind: string): StructuredStatement | 
 <html lang="en">
   <head>
     <SeoHead
-      title={`Formalization · ${bundle.meta.title} · ${SERIES_NAME}`}
-      description={`The Lean 4 formalization behind "${bundle.meta.title}": every statement in the paper mapped to the machine-checked declaration it stands for.`}
+      title={`Formalization · ${titleCase(bundle.meta.title)} · ${SERIES_NAME}`}
+      description={`The Lean 4 formalization behind "${titleCase(bundle.meta.title)}": every statement in the paper mapped to the machine-checked declaration it stands for.`}
       ogType="article"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
     />
   </head>
   <body>
@@ -161,7 +158,7 @@ const structuredOf = (text: string | null, kind: string): StructuredStatement | 
           indexed at <code>{bundle.paperLib!.commit.slice(0, 7)}</code>
         </span>
       </nav>
-      <h1>Formalization: {bundle.meta.title}</h1>
+      <h1>Formalization: {titleCase(bundle.meta.title)}</h1>
       <p class="lib-intro">
         The complete Lean development behind this paper — every definition, lemma, and
         theorem of its module, including helpers the paper text never cites. Identifiers
@@ -344,7 +341,12 @@ const structuredOf = (text: string | null, kind: string): StructuredStatement | 
 
     <script>
       function openHashTarget() {
-        const id = decodeURIComponent(location.hash.slice(1));
+        let id = "";
+        try {
+          id = decodeURIComponent(location.hash.slice(1));
+        } catch {
+          return; // malformed percent-encoding must not kill the script tail
+        }
         if (!id) return;
         const el = document.getElementById(id);
         if (!el) return;
