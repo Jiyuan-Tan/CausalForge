@@ -56,7 +56,7 @@ const listed = flagship ? bundles.slice(1) : bundles;
           <div class="wp-featured-kicker">Featured</div>
           <h2><a href={`${base}/papers/${flagship.id}/`} set:html={renderTexLine(flagship.meta.title)} /></h2>
           <div class="wp-meta">
-            <span class="wp-id">{flagship.meta.wp_number ?? flagship.id} · {flagship.meta.area}</span>
+            <span class="wp-id">{flagship.meta.wp_number ?? flagship.id} · {flagship.meta.area} · {flagship.meta.created}</span>
             <span class="badge badge-verified" title={verifiedBadge(flagship)}>✓ verified in Lean 4</span>
             {typeof flagship.meta.score === "number" && (
               <span class="badge score-badge" title={flagship.meta.score_rationale ?? undefined}>self-reported score {flagship.meta.score}/10</span>
@@ -80,6 +80,7 @@ const listed = flagship ? bundles.slice(1) : bundles;
           <span class="wp-controls-label">Sort:</span>
           <button type="button" class="wp-sort-btn is-active" data-sort="score">Score</button>
           <button type="button" class="wp-sort-btn" data-sort="cluster">Cluster</button>
+          <button type="button" class="wp-sort-btn" data-sort="date" title="First published, newest first">Date</button>
         </div>
       )}
       {listed.length > 0 && (
@@ -91,10 +92,10 @@ const listed = flagship ? bundles.slice(1) : bundles;
 
       <div id="wp-list">
       {listed.map((b) => (
-        <section class="wp-entry" data-score={typeof b.meta.score === "number" ? b.meta.score : -1} data-area={b.meta.area}>
+        <section class="wp-entry" data-score={typeof b.meta.score === "number" ? b.meta.score : -1} data-area={b.meta.area} data-created={b.meta.created}>
           <h2><a href={`${base}/papers/${b.id}/`} set:html={renderTexLine(b.meta.title)} /></h2>
           <div class="wp-meta">
-            <span class="wp-id">{b.meta.wp_number ?? b.id} · {b.meta.area}</span>
+            <span class="wp-id">{b.meta.wp_number ?? b.id} · {b.meta.area} · {b.meta.created}</span>
             <span class="badge badge-verified" title={verifiedBadge(b)}>✓ verified in Lean 4</span>
             {typeof b.meta.score === "number" && (
               <span class="badge score-badge" title={b.meta.score_rationale ?? undefined}>self-reported score {b.meta.score}/10</span>
@@ -131,12 +132,22 @@ const listed = flagship ? bundles.slice(1) : bundles;
         const btns = Array.from(document.querySelectorAll(".wp-sort-btn"));
         const score = (el) => Number(el.getAttribute("data-score"));
         const area = (el) => el.getAttribute("data-area") || "";
+        const created = (el) => el.getAttribute("data-created") || "";
         const clearHeads = () => list.querySelectorAll(".cluster-head").forEach((h) => h.remove());
         const byScore = () => {
           clearHeads();
           entries
             .slice()
             .sort((a, b) => score(b) - score(a))
+            .forEach((e) => list.appendChild(e));
+        };
+        // Timeline: first-published (meta.created, an ISO date so string order is
+        // date order), newest first; same-day papers fall back to score.
+        const byDate = () => {
+          clearHeads();
+          entries
+            .slice()
+            .sort((a, b) => created(b).localeCompare(created(a)) || score(b) - score(a))
             .forEach((e) => list.appendChild(e));
         };
         const byCluster = () => {
@@ -160,7 +171,7 @@ const listed = flagship ? bundles.slice(1) : bundles;
           btn.addEventListener("click", () => {
             const mode = btn.getAttribute("data-sort");
             btns.forEach((b) => b.classList.toggle("is-active", b === btn));
-            mode === "cluster" ? byCluster() : byScore();
+            mode === "cluster" ? byCluster() : mode === "date" ? byDate() : byScore();
           });
         }
       }

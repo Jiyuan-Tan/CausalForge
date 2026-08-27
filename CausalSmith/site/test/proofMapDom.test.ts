@@ -595,8 +595,25 @@ describe("proof map — reader verification", () => {
     expect(node("lem:mid").classList.contains("is-attested")).toBe(true);
     expect(node("thm:main").classList.contains("is-attested")).toBe(false);
     click(node("lem:mid"));
-    expect($("pm-readers").textContent).toContain("verified by 2 readers");
+    expect($("pm-readers").textContent).toContain("verified by @saskia-v, @m-oberst");
     expect(($("pm-verify") as HTMLButtonElement).textContent).toBe("Sign in with GitHub to verify");
+  });
+
+  it("names the first five verifiers and folds the rest into a count", async () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
+      objId: "lem:mid",
+      login: `reader-${i}`,
+      avatarUrl: null,
+      at: `2026-08-2${i}T10:00:00Z`,
+    }));
+    stubNetwork({ list: many });
+    mount(WORKER);
+    initProofMap();
+    await vi.waitFor(() => expect($("pm-coverage").hidden).toBe(false));
+    click(node("lem:mid"));
+    expect($("pm-readers").textContent).toContain(
+      "verified by @reader-0, @reader-1, @reader-2, @reader-3, @reader-4 and 2 more",
+    );
   });
 
   it("records and then withdraws the signed-in reader's own attestation", async () => {

@@ -113,7 +113,7 @@ interface State {
   status: string;
 }
 
-/** Readers shown as avatars before the count takes over. */
+/** Readers shown by avatar AND named in the verify line; the rest fold into "and N more". */
 const MAX_AVATARS = 5;
 /** Below this the site hides the contents rail, so the panel collapses instead. */
 const RAIL_MIN_PX = 1281;
@@ -656,10 +656,13 @@ function renderAttest(state: State, node: MapNode): void {
   }
   const count = document.createElement("span");
   count.className = "pm-count";
-  count.textContent =
-    list.length === 0
-      ? "no reader has verified this yet"
-      : `verified by ${list.length} reader${list.length === 1 ? "" : "s"}`;
+  if (list.length === 0) {
+    count.textContent = "no reader has verified this yet";
+  } else {
+    const names = list.slice(0, MAX_AVATARS).map((a) => `@${a.login}`);
+    const extra = list.length - names.length;
+    count.textContent = `verified by ${names.join(", ")}${extra > 0 ? ` and ${extra} more` : ""}`;
+  }
   ui.readers.appendChild(count);
 
   ui.verify.classList.toggle("is-mine", mine);

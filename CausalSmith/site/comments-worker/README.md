@@ -53,6 +53,13 @@ owner. The wire format is defined in `site/src/lib/comments/schema.ts`.
      path the site does not yet have.
    - Install the App on the **public repo only** (Install App → Only select
      repositories).
+   - **Make the App public** (App settings → Advanced → "Make public"). New
+     GitHub Apps are private by default, and a private App's authorize
+     endpoint returns a bare 404 to every GitHub account except the owner —
+     the symptom is "sign-in works for me but everyone else lands on a 404
+     right after entering their GitHub password". Public here only means
+     others may authorize/install it; the token permissions above are
+     unchanged.
    - Note the **Client ID** and generate a **Client secret**.
 
    There is no OAuth `scope` in this flow: with a GitHub App, permissions come

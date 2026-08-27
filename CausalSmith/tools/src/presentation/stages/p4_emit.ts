@@ -696,11 +696,15 @@ export async function stageP4(io: StageIO): Promise<void> {
   // does not blank the badge; P5 overwrites with the fresh value on its next pass.
   let score: number | null = null;
   let scoreRationale: string | null = null;
+  // `created` is the paper's FIRST publication date (drives the site's timeline sort
+  // and the flagship tiebreak) — a re-emit must carry it forward, never re-stamp it.
+  let created = new Date().toISOString().slice(0, 10);
   try {
     const prev = JSON.parse(await readFile(join(io.outDir, "meta.json"), "utf8"));
     if (typeof prev.tldr === "string" && prev.tldr.trim()) tldr = prev.tldr.trim();
     if (typeof prev.score === "number") score = prev.score;
     if (typeof prev.score_rationale === "string") scoreRationale = prev.score_rationale;
+    if (typeof prev.created === "string" && /^\d{4}-\d{2}-\d{2}$/.test(prev.created)) created = prev.created;
   } catch {
     /* no prior meta.json */
   }
@@ -729,7 +733,7 @@ export async function stageP4(io: StageIO): Promise<void> {
     abstract,
     area,
     authorship: null,
-    created: new Date().toISOString().slice(0, 10),
+    created,
     wp_number: null,
     score,
     score_rationale: scoreRationale,
