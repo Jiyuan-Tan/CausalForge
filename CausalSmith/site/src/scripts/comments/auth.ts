@@ -1,10 +1,11 @@
 /**
  * GitHub sign-in for the paper-page commenter.
  *
- * The token this issues carries NO permissions — the sign-in App requests none,
- * so it identifies its owner and can do nothing else on GitHub. That is what
- * keeps the consent screen to "verify your GitHub identity"; an App asking for
- * any repository permission gets GitHub's "Act on your behalf" note instead.
+ * The token this issues carries NO permissions — the sign-in app is a classic
+ * OAuth App authorized with an empty scope, so it identifies its owner, reads
+ * public data, and can do nothing else on GitHub. The app type is load-bearing:
+ * a GitHub App's consent screen says "Act on your behalf" even with zero
+ * permissions, while this one's says "Public data only".
  *
  * The token never touches this repo's servers beyond the one-shot code exchange
  * in the worker: the popup posts it back with `postMessage`, and it is held in
