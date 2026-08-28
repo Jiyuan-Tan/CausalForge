@@ -62,6 +62,15 @@ export function katexOptions(display: boolean, throwOnError = false): KatexOptio
     throwOnError,
     macros: { ...KATEX_MACROS },
     trust: (ctx) => ctx.command === "\\href" && ctx.url.startsWith("#"),
+    // HTML only. KaTeX's default (htmlAndMathml) renders every formula TWICE —
+    // a visible HTML tree plus a hidden MathML copy for screen readers — which
+    // measured as ~30% of a paper page's bytes and an outsized share of its DOM
+    // nodes (the pages run to ~4 MB / ~200k tags, heavy enough to crash a
+    // memory-tight renderer). The cost is real: screen readers lose the MathML
+    // (and with it the embedded TeX source). Restoring an accessible math
+    // channel (MathML or aria-labels) is a deliberate follow-up if AT support
+    // is requested — the PDF remains the accessible-source artifact meanwhile.
+    output: "html",
   };
 }
 

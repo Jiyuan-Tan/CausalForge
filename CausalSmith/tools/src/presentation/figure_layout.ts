@@ -226,51 +226,57 @@ export function renderFigureSvg(spec: FigureSpec): string {
     const botLane = Math.max(...between.map((bx) => bx.y + bx.h)) + CLEAR;
     const mid = (y1 + y2) / 2;
     const side = Math.abs(topLane - mid) <= Math.abs(botLane - mid) ? -1 : 1;
-    const midX = (x1 + x2) / 2;
-    const g1 = Math.min(60, (x2 - x1) * 0.2);
-    const g2 = Math.min(110, (x2 - x1) * 0.3);
-    // The candidate detour is validated as the ACTUAL pair of cubics it will be
-    // drawn as — not a single midpoint probe — so a lane whose approach ramps
-    // still clip a box is pushed further out.
-    const detourSegs = (y: number): [number, number][][] => [
-      [[x1, y1], [x1 + g1, y1], [midX - g2, y], [midX, y]],
-      [[midX, y], [midX + g2, y], [x2 - g1, y2], [x2 - 3, y2]],
-    ];
+    // The detour is a rounded ORTHOGONAL route, not a broad arch: climb in the
+    // column gap right after the source (nothing can sit there), run flat just
+    // past the blocking boxes, and drop in the gap before the target. A broad
+    // cubic sweeps through intermediate columns at intermediate heights and had
+    // to balloon far outside the figure before it cleared (operator report
+    // 2026-08-28); the orthogonal route hugs the obstacle instead.
+    // Climb/drop lanes sit in the inter-column gaps PAST the full column extent
+    // (boxes are centered within their column's max width), so the verticals
+    // can never cross any box — even a wider sibling in the source's column.
+    const xa = colX[a.layer] + colWidths[a.layer] + 26;
+    const xb = colX[b.layer] - 26;
+    // Candidate validation samples the actual polyline: both verticals and the
+    // flat run (the rounded corners stay within these segments' hulls).
+    const detourPts = (y: number): [number, number][] => {
+      const pts: [number, number][] = [];
+      for (let t = 1; t < 8; t++) pts.push([xa, y1 + ((y - y1) * t) / 8]);
+      for (let t = 0; t <= 24; t++) pts.push([xa + ((xb - xa) * t) / 24, y]);
+      for (let t = 1; t < 8; t++) pts.push([xb, y + ((y2 - y) * t) / 8]);
+      return pts;
+    };
+    const laneClash = (y: number): boolean =>
+      detours.some((d) => Math.abs(d.yD - y) < 16 && d.xMax > x1 && d.xMin < x2) ||
+      hitsBox(detourPts(y), skip) !== undefined;
     let yD = side < 0 ? topLane : botLane;
     let clear = false;
     for (let tries = 0; tries < 12; tries++) {
-      const clash =
-        detours.some((d) => Math.abs(d.yD - yD) < 16 && d.xMax > x1 && d.xMin < x2) ||
-        hitsBox(samples(detourSegs(yD)), skip) !== undefined;
-      if (!clash) {
+      if (!laneClash(yD)) {
         clear = true;
         break;
       }
       yD += side * 18;
     }
     if (!clear) {
-      // Exhausted candidates: start from a lane strictly beyond every box
-      // (staggered per detour) and keep pushing outward until the actual pair
-      // of cubics is collision-free — pushing away from all boxes converges.
+      // Exhausted candidates: start strictly beyond every box (staggered per
+      // detour) and keep stepping outward. Terminates: each step moves the lane
+      // further from every finite box extent and earlier lane, so both clash
+      // predicates eventually fail — the emitted lane is always fully checked.
       yD =
         side < 0
           ? Math.min(...boxes.map((bx) => bx.y)) - CLEAR - 18 * (detours.length + 1)
           : Math.max(...boxes.map((bx) => bx.y + bx.h)) + CLEAR + 18 * (detours.length + 1);
-      // Terminates: each step moves the lane 18 further from every box and every
-      // earlier lane (all finite), and once past their inflated extents both
-      // predicates are false — so the emitted lane is always fully checked.
-      while (
-        detours.some((d) => Math.abs(d.yD - yD) < 16 && d.xMax > x1 && d.xMin < x2) ||
-        hitsBox(samples(detourSegs(yD)), skip) !== undefined
-      ) {
-        yD += side * 18;
-      }
+      while (laneClash(yD)) yD += side * 18;
     }
     detours.push({ yD, xMin: x1, xMax: x2 });
     yLo = Math.min(yLo, yD - 12);
     yHi = Math.max(yHi, yD + 12);
+    // Rounded-polyline emission: zero-length legs (e.g. yD level with an
+    // endpoint) are dropped, and each corner's radius is clamped to half its
+    // shorter adjacent segment — a degenerate leg can never backtrack.
     edgePaths.push(
-      `<path d="M ${r(x1)} ${r(y1)} C ${r(x1 + g1)} ${r(y1)}, ${r(midX - g2)} ${r(yD)}, ${r(midX)} ${r(yD)} C ${r(midX + g2)} ${r(yD)}, ${r(x2 - g1)} ${r(y2)}, ${r(x2 - 3)} ${r(y2)}" fill="none" stroke="#1e1e1c" stroke-width="1.8" marker-end="url(#arr)"/>`,
+      `<path d="${roundedPath([[x1, y1], [xa, y1], [xa, yD], [xb, yD], [xb, y2], [x2 - 3, y2]], 12)}" fill="none" stroke="#1e1e1c" stroke-width="1.8" marker-end="url(#arr)"/>`,
     );
   }
   const viewY = Math.min(0, yLo);
@@ -300,3 +306,26 @@ export function renderFigureSvg(spec: FigureSpec): string {
 }
 
 const r = (n: number): number => Math.round(n * 10) / 10;
+
+/** Path data for a polyline with rounded corners: consecutive near-duplicate
+ *  points are dropped, and each corner uses radius min(maxR, half of either
+ *  adjacent segment), so degenerate legs shrink the rounding instead of
+ *  producing overshooting or reversed path commands. */
+function roundedPath(pts: [number, number][], maxR: number): string {
+  const p = pts.filter(
+    (q, i) => i === 0 || Math.abs(q[0] - pts[i - 1][0]) + Math.abs(q[1] - pts[i - 1][1]) > 0.5,
+  );
+  let d = `M ${r(p[0][0])} ${r(p[0][1])}`;
+  for (let i = 1; i < p.length - 1; i++) {
+    const [px, py] = p[i - 1];
+    const [cx, cy] = p[i];
+    const [nx, ny] = p[i + 1];
+    const inLen = Math.hypot(cx - px, cy - py);
+    const outLen = Math.hypot(nx - cx, ny - cy);
+    const rad = Math.min(maxR, inLen / 2, outLen / 2);
+    d += ` L ${r(cx - ((cx - px) / inLen) * rad)} ${r(cy - ((cy - py) / inLen) * rad)}`;
+    d += ` Q ${r(cx)} ${r(cy)}, ${r(cx + ((nx - cx) / outLen) * rad)} ${r(cy + ((ny - cy) / outLen) * rad)}`;
+  }
+  const [lx, ly] = p[p.length - 1];
+  return `${d} L ${r(lx)} ${r(ly)}`;
+}
