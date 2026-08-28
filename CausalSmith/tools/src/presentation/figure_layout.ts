@@ -169,40 +169,123 @@ export function renderFigureSvg(spec: FigureSpec): string {
     ins.forEach((e, i) => inPort.set(portKey(e), b.y + (b.h * (i + 1)) / (ins.length + 1)));
   }
 
-  // Long edges (spanning >1 column) must not cut through intermediate boxes:
-  // route them through a detour lane below the columns they skip.
+  // Edge routing. Curvature is kept proportional to the actual vertical offset:
+  // a near-horizontal edge renders near-straight, and only genuinely offset
+  // edges bend. Edges spanning >1 column try the direct curve first and only
+  // detour — just past the boxes actually in the way, not to a global bottom
+  // lane — when the direct path would cut through an intermediate box.
+  const CLEAR = 26; // detour clearance beyond a blocking box border
+  const bezier = (p0: [number, number], p1: [number, number], p2: [number, number], p3: [number, number], t: number): [number, number] => {
+    const u = 1 - t;
+    return [
+      u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+      u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1],
+    ];
+  };
+  const hitsBox = (pts: [number, number][], skip: Set<string>): Box | undefined =>
+    boxes.find(
+      (bx) =>
+        !skip.has(bx.node.id) &&
+        pts.some(([px, py]) => px > bx.x - 8 && px < bx.x + bx.w + 8 && py > bx.y - 8 && py < bx.y + bx.h + 8),
+    );
+  const samples = (segs: [number, number][][]): [number, number][] => {
+    const pts: [number, number][] = [];
+    for (const [p0, p1, p2, p3] of segs) {
+      for (let i = 1; i < 40; i++) pts.push(bezier(p0, p1, p2, p3, i / 40));
+    }
+    return pts;
+  };
+  // Horizontal control arm: grows with the vertical offset (up to half the span)
+  // so flat edges stay flat and only real jumps curve.
+  const arm = (dxSpan: number, dy: number): number =>
+    Math.max(24, Math.min(dxSpan / 2, Math.abs(dy) * 0.8 + 24));
   const edgePaths: string[] = [];
-  let laneY = totalH - MARGIN; // next free detour lane; grows the canvas as needed
+  const detours: { yD: number; xMin: number; xMax: number }[] = [];
+  let yLo = 0, yHi = totalH; // canvas extent, grown by detours
   for (const e of spec.edges) {
     const a = byId.get(e.src)!;
     const b = byId.get(e.dst)!;
     const x1 = a.x + a.w, y1 = outPort.get(portKey(e))!;
     const x2 = b.x, y2 = inPort.get(portKey(e))!;
-    if (b.layer - a.layer > 1) {
-      laneY += 34;
-      const yD = laneY;
-      const midX = (x1 + x2) / 2;
+    const skip = new Set([e.src, e.dst]);
+    const dx = arm(x2 - x1, y2 - y1);
+    const direct: [number, number][][] = [[[x1, y1], [x1 + dx, y1], [x2 - dx, y2], [x2 - 3, y2]]];
+    if (b.layer - a.layer <= 1 || !hitsBox(samples(direct), skip)) {
       edgePaths.push(
-        `<path d="M ${r(x1)} ${r(y1)} C ${r(x1 + 50)} ${r(y1)}, ${r(midX - 120)} ${r(yD)}, ${r(midX)} ${r(yD)} C ${r(midX + 120)} ${r(yD)}, ${r(x2 - 50)} ${r(y2)}, ${r(x2 - 3)} ${r(y2)}" fill="none" stroke="#1e1e1c" stroke-width="2" marker-end="url(#arr)"/>`,
+        `<path d="M ${r(x1)} ${r(y1)} C ${r(x1 + dx)} ${r(y1)}, ${r(x2 - dx)} ${r(y2)}, ${r(x2 - 3)} ${r(y2)}" fill="none" stroke="#1e1e1c" stroke-width="1.8" marker-end="url(#arr)"/>`,
       );
-    } else {
-      const dx = Math.max(30, (x2 - x1) / 2);
-      edgePaths.push(
-        `<path d="M ${r(x1)} ${r(y1)} C ${r(x1 + dx)} ${r(y1)}, ${r(x2 - dx)} ${r(y2)}, ${r(x2 - 3)} ${r(y2)}" fill="none" stroke="#1e1e1c" stroke-width="2" marker-end="url(#arr)"/>`,
-      );
+      continue;
     }
+    // Detour: clear the boxes strictly between the two layers within the edge's
+    // x-range, passing whichever side (above/below) deviates least; stagger
+    // lanes that would overlap an earlier detour.
+    const between = boxes.filter(
+      (bx) => bx.layer > a.layer && bx.layer < b.layer && bx.x + bx.w > x1 && bx.x < x2,
+    );
+    const topLane = Math.min(...between.map((bx) => bx.y)) - CLEAR;
+    const botLane = Math.max(...between.map((bx) => bx.y + bx.h)) + CLEAR;
+    const mid = (y1 + y2) / 2;
+    const side = Math.abs(topLane - mid) <= Math.abs(botLane - mid) ? -1 : 1;
+    const midX = (x1 + x2) / 2;
+    const g1 = Math.min(60, (x2 - x1) * 0.2);
+    const g2 = Math.min(110, (x2 - x1) * 0.3);
+    // The candidate detour is validated as the ACTUAL pair of cubics it will be
+    // drawn as — not a single midpoint probe — so a lane whose approach ramps
+    // still clip a box is pushed further out.
+    const detourSegs = (y: number): [number, number][][] => [
+      [[x1, y1], [x1 + g1, y1], [midX - g2, y], [midX, y]],
+      [[midX, y], [midX + g2, y], [x2 - g1, y2], [x2 - 3, y2]],
+    ];
+    let yD = side < 0 ? topLane : botLane;
+    let clear = false;
+    for (let tries = 0; tries < 12; tries++) {
+      const clash =
+        detours.some((d) => Math.abs(d.yD - yD) < 16 && d.xMax > x1 && d.xMin < x2) ||
+        hitsBox(samples(detourSegs(yD)), skip) !== undefined;
+      if (!clash) {
+        clear = true;
+        break;
+      }
+      yD += side * 18;
+    }
+    if (!clear) {
+      // Exhausted candidates: start from a lane strictly beyond every box
+      // (staggered per detour) and keep pushing outward until the actual pair
+      // of cubics is collision-free — pushing away from all boxes converges.
+      yD =
+        side < 0
+          ? Math.min(...boxes.map((bx) => bx.y)) - CLEAR - 18 * (detours.length + 1)
+          : Math.max(...boxes.map((bx) => bx.y + bx.h)) + CLEAR + 18 * (detours.length + 1);
+      // Terminates: each step moves the lane 18 further from every box and every
+      // earlier lane (all finite), and once past their inflated extents both
+      // predicates are false — so the emitted lane is always fully checked.
+      while (
+        detours.some((d) => Math.abs(d.yD - yD) < 16 && d.xMax > x1 && d.xMin < x2) ||
+        hitsBox(samples(detourSegs(yD)), skip) !== undefined
+      ) {
+        yD += side * 18;
+      }
+    }
+    detours.push({ yD, xMin: x1, xMax: x2 });
+    yLo = Math.min(yLo, yD - 12);
+    yHi = Math.max(yHi, yD + 12);
+    edgePaths.push(
+      `<path d="M ${r(x1)} ${r(y1)} C ${r(x1 + g1)} ${r(y1)}, ${r(midX - g2)} ${r(yD)}, ${r(midX)} ${r(yD)} C ${r(midX + g2)} ${r(yD)}, ${r(x2 - g1)} ${r(y2)}, ${r(x2 - 3)} ${r(y2)}" fill="none" stroke="#1e1e1c" stroke-width="1.8" marker-end="url(#arr)"/>`,
+    );
   }
-  const canvasH = laneY > totalH - MARGIN ? laneY + MARGIN : totalH;
+  const viewY = Math.min(0, yLo);
+  // Only a detour extends the canvas — a detour-free figure keeps exactly totalH.
+  const canvasH = (detours.length > 0 ? Math.max(totalH, yHi + MARGIN) : totalH) - viewY;
 
   const parts: string[] = [];
   parts.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${Math.round(totalW)} ${Math.round(canvasH)}" role="img">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 ${Math.round(viewY)} ${Math.round(totalW)} ${Math.round(canvasH)}" role="img">`,
     `<defs><marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1e1e1c"/></marker></defs>`,
     ...edgePaths,
   );
   for (const b of boxes) {
     parts.push(
-      `<rect x="${r(b.x)}" y="${r(b.y)}" width="${r(b.w)}" height="${r(b.h)}" rx="8" fill="${FILLS[b.layer % FILLS.length]}" stroke="#1e1e1c" stroke-width="2"/>`,
+      `<rect x="${r(b.x)}" y="${r(b.y)}" width="${r(b.w)}" height="${r(b.h)}" rx="10" fill="${FILLS[b.layer % FILLS.length]}" stroke="#1e1e1c" stroke-width="1.5"/>`,
     );
     b.node.lines.forEach((line, i) => {
       const size = i === 0 ? TITLE_SIZE : DETAIL_SIZE;

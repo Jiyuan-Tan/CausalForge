@@ -1,184 +1,185 @@
 # Honest Length for Transported Complier Effects
 
-Under transported IV contrasts and bounded outcomes, honest confidence-set length is governed by one scalar: the effective strength \(t_n\), the source sample size times the squared transported first stage divided by transport-weight dispersion.
+Under bounded outcomes and transported IV contrasts, we identify the target complier effect and show that honest confidence-set length is governed by the effective strength \(t_n=n\mu_n^2/\kappa_n\).
 
 ---
 
-## The paper characterizes the honest length frontier
+## Overview
 
-- The target estimand is the complier effect in a target population.
-- The source sample has encouragement, receipt, outcomes, and covariates.
-- The target sample has covariates.
-- Transport weights move source IV contrasts to the target covariate distribution.
-- Weak first stages are allowed through \(\mu_n\), the transported first-stage mean.
-- The minimax expected length is at most and at least a constant times \(\min\{1,t_0^{-1/2}\}\).
-
-@informal thm:oracle-score-inversion-attainment: Oracle score inversion attains expected length at most a constant times \(\min\{1,t_0^{-1/2}\}\) above each fixed effective-strength threshold.
+- We study an encouragement design observed in a source population.
+- The target population supplies covariates, so effects are transported by reweighting source contrasts.
+- The target estimand is the complier effect in the target population.
+- Weak first stages make the transported Wald ratio hard to estimate.
+- The exact difficulty is summarized by \(t_n\), the effective identification strength.
+- Score inversion attains the honest expected-length frontier.
 
 ---
 
-## A running example is an encouragement trial transported to a target population
+## Motivation
 
-- A program is offered in a randomized source experiment.
-- Some encouraged people take up the program, and some do not.
-- The target population is described by covariates but lacks outcomes and receipt.
-- The target question is the effect for target compliers: people whose receipt would change if encouraged.
-- Covariate shift matters because target compliers may live in source covariate regions with uneven representation.
+- Think of a canvassing or program-offer experiment run in one population.
+- In the source, we observe encouragement \(Z\), receipt \(D\), outcome \(Y\), and covariates \(X\).
+- In the target, we observe the covariate distribution where we want the complier effect.
+- Transport weights can be uneven when the target overrepresents covariate cells that are rare in the source.
+- A weak transported first stage and uneven transport weights both reduce usable information.
+- The question is: what honest confidence-set length is achievable?
 
-@figure transported-encouragement-design: Box-and-arrow schematic with source covariates, source encouragement, source receipt, and source outcome feeding source IV contrasts; target covariates feeding target weights; source contrasts and target weights feeding the transported complier effect.
+@figure transported-encouragement-design: Box-and-arrow schematic showing source cells and target cells forming transport weights, weighted cells, transported moments, Kish dispersion, effective IV strength, and the target complier effect.
 
 ---
 
-## Identification is a transported Wald ratio
+## Background
 
-- The source encouragement contrast identifies covariate-specific reduced-form and first-stage contrasts.
-- Outcome transport moves the source outcome contrast to the target covariate law.
-- Receipt transport moves the target-average first stage to the same target covariate law.
-- Target complier positivity makes the denominator positive.
-- Bounded outcomes and monotone binary receipt place the target complier effect in \(\Theta=[-1,1]\).
+- LATE uses an encouragement-induced outcome contrast divided by an encouragement-induced receipt contrast.
+- Imbens and Angrist (1994) and Angrist et al. (1996) give the source IV logic.
+- Chen and Huang (2025) study transported complier effects with regular first stages.
+- Anderson and Rubin (1949) and Fieller (1954) give the ratio-inference logic used for weak denominators.
+- Our contribution combines transport, weak first stages, and honest expected length for a bounded causal ratio.
+
+---
+
+## Setup
+
+- Source population \(S=1\): \(X,Z,D,Y\) are observed.
+- Target population \(S=0\): target covariates \(X\) determine the population being transported to.
+- Outcomes are bounded in \([0,1]\), and receipt is binary.
+- The source encouragement satisfies overlap, randomization, exclusion, and monotonicity.
+- Transport uses the target-to-source density ratio \(w(X)\).
+- The target complier effect is \(\theta_T\), the target complier-conditional outcome contrast.
+
+---
+
+## Transport assumptions
+
+- Outcome transport: the source conditional assignment-outcome contrast carries to the target at the same \(X\).
+- Receipt transport: the target-average receipt contrast equals the target average of the source conditional receipt contrast.
+- Target complier positivity gives a positive target complier share.
+- Transport domination \(P_T\ll P_S^X\) gives the density ratio \(w=dP_T/dP_S^X\).
+- Fixed instrument overlap controls the inverse-propensity source score.
+- Kish dispersion \(\kappa_n\) measures how uneven the target-to-source weights are.
+
+---
+
+## Identification
+
+@informal prop:compact-causal-range: Under the transported IV model, the target complier effect equals the transported Wald ratio and lies in \(\Theta=[-1,1]\).
 
 @formal prop:compact-causal-range
 
 ---
 
-## The assumptions have three jobs
+## Effective strength
 
-- Source IV validity: random assignment within \(X\), exclusion, monotonicity, and instrument overlap.
-- Transport validity: outcome contrasts transport conditionally, and the first-stage contrast transports on the target average.
-- Covariate support: the target covariate law is represented by a density ratio \(w\) relative to the source covariate law.
-- Weak-first-stage geometry: \(\mu_n\), the transported first-stage mean, may shrink.
-- Weight geometry: \(\kappa_n\), the second moment of \(w\), records how uneven transport is.
-
-@formal ass:instrument-overlap
-
----
-
-## The scalar \(t_n\) combines first-stage weakness and covariate shift
-
-- The effective strength is \(t_n=n\mu_n^2/\kappa_n\).
-- Larger \(\mu_n\) means a stronger transported first stage.
-- Larger \(\kappa_n\) means target weighting uses the source sample less evenly.
-- In the running example, a rare target subgroup with large weights lowers effective information even when the source trial is large.
-- The talk’s question is: what honest expected length is possible above \(t_n\ge t_0\)?
-
-@formal ass:weight-second-moment
+- The transported first-stage mean is \(\mu_n\), the target average compliance contrast.
+- The weight-dispersion scale is \(\kappa_n=\mathbb E_S[w(X)^2]\).
+- The effective identification strength is
+\[
+t_n=\frac{n\mu_n^2}{\kappa_n}.
+\]
+- Larger \(\mu_n\) strengthens the denominator.
+- Larger \(\kappa_n\) reduces the effective source information.
+- The expected-length frontier is indexed by a fixed threshold \(t_0\).
 
 ---
 
-## Existing tools cover pieces of the problem
+## Score inversion
 
-- LATE theory identifies complier effects from randomized encouragement designs.
-- Transportability theory explains how source contrasts can target another covariate distribution.
-- Weak-IV robust methods invert reduced-form restrictions when the first stage is small.
-- Recent transported CACE work gives identification and regular estimation with a first stage bounded away from zero.
-- This paper characterizes honest expected length for the transported ratio when the transported first stage degenerates.
+- For each candidate \(\vartheta\in\Theta\), form a transported source score for \(Y-\vartheta D\).
+- Keep candidate values whose score is small relative to the weight-dispersion radius.
+- This is the transported Anderson-Rubin and Fieller logic.
+- The compact range \(\Theta=[-1,1]\) keeps the ratio inference on the causal outcome scale.
+
+@figure score-inversion-pipeline: Box-and-arrow schematic showing candidate values, empirical first stage, transported source score, weight dispersion, critical radius, comparison, and retained confidence set.
 
 ---
 
-## The oracle lower bound fixes the target rate
+## Oracle frontier
 
-@informal thm:oracle-converse: Every oracle honest procedure has worst-case expected length at least a constant times \(\min\{1,t_0^{-1/2}\}\) above each fixed effective-strength threshold.
+@informal thm:oracle-converse: Any oracle honest procedure has worst-case expected length at least a constant multiple of \(\min\{1,t_0^{-1/2}\}\) above effective strength \(t_0\).
 
 @formal thm:oracle-converse
 
----
-
-## Score inversion reaches the oracle rate
-
-- For a candidate \(\vartheta\), form the transported source score for \(Y-\vartheta D\).
-- Keep \(\vartheta\) when the weighted score is small relative to a radius of order \(\sqrt{\widehat\kappa_n/n}\).
-- This is the transported analogue of Anderson--Rubin and Fieller inversion.
-- The construction stays inside \(\Theta=[-1,1]\), so weak identification produces a bounded fallback set.
-- When \(t_0\) grows, the length contracts at the inverse-square-root threshold scale.
+@informal thm:oracle-score-inversion-attainment: Oracle score inversion is honest and has worst-case expected length at most a constant multiple of \(\min\{1,t_0^{-1/2}\}\).
 
 @formal thm:oracle-score-inversion-attainment
 
 ---
 
-## Fixed geometry gives the same frontier
+## Fixed geometry
 
-- Fix the source covariate law, target-to-source weights, and source propensity.
-- Let the causal response law vary subject to the transported IV restrictions.
-- The same \(\min\{1,t_0^{-1/2}\}\) expected-length order holds uniformly over admissible geometries.
-- Thus \(\kappa_n\) absorbs the transport-weight cost rather than leaving geometry-specific rates.
+- Fix the source covariate law, transport weights, and source propensity.
+- Let the causal response law vary within the transported IV model.
+- The same effective-strength frontier holds uniformly over admissible deterministic geometries.
+- This shows that \(t_n\) absorbs both first-stage weakness and transport dispersion.
+- With no covariate shift, \(w(X)=1\), \(\kappa_n=1\), and \(t_n=n\mu_n^2\).
 
-@informal thm:fixed-geometry-frontier: For every admissible deterministic geometry, the fixed-geometry minimax expected length is between constants times \(\min\{1,t_0^{-1/2}\}\).
+@informal thm:fixed-geometry-frontier: For every admissible fixed geometry, the minimax expected length is bounded above and below by constants times \(\min\{1,t_0^{-1/2}\}\).
 
 @formal thm:fixed-geometry-frontier
 
----
-
-## With no covariate shift, the index reduces to the usual first-stage scale
-
-- When \(w(X)=1\), the target covariate law equals the source covariate law.
-- Then \(\kappa_n=1\).
-- The effective strength becomes \(n\mu_n^2\).
-- The same fixed-geometry frontier applies.
-- This specialization shows exactly how transport dispersion extends the single-population weak-first-stage scale.
-
-@informal prop:no-shift-reduction: Under no covariate shift, the fixed-geometry frontier uses \(t_n=n\mu_n^2\) and has the same two-sided \(\min\{1,t_0^{-1/2}\}\) order.
+@informal prop:no-shift-reduction: With unit transport weights, the fixed-geometry frontier has the same \(\min\{1,t_0^{-1/2}\}\) order with \(t_n=n\mu_n^2\).
 
 ---
 
-## Finite cells make the transport weights learnable
+## Cell weight learning
 
-- In the uniform finite-cell design, source cells have mass \(1/k_n\) and assignment is balanced.
-- The target sample estimates each target cell probability.
-- The source sample estimates each cell’s outcome and receipt encouragement contrast.
-- The transported reduced form and first stage are plug-in averages over target empirical cell frequencies.
+- In the uniform finite-cell design, target covariates identify target cell frequencies.
+- Source data estimate outcome and receipt contrasts within each cell.
+- The transported reduced form and first stage average those cell contrasts using empirical target frequencies.
 - A target-sample collision statistic estimates the weight-dispersion scale.
+- The resulting score inversion uses observed samples only.
 
-@figure finite-cell-pipeline: Box-and-arrow schematic with target covariate sample feeding empirical cell frequencies, source sample feeding cellwise IV contrasts, both feeding transported reduced-form and first-stage estimates, then feeding score inversion.
+@figure finite-cell-pipeline: Box-and-arrow schematic showing target cell labels, empirical cell frequencies, collision statistic, source outcome-receipt-encouragement data, cellwise IV contrasts, transported estimates, and score inversion.
 
 ---
 
-## Sample-only finite-cell inversion attains the oracle order
+## Finite-cell result
 
-@informal thm:finite-cell-unknown-weight-attainment: In the uniform finite-cell class with \(k_n/\sqrt n\to0\), a sample-only score inversion has expected length at most a constant times \(\min\{1,t_0^{-1/2}\}\), and every feasible honest procedure has expected length at least a constant times that order.
+@informal thm:finite-cell-unknown-weight-attainment: In the uniform finite-cell class with \(k_n/\sqrt n\to0\), a sample-only score inversion attains expected length at most a constant multiple of \(\min\{1,t_0^{-1/2}\}\), with a matching lower bound.
 
 @formal thm:finite-cell-unknown-weight-attainment
 
 ---
 
-## Regular nonuniform cells retain the same order
+## Regular cells
 
-- Source cell probabilities may vary within fixed regular bounds.
-- The procedure uses known source cell probabilities and a known cell-varying propensity.
-- Target empirical cell frequencies still learn the target covariate law.
-- The score radius uses a regular-cell dispersion proxy.
-- Under the stated growth and overlap conditions, feasible honest length matches the oracle order.
+- The regular extension allows source cell probabilities to vary within fixed constants times \(1/k_n\).
+- The construction uses known source cell probabilities and a known cell-varying propensity.
+- Empirical target frequencies still supply the transported target weights.
+- The same strength-indexed expected-length order is attained.
 
-@informal thm:regular-cell-unknown-weight-attainment: In regular finite-cell designs with known source cell probabilities and known propensity, feasible score inversion attains expected length at most a constant times \(\min\{1,t_0^{-1/2}\}\), with a matching lower bound for feasible honest procedures.
+@informal thm:regular-cell-unknown-weight-attainment: With known regular source-cell probabilities and known propensity, feasible regular-cell score inversion attains the oracle frontier order on \(\mathcal N_n^{\mathrm{reg}}\).
 
 @formal thm:regular-cell-unknown-weight-attainment
 
 ---
 
-## The lower-bound story is a local complier tilt
+## Proof sketch
 
-- Fix the transport geometry.
-- Place compliers in covariate regions in proportion to the transport weight.
-- Calibrate the transported first stage so \(t_n\) equals the threshold.
-- Tilt only complier outcomes by a local amount.
-- The target complier effect moves, while the observed source and target samples remain close enough to force honest sets to cover both possibilities.
-- The largest indistinguishable tilt has the same \(t_0^{-1/2}\) scale.
-
----
-
-## The upper-bound story is score radius divided by first stage
-
-- The score numerator fluctuates on the transported scale \(\sqrt{\kappa_n/n}\).
-- The slope in the candidate value is the transported first stage \(\mu_n\).
-- Dividing score noise by slope gives \(\sqrt{\kappa_n/(n\mu_n^2)}=t_n^{-1/2}\).
-- When this exceeds the diameter of \([-1,1]\), the compact causal range sets the length scale.
-- That is the elbow: order one at weak effective strength, inverse-square-root improvement above it.
+- The upper bound starts from score inversion over the compact causal range.
+- At the true \(\theta_T\), the transported score is centered.
+- Bounded outcomes, binary receipt, overlap, and weight dispersion control the score radius.
+- When the empirical first stage is stable, score inversion has length on the order of radius divided by the first stage.
+- The bad-slope probability is controlled by the same effective strength \(t_n\).
+- The compact range supplies the order-one length scale at weak effective strength.
 
 ---
 
-## The contribution is an honest length theory for transported ratios
+## Lower-bound idea
 
-- The paper identifies the target complier effect as a transported Wald ratio in a compact causal range.
-- It shows that \(t_n=n\mu_n^2/\kappa_n\) is the effective-strength index for honest expected length.
-- It proves matching lower and upper oracle bounds of order \(\min\{1,t_0^{-1/2}\}\).
-- It shows the same order within every admissible fixed transport geometry.
-- It constructs finite-cell feasible score inversions that learn target weights and retain the oracle order under the stated regularity conditions.
+- Fix an admissible transport geometry.
+- Calibrate complier probabilities proportional to the transport weights.
+- This makes the transported first stage match the threshold \(t_0\).
+- Tilt only the complier outcome mean.
+- The tilt moves \(\theta_T\) while the observed-data laws remain close.
+- Honesty therefore forces confidence sets to cover separated target complier effects with nontrivial probability.
+
+---
+
+## Conclusion
+
+- We identify \(\theta_T\) as a transported complier ratio in the compact range \([-1,1]\).
+- We characterize honest expected length through \(t_n=n\mu_n^2/\kappa_n\).
+- Oracle score inversion attains the minimax order \(\min\{1,t_0^{-1/2}\}\).
+- The same order holds at fixed transport geometry.
+- Finite-cell target-weight learning preserves the oracle frontier under the stated growth and regularity conditions.

@@ -58,7 +58,7 @@ export interface Meta {
   created: string;
   wp_number: string | null;
   /** P5 referee's holistic overall score (0–10) + rationale; null = unreviewed.
-   *  Drives the "self-reported score" badge and best-first ordering. */
+   *  Drives the "AI reviewer score" badge and best-first ordering. */
   score?: number | null;
   score_rationale?: string | null;
 }

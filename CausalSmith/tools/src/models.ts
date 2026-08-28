@@ -12,7 +12,8 @@
 // Env overrides (all optional):
 //   CAUSALEAN_MODEL_CODEX_KERNEL   hard D-stage math + proof filler (default gpt-5.6-sol)
 //   CAUSALEAN_MODEL_CODEX_MECH     mechanical                       (default gpt-5.6-terra)
-//   CAUSALEAN_MODEL_CODEX_PRESENT  presentation P0-P5               (default gpt-5.5)
+//   CAUSALEAN_MODEL_CODEX_PRESENT  presentation authoring/revision  (default gpt-5.5)
+//   CAUSALEAN_MODEL_CODEX_PRESENT_REVIEW  presentation P5 referee    (default gpt-5.6-sol)
 //   CAUSALEAN_MODEL_CODEX_CONSULT  orchestrator D-stage              (default gpt-5.6-sol)
 //                                  halt-consultation (manual,
 //                                  referenced by causalsmith-d /
@@ -39,9 +40,11 @@ export const MODELS = {
   codexKernel: envModel("CAUSALEAN_MODEL_CODEX_KERNEL", "gpt-5.6-sol"),
   /** codex, mechanical / clerical tier. */
   codexMechanical: envModel("CAUSALEAN_MODEL_CODEX_MECH", "gpt-5.6-terra"),
-  /** codex, presentation authoring/review tier. Kept on 5.5 for stronger
+  /** codex, presentation authoring/revision tier. Kept on 5.5 for stronger
    *  literature breadth and more readable long-form paper prose. */
   codexPresentation: envModel("CAUSALEAN_MODEL_CODEX_PRESENT", "gpt-5.5"),
+  /** codex, terminal P5 journal-referee review tier. */
+  codexPresentationReview: envModel("CAUSALEAN_MODEL_CODEX_PRESENT_REVIEW", "gpt-5.6-sol"),
   /** codex, orchestrator D-stage halt-consultation tier. The orchestrator (causalsmith-d /
    *  causalsmith-main skills) runs this MANUALLY per its codex recipe; no pipeline stage reads
    *  it. Kept on the stronger solving model (gpt-5.6-sol) for adjudication. */

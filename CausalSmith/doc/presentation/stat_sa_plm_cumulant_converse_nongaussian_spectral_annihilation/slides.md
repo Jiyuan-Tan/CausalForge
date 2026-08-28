@@ -1,169 +1,199 @@
-# Contour Instruments for Learned Treatment Residuals
+# Contour Instruments for Partially Linear Models
 
-A zero of the treatment-noise transform turns residualized treatment into a stable instrument, giving fixed-code minimax mean-squared error of order \(n^{-1}\) under fixed cumulant separation.
-
----
-
-## The paper establishes a root-\(n\) contour route to \(\theta_0\)
-
-- Target: \(\theta_0\), the partially linear coefficient on residualized treatment.
-- Data: \(O=(X,T,Y)\), with supplied treatment and outcome codes \(\bar g_n,\bar q_n\).
-- Signal: the treatment innovation \(\eta=T-g_0(X)\) is independent of \(X\), sub-Gaussian, and has a fixed nonzero cumulant.
-- Device: zeros of \(M(z)=E[e^{z\eta}]\), the treatment-innovation moment-generating function.
-- Payoff: a finite contour statistic attains fixed-code minimax MSE between \(c/n\) and \(C/n\).
-- The result gives an affirmative fixed-separation benchmark for learned-residual partially linear estimation.
-
-@informal thm:adaptive-rootn-minimax: Under fixed primitive constants and the theorem's fixed-code gates, the contour statistic has minimax MSE between \(c/n\) and \(C/n\).
+We use zeros of the treatment-innovation transform to build contour instruments that identify and estimate the partially linear treatment coefficient at fixed-separation root-\(n\) scale.
 
 ---
 
-## Learned treatment residuals create a concrete nuisance problem
+## Overview
 
-- Classical residualization estimates \(\theta_0\) from treatment variation after removing \(g_0(X)\).
-- In the paper’s finite-\(n\) experiment, the analyst supplies a deterministic code \(\bar g_n\).
-- The working residual is \(Z_n=T-\bar g_n(X)\).
-- The treatment-code error is \(D_n(X)=g_0(X)-\bar g_n(X)\).
-- A running example: a flexible ML treatment model is trained elsewhere, then treated as the fixed code for the conference-sample analysis.
-- The question is: what extra identifying information is carried by non-Gaussian residual treatment variation?
+- We study a partially linear model with a supplied treatment code.
+- The target is \(\theta_0\), the treatment coefficient after residualizing treatment on covariates.
+- The key resource is non-Gaussian treatment noise with a fixed nonzero cumulant.
+- A zero of the treatment-innovation moment-generating function creates an instrument that survives treatment-code error.
+- A finite contour bank turns that population identity into a fixed-code estimator with minimax mean-squared error of order \(n^{-1}\).
 
----
-
-## The key model restrictions have direct empirical meaning
-
-- \(\eta=T-g_0(X)\) is independent of \(X\): treatment noise is separated from covariates after the treatment regression.
-- \(E[\xi\mid X,T]=0\): the partially linear conditional mean is correctly centered.
-- \(|\theta_0|\le C_\theta\), \(\|g_0\|_\infty\le C_g\), and \(\|q_0\|_\infty\le C_q\): the target and regressions live on fixed ranges.
-- \(\eta\) and \(\xi\) satisfy the stated sub-Gaussian envelopes.
-- \(|\kappa_k(\eta)|\ge\delta\): the \(k\)th cumulant is separated from zero by a fixed amount.
-- In the running example, the supplied treatment code must be accurate in \(L^1(P_X)\) at the displayed current radius.
+@informal thm:adaptive-rootn-minimax: Under fixed cumulant separation and the stated fixed-code stability and boundedness conditions, the contour statistic has minimax mean-squared error between \(c/n\) and \(C/n\), and its generalized quantile error is at most \(\sqrt{C/(\gamma n)}\).
 
 ---
 
-## A transform zero becomes an instrument
+## Motivation
 
-- Suppose \(z_0\) is a zero of \(M(z)=E[e^{z\eta}]\), with multiplicity \(\ell\).
-- The zero-based instrument is a polynomial-exponential weight applied to the residual.
-- The crucial shift property: the same zero moment survives real shifts from treatment-code error.
-- Conditioning on \(X\) turns that shift property into a valid moment for \(Z_n=T-\bar g_n(X)\).
-- When the denominator is nonzero, the ratio identifies \(\theta_0\).
-
-@formal thm:known-zero-instrument
-
----
-
-## Contours average over the unknown zeros
-
-- A known zero gives a direct ratio; an unknown zero calls for a search rule.
-- The observable treatment-residual transform \(F_n\) carries the zero locations.
-- The observable outcome-weighted transform \(G_n\) carries the numerator information.
-- A contour circle counts enclosed zeros and averages \(G_n/F_n\) around the boundary.
-- The contour is valid when the residual transform is zero-free on the boundary, the nuisance factor is zero-free inside, and at least one zero is enclosed.
-
-@figure contour-identification: Box-and-arrow schematic showing supplied code and data forming residual \(Z_n\), residual transform \(F_n\) and outcome transform \(G_n\), a selected contour with enclosed zeros, and the resulting estimate of \(\theta_0\).
-
-@formal thm:exact-contour-identification
+- Partially linear models estimate a low-dimensional treatment effect while allowing flexible covariate adjustment.
+- Robinson (1988) gives the classical root-\(n\) residualized construction.
+- Modern double/debiased machine learning keeps the same target stable under learned nuisance functions; see Chernozhukov et al. (2018).
+- Here the supplied treatment code may have residual error.
+- Think of \(T\) as an endogenous exposure whose predictable part is learned from covariates.
+- We observe \(Z_n=T-\bar g_n(X)\), the residualized treatment formed with the supplied clipped treatment code.
+- The code error shifts the true treatment innovation by \(D_n(X)=g_0(X)-\bar g_n(X)\).
+- Non-Gaussian treatment noise gives complex transform zeros that can protect estimation from these real shifts.
 
 ---
 
-## Cumulant separation gives a finite search region
+## Setup
 
-- The paper uses the fixed nonzero cumulant as a quantitative non-Gaussian signal.
-- Sub-Gaussian control keeps the transform well behaved on complex disks.
-- Cumulant separation places at least one zero of \(M\) inside the explicit radius \(R_0\).
-- The contour bank searches between \(R_0\) and \(R_1=R_0+1\).
-- The finite bank is chosen once from the primitive constants.
+- We observe \(O=(X,T,Y)\).
+- The conditional treatment and outcome regressions are \(g_0(X)=E[T\mid X]\) and \(q_0(X)=E[Y\mid X]\).
+- The treatment innovation is \(\eta=T-g_0(X)\).
+- The outcome innovation is \(\xi=Y-q_0(X)-\theta_0\eta\).
+- The supplied treatment and outcome codes are clipped to fixed ranges before use.
+- The sample is i.i.d. and split into a pilot fold and an evaluation fold.
 
----
-
-## \(L^1(P_X)\) treatment-code stability preserves zero geometry
-
-- The nuisance factor is \(H_n(z)=E[e^{zD_n(X)}]\).
-- The \(L^1(P_X)\) treatment-code radius controls how far \(H_n\) moves from one.
-- Under the displayed small-radius gate, \(H_n\) stays bounded away from zero on the search disk.
-- Then \(F_n(z)=M(z)H_n(z)\) has the same zero geometry as \(M\) inside the search region.
-- In the running example, this is exactly where the trained treatment code enters the contour theorem.
+@formal def:plm-model
 
 ---
 
-## The estimator is a split-sample contour program
+## Assumptions
 
-- Mechanism: form \(Z_{n,i}=T_i-\bar g_n(X_i)\).
-- Pilot fold: compute empirical transforms and choose a bank circle with certified boundary separation and positive winding count.
-- Evaluation fold: compute the normalized contour average of \(\widehat G/\widehat F\) on the selected circle.
-- Output: take the real midpoint of the certified contour interval and clip it to \([-C_\theta,C_\theta]\).
-- The represented-data layer realizes the same ordinary Borel statistic when the bounded spectral adapter satisfies its build-and-compilation specification.
+- The treatment innovation is independent of covariates.
+- The outcome innovation has conditionally mean zero given \(X,T\).
+- The coefficient and regression functions are bounded.
+- Treatment and outcome innovations are sub-Gaussian under our fixed envelope convention.
+- The \(k\)th cumulant of the treatment innovation is separated from zero by \(\delta\), the cumulant-separation level.
+- The treatment-code radius \(\varepsilon_{1,n}\) controls \(\|\bar g_n-g_0\|_{L^1(P_X)}\).
 
-@figure estimator-pipeline: Box-and-arrow schematic showing observations and supplied treatment code, residual construction, pilot-fold contour selection, evaluation-fold contour ratio, clipping, and output \(\widehat\theta_{\mathrm{spec},n}\).
+@formal ass:cumulant-separation
 
 ---
 
-## The fixed-separation theorem is the main statistical result
+## Key idea
+
+- Let \(M(z)=E[e^{z\eta}]\) be the treatment-innovation moment-generating function.
+- If \(M\) has a zero \(z_0\), a polynomial-exponential weight built from \(z_0\) annihilates every real shift of \(\eta\).
+- Conditioning on \(X\), that same weight becomes an instrument for the code residual \(Z_n\).
+- The resulting ratio identifies \(\theta_0\) whenever the denominator is separated from zero.
+
+@informal thm:known-zero-instrument: A zero of the treatment-innovation transform yields a valid shifted-residual instrument and identifies \(\theta_0\) through a population ratio when the denominator is nonzero.
+
+---
+
+## Contour identification
+
+- A known zero gives one instrument; a contour handles the zeros without naming them one by one.
+- \(F_n\) is the observable transform of the residualized treatment.
+- \(G_n\) is the observable outcome-weighted transform.
+- A contour enclosing at least one zero averages \(G_n/F_n\) over the enclosed zero structure.
+- Nuisance zero-freeness keeps the treatment-code error from creating spurious denominator zeros.
+
+@figure contour-identification: Box-and-arrow schematic showing supplied code and data forming residuals, observable treatment and outcome transforms, a zero-free nuisance factor, a selected contour, a contour average, and the identified coefficient.
+
+@informal thm:exact-contour-identification: On a contour where \(F_n\) is zero-free at the boundary, the nuisance factor is zero-free inside, and at least one zero is enclosed, the normalized contour ratio equals \(\theta_0(P)\).
+
+---
+
+## Estimator
+
+- The estimator uses a finite translated-dyadic bank of circles between the zero-localization radius and an outer radius.
+- The pilot fold selects a circle with a positive winding count and a certified denominator margin.
+- The evaluation fold computes the normalized contour average on the selected circle.
+- The real midpoint is clipped to the known coefficient range.
+- Every empirical branch returns a value, so the estimator is always well defined.
+
+@figure contour-estimator-pipeline: Box-and-arrow schematic showing observations split into pilot and evaluation folds, residualization, empirical transforms, zero-radius bank construction, pilot contour selection, evaluation contour averaging, and clipped output.
+
+@formal def:adaptive-contour-estimator
+
+---
+
+## Main result
+
+- Fixed cumulant separation localizes a transform zero in a fixed search region.
+- The \(L^1(P_X)\) treatment-code gate preserves the zero geometry of the residual transform.
+- Uniform empirical transform control gives root-\(n\) accuracy on the selected contour.
+- The lower bound comes from a one-dimensional submodel with fixed treatment law and \(1/\sqrt n\) target separation.
 
 @formal thm:adaptive-rootn-minimax
 
 ---
 
-## The same bank works across fixed-constant sequences
+## Sequence result
 
-- Along sequences sharing the fixed primitive constants, the transported primitive records generate the same contour bank.
-- The contour statistic remains measurable and keeps the \(c/n\) to \(C/n\) fixed-code non-Gaussian MSE bounds.
-- On the bounded-outcome Gaussian JMS comparison class, the target degenerates to zero and the fixed-code Gaussian risks are zero.
-- This separates the fixed non-Gaussian contour experiment from the bounded Gaussian diagnostic.
+- Along a sequence of experiments with the same primitive constants, one contour bank serves the sequence.
+- On the cumulant-separated non-Gaussian fixed-code class, the minimax mean-squared risk stays between constants times \(n_j^{-1}\).
+- On the bounded-outcome Gaussian comparison class of Jin, Mackey, and Syrgkanis (JMS), the target degenerates to zero under the stated simultaneous restrictions.
 
-@informal thm:common-experiment-dichotomy: Along fixed-constant non-Gaussian sequences satisfying the displayed code gate, the contour bank gives minimax MSE between \(c/n_j\) and \(C/n_j\); on the bounded-outcome Gaussian JMS class, \(\theta_0(P)=0\) and the fixed-code Gaussian risks are zero.
-
-@informal prop:bounded-outcome-gaussian-degeneracy: In the bounded-outcome Gaussian JMS class, every model has \(\theta_0(P)=0\), and any nonempty fixed-code intersection has zero Gaussian MSE and generalized-quantile minimax risks.
+@informal thm:common-experiment-dichotomy: Along fixed-constant non-Gaussian experiment sequences, the same contour bank gives minimax mean-squared risk of order \(n_j^{-1}\), while the bounded-outcome Gaussian JMS fixed-code risks are zero.
 
 ---
 
-## The ACE comparison aligns the common class
+## Related literature
 
-- JMS ACE uses order \(r\) and \(L^r(P_X)\) treatment and outcome code radii.
-- The contour theorem uses the current \(L^1(P_X)\) treatment-code gate to preserve transform zeros.
-- On bounded ranges, the ACE treatment-radius condition supplies the needed \(L^1(P_X)\) control.
-- When \(s=r\), the common clipped-code class matches the ACE-restricted spectral subclass.
-- Under JMS eligibility, both published ACE and contour upper guarantees can be read on the same class.
+- Partially linear models trace to Engle et al. (1986), Robinson (1988), Speckman (1988), and Härdle et al. (2000).
+- Orthogonal and debiased learning build on semiparametric stability; see Chernozhukov et al. (2018) and Newey and Robins (2018).
+- Higher-order orthogonality is the closest methodological comparison, including Mackey et al. (2018) and Jin et al. (2025).
+- Transform-based estimation and zero arguments connect to Feuerverger and McDunnough (1981), Carrasco (2017), Kagan et al. (1973), Mattner (1992), and Hu and Shiu (2022).
+- Non-Gaussian identification also appears in ICA and structural-equation work, including Comon (1994), Lanne et al. (2017), Lee and Mesters (2024), and Reizinger et al. (2025).
+
+---
+
+## ACE comparison
+
+- Jin et al. (2025) provide the published comparison through their finite-order ACE estimator for cumulant-separated partially linear models.
+- The ACE guarantee uses \(L^r(P_X)\) treatment and outcome code radii and the JMS eligibility condition.
+- The contour guarantee uses the common clipped-code experiment and the \(L^1(P_X)\) treatment-code gate.
+- On the aligned class, ACE carries finite-order nuisance terms, while the contour upper guarantee is governed by \((\gamma n)^{-1/2}\).
+- When the ACE nuisance terms dominate \(n^{-1/2}\), the ratio of the contour upper guarantee to the ACE upper guarantee tends to zero.
 
 @formal prop:jms-ace-alignment
 
 ---
 
-## The proof is a three-step stability story
+## Gaussian benchmark
 
-- Step 1: cumulant separation and the sub-Gaussian envelope force a transform zero inside the fixed search disk.
-- Step 2: the treatment-code error changes the residual transform only through \(H_n\), and the \(L^1(P_X)\) gate keeps that factor away from zero.
-- Step 3: uniform empirical transform control makes the selected empirical contour close to a valid population contour.
-- The lower bound comes from a one-dimensional fixed-code submodel with local shifts of \(\theta_0\) and controlled product relative entropy.
-- Together these give the matched \(n^{-1}\) MSE scale.
+- The JMS Gaussian comparison imposes Gaussian treatment noise and bounded observed outcomes.
+- Under those simultaneous restrictions, the target coefficient is forced to zero.
+- The fixed-code Gaussian minimax mean-squared risk and generalized-quantile risk are therefore zero whenever the clipped-code intersection is nonempty.
 
----
-
-## Mixture examples make the mechanism explicit
-
-- In the symmetric Gaussian mixture benchmark, the transform zero is known at \(i\pi/2\).
-- The contour ratio collapses to a clipped sine ratio using \(Y\sin(\pi Z_n/2)\) and \(Z_n\sin(\pi Z_n/2)\).
-- Under the stated \(L^1(P_X)\) treatment-code condition, the denominator stays bounded away from zero.
-- The estimator attains MSE at most \(C/n\) in that benchmark.
-
-@informal prop:symmetric-mixture-reduction: For the symmetric mixture \(\tfrac12N(-1,1)+\tfrac12N(1,1)\), the clipped sine-ratio estimator has mean-squared error at most \(C/n\) under the stated independence, range, tail, sampling, and treatment-code conditions.
+@informal prop:bounded-outcome-gaussian-degeneracy: In the bounded-outcome Gaussian JMS comparison class, every admissible law has \(\theta_0(P)=0\), and the fixed-code Gaussian risks are zero when the class intersection is nonempty.
 
 ---
 
-## Local benchmarks track weakening non-Gaussianity
+## Explicit mixtures
 
-- The Gaussian--Rademacher path gives an explicit fourth-cumulant parameter \(\Delta_a=2a^4\).
-- Its first positive transform zero, denominator scale, and sine estimator are all computable from \(a\).
+- A symmetric two-component Gaussian mixture has a known imaginary transform zero.
+- The contour construction collapses to a sine-ratio estimator using \(Y\sin(\pi Z_n/2)\) and \(Z_n\sin(\pi Z_n/2)\).
+- The \(L^1(P_X)\) treatment-code bound keeps the sine denominator bounded away from zero.
+- The resulting clipped ratio attains mean-squared error at most \(C/n\).
+
+@informal prop:symmetric-mixture-reduction: For the symmetric Gaussian mixture treatment innovation with the stated independence, range, tail, sampling, and treatment-code conditions, the clipped sine-ratio estimator has mean-squared error at most \(C/n\).
+
+---
+
+## Local benchmarks
+
+- The Gaussian--Rademacher path makes weak non-Gaussianity explicit through the amplitude \(a\).
+- Its fourth cumulant magnitude is \(\Delta_a=2a^4\), and the first positive transform zero determines the sine frequency.
+- The mean-squared error bound grows with the reciprocal denominator scale as the path approaches Gaussian noise.
 - The local ACE oracle envelope records the published ACE upper bound with shrinking cumulant threshold \(\delta_n\).
-- These benchmarks organize the triangular-array regime where non-Gaussian signal weakens with \(n\).
 
-@informal thm:local-to-gaussian-partial-benchmarks: Along the Gaussian--Rademacher path, the sine estimator obeys the stated explicit MSE upper bound, and under the published ACE handle hypotheses the local ACE estimator obeys the displayed generalized-quantile upper envelope with \(\Delta=\delta_n\).
+@formal thm:local-to-gaussian-partial-benchmarks
 
 ---
 
-## The contribution is a fixed-separation contour benchmark
+## Also in the paper
 
-- The paper constructs zero-based instruments for learned treatment residuals in partially linear models.
-- It turns unknown transform zeros into an observable contour ratio for \(\theta_0\).
-- It gives a finite, fixed-code contour statistic with matched \(c/n\) and \(C/n\) MSE bounds under fixed cumulant separation.
-- It aligns that guarantee with the published order-\(r\) ACE comparison on the common clipped-code class.
-- It supplies explicit sine-ratio benchmarks for mixture treatment innovations and a local benchmark agenda for shrinking cumulant separation.
+@informal lem:jms-ace-class-relations: The JMS ACE class is contained in the non-Gaussian contour class, the \(L^s(P_X)\)-restricted contour subclass is contained in the JMS ACE class, and the two coincide when \(s=r\).
+
+@informal lem:non-gaussian-hard-submodel: A one-dimensional fixed-code submodel gives an \(n^{-1}\) minimax lower bound on the non-Gaussian and ACE classes.
+
+@informal lem:gaussian-rademacher-l1-benchmark: Along the Gaussian--Rademacher path, the sine denominator and cumulant scale are explicit, and the clipped sine estimator satisfies the displayed mean-squared-error bound.
+
+---
+
+## Future work
+
+- The fixed-separation theorem holds with \(\delta\), the cumulant-separation level, fixed across the experiment.
+- A local-to-Gaussian frontier lets the cumulant threshold \(\delta_n\) shrink with \(n\).
+- The open statistical object is the sharp minimax mean-squared-error rate as a function of \((n,\varepsilon_{1,n},\varepsilon_{2,n},\delta_n)\).
+- A full selector would compare ordinary debiased machine learning, the finite-order ACE estimator, and global-contour procedures under a uniform inference criterion.
+
+@formal oeq:local-to-gaussian-frontier
+
+---
+
+## Conclusion
+
+- We construct contour instruments from zeros of the treatment-innovation transform.
+- The population contour ratio identifies the partially linear treatment coefficient under zero-free boundary, zero-free nuisance, and positive-count conditions.
+- The finite contour statistic attains fixed-code minimax mean-squared error of order \(n^{-1}\) under fixed cumulant separation and the stated stability and boundedness conditions.
+- The ACE alignment places the contour guarantee and the published finite-order guarantee on a common clipped-code comparison class.
+- The mixture benchmarks show the same mechanism in explicit sine-ratio form.

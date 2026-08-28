@@ -112,7 +112,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         <a href={`${base}/`}>{SERIES_NAME} · {SERIES_TAGLINE}</a>
         — {bundle.meta.wp_number ?? bundle.id} · {bundle.meta.area} ·
         {typeof bundle.meta.score === "number" && (
-          <> <span class="score-badge" title={bundle.meta.score_rationale ?? undefined}>self-reported score {bundle.meta.score}/10</span> · </>
+          <> <span class="score-badge" title={bundle.meta.score_rationale ?? "The AI reviewer score is a single automated referee's 0–10 estimate — a rough reference, not a peer-review verdict."}>AI reviewer score {bundle.meta.score}/10</span> · </>
         )}
         pinned commit
         <code>{bundle.commit.slice(0, 7)}</code>
@@ -124,6 +124,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         {GITHUB_URL && <> · <a class="nav-external" href={GITHUB_URL} target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a></>}
       </div>
       <h1>{titleCase(bundle.meta.title)}</h1>
+      <div class="paper-rating" id="paper-rating" hidden></div>
       <div id="paper-body" set:html={renderedBody} />
 
       {bundle.formalLayer && bundle.formalLayer.groups.length > 0 && (
@@ -185,6 +186,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       import { initDrawer } from "../../scripts/drawer.js";
       import { initComments } from "../../scripts/comments.js";
       import { initProofMap } from "../../scripts/proofMap.js";
+      import { initPaperRating } from "../../scripts/ratings.js";
       import { katexOptions } from "../../lib/katexConfig.js";
       // Wire the drawer FIRST, and never behind a top-level `import katex` — a
       // failed katex load (e.g. a stale Vite optimize-deps chunk 504ing in dev)
@@ -196,6 +198,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       // worker is configured. Runs after the drawer for the same reason as the
       // comments layer: neither may cost the Lean drawer if it throws.
       initProofMap();
+      // Byline star rating — same no-worker no-op contract as the other widgets.
+      initPaperRating();
       // Reader commentary — no-ops unless PUBLIC_COMMENTS_WORKER is set. Runs
       // after the drawer so a comments failure can never cost the Lean layer,
       // and after parsing so the sentence segmenter sees the whole body.

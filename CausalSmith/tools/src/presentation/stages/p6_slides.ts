@@ -31,6 +31,32 @@ export async function stageP6(io: StageIO): Promise<void> {
   };
   const outline = await readFile(join(io.outDir, "outline.md"), "utf8");
   const brief = await readFile(join(io.outDir, "related_work_brief.md"), "utf8").catch(() => "");
+  // The paper's verified bibliography (P-stage citation audit) is the ONLY
+  // citable set — the deck attributes prior work as Author (Year) from it.
+  const references = bibSummary(
+    await readFile(join(io.outDir, "references.bib"), "utf8").catch(() => ""),
+  );
+  if (!references) {
+    io.state.notes.push(
+      "P6: references.bib missing or unparsable — deck generated with NO citable bibliography (prior work described without attribution).",
+    );
+  }
+  // Existing figure assets are never overwritten, so a caption reusing a name
+  // must describe THAT diagram — show the model what each kept asset draws.
+  const assetDir = join(io.outDir, "slides_assets");
+  const existingFigures = (
+    await Promise.all(
+      (
+        await readdir(assetDir).catch((e: NodeJS.ErrnoException) => {
+          if (e.code !== "ENOENT") throw e; // only a truly absent dir means "no assets"
+          return [] as string[];
+        })
+      )
+        .filter((n) => n.endsWith(".dsl"))
+        .sort()
+        .map(async (n) => `- ${n.replace(/\.dsl$/, "")}:\n${await readFile(join(assetDir, n), "utf8")}`),
+    )
+  ).join("\n");
   // Appendix sections are proof detail the deck must not show anyway; dropping
   // them first keeps the budget for main-text prose. A flat tail-truncation
   // would deterministically cut the RESULTS sections (numbered last), so over
@@ -63,6 +89,9 @@ export async function stageP6(io: StageIO): Promise<void> {
       meta.abstract,
       outline,
       brief,
+      references,
+      existingFigures,
+      rawSections.join("\n"), // full text: the lint's verbatim corpus, beyond the clipped prompt view
       sections,
       ...layer.blocks.map((b) => `${b.obj_id}§${b.body}`),
     ].join("§§"),
@@ -110,15 +139,20 @@ export async function stageP6(io: StageIO): Promise<void> {
     abstract: meta.abstract,
     outline,
     related_work_brief: brief,
+    references,
+    existing_figures: existingFigures || "(none)",
     formal_catalog: formalCatalog,
     sections,
     lint_findings: "",
   };
+  // A `\[…\]` display in authored prose must be a verbatim copy from the paper —
+  // the corpus is the FULL material (unclipped sections), not the prompt view.
+  const verbatimCorpus = [...layer.blocks.map((b) => b.body), ...rawSections].join("\n");
 
   // One call; one lint-informed retry; then halt for the orchestrator. There is no
   // model review loop — the deck's judge is the orchestrator at the checkpoint.
   let md = await generate(io, vars);
-  let problems = lintDeck(md, formalRefs);
+  let problems = lintDeck(md, formalRefs, verbatimCorpus);
   if (problems.length > 0) {
     // Minimal-repair retry: a fresh re-roll can regress on dimensions the lint
     // does not check (drop a figure, rename a coined term, break a cross-slide
@@ -128,10 +162,10 @@ export async function stageP6(io: StageIO): Promise<void> {
       lint_findings:
         "\nA previous attempt failed these mechanical checks — fix ALL of them:\n" +
         problems.map((p) => `- [${p.gate}] ${p.detail}`).join("\n") +
-        "\nRepair MINIMALLY: reproduce the previous deck below unchanged except where a listed defect requires an edit — do not drop, rename, or rewrite slides, figures, or terms that are not implicated.\n\nPrevious deck:\n" +
+        "\nRepair MINIMALLY: reproduce the previous deck below unchanged except where a listed defect requires an edit — do not drop, rename, or rewrite slides, figures, or terms that are not implicated. Exception: a slides-deck-shape finding implicates the whole deck — fix an over-long deck by MERGING the most closely related slides (never by deleting content that covers a theorem), and an over-short one by splitting.\n\nPrevious deck:\n" +
         md + "\n",
     });
-    problems = lintDeck(md, formalRefs);
+    problems = lintDeck(md, formalRefs, verbatimCorpus);
     if (problems.length > 0) {
       throw new Error(
         `P6: slides failed the mechanical lint after one retry:\n- ${problems
@@ -288,10 +322,44 @@ export function extractDeckMarkdown(stdout: string): string {
   return text.slice(start).trim() + "\n";
 }
 
-function lintDeck(md: string, formalRefs: FormalBlockRef[]) {
+function lintDeck(md: string, formalRefs: FormalBlockRef[], verbatimCorpus: string) {
   try {
-    return lintSlides(parseSlidesMd(md), formalRefs);
+    return lintSlides(parseSlidesMd(md), formalRefs, verbatimCorpus);
   } catch (err) {
     return [{ gate: "slides-structure", detail: err instanceof Error ? err.message : String(err) }];
   }
+}
+
+/** Compact one-line-per-entry view of the paper's verified references.bib:
+ *  `- key: Surname, Surname (year). Title. Venue.` — enough for the deck to cite
+ *  Author (Year) without seeing (or inventing beyond) the bibliography. */
+export function bibSummary(bib: string): string {
+  const lines: string[] = [];
+  for (const entry of bib.split(/^\s*@/m).slice(1)) {
+    const key = /^\w+\s*\{\s*([^,\s]+)\s*,/.exec(entry)?.[1];
+    if (!key) continue;
+    const field = (name: string): string => {
+      const m =
+        new RegExp(`\\b${name}\\s*=\\s*\\{((?:[^{}]|\\{[^{}]*\\})*)\\}`, "i").exec(entry) ??
+        new RegExp(`\\b${name}\\s*=\\s*"((?:\\\\.|[^"\\\\])*)"`, "i").exec(entry) ??
+        new RegExp(`\\b${name}\\s*=\\s*(\\d+)`, "i").exec(entry);
+      return (
+        m?.[1]
+          ?.replace(/<[^>]+>/g, "") // publisher-exported bibs can carry MathML/HTML in titles
+          .replace(/[{}]/g, "")
+          .replace(/\s+/g, " ")
+          .trim() ?? ""
+      );
+    };
+    const surnames = field("author")
+      .split(/\s+and\s+/)
+      .map((a) => (a.includes(",") ? a.split(",")[0] : a.split(/\s+/).pop() ?? "").trim())
+      .filter(Boolean);
+    const venue = field("journal") || field("booktitle") || field("publisher");
+    if (surnames.length === 0 && !field("year")) continue; // unparsable entry: no junk line
+    lines.push(
+      `- ${key}: ${surnames.join(", ")} (${field("year")}). ${field("title")}.${venue ? ` ${venue}.` : ""}`,
+    );
+  }
+  return lines.join("\n");
 }

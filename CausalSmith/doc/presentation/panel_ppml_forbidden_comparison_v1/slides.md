@@ -1,155 +1,175 @@
-# When Fixed-Effect Poisson DiD Gets the Sign Wrong
+# Forbidden Comparisons in Fixed-Effect Poisson Difference-in-Differences
 
-A pooled fixed-effect PPML coefficient can be negative even when every cohort-time proportional treatment effect is positive, because the population score uses signed residual comparisons.
-
----
-
-## The coefficient is a projection, and projections can flip signs
-
-- In staggered adoption, treated cohorts also become comparison cohorts for later-treated groups.
-- In linear DiD, this creates signed comparison weights under heterogeneous effects.
-- This paper gives the proportional-effect PPML analogue.
-- The object is the population treatment coordinate \(\beta^\star(\delta)\), the limiting fixed-effect Poisson projection coefficient.
-- Under a common proportional effect, \(\beta^\star(\delta)\) recovers that effect exactly.
-- Under heterogeneous positive proportional effects, \(\beta^\star(\delta)\) can be negative.
+We characterize when pooled fixed-effect Poisson pseudo-maximum likelihood (PPML) in staggered-adoption difference-in-differences (DiD) delivers a negative population treatment coefficient under strictly positive proportional effects.
 
 ---
 
-## The running example is a staggered policy in a multiplicative mean model
+## Overview
 
-- Think of a gravity-style policy that affects trade flows multiplicatively.
-- Cohorts adopt in periods 2, 3, and 4, and one cohort is never treated.
-- The empirical shortcut is a PPML regression with unit fixed effects, time fixed effects, and one treatment indicator.
-- The causal primitives are cohort-time proportional effects.
-- The question is what sign the single pooled PPML coefficient carries when those effects differ.
-
-@figure staggered-ppml-panel: A box-and-arrow schematic with boxes for cohorts 2, 3, 4, and never treated, arrows from untreated mean and cohort-time proportional effects into observed cohort-time means, and an arrow from observed means into the pooled FE-PPML coefficient.
+- The object is \(\beta^\star(\delta)\), the limiting pooled PPML treatment coordinate.
+- Under heterogeneous proportional effects, \(\beta^\star(\delta)\) is a misspecified projection.
+- Its sign is governed by fitted-mean-weighted residualized treatment comparisons.
+- We give an explicit four-cohort design with \(\beta^\star(\delta)<0\) while every treated cohort-time proportional effect is positive.
+- The counterfactual-share proportional treatment-on-the-treated target (PTT) remains positive in the same population environment.
 
 ---
 
-## Multiplicative parallel trends gives the untreated benchmark
+## Motivation
 
-- The untreated mean factors into a unit baseline and a calendar component.
-- After cohort averaging, the untreated cohort-time mean is \(B_{gt}\), the untreated mean for cohort \(g\) in period \(t\).
-- Treatment is absorbing, so \(D_{gt}\) records whether cohort \(g\) is treated in period \(t\).
-- A treated cell has log proportional effect \(\delta_{gt}\), so positive \(\delta_{gt}\) means the treatment raises the mean proportionally.
-- The collapsed design has enough variation to separate cohort effects, time effects, and treatment.
+- Staggered adoption makes a single treatment indicator tempting.
+- Linear DiD taught us that pooled two-way fixed effects can compare already-treated and newly treated cohorts in hard-to-interpret ways.
+- Goodman-Bacon (2021) gives the linear decomposition.
+- de Chaisemartin and D'Haultfoeuille (2020) show how heterogeneous effects can receive signed weights.
+- Many applied settings use multiplicative means and PPML, especially trade and count outcomes.
+- We ask how the same concern appears on the PPML scale.
+
+---
+
+## Running example
+
+- Think of a trade policy adopted by different country pairs at different dates.
+- Outcomes are nonnegative flows, so applied work often uses PPML with high-dimensional fixed effects.
+- The policy effect is naturally proportional: a treated cell has a multiplicative change relative to its untreated mean.
+- A single pooled PPML coefficient is often read as the policy direction.
+- Our results characterize the population object behind that coefficient.
+
+@figure staggered-adoption-panel: Boxes for cohorts 2, 3, 4, and never-treated, arrows from each cohort box to its treated cohort-period cells, and arrows from all cells into one pooled PPML coefficient.
+
+---
+
+## Setup
+
+- Units belong to adoption cohorts \(G_i\), including the never-treated cohort \(\infty\).
+- Treatment is absorbing, so cohort \(g\) is treated in period \(t\) when \(D_{gt}=1\).
+- The untreated mean has a unit baseline and a calendar component.
+- Treated outcomes follow cohort-time proportional log multipliers \(\delta_{gt}\).
+- Cohort shares stay positive in the large-array limit.
+- Within-cohort baseline averages converge, so the panel collapses to cohort-time cells.
+
+---
+
+## Assumptions
+
+The load-bearing structure is multiplicative untreated means, proportional treatment effects, and a full-rank collapsed fixed-effect design.
 
 @formal ass:unit-untreated-exponential-mean
 
----
+@formal ass:proportional-effects
 
-## The population target is the collapsed PPML coefficient
-
-- The paper studies \(\beta^\star(\delta)\), the treatment coordinate selected by the limiting cohort-time PPML criterion.
-- This is the deterministic population object targeted by pooling cohort-time cells with fixed effects.
-- The fitted mean \(\mu^\star_{gt}(\delta)\) supplies the curvature weights that determine comparisons.
-- The finite-array unit fixed-effect projection collapses to the same cohort-time object asymptotically.
-
-@formal def:collapsed-population-projection
+@formal ass:collapsed-design-rank
 
 ---
 
-## Homogeneity is the calibration point
+## Positive-effect scope
 
-@informal prop:homogeneous-effect-reduction: When every treated cell has the same proportional log effect \(\delta_0\), the population PPML coefficient equals \(\delta_0\) exactly.
+- The sign-reversal question is asked under the strongest sign benchmark.
+- Every treated cohort-time cell has a positive proportional log multiplier.
+- The multicohort scope contains early, middle, late, and never-treated cohorts.
 
-@formal prop:homogeneous-effect-reduction
+@formal ass:strict-positive-effects
 
----
-
-## Heterogeneity makes the residual comparison decisive
-
-- Residualized treatment means treatment after partialling out cohort and time fixed effects.
-- Here residualization uses PPML fitted-mean weights, not ordinary least-squares weights.
-- A treated cell with positive residualized treatment pushes \(\beta^\star(\delta)\) upward when its effect rises.
-- A treated cell with negative residualized treatment pushes \(\beta^\star(\delta)\) downward when its effect rises.
-- The next result gives the exact derivative sign.
+@formal ass:multicohort-frontier-scope
 
 ---
 
-## The local sign is sharp
+## Projection target
 
-@informal thm:sharp-ppml-forbidden-sign: For a treated cell, the derivative of \(\beta^\star(\delta)\) with respect to that cell’s log proportional effect has the same sign as its fitted-mean-weighted residualized treatment.
+- We study the population PPML projection, evaluated at cohort-time means.
+- The fitted mean \(\mu^\star_{gt}(\delta)\) is the PPML fit in the collapsed cohort-time table.
+- The treatment coordinate \(\beta^\star(\delta)\) is the single coefficient produced by pooling.
+- The key comparison object is \(\widetilde W_{gt}(\delta)\), the fitted-mean-weighted residual of treatment after partialling out cohort and time fixed effects.
+- A cell with negative \(\widetilde W_{gt}(\delta)\) acts like an already-treated comparison cell in the PPML projection.
+
+---
+
+## Related literature
+
+- Classical DiD builds untreated counterfactual trends from repeated observations: Ashenfelter and Card (1985), Angrist and Pischke (2009), and Imbens and Wooldridge (2009).
+- Modern staggered DiD clarifies heterogeneous-effect aggregation: Goodman-Bacon (2021), Callaway and Sant'Anna (2021), Sun and Abraham (2021), and Borusyak et al. (2024).
+- Nonlinear DiD and functional-form work frame the multiplicative setting: Wooldridge (2023) and Roth and Sant'Anna (2023).
+- PPML practice is central in multiplicative mean models: Santos Silva and Tenreyro (2006, 2011), Correia et al. (2020), and Yotov et al. (2016).
+- Moreau-Kastler (2025) supplies the closest positive proportional PTT benchmark.
+
+---
+
+## Main result: local sign
+
+@informal thm:sharp-ppml-forbidden-sign: Under collapsed rank, increasing one treated-cell proportional effect moves \(\beta^\star(\delta)\) in the sign direction of that cell's fitted-mean-weighted residualized treatment.
 
 @formal thm:sharp-ppml-forbidden-sign
 
 ---
 
-## The mechanism is the Poisson score, not averaging
+## Intuition
 
-- The PPML first-order condition balances observed means against fitted means.
-- Fixed effects force that balance across cohort margins and time margins.
-- Heterogeneous treatment effects change treated-cell observed means.
-- The fixed-effect refit reallocates that change through fitted-mean-weighted residual comparisons.
-- A positive effect in a negative-residual treated cell can lower the pooled coefficient.
-
-@figure score-residual-pipeline: A box-and-arrow schematic with boxes for heterogeneous treated-cell means, PPML fixed-effect fit, fitted-mean weights, residualized treatment cells, and the sign of the pooled coefficient.
+- PPML fits cohort and time fixed effects first through the multiplicative mean score.
+- The remaining treatment variation is the residual after that weighted fit.
+- The weights are fitted means, so high-mean cells carry more curvature in the score.
+- Increasing a treated-cell effect changes the pooled coefficient through that cell's residualized treatment value.
+- A negative residual means a larger positive effect in that cell pushes the pooled coefficient downward.
 
 ---
 
-## A primitive index gives the global sign
+## Homogeneous benchmark
 
-- The local derivative explains how one cell moves the coefficient.
-- The global characterization reduces the sign to \(\Phi\), a scalar index computed from cohort shares, untreated means, and treated-cell multipliers.
-- The index uses \(h_{gt}\), the share-weighted observed mean component for cohort \(g\) in period \(t\).
-- Its row sums, column sums, grand sum, and treated-cell sum determine the sign frontier.
-- This turns the sign question into a primitive diagnostic.
+@informal prop:homogeneous-effect-reduction: Under the untreated mean restriction, collapsed rank, and a common treated-cell log multiplier, the pooled PPML coefficient recovers that common multiplier exactly.
+
+@formal prop:homogeneous-effect-reduction
 
 ---
 
-## The frontier exactly matches the coefficient sign
+## Primitive frontier
 
-@informal thm:primitive-global-frontier: Under the stated multicohort positive-effect conditions, \(\beta^\star(\delta)\) is negative, zero, or positive exactly when \(\Phi\) is negative, zero, or positive.
+- The derivative result is local.
+- We also give a global sign diagnostic.
+- \(\Phi\), the primitive sign index, is built from cohort shares, untreated means, treatment timing, and proportional multipliers.
+- Under the stated multicohort positive-effect conditions, \(\Phi\) has exactly the same sign as \(\beta^\star(\delta)\).
+- In the same environment, \(\Phi<0\) implies \(\beta^\star(\delta)<0<PTT\).
 
 @formal thm:primitive-global-frontier
 
 ---
 
-## The same primitives can have a positive proportional target
+## Four-cohort witness
 
-- The proportional treatment-on-the-treated target \(PTT\) averages granular proportional effects with counterfactual-share weights.
-- Under positive granular effects, those weights are positive and sum to one.
-- The frontier theorem places both summaries in the same population environment.
-- When \(\Phi<0\), the pooled PPML coefficient is negative while \(PTT\) is positive.
-- The contrast is between a pooled score projection and a positive-weight causal aggregate.
-
----
-
-## The four-cohort witness makes the sign reversal concrete
-
-- The support is \(\{2,3,4,\infty\}\): early, middle, late, and never-treated cohorts.
-- Cohort shares are equal.
-- Untreated baselines are one, and untreated time effects are flat.
-- Every treated cell has a positive proportional log effect.
-- The largest treated effect is in cell \((2,4)\), an early-treated cohort observed late.
-- That cell has negative residualized treatment in the witness.
-
----
-
-## Positive effects can produce a negative pooled coefficient
-
-@informal prop:four-cohort-sign-reversal: In the equal-share four-cohort witness \(W_4\), every treated-cell log proportional effect is positive, the largest effect is at \((2,4)\), and the primitive tuple belongs to the sign-reversal region \(\mathcal R_4\).
+@informal prop:four-cohort-sign-reversal: In the equal-share four-cohort witness with flat untreated means, every treated cell has a positive proportional effect, the largest effect is in cell \((2,4)\), and the primitive belongs to the sign-reversal region.
 
 @formal prop:four-cohort-sign-reversal
 
 ---
 
-## The proof follows the fitted comparison structure
+## Proof sketch
 
-- First, unit fixed effects collapse to cohort-time cells because only cohort-average baselines enter the population criterion.
-- Second, the PPML first-order conditions define a unique pseudo-true fitted mean under the rank condition.
-- Third, differentiating the score gives a denominator from residual treatment variation and a numerator from the treated cell’s residual.
-- Fourth, eliminating fixed effects yields the primitive sign index \(\Phi\).
-- Finally, the four-cohort primitives place \(W_4\) on the negative side of that frontier.
+- Collapse the unit fixed-effect population criterion to cohort-time cells using cohort shares and within-cohort baseline limits.
+- Use the PPML first-order conditions to express local coefficient changes through a weighted residualized treatment.
+- The full-rank condition keeps residual treatment variation positive.
+- Eliminate fixed effects from the collapsed score to obtain the primitive sign index \(\Phi\).
+- In the four-cohort design, the late cell of the early-treated cohort has a negative residual and the explicit primitive index is negative.
 
 ---
 
-## What the paper establishes
+## Also in the paper
 
-- It characterizes the deterministic population FE-PPML treatment coefficient in staggered-adoption proportional-effect designs.
-- It proves exact recovery under a common proportional effect.
-- It gives a sharp local sign rule through fitted-mean-weighted residualized treatment.
-- It gives a primitive global sign frontier through \(\Phi\).
-- It constructs an equal-share four-cohort positive-effect witness with a negative limiting pooled coefficient.
-- It separates the pooled PPML projection from the positive counterfactual-share proportional \(PTT\).
+@informal lem:unit-fe-collapse: Under the stated support, share, untreated-mean, baseline-limit, proportional-effect, and rank conditions, the unit fixed-effect population coefficient equals the collapsed finite-array treatment coordinate and converges to \(\beta^\star(\delta)\).
+
+@informal lem:pseudo-true-ppml-projection: Under collapsed rank, the limiting PPML projection is unique and satisfies the nuisance and treatment score equations.
+
+---
+
+## Interpretation
+
+- Under common proportional effects, pooled fixed-effect PPML recovers the common log multiplier.
+- Under heterogeneous proportional effects, the pooled coefficient is a projection summary shaped by fixed-effect residual comparisons.
+- The four-cohort witness shows a negative limiting pooled coefficient under strictly positive granular proportional effects.
+- Positive-weight proportional targets aggregate the granular effects directly.
+- The sign of the pooled coefficient and the sign of the proportional PTT can therefore diverge in the same primitive environment.
+
+---
+
+## Takeaways
+
+- We characterize the population coefficient targeted by pooled fixed-effect PPML in staggered-adoption multiplicative DiD.
+- The sharp sign formula links local movements in \(\beta^\star(\delta)\) to fitted-mean-weighted residualized treatment.
+- The primitive frontier gives an exact global sign diagnostic through \(\Phi\).
+- The four-cohort witness establishes sign reversal with equal shares, flat untreated means, and strictly positive treated-cell effects.
+- The empirical message is to interpret pooled PPML coefficients as projection summaries and use granular proportional effects or positive-weight proportional aggregates for causal sign statements.

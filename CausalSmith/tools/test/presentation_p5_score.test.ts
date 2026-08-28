@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { archivePriorReview, normalizeScore, upsertFrontmatter } from "../src/presentation/stages/p5_review.js";
+import { archivePriorReview, normalizeScore, stageP5, upsertFrontmatter } from "../src/presentation/stages/p5_review.js";
+import { freshPaperState } from "../src/presentation/state.js";
+import type { PaperDeps, StageIO } from "../src/presentation/pipeline.js";
+import { MODELS } from "../src/models.js";
 
 describe("P5 normalizeScore", () => {
   it("passes a valid one-decimal score through", () => {
@@ -70,6 +73,56 @@ describe("P5 review history", () => {
       expect(await archivePriorReview(dir)).toBe("round_001");
       expect(await readFile(join(dir, "p5_review_history", "round_000.json"), "utf8")).toContain("6.3");
       expect(await readFile(join(dir, "p5_review_history", "round_001.json"), "utf8")).toContain("5.5");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("P5 referee dispatch", () => {
+  it("uses the dedicated Sol review model", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "p5-model-"));
+    try {
+      await writeFile(join(dir, "paper.tex"), "A submission.\n");
+      await writeFile(join(dir, "formal_layer.json"), '{"commit":null,"blocks":[]}\n');
+      await writeFile(join(dir, "lean_snippets.json"), '{"commit":"","snippets":{}}\n');
+      let call: Parameters<PaperDeps["runCodex"]>[0] | null = null;
+      const deps: PaperDeps = {
+        runClaude: async () => "",
+        runCodex: async (args) => {
+          call = args;
+          return {
+            stdout: JSON.stringify({
+              recommendation: "accept",
+              score: 9,
+              score_rationale: "Clear and correct.",
+              summary: "A concise submission.",
+              strengths: [],
+              findings: [],
+              questions_for_authors: [],
+            }),
+            stderr: "",
+          };
+        },
+        dryRun: false,
+      };
+      const io = {
+        ctx: { repoRoot: dir, qid: "q", spec: "v1", deps, outDir: dir },
+        state: freshPaperState("q", "v1"),
+        bank: {} as StageIO["bank"],
+        outDir: dir,
+      } satisfies StageIO;
+
+      await stageP5(io);
+
+      expect(call).toMatchObject({
+        model: MODELS.codexPresentationReview,
+        reasoningEffort: "high",
+        leanLsp: false,
+      });
+      expect(MODELS.codexPresentationReview).toBe(
+        process.env.CAUSALEAN_MODEL_CODEX_PRESENT_REVIEW?.trim() || "gpt-5.6-sol",
+      );
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

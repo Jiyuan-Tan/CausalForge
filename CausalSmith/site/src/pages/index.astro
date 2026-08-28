@@ -67,8 +67,9 @@ const listed = flagship ? bundles.slice(1) : bundles;
             <span class="wp-id">{flagship.meta.wp_number ?? flagship.id} · {flagship.meta.area} · {flagship.meta.created}</span>
             <span class="badge badge-verified" title={verifiedBadge(flagship)}>✓ verified in Lean 4</span>
             {typeof flagship.meta.score === "number" && (
-              <span class="badge score-badge" title={flagship.meta.score_rationale ?? undefined}>self-reported score {flagship.meta.score}/10</span>
+              <span class="badge score-badge" title={flagship.meta.score_rationale ?? undefined}>AI reviewer score {flagship.meta.score}/10</span>
             )}
+            <span class="badge rating-badge" data-rating-for={flagship.id} hidden></span>
           </div>
           {flagship.meta.tldr && <p class="wp-tldr" set:html={renderTexLine(flagship.meta.tldr)} />}
           <div class="wp-actions">
@@ -87,15 +88,19 @@ const listed = flagship ? bundles.slice(1) : bundles;
       {listed.length > 1 && (
         <div class="wp-controls" role="group" aria-label="Sort papers">
           <span class="wp-controls-label">Sort:</span>
-          <button type="button" class="wp-sort-btn is-active" data-sort="score">Score</button>
+          <button type="button" class="wp-sort-btn is-active" data-sort="score">AI score</button>
+          <button type="button" class="wp-sort-btn" data-sort="readers" title="Average reader star rating, best first">Reader rating</button>
           <button type="button" class="wp-sort-btn" data-sort="cluster">Cluster</button>
           <button type="button" class="wp-sort-btn" data-sort="date" title="First published, newest first">Date</button>
         </div>
       )}
       {listed.length > 0 && (
         <p class="wp-score-note">
-          The self-reported score is a single automated referee's estimate — it can be inaccurate
-          and is intended only as a rough reference, not a peer-review verdict.
+          The <strong>AI reviewer score</strong> (0–10) is a single automated referee's estimate,
+          produced by the pipeline's review stage — it can be inaccurate and is intended only as a
+          rough reference, not a peer-review verdict. The <strong>reader rating</strong> (1–5 ★) is
+          the average of star ratings left by signed-in readers, on each paper and on individual
+          statements within it.
         </p>
       )}
 
@@ -107,8 +112,9 @@ const listed = flagship ? bundles.slice(1) : bundles;
             <span class="wp-id">{b.meta.wp_number ?? b.id} · {b.meta.area} · {b.meta.created}</span>
             <span class="badge badge-verified" title={verifiedBadge(b)}>✓ verified in Lean 4</span>
             {typeof b.meta.score === "number" && (
-              <span class="badge score-badge" title={b.meta.score_rationale ?? undefined}>self-reported score {b.meta.score}/10</span>
+              <span class="badge score-badge" title={b.meta.score_rationale ?? undefined}>AI reviewer score {b.meta.score}/10</span>
             )}
+            <span class="badge rating-badge" data-rating-for={b.id} hidden></span>
           </div>
           {b.meta.tldr && <p class="wp-tldr" set:html={renderTexLine(b.meta.tldr)} />}
           <div class="wp-actions">
@@ -132,6 +138,8 @@ const listed = flagship ? bundles.slice(1) : bundles;
     </div>
 
     <script>
+      import { paperAverages } from "../scripts/ratings/api.js";
+
       // Client-side reorder of the working-paper list. Server renders it score-desc
       // (best first); "Cluster" regroups by area with a heading per cluster, score-desc
       // within each. appendChild MOVES the existing nodes, so <details> open-state and
@@ -141,6 +149,8 @@ const listed = flagship ? bundles.slice(1) : bundles;
         const entries = Array.from(list.querySelectorAll(".wp-entry"));
         const btns = Array.from(document.querySelectorAll(".wp-sort-btn"));
         const score = (el) => Number(el.getAttribute("data-score"));
+        // Average reader stars, hydrated below; unrated papers sort last.
+        const human = (el) => Number(el.getAttribute("data-human") ?? -1);
         const area = (el) => el.getAttribute("data-area") || "";
         const created = (el) => el.getAttribute("data-created") || "";
         const clearHeads = () => list.querySelectorAll(".cluster-head").forEach((h) => h.remove());
@@ -149,6 +159,14 @@ const listed = flagship ? bundles.slice(1) : bundles;
           entries
             .slice()
             .sort((a, b) => score(b) - score(a))
+            .forEach((e) => list.appendChild(e));
+        };
+        // Reader rating, best first; ties (and the unrated tail) fall back to AI score.
+        const byReaders = () => {
+          clearHeads();
+          entries
+            .slice()
+            .sort((a, b) => human(b) - human(a) || score(b) - score(a))
             .forEach((e) => list.appendChild(e));
         };
         // Timeline: first-published (meta.created, an ISO date so string order is
@@ -181,8 +199,50 @@ const listed = flagship ? bundles.slice(1) : bundles;
           btn.addEventListener("click", () => {
             const mode = btn.getAttribute("data-sort");
             btns.forEach((b) => b.classList.toggle("is-active", b === btn));
-            mode === "cluster" ? byCluster() : mode === "date" ? byDate() : byScore();
+            mode === "cluster"
+              ? byCluster()
+              : mode === "date"
+                ? byDate()
+                : mode === "readers"
+                  ? byReaders()
+                  : byScore();
           });
+        }
+      }
+
+      // Reader-rating badges, filled from the worker after render. Static pages
+      // cannot know live averages, so every badge starts hidden and the page is
+      // exactly what it was before ratings existed when the fetch fails or no
+      // worker is configured.
+      {
+        const worker = (import.meta.env.PUBLIC_COMMENTS_WORKER ?? "").trim().replace(/\/+$/, "");
+        const badges = Array.from(document.querySelectorAll("[data-rating-for]"));
+        if (worker && badges.length > 0) {
+          const ids = badges
+            .map((b) => b.getAttribute("data-rating-for"))
+            .filter((id) => typeof id === "string" && id.length > 0);
+          paperAverages(worker, [...new Set(ids)])
+            .then((avgs) => {
+              // The worker answered, so every badge shows SOMETHING: an average,
+              // or an explicit muted "not yet rated" (the storefront convention —
+              // an empty star, never a fake 0/5, which would read as the worst
+              // possible score rather than the absence of one).
+              for (const badge of badges) {
+                const stat = avgs[badge.getAttribute("data-rating-for") ?? ""];
+                if (stat) {
+                  badge.textContent = `★ ${stat.avg}/5 · ${stat.count} reader${stat.count === 1 ? "" : "s"}`;
+                  const entry = badge.closest(".wp-entry");
+                  if (entry) entry.setAttribute("data-human", String(stat.avg));
+                } else {
+                  badge.textContent = "☆ not yet rated";
+                  badge.classList.add("rating-badge-empty");
+                }
+                badge.hidden = false;
+              }
+            })
+            .catch(() => {
+              /* badges simply stay hidden */
+            });
         }
       }
     </script>

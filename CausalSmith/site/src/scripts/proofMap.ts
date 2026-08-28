@@ -52,6 +52,14 @@ import {
   withdrawAttestation,
   type Attestation,
 } from "./proofmap/attest.js";
+import {
+  clearRating,
+  listRatings,
+  summarize,
+  writeRating,
+  type RatingRow,
+} from "./ratings/api.js";
+import { renderStars } from "./ratings/stars.js";
 
 interface MapNode {
   id: string;
@@ -84,6 +92,11 @@ interface Ui {
   coverage: HTMLElement;
   coverageBar: HTMLElement;
   coverageTxt: HTMLElement;
+  /** Star-rating slots. OPTIONAL — an older cached page may lack the markup,
+   *  and the map must keep working without it. */
+  rate: HTMLElement | null;
+  rateStars: HTMLElement | null;
+  rateStatus: HTMLElement | null;
 }
 
 interface State {
@@ -105,12 +118,16 @@ interface State {
   order: string[];
   /** objId → the readers who attested it. Empty until (and unless) the worker answers. */
   marks: Map<string, Attestation[]>;
+  /** Star ratings, one flat row list; summarized per selected statement. */
+  ratings: RatingRow[];
   token: string | null;
   viewer: { login: string; avatarUrl: string } | null;
   busy: boolean;
+  ratingBusy: boolean;
   /** The verification line under the button, held here so a late-arriving load
    *  cannot repaint over the reader's own result. */
   status: string;
+  ratingStatus: string;
 }
 
 /** Readers shown by avatar AND named in the verify line; the rest fold into "and N more". */
@@ -217,7 +234,13 @@ function queryUi(): Ui | null {
   };
   if (!svg || !marks) return null;
   for (const v of Object.values(parts)) if (!v) return null;
-  return { svg, marks, ...(parts as Required<typeof parts>) } as Ui;
+  // Rating slots are additive and tolerated absent (stale cached markup).
+  const rating = {
+    rate: el("pm-rate"),
+    rateStars: el("pm-stars"),
+    rateStatus: el("pm-rate-status"),
+  };
+  return { svg, marks, ...(parts as Required<typeof parts>), ...rating } as Ui;
 }
 
 function boot(): void {
@@ -238,10 +261,13 @@ function boot(): void {
     hovered: null,
     order: [],
     marks: new Map(),
+    ratings: [],
     token: data.worker ? auth.readToken() : null,
     viewer: null,
     busy: false,
+    ratingBusy: false,
     status: "",
+    ratingStatus: "",
   };
 
   wireChips(state);
@@ -619,7 +645,9 @@ function showPreview(state: State, node: MapNode, rebuild: boolean): void {
   renderChips(state, ui.cites, node.cites);
   renderChips(state, ui.citedBy, node.citedBy);
   setStatus(state, "");
+  setRatingStatus(state, "");
   renderAttest(state, node);
+  renderRate(state, node);
 }
 
 function renderChips(state: State, host: HTMLElement, ids: string[]): void {
@@ -688,13 +716,13 @@ function renderAttest(state: State, node: MapNode): void {
 }
 
 async function loadMarks(state: State): Promise<void> {
-  try {
-    const list = await listAttestations(state.worker, state.paperId);
-    state.marks = groupByObj(list);
-  } catch {
-    // A dead endpoint leaves the map fully usable; only the counts are missing.
-    state.marks = new Map();
-  }
+  const [attRes, ratRes] = await Promise.allSettled([
+    listAttestations(state.worker, state.paperId),
+    listRatings(state.worker, state.paperId),
+  ]);
+  // A dead endpoint leaves the map fully usable; only the counts are missing.
+  state.marks = attRes.status === "fulfilled" ? groupByObj(attRes.value) : new Map();
+  state.ratings = ratRes.status === "fulfilled" ? ratRes.value : [];
   if (state.token) await loadViewer(state);
   refreshMarks(state);
 }
@@ -741,7 +769,10 @@ function refreshMarks(state: State): void {
   ui.coverageTxt.textContent = `${covered}/${total} ✓`;
 
   const node = state.selected ? state.nodes.get(state.selected) : null;
-  if (node && !ui.card.hidden) renderAttest(state, node);
+  if (node && !ui.card.hidden) {
+    renderAttest(state, node);
+    renderRate(state, node);
+  }
 }
 
 /** Write the verification line, and remember it: every repaint replays it. */
@@ -767,6 +798,7 @@ async function onVerify(state: State): Promise<void> {
       setStatus(state, "Sign-in did not complete.");
     }
     renderAttest(state, node);
+    renderRate(state, node); // the star strip shares the token; keep it in step
     return;
   }
 
@@ -798,5 +830,112 @@ async function onVerify(state: State): Promise<void> {
     state.busy = false;
     refreshMarks(state);
     renderAttest(state, node);
+  }
+}
+
+/* ── Statement star ratings ──────────────────────────────────────────────── */
+
+/** Same holds-across-repaints contract as the verification line. */
+function setRatingStatus(state: State, message: string): void {
+  state.ratingStatus = message;
+  if (state.ui.rateStatus) state.ui.rateStatus.textContent = message;
+}
+
+/** Fill (or hide) the star strip for the selected statement. */
+function renderRate(state: State, node: MapNode): void {
+  const { ui } = state;
+  if (!ui.rate || !ui.rateStars) return; // stale markup without the slots
+  if (!state.worker) {
+    ui.rate.hidden = true;
+    return;
+  }
+  ui.rate.hidden = false;
+  if (ui.rateStatus) ui.rateStatus.textContent = state.ratingStatus;
+  renderStars(ui.rateStars, {
+    summary: summarize(state.ratings, state.viewer?.login ?? null).get(node.id) ?? null,
+    signedIn: !!state.token,
+    busy: state.ratingBusy,
+    noun: "statement",
+    onRate: (n) => void onRateStatement(state, n),
+    // Already signed in → no re-render: it would kill the pulse and drop the
+    // keyboard focus the CTA click just placed on the stars.
+    onCta: () => {
+      if (state.ratingBusy || state.token) return;
+      void ensureRatingSignIn(state).then((ok) => {
+        if (ok && state.selected === node.id) {
+          renderRate(state, node);
+          renderAttest(state, node); // the verify button shares the token
+        }
+      });
+    },
+  });
+}
+
+/** Sign the viewer in if needed. True when a token is held afterwards. */
+async function ensureRatingSignIn(state: State): Promise<boolean> {
+  if (state.token) return true;
+  setRatingStatus(state, "Opening GitHub…");
+  try {
+    const token = await auth.signIn(state.worker);
+    state.token = token; // before writeToken: its broadcast must find us in sync
+    auth.writeToken(token);
+    await loadViewer(state);
+    setRatingStatus(state, "Signed in.");
+    return true;
+  } catch {
+    setRatingStatus(state, "Sign-in did not complete.");
+    return false;
+  }
+}
+
+/** Replace the viewer's own row for one statement locally (null removes it). */
+function adoptOwnRating(state: State, objId: string, stars: number | null): void {
+  const login = state.viewer?.login;
+  if (!login) return;
+  state.ratings = state.ratings.filter((r) => !(r.target === objId && r.login === login));
+  if (stars !== null) {
+    state.ratings.push({ target: objId, login, avatarUrl: null, stars });
+  }
+}
+
+async function onRateStatement(state: State, stars: number): Promise<void> {
+  const id = state.selected;
+  const node = id ? state.nodes.get(id) : null;
+  if (!node || !state.worker || state.ratingBusy) return;
+  // Busy BEFORE the sign-in await: repeated clicks while the popup is open
+  // must not start concurrent sign-in/write flows.
+  state.ratingBusy = true;
+  renderRate(state, node);
+
+  if (!(await ensureRatingSignIn(state))) {
+    state.ratingBusy = false;
+    if (state.selected === node.id) renderRate(state, node);
+    return;
+  }
+  setRatingStatus(state, "");
+  if (state.selected === node.id) renderAttest(state, node); // verify button shares the token
+
+  const mine =
+    summarize(state.ratings, state.viewer?.login ?? null).get(node.id)?.mine ?? null;
+  try {
+    if (mine === stars) {
+      await clearRating(state.worker, state.paperId, node.id, state.token!);
+      adoptOwnRating(state, node.id, null);
+      setRatingStatus(state, "Rating withdrawn.");
+    } else {
+      await writeRating(state.worker, state.paperId, node.id, stars, state.token!);
+      adoptOwnRating(state, node.id, stars);
+      setRatingStatus(state, "");
+    }
+  } catch (err) {
+    const detail = err instanceof Error && err.message ? ` (${err.message.slice(0, 120)})` : "";
+    setRatingStatus(state, `Could not save that${detail}.`);
+  } finally {
+    state.ratingBusy = false;
+    // Only repaint if this statement is still the one on the card — the
+    // selection may have moved during the awaits, and statement A's stars must
+    // not land under statement B's heading. `refreshMarks` on the next load
+    // reconciles the counts either way.
+    if (state.selected === node.id) renderRate(state, node);
   }
 }

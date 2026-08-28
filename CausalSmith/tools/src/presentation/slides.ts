@@ -114,20 +114,32 @@ function normalizeObjId(raw: string): string {
  *   - every directive resolves to a formal-layer block;
  *   - every theorem block appears on some slide (formal or informal) — the deck may
  *     not silently drop a main result;
- *   - no model-authored displayed math (`$$`, `\[`, `\begin{align…}`) — displayed math
- *     enters only through `@formal` injection;
+ *   - no model-COMPOSED displayed math: `$$`/`\begin{align…}` are always rejected, and
+ *     a `\[…\]` display in prose must be a VERBATIM copy (whitespace-insensitive) from
+ *     `verbatimCorpus` (formal bodies + paper sections) — captions and @informal
+ *     headlines stay inline-only;
+ *   - no bare-@formal slide: a formal block needs at least one framing prose/@informal
+ *     line on its slide;
+ *   - authors' voice: prose never says "the paper" (write "we");
  *   - `@informal` headlines are non-empty;
  *   - deck shape: 8–18 slides for a 15–20 minute talk;
  *   - affirmative contribution framing (reused P4 lint) over the prose.
  */
-export function lintSlides(doc: SlidesDoc, formalBlocks: FormalBlockRef[]): LintProblem[] {
+export function lintSlides(
+  doc: SlidesDoc,
+  formalBlocks: FormalBlockRef[],
+  verbatimCorpus = "",
+): LintProblem[] {
   const problems: LintProblem[] = [];
   const known = new Set(formalBlocks.map((b) => b.obj_id));
   const referenced = new Set<string>();
   let proseAll = "";
   let figures = 0;
-  const displayedMath = (s: string): boolean =>
-    /\$\$|\\\[|\\begin\{(align|equation|gather|multline)/.test(s);
+  const composedMath = (s: string): boolean =>
+    /\$\$|\\begin\{(align|equation|gather|multline|flalign|eqnarray|displaymath)/.test(s);
+  const displayedMath = (s: string): boolean => composedMath(s) || /\\\[/.test(s);
+  const squash = (s: string): string => s.replace(/\s+/g, "");
+  const corpus = squash(verbatimCorpus);
   for (const [i, slide] of doc.slides.entries()) {
     const where = `slide ${i + 1} ("${slide.title}")`;
     // The prompt permits an open-directions/limitations slide when the paper
@@ -139,11 +151,45 @@ export function lintSlides(doc: SlidesDoc, formalBlocks: FormalBlockRef[]): Lint
     for (const block of slide.blocks) {
       if (block.kind === "prose") {
         if (!limitationsSlide) proseAll += block.md + "\n";
-        if (displayedMath(block.md)) {
+        if (composedMath(block.md)) {
           problems.push({
             gate: "slides-displayed-math",
-            detail: `${where}: displayed math in authored prose — formal content must enter via @formal <obj_id>`,
+            detail: `${where}: $$…$$/align displayed math in authored prose — use \\[…\\] copied verbatim from the paper, or @formal <obj_id>`,
           });
+        }
+        const displayPairs = [...block.md.matchAll(/\\\[([\s\S]*?)\\\]/g)];
+        if ((block.md.match(/\\\[/g) ?? []).length !== displayPairs.length) {
+          problems.push({
+            gate: "slides-displayed-math",
+            detail: `${where}: unmatched \\[ in prose — every display must be a complete \\[…\\] pair`,
+          });
+        }
+        for (const m of displayPairs) {
+          // Substring laundering guard: a display must be a real formula (some
+          // math structure, non-trivial length), not a prose fragment that
+          // happens to occur in the corpus — and then a verbatim corpus copy.
+          const content = squash(m[1]);
+          const formulaLike = content.length >= 3 && /[\\=<>^_]|\d/.test(content);
+          // Boundary-aware match: some corpus occurrence must not continue into
+          // an alphanumeric on either side, so \[x=1\] cannot launder off x=10.
+          const isBoundary = (ch: string | undefined) => ch === undefined || !/[0-9a-zA-Z]/.test(ch);
+          let verbatim = false;
+          // Guarded by formulaLike: indexOf("") clamps at corpus.length and
+          // would spin forever on an empty display.
+          if (formulaLike) {
+            for (let i = corpus.indexOf(content); i >= 0; i = corpus.indexOf(content, i + 1)) {
+              if (isBoundary(corpus[i - 1]) && isBoundary(corpus[i + content.length])) {
+                verbatim = true;
+                break;
+              }
+            }
+          }
+          if (!formulaLike || !verbatim) {
+            problems.push({
+              gate: "slides-display-not-verbatim",
+              detail: `${where}: the display equation \\[${m[1].trim().slice(0, 60)}…\\] is not a verbatim copy of a formal-catalog body or paper-section formula — copy a real formula exactly, never compose or simplify displayed math`,
+            });
+          }
         }
         if (/^@(formal|informal|figure)\b/m.test(block.md)) {
           problems.push({
@@ -206,6 +252,31 @@ export function lintSlides(doc: SlidesDoc, formalBlocks: FormalBlockRef[]): Lint
           }
         }
       }
+    }
+    // A verbatim theorem dump with no framing reads as a wall: every @formal
+    // needs at least one plain-language line (prose or @informal) on its slide.
+    if (
+      slide.blocks.some((b) => b.kind === "formal") &&
+      !slide.blocks.some((b) => b.kind === "prose" || b.kind === "informal")
+    ) {
+      problems.push({
+        gate: "slides-bare-formal",
+        detail: `${where}: a @formal block stands alone — add at least one plain-language line saying what the statement delivers`,
+      });
+    }
+    // Speaker voice: a deck narrated as "the paper does X" reads as a book
+    // report about someone else's work; the authors say "we".
+    const spoken = [
+      slide.title,
+      ...slide.blocks.map((b) =>
+        b.kind === "prose" ? b.md : b.kind === "informal" ? b.text : b.kind === "figure" ? b.caption : "",
+      ),
+    ].join("\n");
+    if (/\bthe paper('s)?\b/i.test(spoken)) {
+      problems.push({
+        gate: "slides-voice",
+        detail: `${where}: says "the paper" — write in the authors' voice (we/us/our)`,
+      });
     }
   }
   for (const b of formalBlocks) {

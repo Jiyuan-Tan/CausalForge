@@ -11,6 +11,7 @@ import type { ReviewFinding } from "../revision_brief.js";
 import { buildVerificationContract } from "../verification_contract.js";
 import { loadBankNarrative } from "../bank.js";
 import { findingFingerprint } from "../revision_routing.js";
+import { MODELS } from "../../models.js";
 
 interface Review {
   recommendation: "accept" | "minor_revision" | "major_revision" | "reject";
@@ -110,6 +111,7 @@ export async function stageP5(io: StageIO): Promise<void> {
     cwd: io.ctx.repoRoot,
     reasoningEffort: "high",
     leanLsp: false,
+    model: MODELS.codexPresentationReview,
   });
   const parsed = parseJsonLoose(stdout);
   const shaped = ReviewSchema.safeParse(parsed);

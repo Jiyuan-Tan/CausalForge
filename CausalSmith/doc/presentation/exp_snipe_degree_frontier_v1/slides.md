@@ -1,158 +1,165 @@
-# Minimax Risk Under Network Interference
+# Minimax Error for Network Interference
 
-Under fixed interaction order and common Bernoulli assignment, the minimax MSE for the all-treated-versus-all-control effect is governed by one local score energy and one graph-overlap charge.
-
----
-
-## The paper identifies the design cost of network interference
-
-- The target is \(\tau_n\), the finite-population all-treated-versus-all-control average effect.
-- Outcomes may depend on neighbors' assignments through a known directed graph.
-- Each neighborhood has degree at most \(d\), and each assignment can affect at most \(d\) outcomes.
-- Potential outcomes are low-order polynomials with interaction order \(\beta\).
-- The minimax MSE scale is \(B^2\min\{1,dA_d/n\}\).
-- Equivalently, for fixed \((\beta,p)\), the scale is \(B^2\min\{1,d\binom d{k_\star(d,\beta,p)}/n\}\).
+We characterize the design-based minimax mean squared error for total treatment effects under known bounded-degree, low-order network interference and Bernoulli assignment.
 
 ---
 
-## A simple experiment already shows the difficulty
+## Overview
 
-- Imagine a product experiment where each user is treated independently with probability \(p\).
-- A user's outcome can depend on the user's own treatment and up to \(d-1\) neighbors' treatments.
-- The estimand compares the world where everyone is treated with the world where everyone is controlled.
-- The realized experiment observes only one mixed-treatment assignment.
-- The question is: how much Bernoulli variation is enough to estimate the full-population contrast?
+- We study the all-treated-versus-all-control effect \(\tau_n\), the finite-population average contrast between assigning everyone treatment and assigning everyone control.
+- Outcomes may depend on neighbors' assignments through a low-order polynomial.
+- The graph is known, and both in-degree and out-degree are bounded by \(d\).
+- The treatment design is independent Bernoulli with common probability \(p\).
+- The minimax mean squared error is governed by one local energy \(A_d\) and one graph-overlap charge \(d\).
 
-@figure experiment-to-target: A box-and-arrow schematic with boxes labeled Bernoulli assignment, network neighborhoods, observed outcomes, and all-treated-versus-all-control target.
-
----
-
-## The graph contributes an overlap charge
-
-- The in-degree bound says each outcome uses at most \(d\) assignment coordinates.
-- The out-degree bound says each assignment coordinate can enter at most \(d\) outcomes.
-- Variance grows when two unit-level scores share assignment coordinates.
-- The paper's overlap count turns this graph fact into one extra factor of \(d\).
-- The remaining difficulty is local: estimating one neighborhood's all-treated-versus-all-control contrast.
+@informal thm:degree-frontier: Under fixed \(\beta\ge1\) and \(0<p<1\), clipped SNIPE attains the coefficient-mass minimax risk up to constants depending only on \((\beta,p)\).
 
 ---
 
-## The design and graph assumptions fix the probability law
+## Motivation
 
-@formal ass:bernoulli-design
-
-@formal ass:bounded-degree
-
----
-
-## The outcome model fixes the local complexity
-
-@formal ass:low-order
-
-@formal ass:bounded-coefficient-mass
-
-- \(B\) is the unitwise coefficient-mass radius.
-- In the running experiment, \(\beta=1\) allows own and neighbor main effects; larger fixed \(\beta\) allows low-order interactions among treated neighbors.
-- The all-treated-versus-all-control effect \(\tau_n\) averages the contrast \(Y_i(\mathbf 1)-Y_i(\mathbf 0)\) across units.
+- Network experiments often target a total treatment effect, not only a direct effect.
+- Under interference, one unit's outcome can depend on many assignments.
+- Bernoulli assignment gives variation in many local exposure patterns, but those patterns are reused across overlapping neighborhoods.
+- The practical question is: how much precision is possible when the graph is known and interference is low order?
+- The answer matters for design planning: the degree \(d\) controls the finite-population price of interference.
 
 ---
 
-## The exposed order is what Bernoulli assignment can see
+## Running example
 
-- \(\Delta_r(p)\), the order-\(r\) Bernoulli contrast coefficient, tells whether an \(r\)-way centered monomial contributes to the target contrast.
-- \(\bar\beta_d=\min\{\beta,d\}\) is the largest interaction order available inside a degree-\(d\) neighborhood.
-- \(k_\star(d,\beta,p)\) is the largest available order with nonzero Bernoulli contrast.
-- The local score energy \(A_d\) is comparable to \(\binom d{k_\star(d,\beta,p)}\) for fixed \((\beta,p)\).
-
-@formal def:exposed-order
-
----
-
-## SNIPE estimates the target by matching centered contrasts
-
-- Mechanism: SNIPE weights each observed outcome by centered neighborhood monomials up to order \(\bar\beta_d\), scaled by the corresponding Bernoulli contrasts.
-- The unprojected estimator is design-unbiased on the low-order model classes.
-- The clipped estimator projects the SNIPE average back to the natural bounded range.
-- The central question becomes whether clipped SNIPE has the best possible worst-case MSE.
-
-@figure snipe-pipeline: A box-and-arrow schematic with boxes labeled observed assignment and outcomes, centered neighborhood score, SNIPE average, clipped estimate, and total-effect target.
+- Think of a platform experiment where each user is treated independently.
+- A user's outcome can depend on their own assignment and on treated neighbors.
+- Low-order interference means we allow individual and pairwise, or more generally fixed-order, neighborhood interactions.
+- Bounded degree means each user has at most \(d\) relevant neighbors and can affect at most \(d\) outcomes.
+- The estimand asks for the average change between turning treatment on for everyone and turning it off for everyone.
 
 ---
 
-## The main frontier matches upper and lower bounds
+## Setup
 
-@informal thm:degree-frontier: Under fixed \(\beta\ge1\), \(0<p<1\), \(d\le n\), and \(B\ge0\), the coefficient-mass minimax risk is between constants times \(B^2\min\{1,d\binom d{k_\star(d,\beta,p)}/n\}\), and clipped SNIPE attains the upper bound.
+- \(V_n\) is the finite population, and \(Z_j\) is unit \(j\)'s Bernoulli treatment assignment.
+- \(N_i\) is the directed interference neighborhood of unit \(i\).
+- \(Y_i(z)\) is a polynomial in assignments inside \(N_i\), with interaction order at most \(\beta\).
+- \(B\) is the radius of the bounded coefficient-mass or bounded-outcome class.
+- \(\tau_n\) is the all-treated-versus-all-control total treatment effect.
+- Risk averages over the random assignment, with the graph and potential outcomes fixed.
+
+---
+
+## Assumptions
+
+- Common-probability Bernoulli assignment: units are independently treated with probability \(p\in(0,1)\).
+- Bounded interference degree: every neighborhood has size at most \(d\), and every assignment coordinate enters at most \(d\) neighborhoods.
+- Low-order outcomes: only monomials of degree at most \(\beta\) enter each potential outcome.
+- Coefficient-mass envelope: each unit's polynomial coefficients have total absolute mass at most \(B\).
+- In the running example, \(d\) is the maximum measured local spillover degree, and \(\beta\) is the modeled interaction complexity.
+
+---
+
+## SNIPE mechanism
+
+- SNIPE is the low-order polynomial interference estimator of Cortez-Rodriguez et al. (2023).
+- Mechanism: for each unit, weight the observed outcome by centered Bernoulli monomials over its neighborhood.
+- The score is calibrated so its design expectation recovers the all-treated-versus-all-control contrast for every low-order monomial.
+- The clipped version projects the estimate into the natural bounded range.
+- Clipping is what lets the same estimator cover the saturated minimax branch.
+
+@figure estimator-pipeline: Box-and-arrow schematic from known neighborhoods and observed outcomes through centered Bernoulli monomial scores and the score energy \(A_d\) to the weighted SNIPE average, clipping, and the worst-case MSE question.
+
+---
+
+## Key idea
+
+- The local difficulty is summarized by the complete-block score energy \(A_d\).
+- \(A_d\) measures how much Bernoulli variation is needed to extract the all-treated-versus-all-control contrast inside one \(d\)-unit neighborhood.
+- The global difficulty adds one graph charge: an assignment coordinate can appear in up to \(d\) unit-level scores.
+- The exposed order \(k_\star(d,\beta,p)\) is the largest interaction order with nonzero Bernoulli contrast.
+- For fixed \((\beta,p)\), the frontier is the local exposed-interaction count times the overlap charge.
+
+@informal lem:block-energy-representer: The complete-block energy is comparable to the exposed binomial term, and the normalized block representer solves the local contrast problem.
+
+---
+
+## Related literature
+
+- Horvitz and Thompson (1952), Rubin (1978), and Imbens and Rubin (2015) provide the finite-population design-based language.
+- Manski (1993), Sobel (2006), Hudgens and Halloran (2008), and Aronow and Samii (2017) develop core interference frameworks.
+- Leung (2022), Sävje et al. (2021), Hu et al. (2022), and Gao and Ding (2025) emphasize local interference, exposure, and graph-aware design.
+- Cortez-Rodriguez et al. (2023) introduce and analyze SNIPE for low-order neighborhood interference under Bernoulli assignment.
+- Our contribution gives the bounded-class minimax calibration for this known-graph, low-order Bernoulli setting.
+
+---
+
+## Main result I
+
+@informal thm:degree-frontier: Over the coefficient-mass class, the minimax mean squared error is between constant multiples of the exposed-binomial scale, and clipped SNIPE attains the upper bound.
 
 @formal thm:degree-frontier
 
 ---
 
-## The rate has a local factor and a network factor
+## Reading the rate
 
-- \(A_d\) is the local Bernoulli score energy for one complete \(d\)-neighborhood.
-- \(d\) is the global overlap charge from shared assignment coordinates across unit scores.
-- \(n^{-1}\) is the population averaging gain.
-- Projection gives the saturated branch \(B^2\) when the linear variance scale is large.
-- In the running first-order fair-coin example, the frontier becomes \(B^2\min\{1,d^2/n\}\).
-
----
-
-## Complete blocks calibrate the lower bound
-
-- The least-favourable construction partitions active units into complete directed \(d\)-blocks.
-- Inside each block, every active unit has the same full \(d\)-coordinate neighborhood.
-- The perturbation direction is the normalized block representer \(h_d\).
-- The two signed block priors separate the total effect by \(\rho\delta\) while keeping Hellinger distance controlled by \(A_d/m\).
-- This produces the same \(dA_d/n\) scale as the SNIPE upper bound.
+- The coefficient-mass frontier has scale \(B^2\) times a design difficulty term.
+- The term \(A_d\) is local: it comes from one complete \(d\)-block.
+- The extra \(d\) is global: it counts possible overlap among neighborhoods.
+- The exposed-binomial form replaces \(A_d\) by the number of visible interaction subsets at order \(k_\star(d,\beta,p)\).
+- In the running example, more local spillover links raise error through both more local interactions and more shared assignment coordinates.
 
 ---
 
-## Bounded outcomes have the same degree dependence
+## Main result II
 
-@informal thm:bounded-outcome-degree-frontier: Under fixed \(\beta\ge1\), \(0<p<1\), \(d\le n\), and \(B\ge0\), the coefficient-mass and uniformly bounded-outcome minimax risks share the scale \(B^2\min\{1,dA_d/n\}\), and the bounded-outcome clipped SNIPE estimator attains the upper bound.
+@informal thm:bounded-outcome-degree-frontier: The uniformly bounded-outcome class has the same minimax degree dependence as the coefficient-mass class, and its clipped SNIPE estimator attains the rate up to constants depending only on \((\beta,p)\).
 
 @formal thm:bounded-outcome-degree-frontier
 
 ---
 
-## Complete blocks give an exact SNIPE variance benchmark
+## Complete blocks
 
-- When \(d\mid n\), there are \(m=n/d\) complete directed blocks.
-- On these blocks, canonical unprojected SNIPE has exact worst-case MSE \(B^2A_d/m\).
-- The same value equals \(B^2dA_d/n\).
-- This exact calculation explains why the global upper and lower bounds use the same block energy.
+- Complete directed \(d\)-blocks are the hardest local graph shape used in the lower bound.
+- Inside a block, every active unit has the full \(d\)-coordinate neighborhood.
+- The least-favourable construction perturbs coefficients along the normalized block representer.
+- The two signed perturbations separate the total effect while keeping the induced laws close.
+- When \(d\mid n\), the same blocks give an exact worst-case risk for unprojected SNIPE.
+
+@figure block-construction: Box-and-arrow schematic from complete directed blocks to representer perturbations, then signed priors, then separated total effects with close assignment laws.
 
 ---
 
-## Local linear weights have an exact block value
+## Local linear benchmark
 
-@informal thm:sharp-local-linear-constant-and-representers: On fixed complete directed \(d_t\)-block graphs with product Bernoulli assignment and coefficient-mass radius \(B>0\), the minimax risk over block-local design-unbiased linear estimators equals \(B^2A_{d_t}/m_t=B^2d_tA_{d_t}/n_t\).
+@informal thm:sharp-local-linear-constant-and-representers: On fixed complete directed block graphs, the minimax risk over block-local design-unbiased linear estimators is exactly \(B^2A_{d_t}/m_t\).
 
 @formal thm:sharp-local-linear-constant-and-representers
 
 ---
 
-## Fair coins expose odd orders
+## Fair coin
 
-@informal thm:fair-coin-energy-frontier: For \(p=1/2\), even-order Bernoulli contrasts vanish, \(A_d=4\sum_{1\le r\le\bar\beta_d,\ r\text{ odd}}\binom dr\), and the first-order frontier is between constants times \(B^2\min\{1,d^2/n\}\).
+@informal thm:fair-coin-energy-frontier: For \(p=1/2\), even-order Bernoulli contrasts vanish, and first-order interference has minimax risk at most and at least constant multiples of \(B^2\min\{1,d^2/n\}\).
 
 @formal thm:fair-coin-energy-frontier
 
 ---
 
-## The proof rests on three finite-population facts
+## Proof sketch
 
-- Orthogonality: centered Bernoulli monomials make the SNIPE score recover the all-treated-versus-all-control contrast.
-- Overlap counting: bounded out-degree limits how many score covariances can share a treatment subset.
-- Block calibration: complete directed blocks align neighborhoods so the representer energy \(A_d\) controls both separation and distinguishability.
-- Together, these facts match the clipped-SNIPE upper bound with the least-favourable lower bound.
+- Upper bound: SNIPE is design-unbiased because centered Bernoulli monomials are orthogonal across orders.
+- Variance bound: covariance terms appear only when neighborhoods share assignment coordinates.
+- Overlap count: bounded out-degree turns each order-\(r\) overlap into at most \(d\binom d r\) shared terms.
+- Lower bound: complete blocks align neighborhoods so the block representer creates the hardest local contrast.
+- Testing step: two signed block priors keep the observed-data laws close while moving \(\tau_n\) apart.
+- The same \(A_d\) appears in the estimator variance and in the lower-bound affinity.
 
 ---
 
-## The contribution is a minimax calibration for low-order interference
+## Takeaways
 
-- The paper characterizes the bounded-class design minimax MSE for total-effect estimation under known bounded-degree low-order polynomial interference.
-- The frontier is \(B^2\min\{1,dA_d/n\}\), equivalently \(B^2\min\{1,d\binom d{k_\star(d,\beta,p)}/n\}\) up to constants depending on \((\beta,p)\).
-- Clipped SNIPE attains the frontier over both coefficient-mass and uniformly bounded-outcome classes.
-- Complete directed blocks provide the matching lower-bound calibration and exact unprojected-SNIPE benchmark.
-- The local linear complete-block problem has exact value \(B^2A_{d_t}/m_t\).
+- We characterize the finite-population minimax mean squared error for known bounded-degree, low-order polynomial network interference under Bernoulli assignment.
+- The frontier is controlled by local block energy \(A_d\), exposed order \(k_\star(d,\beta,p)\), and one out-degree overlap charge \(d\).
+- Clipped SNIPE attains the bounded-class minimax rate over both coefficient-mass and uniformly bounded-outcome envelopes.
+- Complete directed blocks calibrate the lower bound, the exact unprojected SNIPE risk, and the local linear benchmark.
+- For fair coins and first-order interference, the frontier specializes to \(B^2\min\{1,d^2/n\}\) up to constants.

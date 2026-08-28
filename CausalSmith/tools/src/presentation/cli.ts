@@ -112,8 +112,8 @@ export async function runPresentationCli(argv: string[]): Promise<void> {
   const baseDeps: PaperDeps = {
     codexModel: MODELS.codexPresentation,
     runClaude: (args) => runClaude(args),
-    // Presentation work uses the dedicated 5.5 tier for literature breadth and
-    // journal-style prose. Individual stages still own their task-specific effort.
+    // Presentation authoring uses the dedicated 5.5 tier for literature breadth and
+    // journal-style prose. Individual stages may override it (P5 review uses Sol).
     // Env: CAUSALEAN_MODEL_CODEX_PRESENT.
     runCodex: (args) => runCodex({ cwd: args.cwd, prompt: args.prompt, reasoningEffort: args.reasoningEffort, leanLsp: args.leanLsp, webSearch: args.webSearch, model: args.model ?? MODELS.codexPresentation }),
     dryRun,

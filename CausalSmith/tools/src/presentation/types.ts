@@ -135,7 +135,7 @@ export const PaperMeta = z.object({
   wp_number: z.string().nullable(),
   // P5 referee's holistic overall score (0–10, one decimal) + one-line rationale.
   // Injected by P5 (after P4 emits meta); advisory — gates nothing. Drives the
-  // site's "self-reported score" badge and best-first ordering. null = unreviewed.
+  // site's "AI reviewer score" badge and best-first ordering. null = unreviewed.
   score: z.number().nullable().default(null),
   score_rationale: z.string().nullable().default(null),
 });
