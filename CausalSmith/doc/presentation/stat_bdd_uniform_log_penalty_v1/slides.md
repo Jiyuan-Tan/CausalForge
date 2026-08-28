@@ -1,174 +1,182 @@
-# Distance Is Data, and Data Have Limits
+# Uniform Risk from Distance Compression
 
-TL;DR: Distance-based boundary RD designs face expected sup-loss at least of order \(a_n=(\log n/n)^{1/4}\); signed-distance local polynomials match that scale under the paper’s stated analytic inputs.
-
----
-
-## Punchline
-
-- The paper studies what is statistically recoverable when boundary data are compressed to distances.
-- In the unsigned experiment, a rule sees \((Y_i,\|X_i-x\|_2)\) at each boundary query point \(x\).
-- The paper proves an unconditional logarithmic minimax lower bound over \(\mathcal P_{\mathrm{NP}}(L,q)\).
-- The bound holds even for point-indexed Borel rules, which may choose a different law-independent section at each \(x\).
-- In the signed known-geometry experiment, a stabilized local-polynomial estimator reaches the same \(a_n\) scale under \(\mathsf{AI}_{p,\nu,L}\): three CTY-style analytic inputs assumed here, not proved (spelled out later).
-- The destination: distance compression creates a uniform boundary-testing cost.
+Distance-only boundary rules incur expected sup-loss on the \(a_n=(\log n/n)^{1/4}\) scale; signed-distance local polynomials attain the same scale under the stated analytic inputs.
 
 ---
 
-## Why This Matters
+## The paper characterizes a boundary risk frontier
 
-- Boundary RD designs arise when treatment changes across a geographic or policy frontier.
-- Running example: households near a school-district boundary, with achievement as \(Y\) and assigned district as treatment.
-- Applied work often reduces two-dimensional location to distance from the border.
-- That reduction can be useful, but it changes the statistical experiment.
-- The question here is sharp: what uniform boundary risk follows from the distance information actually given to the rule?
+- Boundary RD asks for a curve of causal or regression quantities, not one cutoff value.
+- The loss is uniform: the rule is judged by its worst error along the boundary.
+- The paper studies what happens when two-dimensional location is compressed to distance from each query point.
+- In the unsigned experiment, distance compression creates a logarithmic minimax lower bound.
+- In the signed known-geometry experiment, the same scale is matched by a stabilized local-polynomial estimator conditional on \(\mathsf{AI}_{p,\nu,L}\).
 
----
-
-## Two Distance Experiments
-
-- Unsigned distance: the rule sees how far each observation is from \(x\), but not which direction or side it came from.
-- Signed distance: the rule sees distance with a sign determined by the known treatment side.
-- In the school-boundary example, unsigned distance forgets which district side a student lies on.
-- Signed distance keeps the side label and uses the known border geometry.
-- The paper analyzes both experiments under expected supremum loss over the boundary.
-
-@figure distance-experiments: A boundary point x on a treatment interface, with nearby observations collapsed either to unsigned radial distances or to signed distances by treatment side.
+@informal thm:cty-a1-a2-winsorized-matched-frontier: Under the stated signed-distance analytic inputs and envelope threshold, the signed-distance minimax outer risk is bounded above and below by constant multiples of \(a_n\).
 
 ---
 
-## Setup: Unsigned Boundary Regression
+## Distance is useful precisely because it throws information away
 
-- The target is the boundary regression curve \(x\mapsto\mu_P(x)\).
-- The law class \(\mathcal P_{\mathrm{NP}}(L,q)\) has compact bivariate support, bounded density, Hölder regression smoothness, and nondegenerate variance.
-- The frontier rate is \(a_n=(\log n/n)^{1/4}\), the normalization against which every risk statement here is measured.
-- A common-map rule applies one law-independent map to \(V_{n,P}(x)\) at every boundary point.
-- A point-indexed rule may choose a law-independent Borel section separately for each \(x\).
-- Both risks measure expected sup-loss along \(\operatorname{bd}(\mathcal X_P)\).
+- In geographic RD, distance to a boundary is a natural running variable.
+- But distance from a query point forgets angular location around that point.
+- Unsigned distance also forgets which treatment side generated an observation.
+- The statistical question is: what is the cost of using that compressed experiment for a whole boundary curve?
+- The answer is a uniform testing penalty on the \(a_n=(\log n/n)^{1/4}\) scale.
 
----
-
-## Setup: Signed Known-Geometry RD
-
-- The target is the treatment-effect curve \(\tau_P(x)\), the jump between arm-specific regression surfaces at the boundary point.
-- The known geometry \(G_P\) gives the support, assignment regions, common interface, Euclidean metric, and uniform kernel.
-- The signed-distance sample \(U^{\pm}_{n,P}(x)\) records outcomes and signed distances from \(x\).
-- The class \(\mathcal P_{12}(p,\nu,L)\) imposes smooth potential-outcome regressions, bounded density and variance, \(2+\nu\) moments, stable two-sided local mass, and stable Gram matrices.
-- In the school-boundary example, these assumptions say both sides of the border have enough nearby observations for uniformly stable local fits.
+@figure distance-compression: A box labeled bivariate observations points to a box labeled unsigned distances from query point and outcomes, which points to a box labeled boundary regression estimate.
 
 ---
 
-## The Estimator in One Sentence
+## The running example is a geographic boundary design
 
-- The signed upper bound uses degree-\(p\) local polynomials on signed distance.
-- Mechanism: fit each arm locally within bandwidth \(h\), use the uniform kernel, winsorize outcomes at \(B(h)=h^{-1/3}\), invert the empirical Gram matrix only when it is stable, and clip the final contrast.
-- The bandwidth used for the theorem is \(h_n=a_n\).
-- The design balances first-order bias of order \(h_n\) against uniform stochastic fluctuation of order \(\{\log(h_n^{-1})/(n h_n^2)\}^{1/2}\).
-- At \(h_n=a_n\), both terms sit on the \(a_n\) scale.
-
----
-
-## Key Idea
-
-- The hard part is uniform recovery over many boundary locations at once.
-- The construction puts many separated binary perturbations along the boundary.
-- At each active location, the two possible regression values differ by order \(a_n\).
-- Unsigned distance preserves radial information but washes out angular information.
-- A rule must decode many weakly distinguishable local bits from compressed observations.
-- That many-coordinate testing problem is where the logarithm enters.
-
-@figure boundary-hypercube: A square support with many separated boundary cells, each carrying one binary perturbation whose radial distance distribution is matched at its query point.
+- Think of a policy assigned on one side of a known municipal border.
+- Near any border point, local comparisons use observations close to that point.
+- With signed distance, an observation carries distance and policy side.
+- With unsigned distance, an observation carries distance but loses side and angle.
+- The paper separates these two information sets and evaluates uniform expected boundary error.
 
 ---
 
-## Where the Literature Stands
+## The unsigned experiment targets a regression boundary
 
-- Classical RD identifies treatment effects at scalar cutoffs and motivates local comparisons.
-- Geographic and boundary RD extend this logic to spatial assignment regions and interface-indexed estimands.
-- CTY develop distance-based identification and local-polynomial tools for boundary designs.
-- CTY’s unsigned common-map lower result gives an \(n^{-1/4}\) lower scale and conjectures the logarithmic strengthening.
-- This paper proves the logarithmic unsigned converse on the same law class and information set.
-- Conditional on three CTY-style analytic inputs, it also assembles a signed-distance expected-risk frontier.
+- The law class \(\mathcal P_{\mathrm{NP}}(L,q)\) contains compact bivariate random-design regressions.
+- The regression function \(\mu_P\), the conditional mean, is \(q\)-smooth on the support.
+- The design density and conditional variance are uniformly bounded above and below.
+- At boundary point \(x\), the rule observes \(V_{n,P}(x)\): outcomes and Euclidean distances from \(x\).
+- The risk is expected sup-loss over the support boundary.
+
+@formal def:cty-nonparametric-class
 
 ---
 
-## Main Result: Unsigned Common-Map Converse
+## Two unsigned rule classes face the same barrier
 
-@informal thm:cty-same-class-log-converse: For every \(q\geq1\) and \(L\geq4\), common-map unsigned distance rules have minimax expected boundary sup-loss at least a constant multiple of \(a_n\) asymptotically.
+- A common-map rule uses one law-independent map at every boundary point.
+- A point-indexed rule may choose a separate law-independent Borel section for each \(x\).
+- Point-indexing gives more procedural flexibility while preserving the same unsigned distance data.
+- Outer expectation handles the boundary supremum for the point-indexed class.
+- The lower bound survives this larger decision class.
+
+@formal def:cty-distance-data
+
+---
+
+## The unsigned common-map risk has logarithmic lower scale
+
+@informal thm:cty-same-class-log-converse: For every \(q\geq1\) and \(L\geq4\), the common-map minimax expected boundary sup-loss is at least a constant multiple of \(a_n\) asymptotically.
 
 @formal thm:cty-same-class-log-converse
 
 ---
 
-## Main Result: Point-Indexed Unsigned Converse
+## The unsigned point-indexed risk has the same lower scale
 
-@informal thm:point-indexed-distance-log-converse: For every \(q\geq1\) and \(L\geq4\), point-indexed unsigned distance rules have minimax outer-expected boundary sup-loss at least a constant multiple of \(a_n\) asymptotically.
+@informal thm:point-indexed-distance-log-converse: For every \(q\geq1\) and \(L\geq4\), even point-indexed unsigned distance rules have outer-expected boundary sup-loss at least a constant multiple of \(a_n\) asymptotically.
 
 @formal thm:point-indexed-distance-log-converse
 
 ---
 
-## Novelty of the Unsigned Lower Bound
+## The lower-bound construction hides many local bits
 
-- The point-indexed class is larger because each boundary point can use its own Borel section.
-- The same lower scale survives that extra flexibility.
-- Heuristic calibration: \(M\asymp\Delta^{-1/q}\), \(w^2\asymp\Delta^{2/q}\), and compressed per-coordinate information is \(n\Delta^4\).
-- Setting \(n\Delta^4\asymp\log M\) gives \(\Delta\asymp(\log n/n)^{1/4}\).
-- Smoothness \(q\) changes constants and cell calibration; the exponent comes from distance compression.
+- Place many separated perturbation cells along the support boundary.
+- Each cell changes the boundary regression value by order \(a_n\).
+- The unsigned distance distribution at the queried boundary point is calibrated to reveal little about the local bit.
+- The number of cells contributes the logarithm through uniform sup-loss.
+- The scale calculation is \(M\asymp\Delta^{-1/q}\), \(w^2\asymp\Delta^{2/q}\), and compressed information \(n\Delta^4\).
+- Balancing \(n\Delta^4\asymp\log M\) gives \(\Delta\asymp(\log n/n)^{1/4}\).
+
+@figure unsigned-hypercube: A row of labeled boundary cells points to a box labeled hidden binary perturbations, which points to a box labeled scalar distance observations, which points to a box labeled decoding difficulty.
 
 ---
 
-## Main Result: Signed-Distance Lower Bound
+## Signed distance adds the geometry needed for local RD fitting
 
-@informal thm:cty-a1-a2-point-indexed-log-converse-all-orders: For every polynomial order \(p\), sufficiently large envelope \(L\), and \(\nu\geq2\), signed known-geometry point-indexed rules have minimax outer risk at least a constant multiple of \(a_n\), already on a fixed rectangular subexperiment.
+- The signed experiment targets \(\tau_P(x)\), the treatment-effect curve along the known interface.
+- The rule knows the support, assignment regions, interface, Euclidean metric, and uniform kernel.
+- The signed distance is positive on the treated side and negative on the control side.
+- In the running geographic example, this means the border and policy side are part of the design information.
+- Local-polynomial fitting uses signed distance as a one-dimensional coordinate.
+
+@formal def:cty-known-geometry-signed-distance-data
+
+---
+
+## The signed law class fixes smoothness, moments, and local conditioning
+
+- \(\mathcal P_{12}(p,\nu,L)\) is the displayed Euclidean, uniform-kernel CTY-style boundary class.
+- Potential-outcome regressions have \(C^{p+1}\) extensions.
+- Conditional variances and \(2+\nu\) moments are uniformly controlled.
+- The interface is a compact rectifiable curve of controlled length.
+- The Gram and arm-mass clauses keep local polynomial fits stable at every interface point.
+
+@formal def:cty-a1-a2-class
+
+---
+
+## The signed lower bound already holds on a fixed rectangle
+
+@informal thm:cty-a1-a2-point-indexed-log-converse-all-orders: For every polynomial order \(p\), above the envelope threshold \(L_0(p)\), the signed-distance minimax outer risk is at least a constant multiple of \(a_n\), even on the fixed hard geometry.
 
 @formal thm:cty-a1-a2-point-indexed-log-converse-all-orders
 
 ---
 
-## Upper Bound Inputs
+## The estimator is stabilized local polynomial smoothing
 
-- The signed upper result is conditional on \(\mathsf{AI}_{p,\nu,L}\).
-- Input 1: distance identification links one-sided signed-distance conditional means to \(\tau_P(x)\).
-- Input 2: uniform first-order bias control bounds the population local-polynomial approximation.
-- Input 3: expected maximal bounds control Gram deviations and raw-score deviations uniformly over arms, boundary points, and laws.
-- The paper’s winsorized-score lemma supplies the bounded-envelope score component.
-- The upper proposition uses the full input collection, including uniform Gram control and the raw-score heavy-tail bound with exponent \(n^{(1+\nu)/(2+\nu)}\).
+- Split observations by signed side of the boundary.
+- Within bandwidth \(h\), fit a degree-\(p\) polynomial in signed distance on each side.
+- Winsorize outcomes at \(B(h)=h^{-1/3}\) to control heavy tails.
+- Invert the empirical Gram matrix only when it is uniformly well conditioned.
+- Clip the final intercept difference to the envelope range.
+
+@formal def:cty-stabilized-local-polynomial-estimator
 
 ---
 
-## Main Result: Signed-Distance Upper Bound
+## The signed upper bound uses three analytic inputs
 
-@informal prop:cty-a1-a2-winsorized-expected-outer-upper: Under the three stated analytic inputs, the winsorized Gram-stabilized signed-distance local-polynomial estimator with \(h_n=a_n\) has uniform expected outer risk at most a constant multiple of \(a_n\).
+- \(\mathsf{AI}_{p,\nu,L}\) collects distance identification, first-order bias control, and expected maximal bounds.
+- These three inputs are assumptions for the signed upper theorem.
+- The winsorized-score lemma supplies the bounded-envelope score component.
+- The upper result also uses the assumed uniform Gram control and the assumed raw-score heavy-tail maximal bound.
+- With bandwidth \(h_n=a_n\), first-order bias and uniform stochastic fluctuation balance at the same scale.
+
+@formal synth_139
+
+---
+
+## The stabilized estimator attains the conditional upper rate
+
+@informal prop:cty-a1-a2-winsorized-expected-outer-upper: Under the displayed signed-distance analytic inputs, the stabilized signed-distance local-polynomial estimator has expected outer sup-loss at most a constant multiple of \(a_n\).
 
 @formal prop:cty-a1-a2-winsorized-expected-outer-upper
 
 ---
 
-## Main Result: Matched Signed Frontier
+## The conditional signed frontier matches lower and upper bounds
 
-@informal thm:cty-a1-a2-winsorized-matched-frontier: Under the stated analytic inputs, the signed known-geometry minimax outer risk is characterized up to constants on the \(a_n\) scale, and the explicit stabilized local-polynomial estimator attains the upper side.
+@informal thm:cty-a1-a2-winsorized-matched-frontier: Under the stated analytic inputs, the signed-distance known-geometry minimax risk is characterized up to constants on the \(a_n\) scale.
 
 @formal thm:cty-a1-a2-winsorized-matched-frontier
 
 ---
 
-## Why the Arguments Work
+## The proof reduces uniform estimation to many hard tests
 
-- Lower bounds: start with many separated boundary cells, each carrying one binary signal.
-- Calibrate the perturbations so each signal changes the boundary target by the chosen amplitude.
-- Match the distance marginal at the queried point so the compressed data reveal little about the local bit.
-- Convert estimation accuracy into simultaneous decoding, so one decoding error becomes expected sup-loss on the boundary.
-- Signed upper bound: identification turns signed distance into one-sided regression at zero on each side.
-- Local-polynomial smoothing, stable Gram matrices, winsorization, and maximal inputs control the expected boundary supremum at \(h_n=a_n\).
+- A direct-product inequality converts many weakly distinguishable coordinates into a high probability of at least one error.
+- The unsigned packing makes scalar distances nearly invariant to the bit that changes the boundary value.
+- The signed rectangle hypercube repeats the testing logic inside one known geometry.
+- The upper proof decomposes signed-distance estimation error into bias, Gram stability, and score fluctuation.
+- The rate emerges when the local-polynomial bandwidth is set to the same scale as the boundary testing amplitude.
 
 ---
 
-## Takeaways
+## The contribution is a precise risk map for distance-based boundary RD
 
-- Unsigned scalar distance creates a boundary-uniform information barrier over \(\mathcal P_{\mathrm{NP}}(L,q)\).
-- The barrier holds for both common-map and point-indexed unsigned rules.
-- Signed distance with known geometry targets the boundary treatment-effect curve under \(\mathcal P_{12}(p,\nu,L)\).
-- The fixed rectangular signed experiment already carries the \(a_n\) lower scale.
-- Under \(\mathsf{AI}_{p,\nu,L}\), the stabilized signed-distance local-polynomial estimator attains the matching expected outer-risk scale.
-- The paper’s contribution is a precise minimax account of how distance compression shapes boundary RD risk.
+- Over \(\mathcal P_{\mathrm{NP}}(L,q)\), unsigned distance rules have minimax expected boundary sup-loss bounded below on the \(a_n\) scale.
+- The lower bound applies to both CTY common-map rules and the larger point-indexed Borel class.
+- Over \(\mathcal P_{12}(p,\nu,L)\), signed-distance known-geometry rules have an unconditional fixed-geometry lower bound.
+- Under \(\mathsf{AI}_{p,\nu,L}\), the stabilized signed-distance local-polynomial estimator attains the matching outer-expected upper scale.
+- The paper explains exactly how distance compression, boundary uniformity, and known treatment geometry determine the attainable risk.

@@ -1,51 +1,50 @@
-# Sharp Rates for ATEs with Many Discrete Confounders
+# Sharp Rates for Discrete Confounding
 
-For fixed interior overlap, and in the calibrated range \(n\ge N_\epsilon\), \(d\le\rho_\epsilon n\log n\), a computable ratio-polynomial hybrid estimator attains the sharp minimax MSE scale \(1/n+d^2/(n^2(\log n)^2)\), expanding the parametric and consistency regimes beyond standard plug-in behavior.
-
----
-
-## Punchline First
-
-- The problem is ATE estimation with \(d\) unrestricted discrete covariate categories.
-- The paper characterizes the fixed-interior minimax risk under overlap level \(\epsilon\in(0,1/2)\).
-- The sharp rate is \(1/n+d^2/(n^2(\log n)^2)\) for \(n\ge N_\epsilon\) and \(d\le\rho_\epsilon n\log n\).
-- A computable hybrid estimator attains the upper bound with fixed numerical tuning.
-- The logarithmic gain moves the parametric window to \(d=O(\sqrt n\log n)\) and the consistency frontier to \(d=o(n\log n)\).
-- Near exact randomization, a centered estimator gives a separate envelope and the endpoint risk is parametric.
+For fixed interior overlap, the paper characterizes the minimax MSE for finite-alphabet ATE estimation as \(1/n+d^2/(n^2(\log n)^2)\) and constructs a computable estimator that attains it.
 
 ---
 
-## Why This Question Matters
+## Overview
 
-- In observational studies, adjustment often means comparing treated and control outcomes within covariate strata.
-- With many discrete covariate categories, some strata are sparse even when population overlap is bounded.
-- Standard cellwise estimators use empirical treatment-control ratios, so sparse denominators create worst-case bias.
-- The econometric question is: how much does unrestricted discrete confounding cost in minimax MSE?
-- The paper answers this question for fixed interior overlap.
+- The setting is observational ATE estimation with a discrete covariate \(X\in\{1,\ldots,d\}\).
+- Each category has unrestricted treatment probabilities and outcome means.
+- Fixed overlap keeps both treatment arms present in every positive-mass category.
+- The paper establishes the minimax MSE rate for each fixed \(\epsilon\in(0,1/2)\), the overlap parameter.
+- The rate separates ordinary sampling error from the price of many unrestricted categories.
+- The estimator is explicit: ratios for well-observed categories, polynomial moments for sparse categories.
 
 ---
 
-## Setup: The Observed Experiment
+## Discrete adjustment creates a rate question
 
-- One observation is \(O=(X,A,Y)\).
-- \(X\) is a covariate category in \(\{1,\ldots,d\}\).
-- \(A\) is binary treatment and \(Y\) is a binary outcome.
-- Each category has mass \(p_k\), propensity \(\pi_k\), and conditional means \(\mu_{0k},\mu_{1k}\).
-- The risk is worst-case over all such finite-alphabet laws satisfying overlap.
+- A category is a covariate cell, such as an age-by-region-by-risk-profile bin.
+- Within each cell, the ATE contribution compares treated and control outcome means.
+- With many cells, some denominators are small even when population overlap holds.
+- Standard plug-in, IPW, and doubly robust estimators collapse to the same count-based rule in the closest prior model.
+- That rule has worst-case MSE scale \(d^2/n^2+1/n\).
+- The minimax lower bound from prior work is smaller by a \((\log n)^2\) factor in the large-alphabet term.
+
+---
+
+## The model is deliberately unrestricted across cells
 
 @formal ass:iid-sampling
 
+@formal ass:overlap
+
+- Think of each category as having its own propensity score and two outcome means.
+- Fixed overlap means every positive-mass category has treated and untreated units at the population level.
+- The hard part is sampling: many population cells may be too small to support stable within-cell ratios.
+
 ---
 
-## Overlap and Causal Interpretation
+## The target is a sum of cell contrasts
 
-- Fixed overlap means every positive-mass category has both treatment arms available in population.
-- Interior means the overlap level is strictly inside, \(\epsilon\in(0,1/2)\); the endpoint \(\epsilon=1/2\) is exact randomization and is treated separately.
-- In the running example, \(\epsilon\) controls how imbalanced treatment can be across the two categories.
-- Consistency and conditional exchangeability give the observed-data functional its ATE interpretation.
-- The minimax problem is then about estimating this adjusted target uniformly over unrestricted category laws.
-
-@formal ass:overlap
+- For category \(k\), the four observed cell masses collect treatment, control, outcome one, and outcome zero probabilities.
+- The cell contribution is category mass times treated-minus-control outcome mean.
+- The ATE functional \(\tau(P)\) is the sum of these contributions over \(k=1,\ldots,d\).
+- Consistency and conditional exchangeability give the usual causal interpretation of this adjusted contrast.
+- The decision problem asks for worst-case mean-squared error over all fixed-overlap observed laws.
 
 @formal ass:consistency
 
@@ -53,113 +52,116 @@ For fixed interior overlap, and in the calibrated range \(n\ge N_\epsilon\), \(d
 
 ---
 
-## Target and Risk in Plain Language
+## The estimator treats dense and sparse cells differently
 
-- The ATE is the sum over categories of: category mass times treated-minus-control mean.
-- The hard part is the categorywise ratio structure inside sparse cells.
-- The minimax risk \(\mathsf R_{n,d,\epsilon}\) asks for the best worst-case MSE over the overlap-restricted experiment class.
-- The paper studies how \(\mathsf R_{n,d,\epsilon}\) changes as \(d\) grows with \(n\).
+@figure hybrid-estimator-pipeline: A box-and-arrow schematic showing the sample split into a pilot half and an estimation half, the pilot half classifying categories as heavy or light, heavy categories flowing to empirical ratio estimates, light categories flowing to Chebyshev factorial-moment estimates, and both branches flowing to a clipped ATE estimate.
 
-@figure estimator-target: The diagram shows covariate categories feeding into categorywise treated-minus-control contrasts, then summing into the ATE target \(\tau(P)\).
-
----
-
-## Key Idea: Treat Heavy and Light Categories Differently
-
-- Heavy categories are pilot-certified by counts above a logarithmic threshold.
-- On heavy categories, empirical treatment-control ratios are stable enough.
-- Light categories are too sparse for direct ratios.
-- On light categories, the estimator replaces the reciprocal ratio by a Chebyshev polynomial of degree \(M(n)\) about \(\log n\).
-- Factorial moments turn each polynomial monomial into an estimable count statistic.
-- The final estimator adds heavy and light contributions and clips to the natural ATE range.
-
-@figure hybrid-pipeline: The diagram shows a split sample, pilot heavy-light classification, ratio estimation for heavy categories, polynomial factorial-moment estimation for light categories, and aggregation into \(\widehat\tau_n^{\mathrm{hyb}}\).
+- Split the sample in half.
+- Use the pilot half to classify categories as heavy or light.
+- Heavy means the pilot count exceeds a threshold of order \(\log n\).
+- Estimate heavy categories by empirical treatment-control ratios on the second half.
+- Estimate light categories by a Chebyshev reciprocal polynomial of degree about \(\log n\).
+- Convert polynomial terms into unbiased count estimates using falling-factorial moments.
 
 ---
 
-## Where the Literature Stood
+## The central difficulty is the reciprocal
 
-- Classical ATE theory gives efficiency results under regular low-dimensional structure.
-- High-dimensional causal methods use nuisance structure such as sparsity, smoothness, or orthogonality.
-- Large-alphabet functional estimation shows how polynomial approximation can sharpen nonsmooth rates.
-- Zeng, Balakrishnan, Han, and Kennedy give the direct discrete-covariate benchmark.
-- Their standard plug-in, IPW, and doubly robust estimators have worst-case scale \(d^2/n^2+1/n\).
-- Their minimax lower bound has scale \(d^2/(n^2\log^2 n)+1/n\), and this paper attains that lower scale in the fixed-interior regime.
+- The category contribution contains ratios: outcome-one mass divided by arm mass.
+- Direct ratios behave well only when the relevant category and arm counts are large.
+- In light categories, the denominator is the singular part of the problem.
+- The polynomial branch approximates the reciprocal contribution on a low-mass scale \(B(n)\) of order \(\log n/n\).
+- Factorial moments estimate the polynomial’s monomials from counts without plug-in bias.
+- The logarithmic gain comes from replacing unstable sparse-cell ratios by an estimable approximation.
 
 ---
 
-## Main Result: The Sharp Fixed-Interior Rate
+## Prior work leaves exactly one gap
 
-@informal thm:sharp-minimax-fixed-interior: For each fixed \(\epsilon\in(0,1/2)\), within \(n\ge N_\epsilon\) and \(d\le\rho_\epsilon n\log n\), the minimax MSE and the hybrid estimator’s worst-case MSE are both bounded above and below by constants times \(1/n+d^2/(n^2(\log n)^2)\).
+- Zeng, Balakrishnan, Han, and Kennedy study the same strong-overlap discrete-covariate benchmark.
+- Their standard estimators have worst-case MSE \(O(d^2/n^2+1/n)\).
+- Their minimax lower bound has scale \(d^2/(n^2(\log n)^2)+1/n\) for \(d\lesssim n\log n\).
+- This paper closes the logarithmic gap: an explicit estimator attains that lower scale under fixed interior overlap.
+
+---
+
+## The fixed-interior minimax rate is sharp
+
+@informal thm:sharp-minimax-fixed-interior: For each fixed \(0<\epsilon<1/2\), when \(n\ge N_\epsilon\) and \(d\le\rho_\epsilon n\log n\), the minimax MSE and the hybrid estimator’s worst-case MSE are both within constants of \(1/n+d^2/(n^2(\log n)^2)\).
 
 @formal thm:sharp-minimax-fixed-interior
 
 ---
 
-## What the Rate Means
+## The rate changes the benchmark for dimension growth
 
-- The first term, \(1/n\), is the ordinary sampling cost.
-- The second term, \(d^2/(n^2(\log n)^2)\), is the cost of unrestricted discrete confounding.
-- With \(d\) fixed, the theorem lands in the parametric regime.
-- With growing \(d\), the same theorem allows parametric risk through \(d=O(\sqrt n\log n)\).
-- Consistency holds exactly along sequences with \(d/(n\log n)\to0\), within the theorem’s displayed dimension range.
+- In the running cell-adjustment example, \(d\) is the number of unrestricted adjustment cells.
+- The parametric \(1/n\) rate holds throughout the theorem’s range when \(d=O(\sqrt n\log n)\).
+- Consistency holds exactly along sequences with \(d/(n\log n)\to0\), within the displayed fixed-interior range.
+- The standard estimator-class benchmark was \(d/n\to0\).
+- The polynomial branch accounts for the extra logarithmic factor.
 
 ---
 
-## The Computable Hybrid and Endpoint Envelope
+## The same hybrid is calibrated across fixed interior overlaps
 
-@informal thm:overlap-adaptive-universal-hybrid: The same count-based hybrid estimator is computable in at most \(K\,d\,M(n)^4\) operations, attains the fixed-overlap upper rate, and combines with a centered estimator to give an upper envelope near exact randomization.
+@informal thm:overlap-adaptive-universal-hybrid: The hybrid estimator is computable from counts in at most \(K\,d\,M(n)^4\) operations, attains the fixed-overlap upper rate for every fixed \(0<\epsilon<1/2\), and combines with a centered estimator to give the stated near-randomization envelope and endpoint bracket.
 
 @formal thm:overlap-adaptive-universal-hybrid
 
 ---
 
-## Why the Novelty Wins
+## Near randomization has its own simple estimator
 
-- The naive plug-in route estimates a reciprocal from sparse arm counts.
-- Its large-alphabet term sits at the \(d^2/n^2\) scale in the direct discrete benchmark.
-- The hybrid keeps ratios only where pilot counts certify enough mass.
-- On light categories, polynomial approximation replaces unstable reciprocals with degree \(M(n)\) about \(\log n\).
-- Factorial moments estimate the polynomial terms directly from counts.
-- This is the source of the improvement to \(d^2/(n^2(\log n)^2)\).
+@figure overlap-regime-comparison: A box-and-arrow schematic with fixed interior overlap flowing to the ratio-polynomial hybrid estimator, exact randomization flowing to the centered estimator, and near-randomization flowing to a selector comparing their risk certificates.
 
----
-
-## Why It Is True: Heavy Categories
-
-- The first split identifies categories whose population masses are large enough, up to high-probability sandwich bounds.
-- Conditional on that pilot classification, the second split estimates heavy-cell contrasts independently.
-- Population overlap turns category mass into enough expected treated and control observations.
-- Missing-arm events and ratio residuals are controlled in aggregate.
-- The heavy branch contributes within the same \(1/n+d^2/(n^2(\log n)^2)\) envelope.
+- At \(\epsilon=1/2\), treatment is randomized within every positive-mass category.
+- The centered estimator averages \(2(2A_i-1)(Y_i-1/2)\).
+- Its risk is at most \(1/n+4(1/2-\epsilon)^2\).
+- The endpoint minimax risk is bracketed between \(1/(100n)\) and \(1/n\).
+- The selected envelope records the better of the sparse-cell scale and the near-randomization scale.
 
 ---
 
-## Why It Is True: Light Categories
+## Why the upper bound works
 
-- Light categories have small population mass after the pilot sandwich.
-- The cell contribution is homogeneous but has reciprocal terms at zero.
-- A Chebyshev reciprocal polynomial approximates the contribution on the light-cell mass scale \(B(n)\).
-- Falling-factorial moments make the polynomial terms unbiased for their population monomials.
-- The degree around \(\log n\) balances approximation error against factorial-moment variance.
-- Summing across light categories preserves the target rate.
+- The pilot split makes the heavy/light decision independent of the estimation noise.
+- With high probability, pilot-heavy categories have enough population mass for second-half ratios to be controlled.
+- Pilot-light categories have mass at most a constant multiple of \(\log n/n\).
+- On that light scale, the Chebyshev reciprocal approximation has bias bounded at the rate needed for the large-alphabet term.
+- Factorial-moment identities turn the polynomial into an estimable count statistic.
+- Variance and covariance bounds keep the sum over many light cells at the same target scale.
 
 ---
 
-## Why It Is True: The Lower Bound and Endpoint
+## Why the lower bound matches
 
-- The lower bound transfers the large-alphabet discrete functional difficulty into the ATE cell functional.
-- The construction creates many hard-to-distinguish sparse category laws with separated ATE values.
-- Their statistical distance remains small at the sample size \(n\).
-- This gives the matching lower scale in the fixed-interior range.
-- At exact randomization, the centered contrast has parametric risk and a one-category Bernoulli argument gives the matching lower bracket.
+- The lower bound embeds a hard large-alphabet functional-estimation problem into the ATE model.
+- Fixed overlap keeps the embedded laws inside the same causal experiment class.
+- Moment-matching makes many sparse-cell alternatives statistically hard to distinguish.
+- Their ATE values remain separated at the \(d/(n\log n)\) scale.
+- Squared separation gives the \(d^2/(n^2(\log n)^2)\) contribution.
+- Ordinary Bernoulli sampling supplies the \(1/n\) contribution.
+
+---
+
+## Also in the paper
+
+@informal lem:light-cell-polynomial: The light-cell polynomial branch is computable and has mean-squared error at most a constant times \(1/n+d^2/(n^2(\log n)^2)\) over its calibrated range.
+
+@informal lem:universal-heavy-cell-rate: The heavy-cell ratio branch has mean-squared error at most a constant times \(1/n+d^2/(n^2(\log n)^2)\) over the fixed-overlap calibrated range.
+
+@informal lem:near-randomization-linear-upper: The centered estimator has risk at most \(1/n+4(1/2-\epsilon)^2\).
+
+@informal lem:randomized-endpoint-minimax: At \(\epsilon=1/2\), the minimax MSE lies between \(1/(100n)\) and \(1/n\).
 
 ---
 
 ## Takeaways
 
-- The paper establishes the sharp fixed-interior minimax MSE rate \(1/n+d^2/(n^2(\log n)^2)\).
-- The constructive upper bound is attained by a computable split-sample ratio-polynomial hybrid estimator.
-- The result gives parametric risk through \(d=O(\sqrt n\log n)\) and consistency exactly when \(d=o(n\log n)\) within the calibrated range.
-- The endpoint analysis brackets exact randomization at the parametric scale.
-- An open direction is the full transition theory for triangular arrays with \(\epsilon=\epsilon_n\) approaching \(1/2\).
+- For unrestricted discrete confounding under fixed interior overlap, the minimax MSE is \(1/n+d^2/(n^2(\log n)^2)\) up to \(\epsilon\)-dependent constants.
+- A computable split-sample hybrid estimator attains the upper bound.
+- Heavy categories use ordinary empirical ratios.
+- Light categories use Chebyshev approximation and factorial moments.
+- The result gives a parametric regime up to \(d=O(\sqrt n\log n)\) and a consistency frontier \(d=o(n\log n)\) within the theorem’s range.
+- The endpoint analysis explains how the rate connects to exact randomization.

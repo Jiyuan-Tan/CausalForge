@@ -1,132 +1,144 @@
-# Calibrating Weak Overlap in Offline Policy Learning
+# Learning Policies When Overlap Fails Near the Decision Boundary
 
-This paper shows how joint margin-overlap decay changes the best possible welfare-regret exponent, and analyzes when a clipped cross-fitted AIPW rule reaches that benchmark.
-
----
-
-## Punchline
-
-- Offline policy learning is easiest when mistakes happen only where treatment effects are small.
-- It becomes harder when those same covariate regions also have weak treatment-arm information.
-- The paper calibrates that interaction through the exponent \(\beta_{\alpha,\gamma}\).
-- The minimax lower-bound exponent is \(r_\star(\alpha,\gamma)\).
-- Under stated nuisance-rate and empirical-process side conditions, a specified clipped cross-fitted AIPW ERM matches that exponent up to logarithmic factors whenever nuisance learning and clipping are not the binding constraint.
-- In nuisance-limited regimes, the same conditional analysis gives the rule’s exponent.
+This paper calibrates the minimax regret exponent for offline policy learning when weak overlap and small treatment effects occur together.
 
 ---
 
-## The Question
+## The rate is set by three local quantities
 
-- We observe offline data \(O=(X,A,Y)\).
-- A policy \(\pi(X)\) chooses treatment \(0\) or \(1\).
-- The goal is low welfare regret: choose the treatment whose conditional contrast has the right sign.
-- Running example: a treatment is valuable for some patients, harmful for others, and nearly neutral near a clinical boundary.
-- The hard region is where the treatment contrast is small.
-- The new feature here is that the rare treatment arm can also be rare in that same region.
+- The target is observed-law welfare regret for deterministic treatment rules.
+- Regret comes from assigning the wrong treatment where the conditional contrast \(\tau_P(X)\), the treatment-effect contrast, has a sign.
+- The hard region has three scales: small contrast, small covariate mass, and rare observation of the informative treatment arm.
+- Joint margin-overlap decay changes the usual margin rate by adding the weak-arm exponent \(\beta_{\alpha,\gamma}\).
+- The lower-bound exponent is \(r_\star(\alpha,\gamma)\), and the clipped AIPW rule attains the same exponent when nuisance learning and clipping are nonbinding.
 
----
-
-## Why Weak Overlap Changes Rates
-
-- Under regular overlap, the policy problem resembles margin-based classification.
-- Small effects create a margin region, and mistakes there cost little.
-- Under joint margin-overlap decay, the data are least informative exactly near that margin.
-- The lower-bound witness makes the informative treatment arm appear with probability \(q_n\) on a small active block.
-- The statistical question becomes: how small can the contrast be while the two signs remain hard to distinguish?
-
-@figure margin-overlap-block: How the lower-bound witness is built: a small active block \(B_n\) carries a local contrast of size \(h_n\) whose sign is revealed only by a treatment arm appearing with probability \(q_n\), a weakness that joint decay caps.
+@informal thm:minimax-lower: Under the stated law-class and witness-calibration conditions, minimax regret is at least a constant times \(n^{-r_\star(\alpha,\gamma)}\).
 
 ---
 
-## Setup in Words
+## The empirical problem is ordinary, until overlap weakens
 
-- The observed law \(P\) defines \(e_P(x)\), the propensity score, and \(\mu_a(x)\), the treatment-arm outcome means.
-- The treatment contrast is \(\tau_P(x)=\mu_1(x)-\mu_0(x)\).
-- The overlap score is \(p_P(x)=\min\{e_P(x),1-e_P(x)\}\), the distance to the nearest propensity boundary.
-- Welfare compares policies by \(E_P[\pi(X)\tau_P(X)]\).
-- The oracle policy treats exactly where \(\tau_P(x)\ge0\).
+- Think of a retrospective treatment dataset with covariates \(X\), treatment \(A\), and bounded outcome \(Y\).
+- A policy \(\pi\) maps each covariate value to treatment 0 or 1.
+- The oracle treats exactly where the contrast \(\tau_P(x)\) is nonnegative.
+- Under strict overlap, both treatment arms are observed often enough throughout the covariate space.
+- Here, the informative arm can become rare precisely where the treatment decision is already hard.
+
+@figure offline-policy-loop: Boxes labeled offline observations, nuisance estimates, clipped AIPW scores, empirical welfare maximization, learned deterministic policy, and welfare regret, connected in that order.
+
+---
+
+## Regret is weighted classification error
+
+- Welfare is normalized to the contrast-weighted value of a policy.
+- A policy loses welfare only on covariates where it disagrees with the oracle sign rule.
+- Errors near \(\tau_P(x)=0\) matter less than errors with a large treatment contrast.
+- This turns policy learning into classification with an econometric score and a welfare weight.
 
 @formal def:welfare-regret
 
+@informal thm:welfare-identity: Under bounded outcomes, regret equals the expected absolute treatment contrast on the policy-oracle disagreement set.
+
 ---
 
-## Margin and Overlap Assumptions
+## The margin condition limits hard-but-important decisions
 
-- The margin condition limits how much covariate mass has small nonzero \(|\tau_P(X)|\).
-- Zero-effect agreement makes ties welfare-neutral for the policy class.
-- The overlap-decay condition limits how often weak overlap and small contrast occur together.
-- In the running example, rare treatment assignment is allowed near the clinical boundary, but its mass is controlled jointly with the small-effect region.
+- The margin exponent \(\alpha\) controls how much covariate mass sits near zero contrast.
+- Larger \(\alpha\) means fewer observations lie close to the decision boundary.
+- In the running example, few patients have nearly tied treatment values when \(\alpha\) is large.
+- Margin localization converts small regret into a small policy-oracle disagreement region.
 
 @formal ass:margin
 
-@formal ass:overlap-decay
+@informal thm:margin-localization: Under the margin, zero-effect, bounded-outcome, and disagreement-set conditions, disagreement probability is at most a constant times \(R_P(\pi)^{\alpha/(1+\alpha)}\).
 
 ---
 
-## Policy Class and Law Class
+## Overlap decay ties weak information to small contrasts
 
-- Policies are deterministic binary rules in a finite-VC class.
-- A countable dense skeleton makes empirical maximization measurable.
-- The law class \(\mathcal P_{\alpha,\gamma}\) collects bounded outcomes, positivity, the margin restriction, zero-effect convention, overlap decay, and the strict-overlap endpoint for \(\gamma=0\).
-- The exponent \(r_\star(\alpha,\gamma)\) is the benchmark rate produced by the margin-overlap calibration.
+- The overlap score \(p_P(x)\) is the distance of the propensity score to the nearest endpoint.
+- Weak overlap means one treatment arm is rarely observed at that covariate value.
+- The parameter \(\gamma\) governs how weak overlap can concentrate inside the small-contrast region.
+- In the running example, the rarer treatment arm is especially scarce for patients whose treatment effects are close to tied.
 
-@formal ass:policy-class
+@formal ass:overlap-decay
+
+@formal ass:strict-overlap-endpoint
+
+---
+
+## The exponent comes from the overlap envelope
+
+- The margin condition allows an active block of mass \(h^\alpha\).
+- A sign change on that block creates contrast scale \(h\).
+- The overlap-decay condition allows the informative arm to appear with probability \(h^{\beta_{\alpha,\gamma}}\).
+- The sample only sees the hard cell at scale \(h^\alpha h^{\beta_{\alpha,\gamma}}\).
+- The resulting denominator is \(2+\alpha+\beta_{\alpha,\gamma}\).
 
 @formal def:exponents
 
----
-
-## Key Idea
-
-- The lower bound balances three quantities.
-- The active block has mass \(h_n^\alpha\), matching the margin condition.
-- The local contrast has size \(h_n\), so a wrong sign costs \(h_n^{1+\alpha}\).
-- The informative treatment arm appears with probability \(q_n=h_n^{\beta_{\alpha,\gamma}}\) when overlap decay permits it.
-- The two laws stay hard to distinguish when \(n h_n^{2+\alpha+\beta_{\alpha,\gamma}}\) is bounded.
-
-@informal prop:overlap-envelope: For \(\gamma>0\), within the tight-window calibration, \(\beta_{\alpha,\gamma}\) is the largest weak-arm exponent compatible with a block of margin mass \(h^\alpha\).
+@formal prop:overlap-envelope
 
 ---
 
-## Where the Literature Stands
+## The lower-bound construction hides one sign
 
-- Treatment-choice work frames policy learning as welfare maximization under sampling uncertainty.
-- Empirical welfare maximization gives finite-sample regret tools for structured policy classes.
-- Doubly robust and cross-fitted scores provide the feasible estimation architecture.
-- Margin-based classification explains how small decision-boundary mass improves regret.
-- Limited-overlap work explains why inverse-propensity methods become unstable near propensity boundaries.
-- This paper combines the margin and overlap mechanisms in a single observed-law minimax calibration.
+- The two witness laws agree everywhere except on one treated active cell.
+- On the active block \(B_n\), the contrast is either \(+h_n\) or \(-h_n\).
+- Outside \(B_n\), both laws have the same strict positive contrast.
+- The informative treatment arm is sampled with probability \(q_n\) on \(B_n\).
+- The learner must infer which oracle policy is correct from rare, low-signal observations.
+
+@figure two-point-witness: Boxes labeled common covariate law, active block, weak treatment arm, sign-positive law, sign-negative law, and oracle policy choice, with arrows showing that only the weak treatment arm on the active block separates the two laws.
+
+@formal def:two-point-witness
 
 ---
 
-## Main Lower Bound
+## The witnesses belong to the target law class
 
-@informal thm:minimax-lower: Over \(\mathcal P_{\alpha,\gamma}\), every measurable policy estimator has worst-case expected regret at least a constant times \(n^{-r_\star(\alpha,\gamma)}\) for all sufficiently large \(n\).
+- The construction satisfies bounded outcomes, positivity, margin, zero-effect, and overlap-decay restrictions.
+- The two induced oracle policies disagree exactly on the active block.
+- The policy class must contain the two witness actions used in the reduction.
+
+@formal def:law-class
+
+@informal lem:witness-membership: Under the stated calibration and smallness conditions, both witness laws lie in \(\mathcal P_{\alpha,\gamma}\) for all sufficiently large \(n\), and their oracle policies are the two stated block rules.
+
+---
+
+## Statistical closeness and welfare separation balance
+
+- Divergence is small because the laws differ only on a low-mass, weak-arm, low-contrast cell.
+- Regret separation is large enough because any single policy makes the wrong active-block decision under one of the two laws.
+- Le Cam’s method converts this indistinguishability into a lower bound on minimax regret.
+
+@informal lem:two-point-divergence: For the witness laws, the one-observation chi-square divergence is at most a constant times \(h_n^{2+\alpha+\beta_{\alpha,\gamma}}\), and the product divergence is bounded.
+
+@informal lem:regret-separation: For every measurable policy, the larger regret under the two witness laws is at least a constant times \(h_n^{1+\alpha}\).
+
+@informal lem:le-cam-two-point-chisq: Bounded product chi-square divergence gives every binary test a positive total error floor.
+
+---
+
+## The observed-law lower bound follows
 
 @formal thm:minimax-lower
 
----
-
-## What the Lower Bound Means
-
-- Under strict overlap, \(\beta_{\alpha,\gamma}=0\), so the exponent is the familiar margin-driven benchmark.
-- With positive overlap decay, \(\beta_{\alpha,\gamma}\) enters the denominator.
-- The rate reflects the probability of observing the arm that reveals the sign on the margin block.
-- In the running example, the lower bound says the hardest cases concentrate weak assignment precisely near clinically marginal patients.
-
-@informal thm:welfare-identity: Welfare regret is exactly contrast-weighted disagreement with the oracle policy.
-
-@informal thm:margin-localization: Under the margin and zero-effect conditions, low regret implies a small oracle-disagreement region.
+- The exponent is \(r_\star(\alpha,\gamma)=(1+\alpha)/(2+\alpha+\beta_{\alpha,\gamma})\).
+- With strict overlap, \(\beta_{\alpha,\gamma}=0\), recovering the margin-driven denominator \(2+\alpha\).
+- With positive overlap decay, \(\beta_{\alpha,\gamma}\) adds the information loss from rare observation of the informative arm.
 
 ---
 
-## The Feasible Rule
+## The analyzed rule is clipped cross-fitted AIPW ERM
 
-- The procedure estimates the contrast with a clipped AIPW score.
-- Clipping replaces propensities by values in \([q_n,1-q_n]\).
-- Cross-fitting evaluates each observation with nuisance estimates trained away from its fold.
-- The empirical rule maximizes clipped AIPW welfare over the countable policy skeleton.
-- The tuning schedule balances stochastic fluctuation, clipping, and nuisance drift.
+- The nuisance triple \(\eta=(\mu_0,\mu_1,e)\) contains outcome regressions and the propensity score.
+- Clipping replaces the propensity by a value inside \([q,1-q]\).
+- Cross-fitting evaluates each fold using nuisance estimates trained away from that fold.
+- The policy maximizes the clipped AIPW empirical welfare criterion over a countable dense policy skeleton.
+
+@formal def:clipped-propensity
 
 @formal def:clipped-aipw-score
 
@@ -134,67 +146,66 @@ This paper shows how joint margin-overlap decay changes the best possible welfar
 
 ---
 
-## Feasible Upper Bound
+## Clipping creates the upper-bound tradeoff
 
-@informal oeq:feasible-upper: Under the stated nuisance-rate, cross-fitting, boundedness, and localized empirical-process side conditions, the clipped cross-fitted AIPW ERM has conditional upper risk at most \(C n^{-r_{\mathrm{up}}}(\log n)^p\).
-
-@formal oeq:feasible-upper
-
----
-
-## Why the Novelty Wins
-
-- A naive un-clipped AIPW rule can have a large envelope when propensities approach a boundary.
-- A fixed clip controls variance but can create drift on weak-overlap regions.
-- The paper lets \(q_n\) shrink and pairs it with a contrast window \(u_n\).
-- The master bound balances \((nq_n^2)^{-A_\alpha}\), \(r_{\mu,n}r_{e,n}/q_n\), \(r_{\mu,n}u_n^{\alpha/2}q_n^{1/(2\gamma)}\), and \(r_{\mu,n}^2/u_n\).
-- The optimized exponent is \(r_{\mathrm{up}}=\min\{r_\star(\alpha,\gamma),g_{\mathrm{joint}}(\alpha,\gamma,a,c)\}\).
-- So the nuisance-and-clipping exponent \(g_{\mathrm{joint}}\) binds exactly when it falls below \(r_\star(\alpha,\gamma)\); otherwise the minimum returns \(r_\star(\alpha,\gamma)\) itself.
+- Smaller \(q_n\) uses more weak-overlap data and increases the empirical-process envelope.
+- Larger \(q_n\) stabilizes weights and increases clipping drift.
+- The localization window \(u_n\) isolates the small-contrast region where overlap decay applies.
+- The feasible exponent optimizes these choices for a fixed nuisance regime \((a,c)\).
 
 @formal def:feasible-rate
 
----
-
-## Also in the Paper
-
-@informal lem:feasible-erm-basic-inequality: The feasible ERM is measurable and satisfies the near-maximization inequality needed to compare it with any in-class policy.
-
-@informal lem:crude-clipped-score-envelope: The clipped AIPW score has envelope at most order \(1/q\).
-
-@informal lem:localized-clipped-drift-bound: The clipped-score drift is bounded by the product nuisance remainder, the localized weak-overlap term, and the localization-complement term.
-
-@informal lem:crude-localized-master-bound: The expected regret of the clipped AIPW ERM is bounded by the lower-bound scale, the clipped empirical-process term, and the nuisance-drift terms.
-
-@informal lem:clip-balance-exponent: The chosen clipping and localization schedules make the master-bound terms at most \(C n^{-r_{\mathrm{feas}}}(\log n)^p\).
+@formal def:upper-risk
 
 ---
 
-## Why the Lower Bound Is True
+## The rule has a conditional upper exponent
 
-- Construct two observed laws that agree everywhere except on a small active block.
-- On that block, the treatment contrast has opposite signs under the two laws.
-- The informative treatment arm is sampled rarely there, according to the overlap-margin calibration.
-- The product distributions remain close, so no test reliably recovers the sign.
-- Any policy must choose one assignment on the active block, so it incurs regret under at least one law.
+@formal oeq:feasible-upper
 
----
-
-## Why the Upper Bound Is True
-
-- The ERM inequality turns empirical near-optimality into a regret comparison with the oracle policy.
-- The clipped score envelope controls stochastic fluctuation through localized VC bounds.
-- The drift identity isolates the conditional bias of the clipped and estimated score.
-- The overlap-decay condition localizes weak-overlap drift to the small-contrast region.
-- The tuning schedule chooses clipping and localization exponents to balance the four leading terms.
+- In the nonbinding branch, \(r_{\mathrm{up}}=r_\star(\alpha,\gamma)\) up to logarithmic factors.
+- In the binding branch, \(r_{\mathrm{up}}\) is the nuisance-limited exponent delivered by this clipped AIPW ERM.
+- The side-condition domain includes supplied nuisance rates, bounded cross-fitted nuisances, fixed balanced folds, and localized empirical-process assumptions.
 
 ---
 
-## Takeaways
+## The proof separates stochastic error from drift
 
-- The paper establishes an observed-law minimax lower-bound exponent for offline policy learning under joint margin-overlap decay.
-- The exponent is calibrated by margin mass, local contrast size, and weak treatment-arm probability.
-- Under the stated nuisance-rate and empirical-process side conditions, a clipped cross-fitted AIPW ERM matches the lower-bound exponent up to logarithmic factors whenever \(g_{\mathrm{joint}}\) does not bind.
-- When \(g_{\mathrm{joint}}\) binds, the same conditional analysis gives the specified rule’s nuisance-limited exponent.
-- The paper records the remaining feasible-tightness question explicitly.
+- Near-ERM gives a basic inequality against the oracle comparator.
+- The clipped score envelope turns clipping level \(q_n\) into stochastic complexity.
+- The drift identity expresses the conditional mean error of the clipped score.
+- Localization places the weak-overlap drift inside the small-contrast region.
+- The balance lemma converts all terms into the exponent \(r_{\mathrm{up}}\).
+
+@informal lem:feasible-erm-basic-inequality: The feasible ERM is measurable and nearly maximizes empirical welfare, giving the stated comparator inequality.
+
+@informal lem:crude-clipped-score-envelope: Under bounded outcomes and bounded outcome nuisances, the clipped AIPW score is at most a constant over \(q\).
+
+@informal lem:clip-bias: The clipped AIPW score reproduces the contrast up to the explicit drift \(b_q\).
+
+---
+
+## Also in the paper
+
+@informal lem:localized-clipped-drift-bound: The clipped-score drift is bounded by the stated product, weak-overlap localization, and complement terms when \(\gamma>0\), and by the product nuisance term under strict overlap.
+
+@informal lem:crude-localized-master-bound: The regret of the clipped cross-fitted AIPW ERM is bounded by the lower-bound scale, the clipped empirical-process term, and the nuisance-drift terms.
+
+@informal lem:clip-balance-exponent: The deterministic clipping and localization schedules make the master-bound terms at most \(C n^{-r_{\mathrm{feas}}}(\log n)^p\).
+
+@informal lem:localized-vc-self-bound: An offset empirical-process control at scale \(\rho_n\) implies expected regret at the same scale.
+
+@informal lem:crossfit-localized-offset-control: Fixed balanced cross-fitting preserves the localized offset control at the stated margin exponent.
+
+@informal lem:clipped-region-localization: Under positive overlap decay, the weak-overlap part of any disagreement set is bounded by the stated margin-overlap and regret-localization terms.
+
+---
+
+## The open question is feasible tightness
 
 @formal oeq:feasible-tight
+
+- The lower bound calibrates the observed-law converse exponent over \(\mathcal P_{\alpha,\gamma}\).
+- The upper bound characterizes one clipped cross-fitted AIPW ERM under explicit side conditions.
+- The nonbinding regime gives matching polynomial exponents up to logarithmic factors.
+- The strict-gap regime identifies the nuisance-learning branch that governs this procedure’s conditional rate.

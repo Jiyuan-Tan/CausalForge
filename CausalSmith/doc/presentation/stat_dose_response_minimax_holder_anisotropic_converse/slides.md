@@ -1,151 +1,178 @@
-# The Interior Dose-Response Floor
+# Dose-Response Lower Bounds at an Interior Dose
 
-Under fixed interior overlap and Hölder smoothness, estimating the dose-response partial mean at \(t_0\), the evaluation dose, has minimax MSE at least of order \(n^{-2\alpha/(2\alpha+1)}\), for every fixed treatment-density smoothness \(\beta>0\).
-
----
-
-## The Punchline
-
-- The target is the average outcome if every unit were evaluated at the same interior dose \(t_0\).
-- The paper proves a same-class minimax lower bound over the Hölder dose class \(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)\).
-- The lower-bound exponent is the one-dimensional treatment-regression exponent.
-- The result holds for every fixed \(\beta>0\), with constants and slack-baseline feasibility calibrated to the fixed model constants.
-- In the smooth-covariate regime \(d\le 4s\), this exponent agrees with the published higher-order influence function (HOIF) benchmark \(\rho_n\).
-- The talk explains why the hardest subproblem already lives in the treatment coordinate.
+Under Hölder smoothness, local positivity, bounded outcomes, and strict baseline slack, the minimax MSE for the interior dose-response partial mean is at least \(n^{-2\alpha/(2\alpha+1)}\) for every fixed treatment-density smoothness \(\beta>0\).
 
 ---
 
-## The Econometric Question
+## The lower floor is the treatment-regression floor
 
-- Continuous-treatment papers often target a dose-response curve: what would the mean outcome be at dose \(t\)?
-- With covariates, the standard adjusted target is a partial mean of the conditional outcome regression.
-- Here the focus is one fixed interior dose \(t_0\), away from boundary behavior at 0 and 1.
-- Running example: estimate mean health outcome at a clinically relevant drug dose, adjusting for baseline covariates.
-- The minimax question is: how small can worst-case squared error be over a smooth nonparametric class?
+- The target is the dose-response partial mean \(\theta_P(t_0)\), the covariate average of the conditional mean at a fixed interior dose.
+- The paper studies worst-case mean-squared error over one Hölder observed-data class.
+- The lower bound is driven by how hard it is to learn the regression function in the treatment coordinate near \(t_0\).
+- This obstruction remains present for every fixed \(\beta>0\).
+- In the smooth-covariate regime \(d\le 4s\), the lower-bound exponent matches the published HOIF benchmark exponent.
+
+@informal thm:sharp-pointwise-lower-bound: Under the stated smoothness, positivity, boundedness, and strict-slack conditions, the minimax risk is at least a constant times \(n^{-2\alpha/(2\alpha+1)}\).
 
 ---
 
-## The Observed-Data Target
+## A fixed dose creates a local regression problem
 
-- One observation is \(O=(Y,A,X)\): outcome, continuous dose, and covariates.
+- Think of a continuous treatment \(A\), such as hours of training, pollution exposure, or dosage.
+- The object of interest is the mean outcome if everyone were evaluated at one interior dose \(t_0\).
+- The data contain observations near \(t_0\), rather than repeated observations exactly at \(t_0\).
+- Smoothness in the dose direction determines how much nearby doses can teach us about the target dose.
+- Local positivity supplies enough observations near \(t_0\) for the comparison to be meaningful.
+
+---
+
+## The estimand averages a target-dose regression surface
+
+- One observation is \(O=(Y,A,X)\).
+- \(Y\) is the outcome, \(A\in[0,1]\) is the continuous treatment dose, and \(X\in[0,1]^d\) is the covariate vector.
 - The regression \(\mu_P(a,x)\) is the conditional mean of \(Y\) at dose \(a\) and covariates \(x\).
-- The treatment density \(\pi_P(a\mid x)\) describes how much data appear near each dose after conditioning.
-- The target \(\theta_P(t_0)\) averages \(\mu_P(t_0,X)\) over the covariate distribution.
-- Under consistency, no unmeasured confounding, and local positivity, this observed-data partial mean has the usual causal dose-response interpretation.
-- In the drug-dose example, \(\theta_P(t_0)\) is the covariate-adjusted mean outcome at dose \(t_0\).
+- The target \(\theta_P(t_0)\) averages \(\mu_P(t_0,X)\) over the population covariate distribution.
+- Under consistency, no unmeasured confounding, and local positivity, this observed-data partial mean has the causal dose-response interpretation.
+
+@figure observed-target-pipeline: Box-and-arrow schematic showing observed data O=(Y,A,X) feeding the regression mu_P(a,x), evaluation at the interior dose t_0, and averaging over the covariate distribution to obtain theta_P(t_0).
 
 ---
 
-## The Model Class in Words
+## The model separates dose and covariate smoothness
 
-- Outcomes are uniformly bounded by \(M\).
-- The evaluation window \([t_0-\varepsilon_0,t_0+\varepsilon_0]\) lies inside the dose support.
-- Local positivity keeps the treatment density at least \(c_0\) throughout that window.
-- Treatment-direction smoothness: \(a\mapsto\mu_P(a,x)\) is \(\alpha\)-Hölder, and \(a\mapsto\pi_P(a\mid x)\) is \(\beta\)-Hölder.
-- Covariate-direction smoothness: \(\mu_P(t_0,x)\), \(\pi_P(t_0\mid x)\), and \(p_{X,P}(x)\) are \(s\)-Hölder in \(x\).
-- These restrictions define the same class used for the lower-bound risk.
+- \(\alpha\) is the Hölder smoothness of the outcome regression in the dose direction near \(t_0\).
+- \(\beta\) is the Hölder smoothness of the treatment density in the dose direction near \(t_0\).
+- \(s\) is the Hölder smoothness in the covariate direction.
+- \(d\) is the covariate dimension.
+- The outcome is bounded, the dose is interior, and the treatment density is bounded below near \(t_0\).
+- The strict-slack baseline gives room to build least favorable alternatives inside the same class.
 
----
-
-## The Two Load-Bearing Conditions
-
-- Interior overlap means every covariate profile has usable dose variation near \(t_0\).
 @formal ass:local-positivity
 
-- Strict baseline slack supplies interior baseline densities \(p_0\) and \(q_0\) with margin \(\eta_0\).
-- That margin lets the proof perturb the regression while preserving boundedness, smoothness, and positivity.
-- In the drug-dose example, the baseline design has enough untreated slack around the target dose to embed hard local alternatives.
+---
+
+## The target and risk criterion are fixed by the same class
+
+- The paper studies the same Hölder dose class throughout, rather than changing the model between lower-bound and comparison statements.
+- The minimax risk is the best possible worst-case mean-squared error over that class.
+- The estimator may use the full iid sample and any measurable procedure.
+- The risk is evaluated at the fixed interior dose \(t_0\).
+
+@formal def:theta-functional
+
+@formal def:minimax-risk
 
 ---
 
-## The Key Idea
+## The comparison benchmark has two candidate rates
 
-- The construction freezes the covariate distribution and the treatment density.
-- It varies only the treatment regression in a narrow neighborhood of \(t_0\).
-- The perturbation has width \(h\) in the dose coordinate and height proportional to the Hölder allowance at that width.
-- The two alternatives move the target \(\theta_P(t_0)\) while keeping the sample laws statistically close.
-- Because the density is fixed, the obstruction is present for every fixed \(\beta>0\).
-@figure lower-bound-pipeline: Two observed-data laws share the same covariate density and treatment density, differ only by a local regression bump around \(t_0\), and induce separated target values.
+- The published HOIF benchmark \(\rho_n\) is the larger of two rates.
+- One term is the one-dimensional treatment-regression scale \(n^{-2\alpha/(2\alpha+1)}\).
+- The other term depends on covariate dimension \(d\), covariate smoothness \(s\), and treatment smoothness \(\alpha\).
+- The algebraic comparison asks which term governs \(\rho_n\) in each regime.
 
----
-
-## Where the Literature Stands
-
-- Potential-outcome and generalized propensity-score work gives the causal language for continuous doses.
-- Semiparametric and orthogonal-score work explains how nuisance estimation enters partial-mean problems.
-- Kennedy and related econometric work study doubly robust continuous-treatment curve estimation.
-- Bonvini and Kennedy provide the closest HOIF benchmark rate \(\rho_n\) under additional localized regularity.
-- This paper supplies the converse lower-bound side for the interior fixed-dose partial mean over the stated Hölder class.
+@formal def:published-hoif-rate
 
 ---
 
-## Main Lower Bound
+## The construction keeps density nuisances under control
 
-@informal thm:sharp-pointwise-lower-bound: Under positive smoothness, interior constants, and strict baseline slack, the minimax risk is at least a constant times \(n^{-2\alpha/(2\alpha+1)}\) for every fixed \(\beta>0\).
+- Mechanism: start from baseline densities \(p_0\) and \(q_0\) that sit strictly inside the model class.
+- Mechanism: perturb the outcome regression locally in the dose coordinate near \(t_0\).
+- Mechanism: keep the treatment-density part compatible with the \(\beta\)-smoothness restriction.
+- Intuition: the alternatives change the target while remaining statistically hard to distinguish.
+- The best possible testing separation is set by one-dimensional smoothing in the treatment direction.
+
+@figure least-favorable-submodel: Box-and-arrow schematic showing slack baseline densities p_0 and q_0 feeding a local regression perturbation near t_0, which creates two hard-to-distinguish laws with separated theta_P(t_0).
+
+---
+
+## The all-\(\beta\) lower bound is the main result
+
+@informal thm:sharp-pointwise-lower-bound: For every fixed \(\beta>0\), the minimax risk is at least a constant times the treatment-regression rate under the theorem's stated conditions.
 
 @formal thm:sharp-pointwise-lower-bound
 
 ---
 
-## Why the Bound Is New
+## Smooth covariates align the lower floor with \(\rho_n\)
 
-- The lower floor is proved on the same Hölder dose class \(\mathcal P_{\alpha,\beta,s}(M,c_0,\varepsilon_0,t_0)\).
-- The exponent is governed by treatment-regression smoothness \(\alpha\).
-- The treatment-density smoothness \(\beta\) remains part of the class, while the hard alternatives keep the treatment density fixed.
-- The proof isolates an unavoidable one-dimensional regression problem inside the causal partial-mean experiment.
-- The statistical tradeoff is the usual local-testing balance: target separation squared against \(n\)-sample distinguishability.
+- When \(d\le 4s\), covariate smoothness is high enough relative to dimension.
+- In that regime, the benchmark \(\rho_n\) equals the treatment-regression term.
+- The same lower-bound construction therefore gives a lower floor at the benchmark scale.
+- In the running example, sufficiently smooth covariate adjustment leaves the local dose-regression difficulty as the binding obstruction.
 
----
+@informal prop:oracle-regime-reduction: When \(d\le 4s\), the published benchmark equals \(n^{-2\alpha/(2\alpha+1)}\), and the same-class minimax risk is at least a constant times \(\rho_n\).
 
-## Comparison with the HOIF Benchmark
-
-- The published benchmark is \(\rho_n=n^{-2\alpha/(2\alpha+1)}\vee n^{-2/(1+d/(4s)+1/\alpha)}\).
-- The first term is the treatment-regression scale.
-- The second term reflects the covariate-smoothness component in the published HOIF comparison.
-- The algebra splits into \(d\le 4s\) and \(4s<d\).
-
-@informal prop:oracle-regime-reduction: When \(d\le 4s\), under the same interior constants and strict-slack baseline, the published benchmark equals the treatment-regression rate, and the same-class minimax risk is at least a constant times \(\rho_n\).
+@formal prop:oracle-regime-reduction
 
 ---
 
-## Smooth-Covariate Regime
+## The smooth-covariate theorem packages the same comparison
 
-@informal thm:sharp-minimax-smooth-covariate: When \(d\le 4s\), under the same interior constants and strict-slack baseline, the same-class minimax risk is at least a constant times \(n^{-2\alpha/(2\alpha+1)}\), and this rate equals \(\rho_n\).
+@informal thm:sharp-minimax-smooth-covariate: Under the smooth-covariate condition \(d\le 4s\), the same-class minimax risk is at least \(n^{-2\alpha/(2\alpha+1)}\) up to a constant, and this rate equals \(\rho_n\).
 
 @formal thm:sharp-minimax-smooth-covariate
 
 ---
 
-## Low-Covariate-Smoothness Regime
+## Low covariate smoothness separates the exponents
 
-@informal thm:frontier-bracket-deficient: When \(4s<d\), under the same interior constants and strict-slack baseline, the same-class minimax risk is still at least a constant times \(n^{-2\alpha/(2\alpha+1)}\), while the published benchmark is governed by \(n^{-2/(1+d/(4s)+1/\alpha)}\) with a strictly smaller exponent.
+- When \(4s<d\), the published benchmark is governed by the covariate-smoothness term.
+- The lower bound remains at the treatment-regression exponent.
+- The theorem gives a strict algebraic ordering between the two exponents.
+- This identifies the certified same-class lower floor in the low-covariate-smoothness regime.
+
+@informal thm:frontier-bracket-deficient: When \(4s<d\), the minimax risk is at least a constant times the treatment-regression rate, while the published benchmark has a strictly smaller exponent.
 
 @formal thm:frontier-bracket-deficient
 
 ---
 
-## Also in the Paper
+## Also in the paper
 
-@informal lem:published-upper-bound-cited: Cited, not proved here: under the Bonvini--Kennedy conditions and tuning, the specified HOIF estimator, with its trained nuisances held fixed, attains conditional mean-squared error at most a constant times \(\rho_n\).
+@informal lem:oracle-dose-regression-lower-all-beta: The oracle lower-bound lemma gives the same \(n^{-2\alpha/(2\alpha+1)}\) minimax floor for every fixed \(\beta>0\).
 
-@informal def:beta-frontier-handle: The beta comparison handle records the all-\(\beta\) lower floor, the two algebraic benchmark regimes, and the stated same-class upper-frontier alternatives.
+@informal lem:rho-oracle-regime-algebra: In the regime \(d\le 4s\), the published benchmark \(\rho_n\) equals the treatment-regression rate.
 
----
+@informal lem:rho-deficient-regime-algebra: In the regime \(4s<d\), the published benchmark equals the covariate-smoothness term and has exponent strictly below the oracle exponent.
 
-## Why the Lower Bound Works
-
-- Start with an interior baseline law satisfying the slack condition.
-- Add a small regression bump centered at \(t_0\), leaving the covariate density and treatment density unchanged.
-- Choose the bump width so the \(\alpha\)-Hölder restriction allows enough height while the sample distributions stay close.
-- The target changes because \(\theta_P(t_0)\) reads the regression exactly at the evaluation dose.
-- Le Cam’s two-point argument turns close sample laws and separated targets into a minimax MSE floor.
+@informal lem:published-upper-bound-cited: Under the cited Bonvini--Kennedy localized-regularity conditions, the HOIF estimator attains at most a constant times \(\rho_n\).
 
 ---
 
-## What to Remember
+## The proof is a two-point testing argument
 
-- The paper establishes a same-class lower bound for the interior continuous-treatment dose-response partial mean.
-- The certified exponent is \(2\alpha/(2\alpha+1)\), the treatment-regression exponent.
-- The conclusion applies for every fixed \(\beta>0\) under the stated slack-baseline condition.
-- In the smooth-covariate regime \(d\le 4s\), the lower-bound exponent agrees with the published HOIF benchmark.
-- In the \(4s<d\) regime, the paper gives the exact algebraic ordering between the certified lower floor and the published benchmark exponent.
+- Build two observed-data laws inside the same Hölder dose class.
+- Make the two laws differ only through a local bump in the treatment regression near \(t_0\).
+- Choose the bump width and height at the treatment-regression scale.
+- The target values separate at the same scale as the bump height.
+- The sample distributions remain close enough that Le Cam's bound converts testing difficulty into MSE risk.
+
+---
+
+## Why \(\beta\) does not change the lower exponent
+
+- The perturbation uses the outcome regression as the hard direction.
+- The treatment-density component is held within the slack baseline envelope.
+- Higher or lower fixed \(\beta\) changes the constants and feasibility margins through the baseline condition.
+- The exponent comes from the local dose-regression tradeoff governed by \(\alpha\).
+
+---
+
+## What the comparison says
+
+- Bonvini--Kennedy supplies the published HOIF benchmark \(\rho_n\) under its localized-regularity conditions.
+- This paper supplies a same-class minimax lower floor over the Hölder dose class.
+- For \(d\le 4s\), the lower-floor exponent and the benchmark exponent coincide.
+- For \(4s<d\), the paper gives the strict exponent comparison between the lower floor and the published benchmark.
+- The rate story is therefore anchored by a same-class lower bound and an external upper-side benchmark.
+
+---
+
+## The contribution is a certified lower-rate benchmark
+
+- The paper establishes the minimax lower bound \(n^{-2\alpha/(2\alpha+1)}\) for the interior dose-response partial mean under the stated Hölder, positivity, boundedness, and slack assumptions.
+- The lower-bound exponent applies for every fixed treatment-density smoothness \(\beta>0\).
+- The algebraic comparison with \(\rho_n\) identifies the smooth-covariate agreement regime \(d\le 4s\).
+- The low-covariate-smoothness regime \(4s<d\) has a certified same-class treatment-regression lower floor and a strictly smaller published benchmark exponent.
