@@ -581,3 +581,33 @@ describe("mergeComments keeps optimistic posts across hydration batches", () => 
     expect(merged[0].replies).toEqual([]);
   });
 });
+
+describe("reanchor with a wire-truncated quote", () => {
+  // The worker historically clipped anchor.exact to 400 chars, cutting a long
+  // multi-sentence quote mid-formula — full-equality matching then reported
+  // "drifted" on the very text the comment was written against (seen live on
+  // the loggap paper). The prefix pass must re-anchor such quotes exactly.
+  const longSentences: SentenceRef[] = Array.from({ length: 12 }, (_, i) => ({
+    id: `s${i}`,
+    text:
+      `Sentence ${i} states that the estimator envelope E_${i}(n,d,eps) dominates ` +
+      `the truncated comparison sup_{P in D_${i}} E_P[(tau-psi(P))^2] for every ` +
+      `measurable candidate under the product-law embedding of block ${i}.`,
+  }));
+
+  it("re-anchors a clipped 5-sentence quote as anchored, not drifted", async () => {
+    const { reanchor } = await import("../src/lib/comments/anchor.js");
+    const full = makeAnchor(longSentences, 4, 9);
+    expect(full.exact.length).toBeGreaterThan(400); // the clip actually bites
+    const clipped = { ...full, exact: full.exact.slice(0, 400) };
+    const m = reanchor(clipped, longSentences);
+    expect(m).toMatchObject({ state: "anchored", start: 4, end: 9, score: 1 });
+  });
+
+  it("a short quote gains no spurious prefix matches", async () => {
+    const { reanchor } = await import("../src/lib/comments/anchor.js");
+    const short = { exact: "Sentence 4 states", prefix: "", suffix: "", count: 1 };
+    const m = reanchor(short, longSentences);
+    expect(m.state).not.toBe("anchored"); // below the prefix-pass floor; fuzzy rules apply
+  });
+});

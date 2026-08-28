@@ -200,13 +200,23 @@ describe("the stylesheet gives math a highlight surface", () => {
   }));
   const mathRules = rules.filter((r) => /\.katex-display/.test(r.selector));
 
-  it("paints display math for every highlight state", () => {
+  it("paints display math for every highlight state except drift", () => {
     const covered = (state: string) =>
       mathRules.some((r) => r.selector.includes(state) && /background|outline|border/.test(r.body));
     expect(covered('.cs-s[class*="cs-hl-"]')).toBe(true); // none / verified / problem
-    expect(covered(".cs-s.cs-hl-drift")).toBe(true);
     expect(covered(".cs-s.cs-pending")).toBe(true);
     expect(covered(".cs-s.cs-linked")).toBe(true);
+    // Drift is the deliberate exception: its dashed rule on a display equation
+    // doubled the underlines the neighbouring prose fragments already draw
+    // (reader-reported), so block math goes bare there — inline math keeps it.
+    expect(covered(".cs-s.cs-hl-drift")).toBe(false);
+    const driftInline = rules.some(
+      (r) =>
+        r.selector.includes(".cs-s.cs-hl-drift > .katex") &&
+        !r.selector.includes(".katex-display") &&
+        /border-bottom/.test(r.body),
+    );
+    expect(driftInline).toBe(true);
   });
 
   it("drives those washes from the same tokens as the prose highlight", () => {

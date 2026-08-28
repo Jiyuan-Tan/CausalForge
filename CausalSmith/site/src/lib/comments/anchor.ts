@@ -275,6 +275,36 @@ export function reanchor(
     return { state: "anchored", start: best.start, end: best.end, score: 1 };
   }
 
+  // Truncated-quote pass. The wire clips a stored `exact` to a length cap
+  // (historically 400 chars — a five-sentence quote spanning display equations
+  // was cut MID-FORMULA), so the stored key is a strict PREFIX of the true
+  // window's key and full equality can never fire: the comment reads as
+  // "drifted" on the very text it was written against. Prefix equality on a
+  // long key identifies the window as unambiguously as full equality; the
+  // length floor keeps a short quote from prefix-matching spuriously.
+  const TRUNCATED_MIN_KEY = 200;
+  if (anchorLen >= TRUNCATED_MIN_KEY) {
+    const prefixHits: Array<{ start: number; end: number }> = [];
+    for (let s = 0; s + w <= n; s++) {
+      if (windowKeyLen(s, s + w) <= anchorLen) continue; // equal was the exact pass
+      if (windowKey(s, s + w).startsWith(anchorKey)) prefixHits.push({ start: s, end: s + w });
+    }
+    if (prefixHits.length > 0) {
+      let best = prefixHits[0];
+      if (prefixHits.length > 1) {
+        let bestCtx = -1;
+        for (const h of prefixHits) {
+          const c = contextScore(anchor, sentences, h.start, h.end);
+          if (c > bestCtx) {
+            bestCtx = c;
+            best = h;
+          }
+        }
+      }
+      return { state: "anchored", start: best.start, end: best.end, score: 1 };
+    }
+  }
+
   // Fuzzy pass. Build the query grams once, and skip any window whose length is
   // too far from the quote's to possibly clear DRIFT_THRESHOLD — a Dice
   // coefficient above 0.5 forces the lengths within ~[0.5, 2]× of each other.
