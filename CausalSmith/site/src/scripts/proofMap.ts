@@ -253,6 +253,18 @@ function boot(): void {
   });
   ui.verify.addEventListener("click", () => void onVerify(state));
 
+  // One session per page: adopt a sign-in or sign-out made through the
+  // comments rail (both widgets share the same stored token), so the reader
+  // never signs in twice on one paper.
+  window.addEventListener(auth.AUTH_EVENT, () => {
+    const token = auth.readToken();
+    if (token === state.token) return;
+    state.token = token;
+    state.viewer = null;
+    if (token) void loadViewer(state).then(() => refreshMarks(state));
+    else refreshMarks(state);
+  });
+
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || state.selected === null) return;
     clearSelection(state);
@@ -747,8 +759,8 @@ async function onVerify(state: State): Promise<void> {
     setStatus(state, "Opening GitHub…");
     try {
       const token = await auth.signIn(state.worker);
+      state.token = token; // before writeToken: its broadcast must find us in sync
       auth.writeToken(token);
-      state.token = token;
       await loadViewer(state);
       setStatus(state, "");
     } catch {

@@ -23,6 +23,21 @@
 const TOKEN_KEY = "cs-gh-token";
 const AUTH_TIMEOUT_MS = 180_000;
 
+/** Fired on `window` whenever the stored token changes (sign-in or sign-out).
+ *  Every widget on the page — the comments rail, the Proof map — holds its own
+ *  copy of the token read at load, so without this signal each one asks the
+ *  reader to sign in separately. Listeners re-read `readToken()` and adopt it:
+ *  one sign-in (or sign-out) covers the whole page. */
+export const AUTH_EVENT = "cs-auth-changed";
+
+function broadcast(): void {
+  try {
+    window.dispatchEvent(new Event(AUTH_EVENT));
+  } catch {
+    /* no DOM (tests) — nothing to notify */
+  }
+}
+
 export interface Viewer {
   login: string;
   avatarUrl: string;
@@ -44,6 +59,7 @@ export function writeToken(token: string): void {
   } catch {
     /* session-only anyway; sign-in simply won't survive a reload */
   }
+  broadcast();
 }
 
 export function clearToken(): void {
@@ -52,6 +68,7 @@ export function clearToken(): void {
   } catch {
     /* nothing to do */
   }
+  broadcast();
 }
 
 function makeNonce(): string {

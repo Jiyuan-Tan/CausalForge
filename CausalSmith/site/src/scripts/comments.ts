@@ -758,6 +758,21 @@ function wire(state: State): void {
     resizeTimer = window.setTimeout(() => refresh(state), 120);
   });
   window.addEventListener("load", () => refresh(state));
+
+  // One session per page: adopt a sign-in or sign-out made through another
+  // widget (the Proof map shares the same stored token), so the reader never
+  // signs in twice on one paper.
+  window.addEventListener(auth.AUTH_EVENT, () => syncAuth(state));
+}
+
+function syncAuth(state: State): void {
+  const token = auth.readToken();
+  if (token === state.token) return;
+  state.token = token;
+  state.viewer = null;
+  renderIdentity(state);
+  if (token) void loadViewer(state);
+  else refresh(state);
 }
 
 function sentenceFrom(target: EventTarget | null): HTMLElement | null {
@@ -778,8 +793,8 @@ async function doSignIn(state: State): Promise<void> {
   setStatus(state, "Opening GitHub…");
   try {
     const token = await auth.signIn(state.cfg.worker);
+    state.token = token; // before writeToken: its broadcast must find us in sync
     auth.writeToken(token);
-    state.token = token;
     setStatus(state, "");
     renderIdentity(state);
     await loadViewer(state);

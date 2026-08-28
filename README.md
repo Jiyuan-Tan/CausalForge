@@ -4,6 +4,11 @@
 browse the Causalean library (every definition and theorem with a plain-English
 translation) and the machine-verified working papers.
 
+**📄 Paper: [CausalSmith: A Formally Grounded, Self-Improving Agentic Framework
+for Automated Research in Causal
+Inference](https://arxiv.org/abs/2607.22511)** — Tan & Syrgkanis,
+arXiv:2607.22511. The paper describing this project.
+
 CausalSmith lays foundations for **formalized, machine-checked causal inference**
 and builds an **AI theorem pipeline** on top of it. The project is two
 [Lean 4](https://leanprover.github.io/) packages with a one-way dependency — the
