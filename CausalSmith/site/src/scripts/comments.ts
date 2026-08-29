@@ -758,6 +758,20 @@ function wire(state: State): void {
     resizeTimer = window.setTimeout(() => refresh(state), 120);
   });
   window.addEventListener("load", () => refresh(state));
+  // The body's HEIGHT keeps changing after load: content-visibility renders
+  // blocks lazily, so every scroll can realize placeholder-sized blocks at
+  // their true height, moving everything below them — and a rail card
+  // positioned against the old geometry ends up far from its passage. A window
+  // `resize` never fires for this; watch the body itself. (The rail lives
+  // OUTSIDE #paper-body, so re-laying it out cannot re-trigger the observer.)
+  if (typeof ResizeObserver === "function") {
+    let bodyTimer = 0;
+    const ro = new ResizeObserver(() => {
+      window.clearTimeout(bodyTimer);
+      bodyTimer = window.setTimeout(() => refresh(state), 120);
+    });
+    ro.observe(state.bodyRoot);
+  }
 
   // One session per page: adopt a sign-in or sign-out made through another
   // widget (the Proof map shares the same stored token), so the reader never
