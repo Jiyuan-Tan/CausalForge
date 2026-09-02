@@ -212,6 +212,7 @@ export const ProposedCoreEditSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("definition-replace"), id: z.string().regex(/^def:[a-z0-9-]+$/),
     proposed: DefinitionSchema, reason: z.string(), direction: z.literal("correct"),
+    based_on_revision: z.string().regex(/^rev:[a-f0-9]{64}$/).optional(),
   }),
   z.object({
     kind: z.literal("definition-delete"), id: z.string().regex(/^def:[a-z0-9-]+$/),
@@ -320,4 +321,54 @@ export const SolveUnitOutputSchema = z.strictObject({
   proposed_core_edits: z.array(ProposedCoreEditSchema).default([]),
   open_obligations: z.array(OpenObligationSchema).default([]),
   prose_updates: ProseUpdatesSchema.optional(),
+}).superRefine((output, ctx) => {
+  for (const change of output.proposed_definition_changes) {
+    const paired = output.proposed_core_edits.filter(
+      (edit): edit is Extract<(typeof output.proposed_core_edits)[number], { kind: "definition-replace" }> =>
+        edit.kind === "definition-replace" && edit.id === change.id,
+    );
+    if (paired.length !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposed_definition_changes"],
+        message:
+          `${change.id} formula correction requires exactly one paired definition-replace ` +
+          `with complete post-image metadata; found ${paired.length}`,
+      });
+      continue;
+    }
+    if (paired[0].proposed.construction !== change.proposed || paired[0].proposed.free_symbols === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposed_core_edits"],
+        message:
+          `${change.id} paired definition-replace must match the proposed formula and declare free_symbols`,
+      });
+    }
+  }
+
+  for (const change of output.proposed_statement_changes) {
+    const paired = output.proposed_core_edits.filter(
+      (edit): edit is Extract<(typeof output.proposed_core_edits)[number], { kind: "statement-replace" }> =>
+        edit.kind === "statement-replace" && edit.id === change.id,
+    );
+    if (paired.length !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposed_statement_changes"],
+        message:
+          `${change.id} claim correction requires exactly one paired statement-replace ` +
+          `whose metadata describes the post-change claim; found ${paired.length}`,
+      });
+      continue;
+    }
+    if (paired[0].proposed.statement !== change.proposed || paired[0].proposed.free_symbols === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposed_core_edits"],
+        message:
+          `${change.id} paired statement-replace must match the proposed claim and declare free_symbols`,
+      });
+    }
+  }
 });

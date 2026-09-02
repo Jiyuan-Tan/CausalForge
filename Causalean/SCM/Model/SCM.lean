@@ -96,6 +96,10 @@ def randomVars (G : SWIGGraph N) : Finset (SWIGNode N) :=
 
 end SWIGGraph
 
+-- The structural functions are the leaf atoms every SCM measurability argument bottoms out
+-- in; registering the field lets `fun_prop` reach them without naming the projection.
+attribute [fun_prop] SCM.structFun_measurable
+
 namespace SCM
 
 universe uN uΩ

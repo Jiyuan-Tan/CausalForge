@@ -1,6 +1,7 @@
 -- Adapted from auto-res/lean-rademacher FoML/PseudoMetric.lean (commit 72d28921dc960f47691640fb973303a1be9d13ca, MIT (c) 2025 AutoRes)
 import Causalean.Stat.Concentration.Covering.CoveringNumber
 import Causalean.Stat.Concentration.Rademacher.Rademacher
+import Causalean.Tactic.Attr
 
 /-!
 Defines the empirical L² pseudometric on function classes used by Dudley
@@ -30,6 +31,7 @@ noncomputable def empiricalNorm (S : Fin n → 𝒳) (f : 𝒳 → ℝ) : ℝ :=
 
 /-- The empirical norm unfolds to the square root of the average squared sample
 values. -/
+@[causal_defs_simps]
 lemma empiricalNorm_def (S : Fin n → 𝒳) (f : 𝒳 → ℝ) :
     empiricalNorm S f = Real.sqrt ((1 / n) * ∑ i : Fin n, (f (S i))^2) :=
   rfl

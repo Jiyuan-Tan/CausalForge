@@ -32,6 +32,7 @@ def finiteSampleMap {X Y : Type*} [MeasurableSpace X] [MeasurableSpace Y]
 
 /-- Pointwise mapping of dependent finite samples is measurable. -/
 -- @node: measurable_finiteSampleMap
+@[fun_prop]
 lemma measurable_finiteSampleMap {X Y : Type*} [MeasurableSpace X] [MeasurableSpace Y]
     (f : X → Y) (hf : Measurable f) :
     Measurable (finiteSampleMap f : FiniteSample X → FiniteSample Y) := by
@@ -138,6 +139,7 @@ def canonicalPrefixObservations {X : Type*} [MeasurableSpace X]
 
 /-- Reading a fixed prefix from a canonical finite configuration is measurable. -/
 -- @node: measurable_canonicalPrefixObservations
+@[fun_prop]
 lemma measurable_canonicalPrefixObservations {X : Type*} [MeasurableSpace X]
     (x₀ : X) (n : ℕ) :
     Measurable (canonicalPrefixObservations x₀ n :
@@ -263,6 +265,7 @@ def finiteSamplePaddedStream {X : Type*} [MeasurableSpace X]
   (s.count, fun k => if h : k < s.count then s.points ⟨k, h⟩ else x0)
 
 -- @node: finiteSamplePaddedStream_measurable
+@[fun_prop]
 lemma finiteSamplePaddedStream_measurable {X : Type*} [MeasurableSpace X]
     (x0 : X) : Measurable (finiteSamplePaddedStream x0) := by
   intro t ht

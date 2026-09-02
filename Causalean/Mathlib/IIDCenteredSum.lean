@@ -341,16 +341,14 @@ lemma iid_centered_sum_sq_lintegral_unscaled_le_of_joined_law
         g p.1 (p.2 i) - ∫ x, g p.1 x ∂P := by
       intro i
       have hpair : Measurable fun p : Ω × ((i : s) → X) => (p.1, p.2 i) := by
-        apply Measurable.prod
-        · exact measurable_fst
-        · exact (measurable_pi_apply i).comp measurable_snd
+        fun_prop
       exact (hg_uncurry_meas.comp hpair).sub (hc_meas.comp measurable_fst)
     exact ENNReal.measurable_ofReal.comp
       ((Finset.measurable_sum _ fun i _ => hterm i).pow_const 2)
   have hB_meas : @Measurable Ω ENNReal m_A inferInstance B := by
     have hnorm : @Measurable Ω ℝ m_A inferInstance
         (fun ω => (eLpNorm (g ω) 2 P).toReal) :=
-      measurable_eLpNorm_two_toReal_of_uncurry (Ω := Ω) (P := P)
+      measurable_eLpNorm_toReal_of_uncurry (Ω := Ω) (P := P)
         (g := g) (by norm_num) (by norm_num) hg_uncurry_meas
     exact ENNReal.measurable_ofReal.comp (hnorm.pow_const 2)
   have hleft_eq : ∫⁻ ω, ENNReal.ofReal

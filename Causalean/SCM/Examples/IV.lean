@@ -142,10 +142,10 @@ example : D ∈ ivDAG.parents Y := by decide
 example : U ∈ ivDAG.parents Y := by decide
 
 -- Z is a root (no parents)
-example : ivDAG.parents Z = ∅ := by native_decide
+example : ivDAG.parents Z = ∅ := by decide
 
 -- U is a root (no parents)
-example : ivDAG.parents U = ∅ := by native_decide
+example : ivDAG.parents U = ∅ := by decide
 
 -- Children: Z has child D
 example : D ∈ ivDAG.children Z := by decide
@@ -158,21 +158,21 @@ example : D ∈ ivDAG.children U := by decide
 example : Y ∈ ivDAG.children U := by decide
 
 -- Y is a leaf (no children)
-example : ivDAG.children Y = ∅ := by native_decide
+example : ivDAG.children Y = ∅ := by decide
 
 -- ============================================================
 -- Testing DAG.lean: roots
 -- ============================================================
 
 -- Z and U are roots
-example : ivDAG.isRoot Z := by native_decide
-example : ivDAG.isRoot U := by native_decide
+example : ivDAG.isRoot Z := by decide
+example : ivDAG.isRoot U := by decide
 
 -- D is not a root (it has parents)
-example : ¬ivDAG.isRoot D := by native_decide
+example : ¬ivDAG.isRoot D := by decide
 
 -- Y is not a root
-example : ¬ivDAG.isRoot Y := by native_decide
+example : ¬ivDAG.isRoot Y := by decide
 
 -- ============================================================
 -- Testing DAG.lean: ancestors, descendants (inductive)
@@ -214,7 +214,7 @@ example : ¬ivDAG.dSep {Z} {Y} ∅ := by decide
 
 -- Z and Y are NOT d-separated by {D} either
 -- (conditioning on D opens the collider path Z → D ← U → Y)
-example : ¬ivDAG.dSep {Z} {Y} {D} := by native_decide
+example : ¬ivDAG.dSep {Z} {Y} {D} := by decide
 
 -- Z and Y ARE d-separated by {D, U}
 example : ivDAG.dSep {Z} {Y} {D, U} := by decide
@@ -248,8 +248,8 @@ def ivSWIGGraph : SWIGGraph IVNode where
     simp only [Finset.mem_singleton] at hu
     subst u
     exact ⟨U, rfl⟩
-  obs_unobs_disjoint := by native_decide
-  dag_edges_classified := by native_decide
+  obs_unobs_disjoint := by decide
+  dag_edges_classified := by decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by
@@ -257,11 +257,11 @@ def ivSWIGGraph : SWIGGraph IVNode where
     simp only [Finset.mem_singleton] at hu
     subst u
     simpa [initialSWIG] using
-      (swig_random_root_of_root ivDAG ∅ U (by native_decide : ivDAG.parents U = ∅))
+      (swig_random_root_of_root ivDAG ∅ U (by decide : ivDAG.parents U = ∅))
   fixed_outside_fixed_isolated := by
     intro n _
-    cases n <;> exact ⟨by native_decide, by native_decide⟩
-  all_children_in_observed := by native_decide
+    cases n <;> exact ⟨by decide, by decide⟩
+  all_children_in_observed := by decide
 
 -- D and Y are directly confounded (they share unobserved parent U)
 example : ivSWIGGraph.directlyConfounded (SWIGNode.random D) (SWIGNode.random Y) := by decide
@@ -273,10 +273,10 @@ example : ¬ivSWIGGraph.directlyConfounded (SWIGNode.random Z) (SWIGNode.random 
 example : ¬ivSWIGGraph.directlyConfounded (SWIGNode.random Z) (SWIGNode.random Y) := by decide
 
 -- C-component of D includes Y (via shared confounder U)
-example : SWIGNode.random Y ∈ ivSWIGGraph.cComponentOf (SWIGNode.random D) := by native_decide
+example : SWIGNode.random Y ∈ ivSWIGGraph.cComponentOf (SWIGNode.random D) := by decide
 
 -- C-component of Z is just {Z} (no bidirected edges to Z)
-example : ivSWIGGraph.cComponentOf (SWIGNode.random Z) = {SWIGNode.random Z} := by native_decide
+example : ivSWIGGraph.cComponentOf (SWIGNode.random Z) = {SWIGNode.random Z} := by decide
 
 -- ============================================================
 -- Testing EdgeType.lean: edge type assignment
@@ -346,18 +346,18 @@ noncomputable def ivSCM : Causalean.SCM IVNode ivΩ where
     rcases hv with rfl | rfl | rfl <;> exact ⟨_, rfl⟩
   unobserved_is_random := by
     intro u hu; simp at hu; subst hu; exact ⟨U, rfl⟩
-  obs_unobs_disjoint := by native_decide
-  dag_edges_classified := by native_decide
+  obs_unobs_disjoint := by decide
+  dag_edges_classified := by decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by
     intro u hu; simp at hu; subst hu
     simpa [initialSWIG] using
-      (swig_random_root_of_root ivDAG ∅ U (by native_decide : ivDAG.parents U = ∅))
+      (swig_random_root_of_root ivDAG ∅ U (by decide : ivDAG.parents U = ∅))
   fixed_outside_fixed_isolated := by
     intro n _
-    cases n <;> exact ⟨by native_decide, by native_decide⟩
-  all_children_in_observed := by native_decide
+    cases n <;> exact ⟨by decide, by decide⟩
+  all_children_in_observed := by decide
   edgeTypes := EdgeTypeAssignment.allNonparametric (initialSWIG ivDAG)
   iota_valueSpace := by
     intro s

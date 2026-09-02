@@ -19,16 +19,6 @@ export function violationsOf(input: RoundInvariantInput, code: RoundViolation["c
   return checkRoundInvariants(input).filter((v) => v.code === code);
 }
 
-/** Assert one invariant holds, reporting the offending ids on failure. */
-export function assertInvariant(
-  input: RoundInvariantInput,
-  code: RoundViolation["code"],
-  where: string,
-): void {
-  const found = violationsOf(input, code);
-  expect(found.map(formatRoundViolation), `${where}: ${code}`).toEqual([]);
-}
-
 /** Assert a round left NO invariant violated — the check a soak scenario runs after every round. */
 export function assertRoundInvariants(input: RoundInvariantInput, where: string): void {
   const found = checkRoundInvariants(input);

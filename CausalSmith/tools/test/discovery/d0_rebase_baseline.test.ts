@@ -127,6 +127,15 @@ describe("prepareD0BaselineRebase", () => {
       currentWorking: pendingJournal,
       currentPendingEscalations: [{ round: 40, changed: [], directive: "still actionable" }],
     })).toThrow(/pending actionable escalation/);
+    // A provenance-only journal row (e.g. an orchestrator-authored prose edit) is an audit
+    // record, not pending work — same predicate as d0_cross_boundary_rewind.
+    expect(() => prepare({
+      currentWorking: pendingJournal,
+      currentPendingEscalations: [{
+        round: 40, provenance_only: true,
+        changed: [{ id: "thm:x", kind: "statement", from: "a", to: "b", reason: "prose" }],
+      } as never],
+    })).not.toThrow();
   });
 
   it("requires exact source and current node-id sets", () => {

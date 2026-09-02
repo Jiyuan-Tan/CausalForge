@@ -349,6 +349,7 @@ lemma evalMap_observed_unfold (M : Causalean.SCM N Ω) (s : FixedValues M) (ℓ 
 /-- At every position in a causal model's topological ordering of observed variables, the
 recursively evaluated observed value is measurable as a function of the model's fixed and latent
 inputs. -/
+@[fun_prop]
 lemma evalObservedAux_measurable (M : Causalean.SCM N Ω) :
     ∀ (n : ℕ) (hn : n < M.observed.card),
       Measurable (fun p : FixedValues M × LatentValues M =>
@@ -450,6 +451,26 @@ theorem evalMap_measurable (M : Causalean.SCM N Ω) :
       exact evalMap_unobserved M p.1 p.2 w huo
     rw [hfun]
     exact (measurable_pi_apply _).comp measurable_snd
+
+/-- The evaluation map, read as a function of the pair `(s, ℓ)` rather than as a curried
+    map, is measurable.
+
+    This is `evalMap_measurable` restated without `Function.uncurry`, which is the shape
+    the pair-valued goals downstream actually have (and the shape `fun_prop` matches on). -/
+@[fun_prop]
+theorem measurable_evalMap_prod (M : Causalean.SCM N Ω) :
+    Measurable (fun p : FixedValues M × LatentValues M => M.evalMap p.1 p.2) :=
+  M.evalMap_measurable
+
+/-- For each fixed assignment to the intervened variables, the evaluation map is measurable
+    as a function of the latent realization alone.
+
+    This is the partially-applied form of `evalMap_measurable`: freezing the fixed-value
+    argument leaves a measurable map on latent realizations. -/
+@[fun_prop]
+theorem measurable_evalMap_apply (M : Causalean.SCM N Ω) (s : FixedValues M) :
+    Measurable (M.evalMap s) :=
+  M.evalMap_measurable.comp (measurable_const.prodMk measurable_id)
 
 /-- An observed variable has the same recursively evaluated value under two inputs when
     those inputs agree on every fixed and latent cause that can affect the target variables.

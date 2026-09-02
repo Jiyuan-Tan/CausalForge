@@ -147,6 +147,7 @@ lemma fixMonoParentMap_apply_random
 /-- The parent values used by a monolithic intervention depend measurably on the original
     parent values, so this reindexing can be used safely when constructing intervened
     structural equations and probability kernels. -/
+@[fun_prop]
 lemma measurable_fixMonoParentMap
     (G : SWIGGraph N) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ G.observed)

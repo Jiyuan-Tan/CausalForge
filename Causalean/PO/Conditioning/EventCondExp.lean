@@ -24,6 +24,7 @@ import Causalean.PO.Core.Variable
 import Causalean.PO.Assumptions.IndepCF
 import Causalean.PO.Assumptions.ConsistencyLemmas
 import Causalean.Mathlib.IndepIntegral
+import Causalean.Tactic.Attr
 import Mathlib.MeasureTheory.Integral.Bochner.Set
 
 /-! # Event-Level Conditional Expectations
@@ -58,6 +59,18 @@ corresponding zero-mass behavior. -/
 def eventCondExp (μ : Measure Ω) (A : Set Ω) (g : Ω → ℝ) : ℝ :=
   (∫ ω in A, g ω ∂μ) / (μ A).toReal
 
+/-- The average of a real-valued quantity over an event is its integral
+restricted to that event, divided by the event's real-valued mass.
+
+This is the simp-shaped form of the definition of the event-level conditional
+expectation: rewriting with it replaces the project wrapper by the underlying
+restricted integral and measure, after which the standard integral API
+applies. -/
+@[condexp_simps]
+lemma eventCondExp_eq (μ : Measure Ω) (A : Set Ω) (g : Ω → ℝ) :
+    eventCondExp μ A g = (∫ ω in A, g ω ∂μ) / (μ A).toReal :=
+  rfl
+
 /-! ### `eventCondExp` · measure identity and finite-partition total law
 
 These two facts are domain-agnostic — they use only the definition of
@@ -69,7 +82,7 @@ case where both sides collapse to `0`. -/
 lemma eventCondExp_mul_measure_toReal (μ : Measure Ω) (A : Set Ω)
     (hA_fin : μ A ≠ ⊤) (f : Ω → ℝ) :
     eventCondExp μ A f * (μ A).toReal = ∫ ω in A, f ω ∂μ := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   by_cases h0 : (μ A).toReal = 0
   · rw [h0, mul_zero]
     have hμ0 : μ A = 0 := by
@@ -163,7 +176,7 @@ lemma eventCondExp_eq_sum_condProb_mul_eventCondExp
 lemma eventCondExp_congr_ae (μ : Measure Ω) (A : Set Ω) {f g : Ω → ℝ}
     (h : f =ᵐ[μ.restrict A] g) :
     eventCondExp μ A f = eventCondExp μ A g := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   rw [MeasureTheory.integral_congr_ae h]
 
 /-- Equal-on-`A` integrands have equal event-level conditional expectations.
@@ -172,7 +185,7 @@ set `A`. -/
 lemma eventCondExp_congr_on (μ : Measure Ω) {A : Set Ω} (hA : MeasurableSet A)
     {f g : Ω → ℝ} (h : ∀ ω ∈ A, f ω = g ω) :
     eventCondExp μ A f = eventCondExp μ A g := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   congr 1
   exact MeasureTheory.setIntegral_congr_fun hA h
 
@@ -182,7 +195,7 @@ lemma eventCondExp_mono_ae (μ : Measure Ω) {A : Set Ω} {f g : Ω → ℝ}
     (hf : IntegrableOn f A μ) (hg : IntegrableOn g A μ)
     (hfg : f ≤ᵐ[μ.restrict A] g) :
     eventCondExp μ A f ≤ eventCondExp μ A g := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   have hint_le : ∫ ω in A, f ω ∂μ ≤ ∫ ω in A, g ω ∂μ :=
     MeasureTheory.setIntegral_mono_ae_restrict hf hg hfg
   have hnn : (0 : ℝ) ≤ (μ A).toReal := ENNReal.toReal_nonneg
@@ -195,7 +208,7 @@ lemma eventCondExp_add (μ : Measure Ω) (A : Set Ω)
     {g₁ g₂ : Ω → ℝ}
     (h₁ : IntegrableOn g₁ A μ) (h₂ : IntegrableOn g₂ A μ) :
     eventCondExp μ A (g₁ + g₂) = eventCondExp μ A g₁ + eventCondExp μ A g₂ := by
-  simp only [eventCondExp, Pi.add_apply, integral_add h₁ h₂, add_div]
+  simp only [condexp_simps, Pi.add_apply, integral_add h₁ h₂, add_div]
 
 /-- Event-level conditional expectation is additive over subtraction for
 integrable functions on the event. -/
@@ -203,13 +216,13 @@ lemma eventCondExp_sub (μ : Measure Ω) (A : Set Ω)
     {g₁ g₂ : Ω → ℝ}
     (h₁ : IntegrableOn g₁ A μ) (h₂ : IntegrableOn g₂ A μ) :
     eventCondExp μ A (g₁ - g₂) = eventCondExp μ A g₁ - eventCondExp μ A g₂ := by
-  simp only [eventCondExp, Pi.sub_apply, integral_sub h₁ h₂, sub_div]
+  simp only [condexp_simps, Pi.sub_apply, integral_sub h₁ h₂, sub_div]
 
 /-- Event-level conditional expectation is homogeneous with respect to real
 scalar multiplication. -/
 lemma eventCondExp_smul (μ : Measure Ω) (A : Set Ω) (c : ℝ) (g : Ω → ℝ) :
     eventCondExp μ A (fun ω => c * g ω) = c * eventCondExp μ A g := by
-  simp only [eventCondExp, MeasureTheory.integral_const_mul, mul_div_assoc]
+  simp only [condexp_simps, MeasureTheory.integral_const_mul, mul_div_assoc]
 
 /-! ### Generic drop-of-conditioning for `IndepFun` -/
 
@@ -229,7 +242,7 @@ theorem eventCondExp_of_ae_eq_IndepFun
     (hF_eq : factualF =ᵐ[μ.restrict (z ⁻¹' {x})] fun ω => h (B ω))
     (hμA_ne_zero : (μ (z ⁻¹' {x})).toReal ≠ 0) :
     eventCondExp μ (z ⁻¹' {x}) factualF = ∫ ω, h (B ω) ∂μ := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   rw [MeasureTheory.integral_congr_ae hF_eq]
   rw [hInd.integral_restrict_preimage_eq_mul hz.aemeasurable hB.aemeasurable
     hx (hz hx) hh_meas.aestronglyMeasurable]
@@ -307,7 +320,7 @@ theorem POSystem.eventCondExp_eq_integral_of_IndepCF
     (hμA_ne_top : μ (rv.value ⁻¹' {x}) ≠ ⊤) :
     eventCondExp μ (rv.value ⁻¹' {x}) (fun ω => h (B.jointValue ω))
       = ∫ ω, h (B.jointValue ω) ∂μ := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   rw [POSystem.integral_restrict_value_eq_mul_of_IndepCF hInd hh_meas x hx]
   have hpos : (μ (rv.value ⁻¹' {x})).toReal ≠ 0 := by
     rw [ENNReal.toReal_ne_zero]
@@ -348,7 +361,7 @@ theorem POVar.eventCondExp_cfUnder_eq_factual_on_event
     (μ : Measure P.Ω) :
     eventCondExp μ (a.event a₀) (y.cfUnder a a₀)
       = eventCondExp μ (a.event a₀) y.factual := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   congr 1
   refine MeasureTheory.setIntegral_congr_fun ha₀ ?_
   intro ω hω
@@ -384,7 +397,7 @@ theorem POSystem.eventCondExp_of_consistency_IndepCF
     (hμA_ne_zero : μ (a.event x) ≠ 0)
     (hμA_ne_top : μ (a.event x) ≠ ⊤) :
     eventCondExp μ (a.event x) factualF = ∫ ω, h (B.jointValue ω) ∂μ := by
-  unfold eventCondExp
+  simp only [condexp_simps]
   rw [MeasureTheory.integral_congr_ae hF_eq]
   rw [POSystem.integral_event_eq_mul_of_IndepCF hInd hh_meas x hx]
   have hpos : (μ (a.event x)).toReal ≠ 0 := by

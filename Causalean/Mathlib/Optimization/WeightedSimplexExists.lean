@@ -25,6 +25,7 @@ noncomputable def kktThreshold (α β : Fin 3 → ℝ) (lam : ℝ) : ℝ :=
 
 /-- The active-set threshold function varies continuously with the multiplier because
 the weights are fixed real coefficients. -/
+@[fun_prop]
 lemma continuous_kktThreshold (α β : Fin 3 → ℝ) :
     Continuous (kktThreshold α β) := by
   unfold kktThreshold

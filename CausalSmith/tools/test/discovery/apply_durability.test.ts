@@ -26,6 +26,13 @@ const PROTO = {
 };
 
 const change = { id: "thm:main", current: "LIVE CLAIM", proposed: "NEW CLAIM", reason: "r", direction: "narrow" };
+const statementReplace = {
+  kind: "statement-replace",
+  id: "thm:main",
+  proposed: { ...PROTO.statements[0], statement: "NEW CLAIM" },
+  reason: "complete statement post-image",
+  direction: "correct",
+};
 
 // NOT COVERED BY AN AUTOMATED TEST: the compare-and-swap itself.
 //
@@ -47,7 +54,10 @@ describe("the adjudicated bundle is consumed only after the proto lands", () => 
     try {
       await saveWorkingState(h.ctx(), {
         round: 1, solved: {}, resolved_oeqs: {},
-        proposals: { statements: [change], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+        proposals: {
+          statements: [change], definitions: [], assumptions: [],
+          coreEdits: [statementReplace], proofs: [],
+        },
       } as never);
       await applyProposedChanges({ ctx: h.ctx() });
 

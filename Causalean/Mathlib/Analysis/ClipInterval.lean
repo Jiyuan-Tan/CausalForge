@@ -98,11 +98,13 @@ lemma clipIcc_sub_sq_le (ht : t ∈ Set.Icc a b) (x : ℝ) :
     _ = (x - t) ^ 2 := sq_abs _
 
 /-- Clipping to a fixed interval is a continuous operation. -/
+@[fun_prop]
 lemma continuous_clipIcc (a b : ℝ) : Continuous (clipIcc a b) :=
   continuous_const.max (continuous_const.min continuous_id)
 
 /-- Clipping to a fixed interval is measurable, so clipping a random variable again yields a
 random variable. -/
+@[fun_prop]
 lemma measurable_clipIcc (a b : ℝ) : Measurable (clipIcc a b) :=
   (continuous_clipIcc a b).measurable
 

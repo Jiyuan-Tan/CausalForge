@@ -23,6 +23,7 @@ different assumption bundles), and a *bundled* form that takes the full
 
 import Causalean.PO.ID.Exact.Proximal.Assumptions
 import Causalean.Mathlib.CondIndep
+import Causalean.Tactic.CondexpLinearity
 
 /-! # Conditional-expectation helpers for proximal ATE
 
@@ -283,7 +284,7 @@ lemma consistency_event' (HC : POSystem.Consistency P) (a : Bool)
       simpa using hindCE_zero
     simpa using Causalean.aeEq_restrict_of_indicator_aeEq hs hindCE_zero'
   have hCE_sub : μ[h | S.σ_AUX] =ᵐ[μ] μ[S.Y | S.σ_AUX] - μ[S.YofA a | S.σ_AUX] :=
-    MeasureTheory.condExp_sub (m := S.σ_AUX) hYInt hYaInt
+    by condexp_linearity
   have hCE_sub_restrict : μ[h | S.σ_AUX]
       =ᵐ[μ.restrict s] μ[S.Y | S.σ_AUX] - μ[S.YofA a | S.σ_AUX] :=
     ae_restrict_of_ae hCE_sub

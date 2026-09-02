@@ -30,7 +30,7 @@ measurability and graphical bookkeeping with minimal analytic overhead.
 * The SCM construction (`continuousBackdoorSCM`) type-checks on `ℝ`-valued
   spaces.  The kernel-native backdoor pipeline does *not* require value-type
   countability or finiteness.
-* `SWIGGraph.backdoorCriterion` discharges via `native_decide` on the
+* `SWIGGraph.backdoorCriterion` discharges via `decide` on the
   underlying DAG (`cb_backdoor_criterion`), witnessing that the continuous SCM
   admits the backdoor adjustment set `{Z}`.
 * `cb_backdoor_identified` applies the general a.e. backdoor pipeline on this
@@ -121,7 +121,7 @@ def cbDAG : DAG CBNode where
   acyclic := DAG.acyclic_of_topoOrder cbTopo_lt
 
 -- ============================================================
--- § 3. The SWIGGraph (computable, used for `native_decide` proofs)
+-- § 3. The SWIGGraph (computable, used for `decide` proofs)
 -- ============================================================
 
 /-- This computable SWIG graph represents the continuous-backdoor example before any intervention.
@@ -140,7 +140,7 @@ def cbSWIGGraph : SWIGGraph CBNode where
   unobserved_is_random := by intro u hu; simp at hu
   obs_unobs_disjoint := by
     rw [Finset.disjoint_right]; intro x hx; simp at hx
-  dag_edges_classified := by native_decide
+  dag_edges_classified := by decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by intro u hu; simp at hu
@@ -149,7 +149,7 @@ def cbSWIGGraph : SWIGGraph CBNode where
     refine ⟨?_, ?_⟩
     · revert n; decide
     · revert n; decide
-  all_children_in_observed := by native_decide
+  all_children_in_observed := by decide
 
 -- ============================================================
 -- § 4. The SCM
@@ -190,13 +190,13 @@ noncomputable def continuousBackdoorSCM : Causalean.SCM CBNode CBΩ where
 example : continuousBackdoorSCM.isStandard := rfl
 
 /-- `Z` is a parent of `X` in the base DAG. -/
-example : Zidx ∈ cbDAG.parents Xidx := by native_decide
+example : Zidx ∈ cbDAG.parents Xidx := by decide
 
 /-- `Z` is a parent of `Y` in the base DAG. -/
-example : Zidx ∈ cbDAG.parents Yidx := by native_decide
+example : Zidx ∈ cbDAG.parents Yidx := by decide
 
 /-- `X` is a parent of `Y` in the base DAG. -/
-example : Xidx ∈ cbDAG.parents Yidx := by native_decide
+example : Xidx ∈ cbDAG.parents Yidx := by decide
 
 -- ============================================================
 -- § 5. Backdoor criterion for `do(X)` with adjustment set `{Z}`
@@ -239,20 +239,20 @@ theorem cb_backdoor_criterion :
       SWIGNode.random Yidx} : Finset (SWIGNode CBNode))
     simp
   · -- Guard: `{random Z}` is disjoint from `{random Y}`.
-    native_decide
+    decide
   · -- Guard: `{random Z}` is disjoint from `{random X}`.
-    native_decide
+    decide
   · -- Condition (i): no element of `{random Z}` is a descendant of `random X`.
     intro z hz D hD
     rw [Finset.mem_singleton] at hz hD
     subst hz; subst hD
     -- Goal: ¬ (initialSWIG cbDAG).isAncestor (.random X) (.random Z).
     -- The only edges from `random X` go to `random Y`; `Z` is not reachable.
-    native_decide
+    decide
   · -- Condition (ii): `{random Z} ∪ {fixed X}` d-separates `{random Y}` from
     -- `{random X}` in the splitMono graph.  Discharged via `splitMonoDAG`
-    -- (computable) + `native_decide`, mirroring `SCM/Examples/BackDoor.lean`.
-    exact (by native_decide :
+    -- (computable) + `decide`, mirroring `SCM/Examples/BackDoor.lean`.
+    exact (by decide :
       (cbSWIGGraph.splitMonoDAG ({Xidx} : Finset CBNode)).dSep
         {SWIGNode.random Yidx}
         (Finset.image SWIGNode.random ({Xidx} : Finset CBNode))

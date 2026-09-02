@@ -49,12 +49,14 @@ private lemma isCompact_cube (d : ℕ) (r : ℝ) : IsCompact (cube d r) := by
   exact isCompact_univ_pi fun _ => isCompact_Icc
 
 /-- A multivariate real monomial varies continuously with its coordinate vector. -/
+@[fun_prop]
 lemma continuous_monomial {ι : Type*} [Fintype ι] (e : ι → ℕ) :
     Continuous (monomial e) := by
   unfold monomial
   exact continuous_finset_prod _ fun j _ => (continuous_apply j).pow (e j)
 
 /-- A finite linear combination of multivariate real monomials is continuous. -/
+@[fun_prop]
 lemma continuous_monomialCombination {d p : ℕ}
     (expo : Fin p → (Fin d → ℕ)) (z : Fin p → ℝ) :
     Continuous (fun u => ∑ k, z k * monomial (expo k) u) := by

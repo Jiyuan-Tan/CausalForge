@@ -16,12 +16,16 @@ describe("consumePendingScaffoldRedirect", () => {
   });
   it("pending redirect → one scaffold pass, loop proceeds on completion", async () => {
     let called = 0;
-    const out = await consumePendingScaffoldRedirect(mkArgs("fix decl X"), (async () => {
+    let targets: string[] | undefined;
+    const redirect = "fix decl X\n\nDeclarations to edit (one obj_id per line, verbatim):\n- thm:x\n- sym:y";
+    const out = await consumePendingScaffoldRedirect(mkArgs(redirect), (async (args: { revisionTargets?: string[] }) => {
       called += 1;
+      targets = args.revisionTargets;
       return { stage: "2", status: "completed", message: "" } as never;
     }) as never);
     expect(out).toBeNull();
     expect(called).toBe(1);
+    expect(targets).toEqual(["thm:x", "sym:y"]);
   });
   it("pending redirect + blocked scaffold → fail closed with the F2 result", async () => {
     const blocked = { stage: "2", status: "blocked", message: "no" };

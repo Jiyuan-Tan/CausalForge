@@ -66,9 +66,12 @@ const paperData = {
 // the graph, so every object is reachable.
 const entryIds = new Set(bundle.entries.map((e) => e.obj_id));
 const ghBase = GITHUB_REPO ? `https://github.com/${GITHUB_REPO}/blob/${sourceRef(bundle.commit)}/${bundle.leanSubdir}` : null;
+// `matched` is the ONLY status that earns the verified badge. The retired legacy `derived` meant
+// the Lean encodes a strictly WEAKER consequence than the paper claims — a faithfulness FAIL — so
+// an artifact still carrying it renders as drift, never as verified.
 const statusLabel: Record<string, string> = {
   matched: "verified",
-  derived: "verified",
+  derived: "drift",
   drift: "drift",
   unreviewed: "—",
 };
@@ -171,8 +174,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       <PaperComments />
     </article>
 
-    <div class="drawer-scrim" id="drawer-scrim"></div>
-    <aside class="drawer" id="drawer" aria-hidden="true">
+    {/* Docked, NON-MODAL Lean panel — no scrim: the paper stays lit, scrollable
+        and clickable while it is open (the column shifts left to make room). */}
+    <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Lean statement">
       <div class="drawer-head">
         <button class="close" id="drawer-close" aria-label="Close">✕</button>
         <span class="drawer-title" id="drawer-title"></span>

@@ -111,19 +111,25 @@ noncomputable def factualY : P.Ω → ℝ    := S.yVar.factual
 /-! ### Measurability -/
 
 /-- Treatment-arm potential outcomes are measurable. -/
+@[fun_prop]
 lemma measurable_YofA (a : Bool) : Measurable (S.YofA a) :=
   S.yVar.measurable_cfUnder S.aVar a
 /-- Treatment-arm potential mediators are measurable. -/
+@[fun_prop]
 lemma measurable_MofA (a : Bool) : Measurable (S.MofA a) :=
   S.mVar.measurable_cfUnder S.aVar a
 /-- Joint treatment-mediator potential outcomes are measurable. -/
+@[fun_prop]
 lemma measurable_YofAM (a : Bool) (m : β) : Measurable (S.YofAM a m) :=
   S.yVar.measurable_cf _
 /-- The observed treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualA : Measurable S.factualA := S.aVar.measurable_factual
 /-- The observed mediator is measurable. -/
+@[fun_prop]
 lemma measurable_factualM : Measurable S.factualM := S.mVar.measurable_factual
 /-- The observed outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-! ### Events and indicators -/
@@ -339,6 +345,7 @@ namespace Assumptions
 
 /-- Compatibility projection for older call sites: factual outcome integrability
 is derived from consistency plus integrability of the finite `Y(a,m)` cells. -/
+@[fun_prop]
 lemma integrable_factualY (hA : S.Assumptions) :
     Integrable S.factualY P.μ :=
   S.integrable_factualY_of_consistency_integrable_YofAM

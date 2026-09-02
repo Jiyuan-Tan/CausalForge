@@ -90,6 +90,7 @@ noncomputable def phi_eta_dir_deriv
                      - 1 / (1 - g₀.e_fn (projX z)) * v.μ_fn false (projX z))
 
 /-- `phi_eta_dir_deriv g₀ v` is measurable in `z`. -/
+@[fun_prop]
 lemma measurable_phi_eta_dir_deriv (g₀ v : NuisanceVec γ) :
     Measurable (fun z : γ × Bool × ℝ => phi_eta_dir_deriv g₀ v z) := by
   unfold phi_eta_dir_deriv indA projX projA projY

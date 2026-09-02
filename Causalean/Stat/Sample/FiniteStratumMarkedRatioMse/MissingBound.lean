@@ -75,7 +75,11 @@ private lemma missingArmCount_le_sampleSize {m : Nat}
     simpa [s, t] using hc
   · omega
 
-private lemma integrable_missingArmCount_mul {m : Nat}
+/-- When the stratum label and the arm assignment are measurable, the product of the counts of
+missing arm/category cells for two categories is integrable over the product sample, because
+the two counts are bounded by the sample size. -/
+@[fun_prop]
+lemma integrable_missingArmCount_mul {m : Nat}
     (mu : Measure Omega) [IsProbabilityMeasure mu]
     (group : Omega → kappa) (arm : Omega → Bool)
     (hgroup : Measurable group) (harm : Measurable arm) (a : Bool)

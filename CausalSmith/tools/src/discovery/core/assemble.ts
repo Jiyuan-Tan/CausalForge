@@ -42,6 +42,7 @@ import { repairCoreLatexSerialization } from "./latex_serialization.js";
 import { wireStatementProofDependencies, rebuildAssumptionUsedBy } from "./dependencies.js";
 import { pruneDeadAssumptions } from "./gate.js";
 import type { WorkingState, SolvedMember } from "../stages/d0_working.js";
+import { remapResolvedDependencies } from "./oeq_edges.js";
 
 /** Cumulative prose overlay carried in `d0_working.json` (Phase 1). The solver's
  *  directive-authorized `prose_updates` accumulate here instead of being written
@@ -223,11 +224,24 @@ export function assembleCore(proto: Core, working: WorkingState): Core {
   // -- 2. durable OEQ resolutions ------------------------------------------------
   const resolutions = Object.entries(working.resolved_oeqs ?? {});
   const answeredSources = new Set(resolutions.map(([src]) => src));
+  const replacement = new Map(resolutions.map(([src, r]) => [src, resolutionTheoremId(r)] as const));
+  // An answer theorem legitimately cites the question it settles. Remapping THAT edge
+  // to the answer produces a self-dependency, which every consumer then reads as a
+  // changed basis (the record snapshot no longer matches the render) and re-dispatches
+  // the already-answered question each round. Keep the historical source id there.
+  // Shared Q→T rule (see oeq_edges.ts): the answer's own citation of the question
+  // it settles inherits the question's upstream edges instead of a self-edge.
+  const questionDependencies = new Map(core.statements.map((s) => [s.id, s.depends_on] as const));
+  const remapDependencies = (consumerId: string, dependencies: string[]): string[] =>
+    remapResolvedDependencies(consumerId, dependencies, replacement, (id) => questionDependencies.get(id));
   if (resolutions.length > 0) {
-    const replacement = new Map(resolutions.map(([src, r]) => [src, resolutionTheoremId(r)] as const));
+    core.symbols = core.symbols.map((symbol) => ({
+      ...symbol,
+      ...(symbol.ref !== undefined ? { ref: replacement.get(symbol.ref) ?? symbol.ref } : {}),
+    }));
     core.statements = core.statements
       .filter((s) => !(s.kind === "openendedquestion" && answeredSources.has(s.id)))
-      .map((s) => ({ ...s, depends_on: s.depends_on.map((d) => replacement.get(d) ?? d) }));
+      .map((s) => ({ ...s, depends_on: remapDependencies(s.id, s.depends_on) }));
   }
 
   // -- 3. attach proofs / insert agent nodes, deriving status --------------------
@@ -273,6 +287,7 @@ export function assembleCore(proto: Core, working: WorkingState): Core {
       } else {
         const rendered = renderAgentNode(rec as SolvedMember & { node: CoreStatement });
         if (rendered !== null) {
+          rendered.depends_on = remapDependencies(rendered.id, rendered.depends_on);
           byId.set(id, core.statements.length);
           core.statements.push(rendered);
         }
@@ -282,6 +297,15 @@ export function assembleCore(proto: Core, working: WorkingState): Core {
 
   // -- 4./6. derived passes, in the merge's order --------------------------------
   wireStatementProofDependencies(core);
+  // Proof citation wiring can recover a historical source id after the initial
+  // render normalization. A durable resolution makes every such Q edge denote T;
+  // normalize once more so no rendered agent node can point at a hidden source.
+  if (replacement.size > 0) {
+    core.statements = core.statements.map((statement) => ({
+      ...statement,
+      depends_on: remapDependencies(statement.id, statement.depends_on),
+    }));
+  }
   applyProseOverlay(core, (working as { prose_overlay?: ProseOverlay }).prose_overlay);
   {
     const res = pruneDeadAssumptions(core);

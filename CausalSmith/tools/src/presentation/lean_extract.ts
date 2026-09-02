@@ -1,8 +1,10 @@
 /**
  * Statement-source extraction for the website drawer.
  * Theorems/lemmas: from the decl keyword line (plus preceding doc comment) up
- * to the first `:=`. Defs/structures: full source capped at 40 lines.
+ * to the proof-delimiting `:=`. Defs/structures: full source capped at 40 lines.
  */
+
+import { findProofStart } from "./lean_statement.js";
 
 const DECL_RE = (decl: string) =>
   new RegExp(
@@ -135,9 +137,6 @@ export function extractDeclSnippet(source: string, decl: string, line: number): 
   // pathology guard, with an explicit marker).
   const cap = isProp ? 400 : 120;
   let truncated = true;
-  // A theorem's terminating `:=` sits at bracket depth 0; `:=` inside binder
-  // parentheses (e.g. `let lam := …` in a hypothesis type) must not cut.
-  let depth = 0;
   // Block-comment nesting depth while scanning a def/structure body. The "next declaration" probe
   // must NOT fire on a decl keyword that is really PROSE inside a `/- … -/` docstring — the
   // `upperRisk` docstring says "…the policy class Π…", and a line starting with "class"/"def"/"end"
@@ -152,19 +151,15 @@ export function extractDeclSnippet(source: string, decl: string, line: number): 
   for (let i = s; i < Math.min(lines.length, start + cap); i++) {
     const l = lines[i];
     if (isProp) {
-      const scan = l.replace(/--.*$/, ""); // line comments can't move depth or cut
-      let cut = -1;
-      for (let j = 0; j < scan.length; j++) {
-        const c = scan[j];
-        if (c === "(" || c === "[" || c === "{" || c === "⟨" || c === "⦃") depth++;
-        else if (c === ")" || c === "]" || c === "}" || c === "⟩" || c === "⦄") depth--;
-        else if (c === ":" && scan[j + 1] === "=" && depth === 0) {
-          cut = j;
-          break;
-        }
-      }
+      // Use the same proof-delimiter scanner as the P4 row structurer. In
+      // particular, a depth-zero `:=` after `let W` belongs to the CONCLUSION,
+      // not to the proof; the old per-line scan cut the published statement at
+      // the bare text `let W`.
+      const candidate = [...out, l].join("\n");
+      const cut = findProofStart(candidate);
       if (cut >= 0) {
-        const head = l.slice(0, cut).trimEnd();
+        const head = candidate.slice(0, cut).trimEnd();
+        out.length = 0;
         if (head !== "") out.push(head);
         truncated = false;
         break;

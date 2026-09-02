@@ -186,6 +186,34 @@ describe("retired: proposal closure", () => {
 });
 
 describe("retired: oeq-source-retired", () => {
+  it("an answer theorem citing the question it settles renders with neither a self-edge nor a dangling Q id", () => {
+    const proto = core([
+      stmt({ id: "lem:base", status: "proved", proof_tex: "B" }),
+      stmt({ id: "oeq:q", kind: "openendedquestion", statement: "characterize the frontier", depends_on: ["lem:base"] }),
+      stmt({ id: "thm:consumer", depends_on: ["oeq:q"] }),
+    ]);
+    const out = assembleCore(
+      proto,
+      working({
+        solved: {
+          "thm:answer": {
+            proof_tex: "P",
+            snapshot: snap("A"),
+            node: { id: "thm:answer", kind: "theorem", statement: "A", depends_on: ["oeq:q"], status: "proved" } as never,
+            owner: "oeq:q",
+          },
+        },
+        resolved_oeqs: { "oeq:q": { theorem_id: "thm:answer", source_fingerprint: "fp" } },
+      }),
+    );
+    const ids = new Set(out.statements.map((s) => s.id));
+    expect(ids.has("oeq:q")).toBe(false);
+    const answer = out.statements.find((s) => s.id === "thm:answer")!;
+    // The dropped self-citation inherits the question's own upstream edge.
+    expect(answer.depends_on).toEqual(["lem:base"]);
+    expect(out.statements.find((s) => s.id === "thm:consumer")!.depends_on).toEqual(["thm:answer"]);
+    for (const s of out.statements) for (const d of s.depends_on) expect(ids.has(d), `${s.id} -> ${d}`).toBe(true);
+  });
   it("an answered question is filtered out of the render and its answer published", () => {
     // Derived from the healthy stat_reversekl_two_coverage resolution shape.
     const proto = core([

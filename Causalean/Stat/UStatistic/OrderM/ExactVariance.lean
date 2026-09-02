@@ -205,7 +205,7 @@ theorem crossterm_eq_zero_of_image_ne (hmeas : Measurable g)
   let F : X × (R → X) → ℝ := fun z =>
     g (insertCoord p z.1 (tailOf z.2)) * Ψ z.2
   have hXRmeas : Measurable XR := by
-    exact measurable_pi_lambda _ (fun i : R => S.meas (i.1 : ℕ))
+    fun_prop
   have hX0meas : Measurable (fun ω : Ω => S.Z (t p : ℕ) ω) := S.meas (t p : ℕ)
   have hPairMeas : Measurable (fun ω : Ω => (S.Z (t p : ℕ) ω, XR ω)) :=
     hX0meas.prodMk hXRmeas
@@ -303,7 +303,8 @@ theorem crossterm_eq_zero_of_image_ne (hmeas : Measurable g)
   have hinner : ∀ xr : R → X, (∫ x : X, F (x, xr) ∂P) = 0 := by
     intro xr
     change (∫ x : X, g (insertCoord p x (tailOf xr)) * Ψ xr ∂P) = 0
-    rw [integral_mul_const, hdeg p (tailOf xr), zero_mul]
+    integral_linearity
+    rw [hdeg p (tailOf xr), zero_mul]
   calc
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ
         = ∫ ω, F (S.Z (t p : ℕ) ω, XR ω) ∂μ := by
@@ -404,11 +405,14 @@ theorem integral_injectiveTuples_sum_sq_degen
       g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ)
       = ∫ ω, (∑ t ∈ T, g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ by rfl]
   rw [hexpand]
-  rw [integral_finset_sum _ (fun t ht => by
+  have hterm_int : ∀ t ∈ T,
+      Integrable (fun ω => ∑ q ∈ T,
+        g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω)) μ := fun t ht => by
     apply integrable_finset_sum
     intro q hq
     exact S.integrable_orderTerm_mul hg.meas hg.sq
-      (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))]
+      (hinj_of_mem_T t ht) (hinj_of_mem_T q hq)
+  integral_linearity
   have hpush : ∀ t ∈ T,
       ∫ ω, ∑ q ∈ T,
         g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ
@@ -483,7 +487,8 @@ theorem integral_rescaled_order_sq_degen (hg : OrderDegenKernel P g)
     simp only [uStatisticOrder, K]
     rw [mul_pow, Real.sq_sqrt hnnonneg]
     ring
-  rw [hpoint, integral_const_mul]
+  rw [hpoint]
+  integral_linearity
   rw [show (∫ ω, (K ω) ^ 2 ∂μ)
       = ∫ ω, (∑ t ∈ injectiveTuples m n,
           g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ by rfl]

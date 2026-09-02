@@ -243,7 +243,14 @@ describe("round-5: a reopened frozen CITED node keeps its citation", () => {
         resolved_oeqs: {},
         proposals: {
           statements: [{ id: "lem:cited", current: "OLD", proposed: "NEW", reason: "narrow", direction: "narrow" }],
-          definitions: [], assumptions: [], coreEdits: [], proofs: [],
+          definitions: [], assumptions: [], proofs: [],
+          coreEdits: [{
+            kind: "statement-replace",
+            id: "lem:cited",
+            proposed: { ...CITED, statement: "NEW" },
+            reason: "synchronize the changed cited claim's complete post-image",
+            direction: "correct",
+          }],
         },
       } as never);
 

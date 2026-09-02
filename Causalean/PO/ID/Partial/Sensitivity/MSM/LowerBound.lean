@@ -20,6 +20,7 @@ Results: `cutoff_optimal_lower` (the lower cutoff minimizes `candMean` over the 
 and the unconditional sharp lower bound `msmLowerCalib_eq_cutoff_unconditional`. -/
 
 import Causalean.PO.ID.Partial.Sensitivity.MSM.CutoffConstruct
+import Causalean.Tactic.CondexpLinearity
 
 /-! # Sharp treated-arm lower bound for the marginal sensitivity model
 
@@ -57,6 +58,27 @@ noncomputable def survTargetLower (Λ : ℝ) (ω : P.Ω) : ℝ :=
 noncomputable def calibLevelLower (Λ : ℝ) (ω : P.Ω) : ℝ :=
   1 - S.survTargetLower Λ ω / S.propScore true ω
 
+/-- The lower target survival is measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_survTargetLower_sigmaX (Λ : ℝ) :
+    Measurable[S.sigmaX] (S.survTargetLower Λ) := by
+  have hp : Measurable[S.sigmaX] (S.propScore true) := by
+    unfold POBackdoorSystem.propScore
+    exact stronglyMeasurable_condExp.measurable
+  unfold POBackdoorSystem.survTargetLower
+  exact (((S.measurable_wMax_sigmaX Λ).mul hp).sub measurable_const).div
+    ((S.measurable_wMax_sigmaX Λ).sub (S.measurable_wMin_sigmaX Λ))
+
+/-- The lower calibration quantile level is measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_calibLevelLower_sigmaX (Λ : ℝ) :
+    Measurable[S.sigmaX] (S.calibLevelLower Λ) := by
+  have hp : Measurable[S.sigmaX] (S.propScore true) := by
+    unfold POBackdoorSystem.propScore
+    exact stronglyMeasurable_condExp.measurable
+  unfold POBackdoorSystem.calibLevelLower
+  exact measurable_const.sub ((S.measurable_survTargetLower_sigmaX Λ).div hp)
+
 /-- **Optimality of the lower quantile-cutoff weight.** Fix [a sensitivity parameter Λ at least
 1](hyp:hΛ) and assume [the propensity score for treatment given the covariates lies strictly
 between 0 and 1 almost surely (overlap)](hyp:hoverlap). For [a σ(X)-measurable, integrable cutoff
@@ -79,7 +101,7 @@ theorem cutoff_optimal_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
     (hmeas : AEMeasurable etilde P.μ) :
     S.candMean (S.lowerCutoffProp Λ c) ≤ S.candMean etilde := by
   classical
-  have _ : Integrable c P.μ := hc_int
+  have _ : Integrable c P.μ := by fun_prop
   have hΛ0 : (0 : ℝ) < Λ := lt_of_lt_of_le one_pos hΛ
   set A : P.Ω → ℝ := S.dVar.indicator true with hA_def
   set Y : P.Ω → ℝ := S.factualY with hY_def
@@ -113,9 +135,7 @@ theorem cutoff_optimal_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
         div_le_div_iff₀ (by positivity : (0 : ℝ) < Λ * e0) het0]
       constructor <;> intro h <;> nlinarith [h, mul_pos hΛ0 he0]
     rw [hMax, hMin, and_comm]
-  have hAm : Measurable A := by
-    rw [hA_def]
-    exact S.dVar.measurable_indicator true (measurableSet_singleton true)
+  have hAm : Measurable A := by fun_prop
   have hYm : Measurable Y := by
     rw [hY_def]
     exact S.measurable_factualY
@@ -123,14 +143,8 @@ theorem cutoff_optimal_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
     rw [he_def]
     unfold POBackdoorSystem.propScore
     exact (stronglyMeasurable_condExp.mono S.sigmaX_le).measurable
-  have hwMaxm : Measurable (S.wMax Λ) := by
-    unfold POBackdoorSystem.wMax
-    exact (measurable_const.add
-      ((measurable_const.mul (measurable_const.sub hem)).div hem))
-  have hwMinm : Measurable (S.wMin Λ) := by
-    unfold POBackdoorSystem.wMin
-    exact (measurable_const.add
-      ((measurable_const.sub hem).div (measurable_const.mul hem)))
+  have hwMaxm : Measurable (S.wMax Λ) := by fun_prop
+  have hwMinm : Measurable (S.wMin Λ) := by fun_prop
   have hwCm : Measurable wC := by
     rw [hwC_def]
     exact Measurable.ite (measurableSet_lt (hc_meas.mono S.sigmaX_le le_rfl) hYm)
@@ -171,9 +185,7 @@ theorem cutoff_optimal_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
     · simp only [if_neg hcy]
       exact ⟨hminmax, le_rfl, lt_of_lt_of_le (by linarith) hminmax⟩
   have hYE_int : Integrable (fun ω => A ω * Y ω * wE ω) P.μ := by
-    have hwE_aem : AEMeasurable wE P.μ := by
-      rw [hwE_def]
-      exact aemeasurable_const.div hmeas
+    have hwE_aem : AEMeasurable wE P.μ := by fun_prop
     refine Integrable.mono' henv
       (((hAm.mul hYm).aemeasurable.mul hwE_aem).aestronglyMeasurable) ?_
     filter_upwards [hboxE, hmem.1.1] with ω hbox hint
@@ -214,9 +226,7 @@ theorem cutoff_optimal_lower (Λ : ℝ) (hΛ : 1 ≤ Λ)
       A ω / (1 / (if c ω < S.factualY ω then S.wMin Λ ω else S.wMax Λ ω))
     rw [hwC_def, hY_def, div_div_eq_mul_div, div_one]
   have hcE_int : Integrable (fun ω => c ω * A ω * wE ω) P.μ := by
-    have hwE_aem : AEMeasurable wE P.μ := by
-      rw [hwE_def]
-      exact aemeasurable_const.div hmeas
+    have hwE_aem : AEMeasurable wE P.μ := by fun_prop
     refine Integrable.mono' hc_env
       (((hc_meas.mono S.sigmaX_le le_rfl).mul hAm).aemeasurable.mul hwE_aem).aestronglyMeasurable ?_
     filter_upwards [hboxE, hmem.1.1] with ω hbox hint
@@ -413,25 +423,14 @@ theorem lowerCutoff_calibValue_eq (Λ : ℝ) (c : P.Ω → ℝ) (hc_meas : Measu
   have _hint_used := hint
   set A : P.Ω → ℝ := S.dVar.indicator true with hA_def
   set I : P.Ω → ℝ := fun ω => if c ω < S.factualY ω then (1 : ℝ) else 0 with hI_def
-  have hprop_meas : Measurable[S.sigmaX] (S.propScore true) := by
+  have _hprop_meas : Measurable[S.sigmaX] (S.propScore true) := by
     unfold POBackdoorSystem.propScore
     exact stronglyMeasurable_condExp.measurable
-  have hwMin_smeas : StronglyMeasurable[S.sigmaX] (S.wMin Λ) := by
-    unfold POBackdoorSystem.wMin
-    exact (measurable_const.add
-      ((measurable_const.sub hprop_meas).div (measurable_const.mul hprop_meas))).stronglyMeasurable
-  have hwMax_smeas : StronglyMeasurable[S.sigmaX] (S.wMax Λ) := by
-    unfold POBackdoorSystem.wMax
-    exact (measurable_const.add
-      ((measurable_const.mul (measurable_const.sub hprop_meas)).div hprop_meas)).stronglyMeasurable
-  have hdiff_smeas : StronglyMeasurable[S.sigmaX] (fun ω => S.wMax Λ ω - S.wMin Λ ω) :=
-    (hwMax_smeas.measurable.sub hwMin_smeas.measurable).stronglyMeasurable
-  have hA_int : Integrable A P.μ := by
-    rw [hA_def]
-    exact S.dVar.integrable_indicator (μ := P.μ) true (measurableSet_singleton true)
-  have hI_int : Integrable (fun ω => A ω * I ω) P.μ := by
-    rw [hA_def, hI_def]
-    exact hint1
+  have hwMin_smeas : StronglyMeasurable[S.sigmaX] (S.wMin Λ) := by fun_prop
+  have hwMax_smeas : StronglyMeasurable[S.sigmaX] (S.wMax Λ) := by fun_prop
+  have hdiff_smeas : StronglyMeasurable[S.sigmaX] (fun ω => S.wMax Λ ω - S.wMin Λ ω) := by fun_prop
+  have hA_int : Integrable A P.μ := by fun_prop
+  have hI_int : Integrable (fun ω => A ω * I ω) P.μ := by fun_prop
   have hmax_int' : Integrable (fun ω => S.wMax Λ ω * A ω) P.μ := by
     refine hmax_int.congr (Filter.Eventually.of_forall ?_)
     intro ω
@@ -458,7 +457,7 @@ theorem lowerCutoff_calibValue_eq (Λ : ℝ) (c : P.Ω → ℝ) (hc_meas : Measu
         =ᵐ[P.μ]
           P.μ[fun ω => S.wMax Λ ω * A ω | S.sigmaX]
             - P.μ[fun ω => (S.wMax Λ ω - S.wMin Λ ω) * (A ω * I ω) | S.sigmaX] :=
-    MeasureTheory.condExp_sub hmax_int' hdiff_int S.sigmaX
+    by condexp_linearity
   have hpullMax :
       P.μ[fun ω => S.wMax Λ ω * A ω | S.sigmaX]
         =ᵐ[P.μ] (fun ω => S.wMax Λ ω * S.propScore true ω) := by
@@ -631,24 +630,13 @@ theorem exists_calibrating_cutoff_lower (Λ : ℝ) (hΛ : 1 < Λ)
     ∃ c : P.Ω → ℝ, Measurable[S.sigmaX] c ∧ S.treatedSurv c =ᵐ[P.μ] S.survTargetLower Λ := by
   classical
   have _hΛ_used := hΛ
-  have hprop_meas : Measurable[S.sigmaX] (S.propScore true) := by
+  have _hprop_meas : Measurable[S.sigmaX] (S.propScore true) := by
     unfold POBackdoorSystem.propScore
     exact stronglyMeasurable_condExp.measurable
-  have hwMin_meas : Measurable[S.sigmaX] (S.wMin Λ) := by
-    unfold POBackdoorSystem.wMin
-    exact measurable_const.add
-      ((measurable_const.sub hprop_meas).div (measurable_const.mul hprop_meas))
-  have hwMax_meas : Measurable[S.sigmaX] (S.wMax Λ) := by
-    unfold POBackdoorSystem.wMax
-    exact measurable_const.add
-      ((measurable_const.mul (measurable_const.sub hprop_meas)).div hprop_meas)
-  have hsurvTarget_meas : Measurable[S.sigmaX] (S.survTargetLower Λ) := by
-    unfold POBackdoorSystem.survTargetLower
-    exact ((hwMax_meas.mul hprop_meas).sub measurable_const).div
-      (hwMax_meas.sub hwMin_meas)
-  have hlevel_meas : Measurable[S.sigmaX] (S.calibLevelLower Λ) := by
-    unfold POBackdoorSystem.calibLevelLower
-    exact measurable_const.sub (hsurvTarget_meas.div hprop_meas)
+  have hwMin_meas : Measurable[S.sigmaX] (S.wMin Λ) := by fun_prop
+  have hwMax_meas : Measurable[S.sigmaX] (S.wMax Λ) := by fun_prop
+  have hsurvTarget_meas : Measurable[S.sigmaX] (S.survTargetLower Λ) := by fun_prop
+  have hlevel_meas : Measurable[S.sigmaX] (S.calibLevelLower Λ) := by fun_prop
   obtain ⟨g, hg, hg_eq⟩ := S.exists_factor_through_factualX hlevel_meas
   let τ : γ → ℝ := fun a => if 0 < g a ∧ g a < 1 then g a else (1 / 2 : ℝ)
   have hτ_meas : Measurable τ := by

@@ -23,6 +23,7 @@ lemmas in `ScorePullout.lean`.
 -/
 
 import Causalean.Estimation.DTR.SeqDRMoment
+import Causalean.Tactic.CondexpLinearity
 
 /-!
 Proves mean-zero properties for the sequential doubly robust score. The module
@@ -50,6 +51,7 @@ variable {P : POSystem} {δ : Type} {γ : Fin 2 → Type}
 `Measurable.add`/`Measurable.mul`/`Measurable.div` chained against the
 projections, the indicator functions `indEq`, and the value-space
 nuisance functions stored in `S.η₀`. -/
+@[fun_prop]
 lemma measurable_ψ_seqDR (S : DTREstimationSystem P δ γ) :
     Measurable S.ψ_seqDR := by
   exact S.measurable_seqDRMomentFunctional S.η₀ S.θ₀
@@ -129,14 +131,8 @@ lemma cond_exp_residual_zero_stage0
        S.toPODTRSystem.factualS ⟨0, by decide⟩ ω)
   have hY_int : Integrable Y P.μ := by
     simpa [Y] using hA.integrable_Y S.dbar
-  have hI0_int : Integrable I0 P.μ := by
-    simpa [I0] using
-      (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_indicator
-        (S.dbar ⟨0, by decide⟩)
-  have hI0Y_int : Integrable (fun ω => I0 ω * Y ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hY_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, Y, mul_comm]))
+  have hI0_int : Integrable I0 P.μ := by fun_prop
+  have hI0Y_int : Integrable (fun ω => I0 ω * Y ω) P.μ := by fun_prop
   have hM0_int : Integrable M0 P.μ := by
     exact (B0.integrable_condExpGiven (S.toPODTRSystem.Y_of S.dbar)).congr
       (by simpa [B0, M0] using S.μ₀_compat hA)
@@ -145,21 +141,10 @@ lemma cond_exp_residual_zero_stage0
       simpa [M1] using (S.stageOneReg_memLp h_overlap h_y2).ae_eq
         (S.μ₁_val_comp_eq_stageOneReg).symm
     exact hM1_L2.integrable (by norm_num)
-  have hM0_meas : Measurable M0 := by
-    exact S.μ₀_meas.comp (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩)
-  have hM1_meas : Measurable M1 := by
-    have hs1 := S.toPODTRSystem.measurable_factualS ⟨1, by decide⟩
-    have hd0 := S.toPODTRSystem.measurable_factualD ⟨0, by decide⟩
-    have hs0 := S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩
-    exact S.μ₁_meas.comp (hs1.prod (hd0.prod hs0))
-  have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM0_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M0, mul_comm]))
-  have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M1, mul_comm]))
+  have hM0_meas : Measurable M0 := by fun_prop
+  have hM1_meas : Measurable M1 := by fun_prop
+  have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by fun_prop
+  have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by fun_prop
   have hres_eq :
       (fun ω => I0 ω * (M1 ω - M0 ω))
         = (fun ω => I0 ω * M1 ω - I0 ω * M0 ω) := by
@@ -170,13 +155,9 @@ lemma cond_exp_residual_zero_stage0
         =ᵐ[P.μ]
           B0.condExpGiven (fun ω => I0 ω * M1 ω) P.μ
             - B0.condExpGiven (fun ω => I0 ω * M0 ω) P.μ := by
-    simp only [POCFBundle.condExpGiven]
-    exact MeasureTheory.condExp_sub hI0M1_int hI0M0_int B0.sigma
+    condexp_linearity
   have hI0_sm_B1 :
-      StronglyMeasurable[B1.sigma] I0 := by
-    simpa [B1, I0] using
-      S.toPODTRSystem.stronglyMeasurable_indicator_dVar_sigma_history
-        1 (by decide) ⟨0, by decide⟩ (by decide) (S.dbar ⟨0, by decide⟩)
+      StronglyMeasurable[B1.sigma] I0 := by fun_prop
   have hrev_B1 :
       (fun ω => I0 ω * M1 ω)
         =ᵐ[P.μ] B1.condExpGiven (fun ω => I0 ω * Y ω) P.μ := by
@@ -221,10 +202,7 @@ lemma cond_exp_residual_zero_stage0
   let ψ : (∀ i : Fin (S.toPODTRSystem.cfYBundle S.dbar).n,
       (S.toPODTRSystem.cfYBundle S.dbar).type i) → ℝ :=
     fun f => (f i0 : ℝ)
-  have hψ_meas : Measurable ψ := by
-    change Measurable (fun f : (∀ i, (S.toPODTRSystem.cfYBundle S.dbar).type i) =>
-      (f i0 : ℝ))
-    exact measurable_pi_apply i0
+  have hψ_meas : Measurable ψ := by fun_prop
   have hYof_eq_proj :
       S.toPODTRSystem.Y_of S.dbar =
         ψ ∘ (S.toPODTRSystem.cfYBundle S.dbar).jointValue := by
@@ -240,8 +218,7 @@ lemma cond_exp_residual_zero_stage0
     rw [hYof_eq_proj]
     exact hproj
   let u : δ → ℝ := ({S.dbar ⟨0, by decide⟩} : Set δ).indicator (fun _ => (1 : ℝ))
-  have hu_meas : Measurable u :=
-    measurable_const.indicator (MeasurableSet.singleton _)
+  have hu_meas : Measurable u := by fun_prop (disch := measurability)
   have hu_eq : (fun ω => u (S.toPODTRSystem.factualD ⟨0, by decide⟩ ω)) = I0 := by
     funext ω
     by_cases h : S.toPODTRSystem.factualD ⟨0, by decide⟩ ω =
@@ -308,11 +285,7 @@ lemma cond_exp_residual_zero_stage0
     refine hCE_I0M1_to_Y.trans ?_
     filter_upwards [hExch, S.e₀_compat, S.μ₀_compat hA] with ω hE he hμ
     rw [hE, he, hμ]
-  have hM0_sm_B0 : StronglyMeasurable[B0.sigma] M0 := by
-    have hs0 : Measurable[B0.sigma] (S.toPODTRSystem.factualS ⟨0, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualS_sigma_history 0 (by decide)
-        ⟨0, by decide⟩ (by decide)
-    exact (S.μ₀_meas.comp hs0).stronglyMeasurable
+  have hM0_sm_B0 : StronglyMeasurable[B0.sigma] M0 := by fun_prop
   have hpull_M0 :=
     B0.condExpGiven_mul_of_stronglyMeasurable_right
       (f := I0) (g := M0) hM0_sm_B0 hI0M0_int hI0_int
@@ -385,62 +358,20 @@ lemma cond_exp_residual_zero_stage1
     simpa [Y] using hA.integrable_Y S.dbar
   have hYf_int : Integrable Yf P.μ := by
     simpa [Yf] using hA.integrable_factualY
-  have hI0_int : Integrable I0 P.μ := by
-    simpa [I0] using
-      (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_indicator
-        (S.dbar ⟨0, by decide⟩)
-  have hI1_int : Integrable I1 P.μ := by
-    simpa [I1] using
-      (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_indicator
-        (S.dbar ⟨1, by decide⟩)
+  have hI0_int : Integrable I0 P.μ := by fun_prop
+  have hI1_int : Integrable I1 P.μ := by fun_prop
   have hM1_int : Integrable M1 P.μ := by
     have hM1_L2 : MemLp M1 2 P.μ := by
       simpa [M1] using (S.stageOneReg_memLp h_overlap h_y2).ae_eq
         (S.μ₁_val_comp_eq_stageOneReg).symm
     exact hM1_L2.integrable (by norm_num)
-  have hM1_meas : Measurable M1 := by
-    have hs1 := S.toPODTRSystem.measurable_factualS ⟨1, by decide⟩
-    have hd0 := S.toPODTRSystem.measurable_factualD ⟨0, by decide⟩
-    have hs0 := S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩
-    exact S.μ₁_meas.comp (hs1.prod (hd0.prod hs0))
-  have hI1Y_int : Integrable (fun ω => I1 ω * Y ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hY_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, Y, mul_comm]))
-  have hI1Yf_int : Integrable (fun ω => I1 ω * Yf ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hYf_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, Yf, mul_comm]))
-  have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hM1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, M1, mul_comm]))
-  have hI0I1Y_int : Integrable (fun ω => I0 ω * (I1 ω * Y ω)) P.μ := by
-    have hmeas : Measurable (fun ω => I1 ω * Y ω) :=
-      ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-        (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul
-        (by simpa [Y] using S.toPODTRSystem.measurable_Y_of S.dbar)
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1Y_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by
-      simp [I0, I1, Y, mul_comm, mul_left_comm]))
-  have hI0I1Yf_int : Integrable (fun ω => I0 ω * (I1 ω * Yf ω)) P.μ := by
-    have hmeas : Measurable (fun ω => I1 ω * Yf ω) :=
-      ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-        (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul
-        (by simpa [Yf] using S.toPODTRSystem.measurable_factualY)
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1Yf_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by
-      simp [I0, I1, Yf, mul_comm, mul_left_comm]))
-  have hI0I1M1_int : Integrable (fun ω => I0 ω * (I1 ω * M1 ω)) P.μ := by
-    have hmeas : Measurable (fun ω => I1 ω * M1 ω) :=
-      ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-        (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul hM1_meas
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1M1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by
-      simp [I0, I1, M1, mul_comm]))
+  have hM1_meas : Measurable M1 := by fun_prop
+  have hI1Y_int : Integrable (fun ω => I1 ω * Y ω) P.μ := by fun_prop
+  have hI1Yf_int : Integrable (fun ω => I1 ω * Yf ω) P.μ := by fun_prop
+  have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by fun_prop
+  have hI0I1Y_int : Integrable (fun ω => I0 ω * (I1 ω * Y ω)) P.μ := by fun_prop
+  have hI0I1Yf_int : Integrable (fun ω => I0 ω * (I1 ω * Yf ω)) P.μ := by fun_prop
+  have hI0I1M1_int : Integrable (fun ω => I0 ω * (I1 ω * M1 ω)) P.μ := by fun_prop
   have hres_eq :
       (fun ω => I0 ω * (I1 ω * (Yf ω - M1 ω)))
         = (fun ω => I0 ω * (I1 ω * Yf ω) -
@@ -453,8 +384,7 @@ lemma cond_exp_residual_zero_stage1
         =ᵐ[P.μ]
           B1.condExpGiven (fun ω => I0 ω * (I1 ω * Yf ω)) P.μ
             - B1.condExpGiven (fun ω => I0 ω * (I1 ω * M1 ω)) P.μ := by
-    simp only [POCFBundle.condExpGiven]
-    exact MeasureTheory.condExp_sub hI0I1Yf_int hI0I1M1_int B1.sigma
+    condexp_linearity
   have hConsistency :
       (fun ω => Yf ω * S.toPODTRSystem.indD S.dbar 2 ω)
         = (fun ω => Y ω * S.toPODTRSystem.indD S.dbar 2 ω) := by
@@ -504,33 +434,16 @@ lemma cond_exp_residual_zero_stage1
           B1.condExpGiven (fun ω => I0 ω * (I1 ω * Y ω)) P.μ :=
     B1.condExpGiven_congr_ae hFact_to_cf
   have hI0_sm_B1 :
-      StronglyMeasurable[B1.sigma] I0 := by
-    simpa [B1, I0] using
-      S.toPODTRSystem.stronglyMeasurable_indicator_dVar_sigma_history
-        1 (by decide) ⟨0, by decide⟩ (by decide) (S.dbar ⟨0, by decide⟩)
-  have hM1_sm_B1 : StronglyMeasurable[B1.sigma] M1 := by
-    have hs1 : Measurable[B1.sigma] (S.toPODTRSystem.factualS ⟨1, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualS_sigma_history 1 (by decide)
-        ⟨1, by decide⟩ (by decide)
-    have hd0 : Measurable[B1.sigma] (S.toPODTRSystem.factualD ⟨0, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualD_sigma_history 1 (by decide)
-        ⟨0, by decide⟩ (by decide)
-    have hs0 : Measurable[B1.sigma] (S.toPODTRSystem.factualS ⟨0, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualS_sigma_history 1 (by decide)
-        ⟨0, by decide⟩ (by decide)
-    exact (S.μ₁_meas.comp (hs1.prod (hd0.prod hs0))).stronglyMeasurable
-  have hI0M1_sm_B1 : StronglyMeasurable[B1.sigma] (fun ω => I0 ω * M1 ω) :=
-    hI0_sm_B1.mul hM1_sm_B1
+      StronglyMeasurable[B1.sigma] I0 := by fun_prop
+  have hM1_sm_B1 : StronglyMeasurable[B1.sigma] M1 := by fun_prop
+  have hI0M1_sm_B1 : StronglyMeasurable[B1.sigma] (fun ω => I0 ω * M1 ω) := by fun_prop
   have hcfY_n : (S.toPODTRSystem.cfYBundle S.dbar).n = 1 := rfl
   let i0 : Fin (S.toPODTRSystem.cfYBundle S.dbar).n :=
     ⟨0, by rw [hcfY_n]; exact Nat.one_pos⟩
   let ψ : (∀ i : Fin (S.toPODTRSystem.cfYBundle S.dbar).n,
       (S.toPODTRSystem.cfYBundle S.dbar).type i) → ℝ :=
     fun f => (f i0 : ℝ)
-  have hψ_meas : Measurable ψ := by
-    change Measurable (fun f : (∀ i, (S.toPODTRSystem.cfYBundle S.dbar).type i) =>
-      (f i0 : ℝ))
-    exact measurable_pi_apply i0
+  have hψ_meas : Measurable ψ := by fun_prop
   have hYof_eq_proj :
       S.toPODTRSystem.Y_of S.dbar =
         ψ ∘ (S.toPODTRSystem.cfYBundle S.dbar).jointValue := by
@@ -546,8 +459,7 @@ lemma cond_exp_residual_zero_stage1
     rw [hYof_eq_proj]
     exact hproj
   let u : δ → ℝ := ({S.dbar ⟨1, by decide⟩} : Set δ).indicator (fun _ => (1 : ℝ))
-  have hu_meas : Measurable u :=
-    measurable_const.indicator (MeasurableSet.singleton _)
+  have hu_meas : Measurable u := by fun_prop (disch := measurability)
   have hu_eq : (fun ω => u (S.toPODTRSystem.factualD ⟨1, by decide⟩ ω)) = I1 := by
     funext ω
     by_cases h : S.toPODTRSystem.factualD ⟨1, by decide⟩ ω =
@@ -774,36 +686,17 @@ private lemma seqDR_factualZ_integral_zero (S : DTREstimationSystem P δ γ)
       simpa [H1, M1] using (S.stageOneReg_memLp h_overlap h_y2).ae_eq
         (S.μ₁_val_comp_eq_stageOneReg).symm
     exact hM1_L2.integrable (by norm_num)
-  have hM0_meas : Measurable M0 :=
-    S.μ₀_meas.comp (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩)
-  have hM1_meas : Measurable M1 := by
-    have hs1 := S.toPODTRSystem.measurable_factualS ⟨1, by decide⟩
-    have hd0 := S.toPODTRSystem.measurable_factualD ⟨0, by decide⟩
-    have hs0 := S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩
-    exact S.μ₁_meas.comp (hs1.prod (hd0.prod hs0))
-  have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM0_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M0, mul_comm]))
-  have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M1, mul_comm]))
-  have hR0_int : Integrable R0 P.μ := by
-    have hsub := hI0M1_int.sub hI0M0_int
-    refine hsub.congr ?_
-    exact Filter.Eventually.of_forall (fun ω => by
-      simp [R0]
-      ring)
+  have hM0_meas : Measurable M0 := by fun_prop
+  have hM1_meas : Measurable M1 := by fun_prop
+  have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by fun_prop
+  have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by fun_prop
+  have hR0_int : Integrable R0 P.μ := by fun_prop
   have hI1Yf_int : Integrable
       (fun ω => I1 ω * S.toPODTRSystem.factualY ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
       (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hA.integrable_factualY
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, mul_comm]))
-  have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hM1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, M1, mul_comm]))
+  have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by fun_prop
   have hI1_res_int : Integrable
       (fun ω => I1 ω * (S.toPODTRSystem.factualY ω - M1 ω)) P.μ := by
     have hsub := hI1Yf_int.sub hI1M1_int
@@ -812,39 +705,10 @@ private lemma seqDR_factualZ_integral_zero (S : DTREstimationSystem P δ γ)
       rw [Pi.sub_apply]
       ring)
   have hI1_res_meas : Measurable
-      (fun ω => I1 ω * (S.toPODTRSystem.factualY ω - M1 ω)) :=
-    ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul
-      (S.toPODTRSystem.measurable_factualY.sub hM1_meas)
-  have hR1_int : Integrable R1 P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1_res_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by
-      change (I1 ω * (S.toPODTRSystem.factualY ω - M1 ω)) * I0 ω =
-        R1 ω
-      simp [R1]
-      ring))
-  have hW0_sm : StronglyMeasurable[B0.sigma] W0 := by
-    have hs0 : Measurable[B0.sigma] (S.toPODTRSystem.factualS ⟨0, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualS_sigma_history 0 (by decide)
-        ⟨0, by decide⟩ (by decide)
-    exact (measurable_const.div (S.e₀_meas.comp hs0)).stronglyMeasurable
-  have hW1_sm : StronglyMeasurable[B1.sigma] W1 := by
-    have hs1 : Measurable[B1.sigma] (S.toPODTRSystem.factualS ⟨1, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualS_sigma_history 1 (by decide)
-        ⟨1, by decide⟩ (by decide)
-    have hd0 : Measurable[B1.sigma] (S.toPODTRSystem.factualD ⟨0, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualD_sigma_history 1 (by decide)
-        ⟨0, by decide⟩ (by decide)
-    have hs0 : Measurable[B1.sigma] (S.toPODTRSystem.factualS ⟨0, by decide⟩) :=
-      S.toPODTRSystem.measurable_factualS_sigma_history 1 (by decide)
-        ⟨0, by decide⟩ (by decide)
-    have he0 : Measurable[B1.sigma]
-        (fun ω => S.e₀_val (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω)) :=
-      S.e₀_meas.comp hs0
-    have he1 : Measurable[B1.sigma] (fun ω => S.e₁_val (H1 ω)) :=
-      S.e₁_meas.comp (hs1.prod (hd0.prod hs0))
-    exact (measurable_const.div (he0.mul he1)).stronglyMeasurable
+      (fun ω => I1 ω * (S.toPODTRSystem.factualY ω - M1 ω)) := by fun_prop
+  have hR1_int : Integrable R1 P.μ := by fun_prop
+  have hW0_sm : StronglyMeasurable[B0.sigma] W0 := by fun_prop
+  have hW1_sm : StronglyMeasurable[B1.sigma] W1 := by fun_prop
   have hW0_bound : ∀ᵐ ω ∂P.μ, ‖W0 ω‖ ≤ ε⁻¹ := by
     filter_upwards [h_overlap.2.2, S.e₀_compat] with ω hover hcomp
     have he : ε ≤ S.e₀_val (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω) := by
@@ -993,10 +857,9 @@ private lemma seqDR_factualZ_integral_zero (S : DTREstimationSystem P δ γ)
         Causalean.Estimation.DTR.seqDRMoment, DTREstimationSystem.factualZ,
         DTREstimationSystem.η₀, projS₀, projD₀, projS₁, projD₁, projY, histH₁,
         indEq, hD0n, M0, M1, H1, R0, R1, W0, W1, I0, hI0rawn, one_div]
-  have hconst_int : Integrable (fun _ : P.Ω => S.θ₀) P.μ := integrable_const _
+  have hconst_int : Integrable (fun _ : P.Ω => S.θ₀) P.μ := by fun_prop
   have hsum_int : Integrable
-      (fun ω => M0 ω + W0 ω * R0 ω + W1 ω * R1 ω) P.μ :=
-    (hM0_int.add hW0R0_int).add hW1R1_int
+      (fun ω => M0 ω + W0 ω * R0 ω + W1 ω * R1 ω) P.μ := by fun_prop
   calc
     ∫ ω, S.ψ_seqDR (S.factualZ ω) ∂P.μ
         = ∫ ω, M0 ω + W0 ω * R0 ω + W1 ω * R1 ω - S.θ₀ ∂P.μ := by

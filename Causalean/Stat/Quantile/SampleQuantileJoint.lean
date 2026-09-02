@@ -70,6 +70,7 @@ noncomputable def IIDSample.sampleQuantileVec (S : IIDSample Ω ℝ μ P) (τ : 
   fun n ω => eucl (fun j => S.sampleQuantile (τ j) n ω)
 
 /-- The joint quantile influence function is measurable. -/
+@[fun_prop]
 lemma measurable_quantileIFVec (τ q f : Fin k → ℝ) : Measurable (quantileIFVec τ q f) := by
   unfold quantileIFVec eucl
   refine ((EuclideanSpace.equiv (Fin k) ℝ).symm.continuous.measurable).comp ?_

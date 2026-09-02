@@ -166,6 +166,7 @@ theorem atomSolve_uniformMoments (L : ℕ) :
     mul_comm]
 
 /-- The moment-matching solve depends continuously on the target moments — it is linear. -/
+@[fun_prop]
 theorem continuous_atomSolve (L : ℕ) : Continuous (atomSolve L) := by
   apply continuous_pi
   intro i
@@ -182,6 +183,7 @@ noncomputable def padCumulants (L : ℕ) (y : Fin (L + 1) → ℝ) : ℕ → ℝ
   fun k => if h : k < L + 1 then y ⟨k, h⟩ else 0
 
 /-- Zero-extension of a finite cumulant target is continuous in the target. -/
+@[fun_prop]
 theorem continuous_padCumulants (L : ℕ) : Continuous (padCumulants L) := by
   apply continuous_pi
   intro k
@@ -200,6 +202,7 @@ noncomputable def cumulantToWeights (L : ℕ) (y : Fin (L + 1) → ℝ) :
 /-- **The cumulant-to-weights map is continuous.** For [any truncation order `L`](hyp:L), [the map
 sending a truncated cumulant target to the recovered symmetric-atom weights is continuous](goal),
 since both the moment↔cumulant inversion and the Vandermonde solve it composes are continuous. -/
+@[fun_prop]
 theorem continuous_cumulantToWeights (L : ℕ) : Continuous (cumulantToWeights L) := by
   apply (continuous_atomSolve L).comp
   apply continuous_pi

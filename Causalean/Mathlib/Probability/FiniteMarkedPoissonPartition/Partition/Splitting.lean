@@ -228,7 +228,9 @@ private lemma wordEquiv_fst {n : ℕ} (w : Fin n → ι) (k : Fin n) :
   rw [hu] at hp
   exact hp.symm
 
-private noncomputable def gatherWord {Y : Type*} [MeasurableSpace Y]
+/-- Regroup an `n`-tuple of points according to the word `w`, which assigns each position a
+cell index, into one tuple per cell. -/
+noncomputable def gatherWord {Y : Type*} [MeasurableSpace Y]
     {n : ℕ} (w : Fin n → ι) (z : Fin n → Y) :
     ∀ j, Fin (wordHistogram w j) → Y :=
   fun j k => z (wordUnshuffleEquiv w ⟨j, k⟩)
@@ -239,7 +241,9 @@ private lemma gatherWord_apply {Y : Type*} [MeasurableSpace Y]
     gatherWord w z j k = z (wordUnshuffleEquiv w ⟨j, k⟩) := by
   rfl
 
-private lemma measurable_gatherWord {Y : Type*} [MeasurableSpace Y]
+/-- Regrouping an `n`-tuple of points by the cell word `w` is a measurable map. -/
+@[fun_prop]
+lemma measurable_gatherWord {Y : Type*} [MeasurableSpace Y]
     {n : ℕ} (w : Fin n → ι) :
     Measurable (gatherWord (Y := Y) w) := by
   have hfun : gatherWord (Y := Y) w =
@@ -315,12 +319,17 @@ private lemma restrict_prod_cellSet
     rw [hcoe, Measure.prod_smul_left, smul_smul,
       ENNReal.mul_inv_cancel hj (measure_ne_top P _), one_smul]
 
-private noncomputable def fixedPartitionEmbed {Y : Type*} [MeasurableSpace Y]
+/-- Turn one point tuple per cell, of the sizes recorded by `c`, into one finite sample per
+cell. -/
+noncomputable def fixedPartitionEmbed {Y : Type*} [MeasurableSpace Y]
     (c : ι → ℕ) (z : ∀ j, Fin (c j) → Y) :
     ι → FiniteSample Y :=
   fun j => fixedSizeEmbed (c j) (z j)
 
-private lemma measurable_fixedPartitionEmbed {Y : Type*} [MeasurableSpace Y]
+/-- Embedding one fixed-size point tuple per cell into one finite sample per cell is a
+measurable map. -/
+@[fun_prop]
+lemma measurable_fixedPartitionEmbed {Y : Type*} [MeasurableSpace Y]
     (c : ι → ℕ) : Measurable (fixedPartitionEmbed (Y := Y) c) := by
   apply measurable_pi_lambda
   intro j

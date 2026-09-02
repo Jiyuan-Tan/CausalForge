@@ -213,9 +213,11 @@ export const StatementSchema = z
     // proof_tex) is laundering. A `cited` statement MUST carry `source` and is a
     // LEAF: it may reference `def:`/`ass:` for notation but must not `depends_on`
     // other `lem:`/`thm:`/`prop:` (cite the theorem, never reconstruct its proof —
-    // G-cited). F1 maps `cited` → `gate_class:"cited"` BY DEFAULT, except a cited
-    // node load-bearing on a headline, which F1 re-routes to reuse/crux/gated
-    // (a headline may not rest on a never-built citation — anti-laundering).
+    // G-cited). F1 initially maps `cited` → `gate_class:"cited"`. A later supported
+    // discharge keeps this discovery provenance while mapping the node to an exact
+    // proved lemma/theorem and removing it from consumer hypotheses. A delivered
+    // headline or headline-support result may not remain conditional on cited debt;
+    // only a secondary cited node outside that reverse closure may stay gated.
     status: z.enum(["to-prove", "proved", "cited"]),
     source: CitedSourceSchema.optional(), // REQUIRED ⟺ status === "cited"
     // Results in OTHER CausalSmith papers that this node NAMES but does not depend
@@ -327,7 +329,21 @@ export const CoreSchema = z.object({
   qid: z.string(),
   specialization: z.string().optional(),
   cluster: z.enum(["panel", "exactid", "partialid", "stat", "experimentation", "scm"]).optional(),
-  symbols: z.array(SymbolSchema),
+  // Symbol dependency ordering and semantic-basis traversal both key declarations by
+  // name. A duplicate cannot have a well-defined position or meaning and can hide a
+  // dependency cycle when the topological canonicalizer defers invalid input here.
+  symbols: z.array(SymbolSchema).refine(
+    (symbols) => new Set(symbols.map((s) => s.name)).size === symbols.length,
+    (symbols) => {
+      const seen = new Set<string>();
+      const dupes = new Set<string>();
+      for (const s of symbols) {
+        if (seen.has(s.name)) dupes.add(s.name);
+        else seen.add(s.name);
+      }
+      return { message: `duplicate symbol name(s): ${[...dupes].join(", ")} — symbol ordering and semantic traversal require one declaration per name` };
+    },
+  ),
   assumptions: z.array(AssumptionSchema),
   definitions: z.array(DefinitionSchema).default([]),
   statements: z.array(StatementSchema),

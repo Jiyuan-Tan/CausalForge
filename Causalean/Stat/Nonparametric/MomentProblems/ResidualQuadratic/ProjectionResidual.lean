@@ -71,6 +71,7 @@ theorem projResidual_memL2 (μ : Measure ℝ) [IsFiniteMeasure μ] (h : FiniteMo
   exact this
 
 /-- `q` is integrable (finite measure + `q ∈ L²`). -/
+@[fun_prop]
 theorem integrable_projResidual (μ : Measure ℝ) [IsFiniteMeasure μ] (h : FiniteMoment4 μ) :
     Integrable (projResidual μ) μ :=
   (projResidual_memL2 μ h).integrable (by norm_num)

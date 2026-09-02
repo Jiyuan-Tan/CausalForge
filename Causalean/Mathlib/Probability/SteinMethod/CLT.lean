@@ -67,6 +67,7 @@ theorem cdf_tendsto_of_charFun_tendsto (lawn : ℕ → ProbabilityMeasure ℝ)
   exact measure_ne_top _ _
 
 /-- A bounded real function of a measurable map is integrable on a finite measure. -/
+@[deprecated MeasureTheory.Integrable.of_bound (since := "2026-08-29")]
 private theorem integrable_bdd_real {Ω : Type*} [MeasurableSpace Ω] {ν : Measure Ω}
     [IsFiniteMeasure ν] (g : Ω → ℝ) (hg : Measurable g) {c : ℝ} (hc : ∀ ω, |g ω| ≤ c) :
     Integrable g ν :=
@@ -80,19 +81,22 @@ theorem charFun_map_eq_cos_sin {Ω : Type*} [MeasurableSpace Ω] (ν : Measure �
     charFun (ν.map W) t
       = (↑(∫ ω, Real.cos (t * W ω) ∂ν) : ℂ) + (↑(∫ ω, Real.sin (t * W ω) ∂ν) : ℂ) * Complex.I := by
   -- Move the integral back to `ν` via `integral_map`.
-  have hg : AEStronglyMeasurable (fun x : ℝ => Complex.exp (↑t * ↑x * Complex.I)) (ν.map W) :=
-    (Complex.measurable_exp.comp
-      ((measurable_const.mul Complex.measurable_ofReal).mul measurable_const)).aestronglyMeasurable
+  have hg : AEStronglyMeasurable (fun x : ℝ => Complex.exp (↑t * ↑x * Complex.I)) (ν.map W) := by
+    fun_prop
   rw [charFun_apply_real, integral_map hW.aemeasurable hg]
   -- Integrability of the real/imaginary integrands.
   have hcosint : Integrable (fun ω => (↑(Real.cos (t * W ω)) : ℂ)) ν :=
-    (integrable_bdd_real (fun ω => Real.cos (t * W ω))
-      (Real.measurable_cos.comp (measurable_const.mul hW))
-      (fun ω => Real.abs_cos_le_one _)).ofReal
+    (MeasureTheory.Integrable.of_bound
+      (f := fun ω => Real.cos (t * W ω))
+      (by fun_prop) 1
+      (Filter.Eventually.of_forall (fun ω => by
+        rw [Real.norm_eq_abs]; exact Real.abs_cos_le_one _))).ofReal
   have hsinint : Integrable (fun ω => (↑(Real.sin (t * W ω)) : ℂ) * Complex.I) ν :=
-    ((integrable_bdd_real (fun ω => Real.sin (t * W ω))
-      (Real.measurable_sin.comp (measurable_const.mul hW))
-      (fun ω => Real.abs_sin_le_one _)).ofReal).mul_const Complex.I
+    ((MeasureTheory.Integrable.of_bound
+      (f := fun ω => Real.sin (t * W ω))
+      (by fun_prop) 1
+      (Filter.Eventually.of_forall (fun ω => by
+        rw [Real.norm_eq_abs]; exact Real.abs_sin_le_one _))).ofReal).mul_const Complex.I
   -- Rewrite the complex exponential pointwise and split.
   have hpt : ∀ ω, Complex.exp (↑t * ↑(W ω) * Complex.I)
       = ↑(Real.cos (t * W ω)) + ↑(Real.sin (t * W ω)) * Complex.I := by

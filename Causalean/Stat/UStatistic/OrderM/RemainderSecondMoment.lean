@@ -236,7 +236,8 @@ theorem crossterm_zero_of_shared_one [IsFiniteMeasure P]
     change
       (∫ tail : Tail → X,
           g (insertCoord p (xq ⟨a, ha_q⟩) tail) * Ψ xq ∂πTail) = 0
-    rw [integral_mul_const, hg.firstDeg p (xq ⟨a, ha_q⟩)]
+    integral_linearity
+    rw [hg.firstDeg p (xq ⟨a, ha_q⟩)]
     simp
   calc
     ∫ ω, g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ
@@ -560,11 +561,14 @@ theorem integral_injectiveTuples_sum_sq_le_shared_count [IsFiniteMeasure P]
       g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ)
       = ∫ ω, (∑ t ∈ T, g (fun j => S.Z (t j : ℕ) ω)) ^ 2 ∂μ by rfl]
   rw [hexpand]
-  rw [integral_finset_sum _ (fun t ht => by
+  have hterm_int : ∀ t ∈ T,
+      Integrable (fun ω => ∑ q ∈ T,
+        g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω)) μ := fun t ht => by
     apply integrable_finset_sum
     intro q hq
     exact S.integrable_orderTerm_mul hg.meas hg.sq
-      (hinj_of_mem_T t ht) (hinj_of_mem_T q hq))]
+      (hinj_of_mem_T t ht) (hinj_of_mem_T q hq)
+  integral_linearity
   have hpush : ∀ t ∈ T,
       ∫ ω, ∑ q ∈ T,
         g (fun j => S.Z (t j : ℕ) ω) * g (fun j => S.Z (q j : ℕ) ω) ∂μ
@@ -726,7 +730,8 @@ private theorem integral_rescaled_order_sq_le_counting_normalization [IsFiniteMe
     calc
       ∫ ω, (Real.sqrt (n : ℝ) * uStatisticOrder S g n ω) ^ 2 ∂μ
           = (n : ℝ) * (injectiveTupleCount m n)⁻¹ ^ 2 * ∫ ω, (K ω) ^ 2 ∂μ := by
-            rw [hpoint, integral_const_mul]
+            rw [hpoint]
+            integral_linearity
       _ ≤ (n : ℝ) * (injectiveTupleCount m n)⁻¹ ^ 2 *
             ((((injectiveTuples m n ×ˢ injectiveTuples m n).filter
               (fun tq => 2 ≤

@@ -16,7 +16,7 @@
 // INSERT-ONLY (a merge cannot modify or delete a proven decl — asserted by
 // byte-preservation), and codex never self-certifies the build: the same
 // integration gate promote used (`lake build` → `library_index` → `embed` →
-// `lint:embeddings` → `doc:gen` → `doc:check`) runs deterministically, rolling
+// `lint:embeddings` → `lint:nl-links` → `doc:gen` → `doc:check`) runs deterministically, rolling
 // back everything on any failure.
 //
 // Manifest content is carried inline (full bodies / insert patches as strings).
@@ -413,6 +413,9 @@ export async function applyManifest(
       { cmd: "lake exe library_index", cwd: cRoot },
       { cmd: "npm run embed:library", cwd: toolsDir },
       { cmd: "npm run lint:embeddings", cwd: toolsDir },
+      // Crosslink gate: the /library page and the public export hard-fail on a
+      // theorem whose docstring leaves a binder unlinked or a headline unannotated.
+      { cmd: "npm run lint:nl-links", cwd: toolsDir },
       { cmd: "npm run doc:gen", cwd: toolsDir },
       { cmd: "npm run doc:check", cwd: toolsDir },
     ];

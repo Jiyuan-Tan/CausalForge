@@ -448,7 +448,11 @@ theorem normalizedOrderedProductStatistic_mul_expansion
   simp only [Fintype.card_fin]
   ring
 
-private theorem integrable_normalizedFiniteKernelStatistic
+/-- If a finite-arity kernel is measurable and integrable under the product of the population
+law, then the normalized statistic that averages it over all injective index tuples of the
+sample is integrable. -/
+@[fun_prop]
+theorem integrable_normalizedFiniteKernelStatistic
     (S : Causalean.Stat.IIDSample Ω X μ P) {ι : Type*} [Fintype ι]
     {k : (ι → X) → ℝ} {n : ℕ} (hkmeas : Measurable k)
     (hkint : Integrable k (Measure.pi fun _ : ι => P)) :
@@ -507,23 +511,16 @@ theorem integral_normalizedOrderedProductStatistic_mul
     · exact (integrable_normalizedFiniteKernelStatistic S (hmeas M) (hint M)).const_mul _
     · rw [matchingNormalization_eq_zero_of_card_gt M hc]
       simp
-  rw [integral_finset_sum _ hterm]
+  integral_linearity
   apply Finset.sum_congr rfl
   intro h hh
-  rw [integral_finset_sum]
-  · apply Finset.sum_congr rfl
-    intro M hM
-    rw [integral_const_mul]
-    by_cases hc : Fintype.card M.MergedIndex ≤ n
-    · rw [integral_normalizedFiniteKernelStatistic S hc (hmeas M) (hint M)]
-      rfl
-    · rw [matchingNormalization_eq_zero_of_card_gt M hc]
-      simp
-  · intro M hM
-    by_cases hc : Fintype.card M.MergedIndex ≤ n
-    · exact (integrable_normalizedFiniteKernelStatistic S (hmeas M) (hint M)).const_mul _
-    · rw [matchingNormalization_eq_zero_of_card_gt M hc]
-      simp
+  apply Finset.sum_congr rfl
+  intro M hM
+  by_cases hc : Fintype.card M.MergedIndex ≤ n
+  · rw [integral_normalizedFiniteKernelStatistic S hc (hmeas M) (hint M)]
+    rfl
+  · rw [matchingNormalization_eq_zero_of_card_gt M hc]
+    simp
 
 /-- The ordered-product mean is the expectation of a coordinatewise product
 under independent draws from the population law. -/

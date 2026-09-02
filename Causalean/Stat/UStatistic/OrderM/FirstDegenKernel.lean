@@ -57,6 +57,11 @@ structure OrderFirstDegenKernel (P : Measure X) {m : ℕ} [NeZero m]
         g (insertCoord j x tail) ∂(Measure.pi fun _ : {k : Fin m // k ≠ j} => P) = 0
   sq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P)
 
+-- Measurability and square-integrability of a first-order degenerate order-`m` kernel are
+-- exposed to the function-property tactics, so a proof holding an `OrderFirstDegenKernel`
+-- hypothesis need not name these fields.
+attribute [fun_prop] OrderFirstDegenKernel.meas OrderFirstDegenKernel.sq
+
 namespace OrderFirstDegenKernel
 
 variable [IsProbabilityMeasure P] {m : ℕ} [NeZero m] {g : (Fin m → X) → ℝ}
@@ -64,6 +69,7 @@ variable [IsProbabilityMeasure P] {m : ℕ} [NeZero m] {g : (Fin m → X) → �
 omit [IsProbabilityMeasure P] in
 /-- A first-order degenerate square-integrable kernel is integrable under the
 product law. -/
+@[fun_prop]
 theorem integrable [IsFiniteMeasure P] (hg : OrderFirstDegenKernel P g) :
     Integrable g (Measure.pi fun _ : Fin m => P) :=
   ((memLp_two_iff_integrable_sq hg.meas.aestronglyMeasurable).mpr hg.sq).integrable

@@ -45,10 +45,12 @@ noncomputable def steinSol (h : ℝ → ℝ) (w : ℝ) : ℝ :=
   Real.exp (w ^ 2 / 2) * ∫ x in Set.Iic w, (h x - gExpect h) * Real.exp (-x ^ 2 / 2)
 
 /-- The integrand `(h x − E[h(Z)])·e^{−x²/2}` appearing inside `steinSol`. -/
-private noncomputable def steinIntegrand (h : ℝ → ℝ) (x : ℝ) : ℝ :=
+noncomputable def steinIntegrand (h : ℝ → ℝ) (x : ℝ) : ℝ :=
   (h x - gExpect h) * Real.exp (-x ^ 2 / 2)
 
-private theorem steinIntegrand_continuous (h : ℝ → ℝ) (hh : Continuous h) :
+/-- The Stein integrand is continuous whenever the test function `h` is. -/
+@[fun_prop]
+theorem steinIntegrand_continuous (h : ℝ → ℝ) (hh : Continuous h) :
     Continuous (steinIntegrand h) := by
   unfold steinIntegrand
   fun_prop
@@ -91,7 +93,7 @@ theorem steinSol_hasDerivAt (h : ℝ → ℝ) (hh : Continuous h) {C : ℝ} (hb 
     (w : ℝ) :
     HasDerivAt (steinSol h) (w * steinSol h w + (h w - gExpect h)) w := by
   set g := steinIntegrand h with hg_def
-  have hg_cont : Continuous g := steinIntegrand_continuous h hh
+  have hg_cont : Continuous g := by fun_prop
   have hg_int : Integrable g := steinIntegrand_integrable hh hb
   -- The cumulative integral `G w = ∫ x in Iic w, g x` has derivative `g w`.
   set G : ℝ → ℝ := fun u => ∫ x in Set.Iic u, g x with hG_def

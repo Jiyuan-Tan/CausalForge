@@ -14,6 +14,7 @@ all first projections.
 -/
 
 import Causalean.Stat.UStatistic.Basic
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.Data.Fintype.CardEmbedding
 import Mathlib.MeasureTheory.Constructions.Pi
 
@@ -134,6 +135,7 @@ theorem hoeffding_decomp_order {m : ℕ} [NeZero m] (h : (Fin m → X) → ℝ)
 
 /-- The coordinatewise first projection is integrable whenever the corresponding
 slice-averaged kernel is integrable. -/
+@[fun_prop]
 theorem uProjOrderAt_integrable [IsFiniteMeasure P] {m : ℕ} (j : Fin m)
     {h : (Fin m → X) → ℝ}
     (hint : Integrable
@@ -158,12 +160,13 @@ theorem uProjOrderAt_integral_eq_zero [IsProbabilityMeasure P] {m : ℕ}
         = uMeanOrder h P) :
     ∫ x, uProjOrderAt j h P x ∂P = 0 := by
   unfold uProjOrderAt
-  rw [integral_sub hint (integrable_const _), integral_const, probReal_univ, one_smul,
-    hmean]
+  integral_linearity
+  rw [integral_const, probReal_univ, one_smul, hmean]
   ring
 
 /-- The summed first-order influence function is integrable if every
 coordinatewise first projection is integrable. -/
+@[fun_prop]
 theorem uInfluenceOrder_integrable {m : ℕ}
     {h : (Fin m → X) → ℝ}
     (hint : ∀ j : Fin m, Integrable (uProjOrderAt j h P) P) :
@@ -176,7 +179,7 @@ theorem uInfluenceOrder_integral_eq_zero {m : ℕ} {h : (Fin m → X) → ℝ}
     (hint : ∀ j : Fin m, Integrable (uProjOrderAt j h P) P)
     (hzero : ∀ j : Fin m, ∫ x, uProjOrderAt j h P x ∂P = 0) :
     ∫ x, (∑ j : Fin m, uProjOrderAt j h P x) ∂P = 0 := by
-  rw [integral_finset_sum _ (fun j _ => hint j)]
+  integral_linearity
   simp [hzero]
 
 /-- Integrating a function of one coordinate under a finite product law recovers
@@ -273,9 +276,9 @@ theorem uDegenOrder_integral_tail_eq_zero [IsProbabilityMeasure P] {m : ℕ}
           - ∑ l : Fin m, uProjOrderAt l h P ((insertCoord j x tail) l)) from by
           funext tail
           simp only [uDegenOrder]]
-    rw [integral_sub hleft_int hsum_int, integral_sub (hrow j x) hconst_int,
-      integral_const, probReal_univ, one_smul,
-      integral_finset_sum _ (fun l _ => hterm_int l)]
+    have hrow_int := hrow j x
+    integral_linearity
+    simp only [integral_const, probReal_univ, one_smul]
   have hsum_eval :
       (∑ l : Fin m,
             ∫ tail : ({k : Fin m // k ≠ j}) → X,

@@ -25,11 +25,16 @@ noncomputable def retainedObservations (x₀ : X) (n : ℕ)
       (Fin.cast (orderByMarks_count s).symm (Fin.castLE h k))).1
   else fun _ => x₀
 
-private noncomputable def prefixPointOr {Y : Type*} [MeasurableSpace Y]
+/-- The `k`-th point of a finite sample once it has at least `n` points, and the fallback
+value `y₀` otherwise. -/
+noncomputable def prefixPointOr {Y : Type*} [MeasurableSpace Y]
     (y₀ : Y) (n : ℕ) (k : Fin n) (s : FiniteSample Y) : Y :=
   if h : n ≤ s.count then s.points (Fin.castLE h k) else y₀
 
-private lemma measurable_prefixPointOr {Y : Type*} [MeasurableSpace Y]
+/-- Reading off the `k`-th point of a finite sample, with a fallback value when the sample is
+too short, is a measurable map. -/
+@[fun_prop]
+lemma measurable_prefixPointOr {Y : Type*} [MeasurableSpace Y]
     (y₀ : Y) (n : ℕ) (k : Fin n) :
     Measurable (prefixPointOr y₀ n k : FiniteSample Y → Y) := by
   intro t ht
@@ -44,6 +49,7 @@ private lemma measurable_prefixPointOr {Y : Type*} [MeasurableSpace Y]
     exact measurable_const ht
 
 /-- Retaining and forgetting marks is a measurable map to an `n`-tuple. -/
+@[fun_prop]
 lemma measurable_retainedObservations (x₀ : X) (n : ℕ) :
     Measurable (retainedObservations x₀ n :
       FiniteSample (X × ℝ) → (Fin n → X)) := by
@@ -163,11 +169,11 @@ private lemma map_retainedObservations_fixedSizeEmbed_pi
   have hsplit := measurePreserving_arrowProdEquivProdArrow X ℝ (Fin m)
     (fun _ : Fin m => P) (fun _ : Fin m => R)
   have hsplit_inv := (MeasurePreserving.symm split hsplit).map_eq
-  have hretfix : Measurable (retainedObservations x₀ n ∘ fixedSizeEmbed m) :=
-    (measurable_retainedObservations x₀ n).comp (measurable_fixedSizeEmbed m)
+  have hretfix : Measurable (retainedObservations x₀ n ∘ fixedSizeEmbed m) := by
+    fun_prop
   have htotal : Measurable
-      ((retainedObservations x₀ n ∘ fixedSizeEmbed m) ∘ split.symm) :=
-    hretfix.comp split.symm.measurable
+      ((retainedObservations x₀ n ∘ fixedSizeEmbed m) ∘ split.symm) := by
+    fun_prop
   rw [Measure.map_map (measurable_retainedObservations x₀ n)
       (measurable_fixedSizeEmbed m), ← hsplit_inv,
     Measure.map_map hretfix split.symm.measurable]

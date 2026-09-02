@@ -82,6 +82,7 @@ noncomputable def finitePoissonObjective {E I : Type*} [AddCommGroup E] [Module 
 -- @node: finitePoissonObjective_continuous
 /-- The finite Poisson criterion is continuous in its parameter whenever the
 linear design acts on a finite-dimensional normed space. -/
+@[fun_prop]
 lemma finitePoissonObjective_continuous {E I : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E] [Fintype I] (q m : I → ℝ) (A : E →ₗ[ℝ] (I → ℝ)) :
     Continuous (finitePoissonObjective q m A) := by

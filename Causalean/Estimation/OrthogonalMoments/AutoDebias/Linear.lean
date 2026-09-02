@@ -98,6 +98,8 @@ structure LinRegFnSys where
 attribute [instance] LinRegFnSys.Z_meas LinRegFnSys.P_Z_prob
   LinRegFnSys.X_meas LinRegFnSys.H_γ_addCommGroup LinRegFnSys.H_γ_module
 
+attribute [fun_prop] LinRegFnSys.proj_X_meas LinRegFnSys.Y_obs_meas LinRegFnSys.m_lin_meas
+
 /-- **Population linear functional** `L(γ) := ∫ m_lin(z, γ) dP_Z`. -/
 noncomputable def L_of_m (S : LinRegFnSys) : S.H_γ → ℝ :=
   fun γ => ∫ z, S.m_lin z γ ∂S.P_Z

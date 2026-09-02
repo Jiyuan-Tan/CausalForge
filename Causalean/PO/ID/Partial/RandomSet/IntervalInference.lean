@@ -182,9 +182,11 @@ On the centered endpoint normalised sum it is `√n · dᴴ(E[Y], Ȳₙ)`. -/
 noncomputable def dirStat (w : EuclideanSpace ℝ (Fin 2)) : ℝ := max 0 (max (w 0) (-(w 1)))
 
 /-- The directed-Hausdorff endpoint functional is continuous. -/
+@[fun_prop]
 lemma continuous_dirStat : Continuous dirStat := by unfold dirStat; fun_prop
 
 /-- The directed-Hausdorff endpoint functional is measurable. -/
+@[fun_prop]
 lemma measurable_dirStat : Measurable dirStat := continuous_dirStat.measurable
 
 section DirectedCLT

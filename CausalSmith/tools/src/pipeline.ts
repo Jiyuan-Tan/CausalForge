@@ -22,6 +22,7 @@ import {
 } from "./discovery/stages/d0_working.js";
 import type { PipelineContext, Stage, StateJson } from "./types.js";
 import { legacyCrossBoundaryRewindGuard } from "./discovery/stages/d0_cross_boundary_rewind.js";
+import { clearOrphanSolvePathLeases } from "./discovery/solve/dispatch.js";
 
 export function nextStage(stage: Stage): Stage | null {
   const index = STAGE_ORDER.indexOf(stage);
@@ -228,9 +229,10 @@ export async function runPipeline(
   handler: StageHandler = ctx.dryRun ? dryRunStageHandler : liveStageHandler,
   options: RunPipelineOptions = {},
 ): Promise<StateJson> {
-  return withRunHeartbeat(ctx.repoRoot, ctx.qid, ctx.specialization, () =>
-    runPipelineInner(ctx, handler, options),
-  );
+  return withRunHeartbeat(ctx.repoRoot, ctx.qid, ctx.specialization, async () => {
+    await clearOrphanSolvePathLeases(ctx);
+    return runPipelineInner(ctx, handler, options);
+  });
 }
 
 async function runPipelineInner(

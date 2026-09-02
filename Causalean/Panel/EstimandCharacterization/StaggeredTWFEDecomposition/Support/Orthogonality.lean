@@ -19,6 +19,7 @@ cross-cohort sum collapse to `E[D]`.
 -/
 
 import Causalean.Panel.EstimandCharacterization.StaggeredTWFEDecomposition.Support.Integrals
+import Causalean.Tactic.IntegralLinearity
 
 /-! # Goodman-Bacon Bridge Orthogonality
 
@@ -460,7 +461,7 @@ theorem panelMeanReg_cohort_axis_orthogonal
             ring
       _ = ∫ ω, (∑ g', a g' * IG g' ω) * IG g ω ∂μ
             + ∫ ω, (∑ t, b t * IT t ω) * IG g ω ∂μ := by
-            exact integral_add hsumGI_int hsumTI_int
+            integral_linearity
       _ = ∫ ω, F ω * IG g ω ∂μ := by
             rw [hcohort, hperiod]
             ring
@@ -476,8 +477,8 @@ theorem panelMeanReg_cohort_axis_orthogonal
                   filter_upwards [] with ω
                   ring
             _ = ∫ ω, F ω * IG g ω ∂μ
-                - ∫ ω, panelMeanReg μ F G T_rv ω * IG g ω ∂μ :=
-                  integral_sub hFI_int hPanelI_int
+                - ∫ ω, panelMeanReg μ F G T_rv ω * IG g ω ∂μ := by
+                  integral_linearity
     _ = 0 := by rw [hpanel]; ring
 
 omit [DecidableEq 𝒢] in
@@ -595,7 +596,7 @@ theorem panelMeanReg_period_axis_orthogonal
             ring
       _ = ∫ ω, (∑ g, a g * IG g ω) * IT t ω ∂μ
             + ∫ ω, (∑ t', b t' * IT t' ω) * IT t ω ∂μ := by
-            exact integral_add hsumGI_int hsumTI_int
+            integral_linearity
       _ = ∫ ω, F ω * IT t ω ∂μ := by
             rw [hcohort, hperiod]
             ring
@@ -611,8 +612,8 @@ theorem panelMeanReg_period_axis_orthogonal
                   filter_upwards [] with ω
                   ring
             _ = ∫ ω, F ω * IT t ω ∂μ
-                - ∫ ω, panelMeanReg μ F G T_rv ω * IT t ω ∂μ :=
-                  integral_sub hFI_int hPanelI_int
+                - ∫ ω, panelMeanReg μ F G T_rv ω * IT t ω ∂μ := by
+                  integral_linearity
     _ = 0 := by rw [hpanel]; ring
 
 /-! ### Per-cohort orthogonality under the balanced-cell bridge hypotheses -/

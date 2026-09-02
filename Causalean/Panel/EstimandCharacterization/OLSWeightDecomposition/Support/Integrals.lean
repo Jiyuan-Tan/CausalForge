@@ -75,6 +75,7 @@ theorem cellTau_mul_cellMass {Ω 𝒢 : Type*}
 
 /-- Product of two singleton indicators against an `L²` function is
 integrable under a finite measure. -/
+@[fun_prop]
 theorem integrable_mul_indicator_D_G {Ω 𝒢 : Type*}
     [MeasurableSpace Ω] [MeasurableSpace 𝒢] [MeasurableSingletonClass 𝒢]
     (μ : Measure Ω) [IsFiniteMeasure μ]

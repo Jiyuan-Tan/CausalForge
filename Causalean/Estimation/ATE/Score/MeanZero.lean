@@ -19,6 +19,7 @@ The two IPW corrections vanish via `weighted_residual_integral_zero` (a
 -/
 
 import Causalean.Estimation.ATE.Score.AIPWMoment
+import Causalean.Tactic.IntegralLinearity
 
 /-!
 Proves measurability and mean-zero properties of the AIPW influence function
@@ -45,6 +46,7 @@ variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 /-! ## Measurability of `ψ_AIPW` -/
 
 /-- The AIPW influence function is measurable as a function of the observed data triple. -/
+@[fun_prop]
 lemma measurable_ψ_AIPW (S : BackdoorEstimationSystem P γ) :
     Measurable S.ψ_AIPW := by
   unfold BackdoorEstimationSystem.ψ_AIPW aipwMoment indA projX projA projY
@@ -385,6 +387,7 @@ private noncomputable def e_val_label (S : BackdoorEstimationSystem P γ)
     (d : Bool) (x : γ) : ℝ :=
   if d then S.e_val x else 1 - S.e_val x
 
+@[fun_prop]
 private lemma measurable_e_val_label (S : BackdoorEstimationSystem P γ) (d : Bool) :
     Measurable (S.e_val_label d) := by
   cases d
@@ -600,35 +603,11 @@ private lemma aipw_factualZ_integral_zero (S : BackdoorEstimationSystem P γ)
         = ∫ ω, base ω + B ω - C ω - S.θ₀ ∂P.μ := by
           exact MeasureTheory.integral_congr_ae hψ_eq
     _ = (∫ ω, base ω ∂P.μ) + (∫ ω, B ω ∂P.μ) - (∫ ω, C ω ∂P.μ) - S.θ₀ := by
-      have hBmC_int : Integrable (fun ω => B ω - C ω) P.μ :=
-        hB_int'.sub hC_int'
-      have htmp : Integrable (fun ω => base ω + (B ω - C ω)) P.μ :=
-        hbase_int.add hBmC_int
-      have h_inner_int : Integrable (fun ω => base ω + B ω - C ω) P.μ := by
-        refine htmp.congr (Filter.EventuallyEq.of_eq (by
-          funext ω
-          ring))
-      have hEq_outer :
-          (fun ω => base ω + B ω - C ω - S.θ₀) = (fun ω => (base ω + B ω - C ω) - S.θ₀) := by
-        funext ω
-        ring
-      have hEq_inner :
-          (fun ω => base ω + B ω - C ω) = (fun ω => base ω + (B ω - C ω)) := by
-        funext ω
-        ring
-      have hθ_int : Integrable (fun _ : P.Ω => (S.θ₀ : ℝ)) P.μ :=
-        integrable_const _
       have hθ_const : (∫ (a : P.Ω), (S.θ₀ : ℝ) ∂P.μ) = S.θ₀ := by
         haveI : IsProbabilityMeasure P.μ := inferInstance
         simp
-      rw [show (fun ω => base ω + B ω - C ω - S.θ₀) =
-          (fun ω => (base ω + B ω - C ω) - S.θ₀) from hEq_outer]
-      rw [integral_sub h_inner_int hθ_int]
-      rw [show (fun ω => base ω + B ω - C ω) = (fun ω => base ω + (B ω - C ω)) from hEq_inner]
-      rw [integral_add hbase_int hBmC_int]
-      rw [integral_sub hB_int' hC_int']
+      integral_linearity
       rw [hθ_const]
-      ring
     _ = S.θ₀ + 0 - 0 - S.θ₀ := by
       rw [hθ0, hB_zero', hC_zero']
     _ = 0 := by ring

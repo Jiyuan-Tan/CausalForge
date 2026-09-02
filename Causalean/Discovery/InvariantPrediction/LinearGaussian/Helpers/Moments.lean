@@ -26,15 +26,16 @@ variable {p : ℕ}
 
 /-- `εⱼ` is a.e.-measurable: by the structural-residual identity `hε` it agrees
 a.e. with the measurable map `Xⱼ − Σ_{k≠j} βⱼₖ Xₖ`. -/
+@[fun_prop]
 theorem eps_aemeasurable (M : ObsSEM p) (j : Fin (p + 1)) :
     AEMeasurable (fun ω => M.ε ω j) M.P := by
   have hmeasRHS : Measurable
-      (fun ω => M.X ω j - ∑ k ∈ Finset.univ.erase j, M.β j k * M.X ω k) :=
-    (M.hXmeas j).sub (Finset.measurable_sum _ (fun k _ => (M.hXmeas k).const_mul _))
+      (fun ω => M.X ω j - ∑ k ∈ Finset.univ.erase j, M.β j k * M.X ω k) := by fun_prop
   refine hmeasRHS.aemeasurable.congr ?_
   filter_upwards [M.hε] with ω hω using (hω j).symm
 
 /-- The noise `εⱼ` is `M.P`-integrable (Gaussian marginal has a first moment). -/
+@[fun_prop]
 theorem eps_integrable (M : ObsSEM p) (j : Fin (p + 1)) :
     Integrable (fun ω => M.ε ω j) M.P := by
   have hmeas : AEMeasurable (fun ω => M.ε ω j) M.P := eps_aemeasurable M j

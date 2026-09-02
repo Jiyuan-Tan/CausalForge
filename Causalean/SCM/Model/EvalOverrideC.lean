@@ -489,6 +489,7 @@ theorem evalMap_overrideC_at_self
 /-- At every position in an SCM's topological order, its observed-variable evaluator with
     specified observed values overridden is jointly measurable in fixed, override, and latent
     inputs. -/
+@[fun_prop]
 lemma evalObservedAuxOverride_measurable
     (M : Causalean.SCM N Ω) {C : Finset (SWIGNode N)} (hC : C ⊆ M.observed) :
     ∀ (n : ℕ) (hn : n < M.observed.card),
@@ -582,6 +583,7 @@ lemma evalObservedAuxOverride_measurable
     **Joint measurability of `evalMap_overrideC`.**
 
     The override map is jointly measurable in `((s, c), ℓ)`. -/
+@[fun_prop]
 theorem measurable_evalMap_overrideC
     (M : Causalean.SCM N Ω) {Y C : Finset (SWIGNode N)}
     (hY : Y ⊆ M.observed) (hC : C ⊆ M.observed) :

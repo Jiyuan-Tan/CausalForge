@@ -122,22 +122,28 @@ def yEvent (y : Bool) : Set P.Ω := S.yVar.event y
 
 /-- For [a fixed instrument value `z`](hyp:z), [the potential treatment `D(z)` is
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_DofZ (z : Bool) : Measurable (S.DofZ z) :=
   S.dVar.measurable_cfUnder S.zVar z
 
 /-- The outcome under a fixed treatment value is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 
 /-- The outcome under fixed instrument and treatment values is measurable. -/
+@[fun_prop]
 lemma measurable_YofZD (z d : Bool) : Measurable (S.YofZD z d) :=
   S.yVar.measurable_cf _
 
 /-- The factual instrument is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.zVar.measurable_factual
 /-- The factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 /-- The factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- The factual instrument event is measurable. -/
@@ -153,10 +159,12 @@ lemma measurableSet_yEvent (y : Bool) : MeasurableSet (S.yEvent y) :=
   S.yVar.measurableSet_event _ (measurableSet_singleton _)
 
 /-- The Boolean-to-real embedding is measurable. -/
+@[fun_prop]
 lemma measurable_boolToReal : Measurable (boolToReal) := by
   apply measurable_of_finite
 
 /-- The real-valued potential outcome under a fixed treatment is measurable. -/
+@[fun_prop]
 lemma measurable_YofD_real (d : Bool) : Measurable (S.YofD_real d) :=
   measurable_boolToReal.comp (S.measurable_YofD d)
 

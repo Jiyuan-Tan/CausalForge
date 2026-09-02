@@ -89,7 +89,7 @@ export async function buildBundle(args: {
    *  (when present) restricts presentation-synthesized-definition matching to
    *  def-like declarations. */
   moduleDecls?: Map<string, { file: string; line: number; kind?: string }>;
-  /** obj_id → causalsmith review status ("matched"/"derived"/"drift"/"unreviewed"), stamped onto
+  /** obj_id → causalsmith review status ("matched"/"drift"/"unreviewed"), stamped onto
    *  each entry so the page reports the verified state honestly. Defaults to "unreviewed". */
   verdictByObj?: Map<string, { status: string }>;
 }): Promise<{ crosswalk: PresentationCrosswalk; snippets: LeanSnippets; matchedSynthDecls: Set<string> }> {

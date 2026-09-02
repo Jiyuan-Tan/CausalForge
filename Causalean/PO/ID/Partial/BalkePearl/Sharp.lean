@@ -90,6 +90,7 @@ noncomputable def eval (r : Regime SV SX) (ω : SOmega) : ∀ v : SV, SX v := by
           yArmω dEff ω
 
 /-- The canonical evaluator is measurable under every intervention regime. -/
+@[fun_prop]
 lemma measurable_eval (r : Regime SV SX) : Measurable (eval r) := by
   exact measurable_of_finite _
 

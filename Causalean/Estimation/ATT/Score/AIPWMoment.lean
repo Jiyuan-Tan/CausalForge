@@ -21,6 +21,7 @@ ATE version to avoid duplication.
 
 import Causalean.Estimation.ATT.Setup
 import Causalean.Estimation.ATE.Score.AIPWMoment
+import Causalean.Tactic.Attr
 
 /-!
 Defines the value-space ingredients for ATT augmented inverse-probability
@@ -65,6 +66,20 @@ noncomputable def aipwMomentATT
         * (projY z - μ₀_fn (projX z))
     - indA z * θ
 
+/-- The augmented inverse-probability-weighting moment for the effect on the treated, at a data
+point, a nuisance pair, and a parameter value, is the treated outcome residual against the
+control regression, minus the odds-weighted control outcome residual, minus the parameter value
+on the treated. -/
+@[causal_defs_simps]
+lemma aipwMomentATT_eq
+    (z : γ × Bool × ℝ) (μ₀_fn : γ → ℝ) (e_fn : γ → ℝ) (θ : ℝ) :
+    aipwMomentATT z μ₀_fn e_fn θ =
+      indA z * (projY z - μ₀_fn (projX z))
+        - (1 - indA z) * (e_fn (projX z) / (1 - e_fn (projX z)))
+            * (projY z - μ₀_fn (projX z))
+        - indA z * θ :=
+  rfl
+
 /-- The ATT AIPW influence function at the truth for the population-`π_T`
 one-shot estimator:
 `ψ_ATT(z) := (1/π) · m_AIPW(η₀, z, 0) − θ₀`.
@@ -91,6 +106,8 @@ structure TreatedNuisanceVec (γ : Type*) [MeasurableSpace γ] where
   e_fn  : γ → ℝ
   μ₀_meas : Measurable μ₀_fn
   e_meas  : Measurable e_fn
+
+attribute [fun_prop] TreatedNuisanceVec.μ₀_meas TreatedNuisanceVec.e_meas
 
 namespace TreatedNuisanceVec
 
@@ -296,6 +313,7 @@ noncomputable def aipwMomentATTFunctional :
   fun η z θ => aipwMomentATT z η.μ₀_fn η.e_fn θ
 
 /-- Measurability of the ATT AIPW moment functional in the data variable `z`. -/
+@[fun_prop]
 lemma measurable_aipwMomentATTFunctional
     (η : TreatedNuisanceVec γ) (θ : ℝ) :
     Measurable (fun z => aipwMomentATTFunctional η z θ) := by

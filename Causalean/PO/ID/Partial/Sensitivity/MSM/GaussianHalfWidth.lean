@@ -22,6 +22,7 @@ in the form of `GaussianMoments.integral_Ioi_id_gaussianReal`) — and the per-s
 
 import Causalean.PO.ID.Partial.Sensitivity.MSM.Gaussian
 import Causalean.Mathlib.Probability.GaussianMoments
+import Causalean.Tactic.IntegralLinearity
 
 /-! # Gaussian MSM half-width formula
 
@@ -425,12 +426,7 @@ theorem msmUpperCalib_gaussian_halfWidth (Λ : ℝ) (hΛ : 1 < Λ)
   have hsplit_final :
       ∫ ω, M ω + K * ((1 - e ω) * sig ω) ∂P.μ =
         (∫ ω, M ω ∂P.μ) + K * ∫ ω, (1 - e ω) * sig ω ∂P.μ := by
-    have hM_int : Integrable M P.μ := by
-      simpa [M] using hint_m
-    have hσ_int : Integrable (fun ω => (1 - e ω) * sig ω) P.μ := by
-      simpa [e, sig] using hint_σ
-    rw [integral_add hM_int (hσ_int.const_mul K)]
-    rw [integral_const_mul]
+    integral_linearity
   calc
     S.msmUpperCalib Λ = S.candMean (S.cutoffProp Λ c) := hmain
     _ = (∫ ω, S.wMin Λ ω * (A ω * Y ω) ∂P.μ) +

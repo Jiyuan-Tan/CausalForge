@@ -1,0 +1,1404 @@
+{
+  "qid": "exp_dte_minimax_comp_frontier",
+  "specialization": "v1",
+  "cluster": "experimentation",
+  "symbols": [
+    {
+      "name": "b",
+      "type": "number_of_blocks",
+      "space": "\\(\\{1,2,\\ldots\\}\\)",
+      "def": "Number of equal clique blocks.",
+      "role": "family_index"
+    },
+    {
+      "name": "s",
+      "type": "block_size",
+      "space": "\\(\\{2,3,\\ldots\\}\\)",
+      "def": "Number of units in each clique block.",
+      "role": "family_index"
+    },
+    {
+      "name": "n",
+      "type": "population_size",
+      "space": "\\(\\mathbb N\\)",
+      "def": "\\(n=bs\\).",
+      "role": "instance_size",
+      "refs": [
+        "b",
+        "s"
+      ]
+    },
+    {
+      "name": "V_n",
+      "type": "finite_population",
+      "space": "\\(2^{\\mathbb N}\\)",
+      "def": "Fixed population \\(V_n=\\{1,\\ldots,n\\}\\).",
+      "role": "population",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "r",
+      "type": "block_index",
+      "space": "\\(\\{1,\\ldots,b\\}\\)",
+      "def": "Generic clique-block index.",
+      "role": "index",
+      "refs": [
+        "b"
+      ]
+    },
+    {
+      "name": "j",
+      "type": "within_block_index",
+      "space": "\\(\\{1,\\ldots,s\\}\\)",
+      "def": "Generic label within a clique block.",
+      "role": "index",
+      "refs": [
+        "s"
+      ]
+    },
+    {
+      "name": "B_r",
+      "type": "clique_block",
+      "space": "\\(2^{V_n}\\)",
+      "def": "Block \\(r\\) in a fixed labeled partition of \\(V_n\\), with \\(|B_r|=s\\).",
+      "role": "network_structure",
+      "refs": [
+        "r",
+        "V_n",
+        "s"
+      ]
+    },
+    {
+      "name": "\\mathcal B_{b,s}",
+      "type": "equal_block_partition",
+      "space": "\\(2^{2^{V_n}}\\)",
+      "def": "\\(\\mathcal B_{b,s}=\\{B_1,\\ldots,B_b\\}\\) is a partition of \\(V_n\\) into equal blocks.",
+      "role": "network_structure",
+      "refs": [
+        "B_r",
+        "b",
+        "s",
+        "V_n"
+      ]
+    },
+    {
+      "name": "G_{b,s}",
+      "type": "block_clique_network",
+      "space": "\\(2^{\\binom{V_n}{2}}\\)",
+      "def": "Disjoint union of the complete graphs induced by the blocks in \\(\\mathcal B_{b,s}\\).",
+      "role": "design_input",
+      "refs": [
+        "\\mathcal B_{b,s}",
+        "V_n"
+      ]
+    },
+    {
+      "name": "G",
+      "type": "known_interference_network",
+      "space": "\\(2^{\\binom{V_n}{2}}\\)",
+      "def": "Generic known simple interference graph on \\(V_n\\).",
+      "role": "open_question_input",
+      "refs": [
+        "V_n"
+      ]
+    },
+    {
+      "name": "H_{\\mathrm{DTE}}(G)",
+      "type": "general_two_layer_dte_conflict_graph",
+      "space": "\\(2^{\\binom{V_n\\times\\{0,1\\}}{2}}\\)",
+      "def": "Two-layer exposure conflict graph for the DTE on \\(G\\).",
+      "role": "open_question_input",
+      "refs": [
+        "G",
+        "V_n"
+      ]
+    },
+    {
+      "name": "\\Theta_2(G)",
+      "type": "general_separate_layer_second_moment_set",
+      "space": "\\(2^{\\mathbb R^{V_n\\times\\{0,1\\}}}\\)",
+      "def": "Two-layer target-outcome vectors on \\(G\\) satisfying a normalized Euclidean-ball constraint in each layer.",
+      "role": "open_question_parameter_space",
+      "refs": [
+        "G",
+        "n",
+        "V_n"
+      ]
+    },
+    {
+      "name": "i",
+      "type": "unit_index",
+      "space": "\\(V_n\\)",
+      "def": "Generic experimental-unit index.",
+      "role": "index",
+      "refs": [
+        "V_n"
+      ]
+    },
+    {
+      "name": "\\widetilde N_i",
+      "type": "closed_neighborhood",
+      "space": "\\(2^{V_n}\\)",
+      "def": "Closed neighborhood of unit \\(i\\) in \\(G_{b,s}\\); it is the unique block containing \\(i\\).",
+      "role": "interference_support",
+      "refs": [
+        "i",
+        "G_{b,s}",
+        "B_r",
+        "V_n"
+      ]
+    },
+    {
+      "name": "\\mathcal Z_n",
+      "type": "assignment_space",
+      "space": "\\(2^{V_n}\\)",
+      "def": "\\(\\mathcal Z_n=\\{0,1\\}^{V_n}\\).",
+      "role": "assignment_space",
+      "refs": [
+        "V_n"
+      ]
+    },
+    {
+      "name": "z",
+      "type": "assignment",
+      "space": "\\(\\mathcal Z_n\\)",
+      "def": "Generic binary treatment assignment.",
+      "role": "assignment_argument",
+      "refs": [
+        "\\mathcal Z_n"
+      ]
+    },
+    {
+      "name": "z^{\\prime}",
+      "type": "assignment",
+      "space": "\\(\\mathcal Z_n\\)",
+      "def": "Second generic treatment assignment.",
+      "role": "assignment_argument",
+      "refs": [
+        "\\mathcal Z_n",
+        "z"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "finite_population_potential_outcome_schedule",
+      "space": "\\(\\prod_{i\\in V_n}\\mathbb R^{\\mathcal Z_n}\\)",
+      "def": "Fixed schedule \\(Y=(Y_i(z):i\\in V_n,z\\in\\mathcal Z_n)\\).",
+      "role": "fixed_finite_population",
+      "refs": [
+        "i",
+        "V_n",
+        "z",
+        "\\mathcal Z_n"
+      ]
+    },
+    {
+      "name": "k",
+      "type": "exposure_layer_index",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "DTE exposure-layer index.",
+      "role": "index"
+    },
+    {
+      "name": "e_{i,k}",
+      "type": "dte_target_exposure",
+      "space": "\\(\\{0,1\\}^{\\widetilde N_i}\\)",
+      "def": "\\(e_{i,0}\\) is all control on \\(\\widetilde N_i\\), while \\(e_{i,1}\\) treats only \\(i\\).",
+      "role": "target_exposure",
+      "refs": [
+        "i",
+        "k",
+        "\\widetilde N_i"
+      ]
+    },
+    {
+      "name": "u_{i,k}",
+      "type": "target_exposure_outcome",
+      "space": "\\(\\mathbb R\\)",
+      "def": "\\(u_{i,k}=Y_i(e_{i,k})\\).",
+      "role": "causal_primitive",
+      "refs": [
+        "Y",
+        "i",
+        "k",
+        "e_{i,k}"
+      ]
+    },
+    {
+      "name": "u",
+      "type": "two_layer_target_outcome_vector",
+      "space": "\\(\\mathbb R^{V_n\\times\\{0,1\\}}\\)",
+      "def": "Vector of all \\(u_{i,k}\\).",
+      "role": "game_parameter",
+      "refs": [
+        "u_{i,k}",
+        "V_n"
+      ]
+    },
+    {
+      "name": "\\tau_{\\mathrm{DTE}}(Y)",
+      "type": "finite_population_direct_treatment_effect",
+      "space": "\\(\\mathbb R\\)",
+      "def": "\\(\\tau_{\\mathrm{DTE}}(Y)=n^{-1}\\sum_{i\\in V_n}(u_{i,1}-u_{i,0})\\).",
+      "role": "causal_estimand",
+      "refs": [
+        "Y",
+        "n",
+        "i",
+        "V_n",
+        "u_{i,k}"
+      ]
+    },
+    {
+      "name": "\\Theta_{b,s}",
+      "type": "separate_layer_second_moment_set",
+      "space": "\\(2^{\\mathbb R^{V_n\\times\\{0,1\\}}}\\)",
+      "def": "Product of the two normalized Euclidean balls for the control and treated target-outcome layers.",
+      "role": "parameter_space",
+      "refs": [
+        "u",
+        "n",
+        "V_n"
+      ]
+    },
+    {
+      "name": "\\mathcal M_2(G_{b,s})",
+      "type": "published_second_moment_ani_class",
+      "space": "\\(2^{\\prod_{i\\in V_n}\\mathbb R^{\\mathcal Z_n}}\\)",
+      "def": "Published \\(q=2\\) arbitrary-neighborhood-interference class specialized to \\(G_{b,s}\\).",
+      "role": "adversarial_schedule_class",
+      "refs": [
+        "G_{b,s}",
+        "Y",
+        "i",
+        "V_n",
+        "\\mathcal Z_n"
+      ]
+    },
+    {
+      "name": "\\mathcal D_n",
+      "type": "assignment_law_space",
+      "space": "\\(\\Delta(\\mathcal Z_n)\\)",
+      "def": "All randomization laws on binary assignments.",
+      "role": "design_space",
+      "refs": [
+        "\\mathcal Z_n"
+      ]
+    },
+    {
+      "name": "\\Gamma_n",
+      "type": "estimator_space",
+      "space": "\\(\\{\\widehat\\tau:\\mathcal Z_n\\times\\mathbb R^n\\to\\mathbb R\\}\\)",
+      "def": "All measurable assignment-and-outcome estimators.",
+      "role": "estimator_space",
+      "refs": [
+        "n",
+        "\\mathcal Z_n"
+      ]
+    },
+    {
+      "name": "R_2(G_{b,s})",
+      "type": "unrestricted_dte_minimax_risk",
+      "space": "\\([0,\\infty)\\)",
+      "def": "Worst-case mean squared error minimized jointly over \\(\\mathcal D_n\\) and \\(\\Gamma_n\\).",
+      "role": "minimax_value",
+      "refs": [
+        "G_{b,s}",
+        "\\mathcal D_n",
+        "\\Gamma_n",
+        "\\mathcal M_2(G_{b,s})",
+        "\\tau_{\\mathrm{DTE}}(Y)"
+      ]
+    },
+    {
+      "name": "H_{b,s}",
+      "type": "two_layer_dte_conflict_graph",
+      "space": "\\(2^{\\binom{V_n\\times\\{0,1\\}}{2}}\\)",
+      "def": "DTE exposure-level conflict graph induced by \\(G_{b,s}\\).",
+      "role": "calibration_graph",
+      "refs": [
+        "G_{b,s}",
+        "V_n",
+        "k"
+      ]
+    },
+    {
+      "name": "c",
+      "type": "all_control_block_count",
+      "space": "\\(\\{0,\\ldots,b\\}\\)",
+      "def": "Number of blocks assigned the all-control exposure pattern.",
+      "role": "orbit_index",
+      "refs": [
+        "b"
+      ]
+    },
+    {
+      "name": "\\mathcal S_c",
+      "type": "maximal_exposure_pattern_orbit",
+      "space": "\\(2^{2^{V_n\\times\\{0,1\\}}}\\)",
+      "def": "Orbit of maximal compatible exposure sets with exactly \\(c\\) all-control blocks and one isolated-treated label in each remaining block.",
+      "role": "observation_orbit",
+      "refs": [
+        "c",
+        "b",
+        "B_r",
+        "V_n"
+      ]
+    },
+    {
+      "name": "S_c",
+      "type": "canonical_maximal_exposure_pattern",
+      "space": "\\(\\mathcal S_c\\)",
+      "def": "Fixed canonical representative of orbit \\(\\mathcal S_c\\).",
+      "role": "posterior_observation_pattern",
+      "refs": [
+        "c",
+        "\\mathcal S_c"
+      ]
+    },
+    {
+      "name": "C",
+      "type": "all_control_block_subset",
+      "space": "\\(2^{\\{1,\\ldots,b\\}}\\)",
+      "def": "Set of all-control blocks, with \\(|C|=c\\).",
+      "role": "assignment_component",
+      "refs": [
+        "b",
+        "c"
+      ]
+    },
+    {
+      "name": "J_r",
+      "type": "singleton_treated_label",
+      "space": "\\(\\{1,\\ldots,s\\}\\)",
+      "def": "Treated label selected in block \\(r\\notin C\\).",
+      "role": "assignment_component",
+      "refs": [
+        "r",
+        "s",
+        "C"
+      ]
+    },
+    {
+      "name": "p",
+      "type": "orbit_law",
+      "space": "\\(\\Delta(\\{0,\\ldots,b\\})\\)",
+      "def": "Law \\(p=(p_0,\\ldots,p_b)\\) of the all-control block count.",
+      "role": "invariant_design_parameter",
+      "refs": [
+        "b",
+        "c"
+      ]
+    },
+    {
+      "name": "A_c",
+      "type": "treated_observation_coefficient",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Common coefficient on each observed isolated-treated outcome when the orbit index is \\(c\\).",
+      "role": "invariant_estimator_parameter",
+      "refs": [
+        "c"
+      ]
+    },
+    {
+      "name": "D_c",
+      "type": "control_observation_coefficient",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Common coefficient on each observed control outcome when the orbit index is \\(c\\).",
+      "role": "invariant_estimator_parameter",
+      "refs": [
+        "c"
+      ]
+    },
+    {
+      "name": "\\delta_{p,A,D}",
+      "type": "invariant_design_estimator_procedure",
+      "space": "\\(\\mathcal D_n\\times\\Gamma_n\\)",
+      "def": "Block- and unit-invariant randomization and estimator indexed by \\(p\\), \\(A_c\\), and \\(D_c\\).",
+      "role": "candidate_saddle_action",
+      "refs": [
+        "p",
+        "A_c",
+        "D_c",
+        "\\mathcal D_n",
+        "\\Gamma_n"
+      ]
+    },
+    {
+      "name": "W_c",
+      "type": "conditional_coefficient_moment_matrix",
+      "space": "\\(\\mathbb S_+^3\\)",
+      "def": "Convexified moment matrix with rank-one realization \\(W_c=p_c(1,A_c,D_c)^{\\mathsf T}(1,A_c,D_c)\\).",
+      "role": "sdp_primal_variable",
+      "refs": [
+        "c",
+        "p",
+        "A_c",
+        "D_c"
+      ]
+    },
+    {
+      "name": "\\alpha",
+      "type": "coefficient_moment_index",
+      "space": "\\(\\{0,1,2\\}\\)",
+      "def": "First coordinate index in a coefficient moment matrix.",
+      "role": "index"
+    },
+    {
+      "name": "\\beta",
+      "type": "coefficient_moment_index",
+      "space": "\\(\\{0,1,2\\}\\)",
+      "def": "Second coordinate index in a coefficient moment matrix.",
+      "role": "index",
+      "refs": [
+        "\\alpha"
+      ]
+    },
+    {
+      "name": "w^c_{\\alpha\\beta}",
+      "type": "coefficient_moment_entry",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Entry \\((\\alpha,\\beta)\\) of \\(W_c\\), ordered as \\((1,A_c,D_c)\\).",
+      "role": "sdp_coordinate",
+      "refs": [
+        "W_c",
+        "c",
+        "\\alpha",
+        "\\beta",
+        "A_c",
+        "D_c"
+      ]
+    },
+    {
+      "name": "K_0(W)",
+      "type": "constant_block_mean_risk_matrix",
+      "space": "\\(\\mathbb S_+^2\\)",
+      "def": "Two-layer risk matrix on the constant block-mean mode.",
+      "role": "mode_risk",
+      "refs": [
+        "W_c",
+        "w^c_{\\alpha\\beta}"
+      ]
+    },
+    {
+      "name": "K_{\\mathrm B}(W)",
+      "type": "between_block_risk_matrix",
+      "space": "\\(\\mathbb S_+^2\\)",
+      "def": "Two-layer risk matrix on every between-block zero-sum mode.",
+      "role": "mode_risk",
+      "refs": [
+        "W_c",
+        "w^c_{\\alpha\\beta}"
+      ]
+    },
+    {
+      "name": "k_{\\mathrm W}(W)",
+      "type": "within_block_treated_contrast_risk",
+      "space": "\\([0,\\infty)\\)",
+      "def": "Risk eigenvalue on the treated within-block contrast modes.",
+      "role": "mode_risk",
+      "refs": [
+        "W_c",
+        "w^c_{\\alpha\\beta}"
+      ]
+    },
+    {
+      "name": "\\lambda_0",
+      "type": "control_layer_risk_multiplier",
+      "space": "\\([0,\\infty)\\)",
+      "def": "Dual norm multiplier for the control-layer Euclidean ball.",
+      "role": "sdp_epigraph_variable"
+    },
+    {
+      "name": "\\lambda_1",
+      "type": "treated_layer_risk_multiplier",
+      "space": "\\([0,\\infty)\\)",
+      "def": "Dual norm multiplier for the treated-layer Euclidean ball.",
+      "role": "sdp_epigraph_variable"
+    },
+    {
+      "name": "V_{b,s}",
+      "type": "block_clique_invariant_linear_value",
+      "space": "\\([0,\\infty)\\)",
+      "def": "Optimal value of the explicit mode semidefinite program; it is the exact minimax value within the invariant linear class and a computable unrestricted upper-risk endpoint.",
+      "role": "invariant_linear_value_and_unrestricted_upper_certificate",
+      "refs": [
+        "b",
+        "s",
+        "W_c",
+        "K_0(W)",
+        "K_{\\mathrm B}(W)",
+        "k_{\\mathrm W}(W)",
+        "\\lambda_0",
+        "\\lambda_1"
+      ]
+    },
+    {
+      "name": "\\mathfrak G_{b,s}",
+      "type": "block_unit_symmetry_group",
+      "space": "\\(\\operatorname{Sym}(V_n)\\times\\{\\pm1\\}\\)",
+      "def": "Wreath-product permutations of blocks and labels within blocks, augmented by simultaneous sign reversal of both outcome layers.",
+      "role": "invariance_group",
+      "refs": [
+        "b",
+        "s",
+        "V_n",
+        "B_r",
+        "u"
+      ]
+    },
+    {
+      "name": "g_0",
+      "type": "constant_mode_vector",
+      "space": "\\(\\mathbb R^{V_n}\\)",
+      "def": "\\(g_0=n^{-1/2}\\mathbf 1_{V_n}\\).",
+      "role": "certificate_mode_basis",
+      "refs": [
+        "n",
+        "V_n"
+      ]
+    },
+    {
+      "name": "g_{\\mathrm B}",
+      "type": "canonical_between_block_vector",
+      "space": "\\(\\mathbb R^{V_n}\\)",
+      "def": "For \\(b\\ge2\\), \\(g_{\\mathrm B}=(2s)^{-1/2}(\\mathbf 1_{B_1}-\\mathbf 1_{B_2})\\); for \\(b=1\\), set \\(g_{\\mathrm B}=0\\).",
+      "role": "certificate_mode_basis",
+      "refs": [
+        "b",
+        "s",
+        "B_r",
+        "V_n"
+      ]
+    },
+    {
+      "name": "g_{\\mathrm W}",
+      "type": "canonical_within_block_vector",
+      "space": "\\(\\mathbb R^{V_n}\\)",
+      "def": "\\(g_{\\mathrm W}=2^{-1/2}(\\mathbf e_{(1,1)}-\\mathbf e_{(1,2)})\\), using the first two labels of block \\(B_1\\).",
+      "role": "certificate_mode_basis",
+      "refs": [
+        "s",
+        "B_r",
+        "V_n"
+      ]
+    },
+    {
+      "name": "P_c",
+      "type": "revealed_coordinate_projection",
+      "space": "\\(\\mathbb R^{2n\\times2n}\\)",
+      "def": "Orthogonal coordinate projection onto the target outcomes revealed by the canonical maximal exposure pattern \\(S_c\\).",
+      "role": "posterior_collision_operator",
+      "refs": [
+        "c",
+        "S_c",
+        "n",
+        "u"
+      ]
+    },
+    {
+      "name": "\\mathcal A_{b,s}^{\\star}",
+      "type": "finite_candidate_orbit_atom_dictionary",
+      "space": "\\(2^{\\Theta_{b,s}}\\)",
+      "def": "Finite candidate atom dictionary produced from an optimal mode-SDP primal--dual pair by the posterior-collision lift and closure under \\(\\mathfrak G_{b,s}\\).",
+      "role": "candidate_posterior_collision_support",
+      "refs": [
+        "V_{b,s}",
+        "\\Theta_{b,s}",
+        "\\mathfrak G_{b,s}"
+      ]
+    },
+    {
+      "name": "L_{b,s}",
+      "type": "certificate_support_size",
+      "space": "\\(\\mathbb N\\)",
+      "def": "Cardinality of \\(\\mathcal A_{b,s}^{\\star}\\).",
+      "role": "certificate_size",
+      "refs": [
+        "\\mathcal A_{b,s}^{\\star}"
+      ]
+    },
+    {
+      "name": "h",
+      "type": "certificate_atom_index",
+      "space": "\\(\\{1,\\ldots,L_{b,s}\\}\\)",
+      "def": "Index of a lifted symmetry-orbit atom.",
+      "role": "index",
+      "refs": [
+        "L_{b,s}"
+      ]
+    },
+    {
+      "name": "u^{(h)}",
+      "type": "certificate_atom",
+      "space": "\\(\\Theta_{b,s}\\)",
+      "def": "Atom \\(h\\) in \\(\\mathcal A_{b,s}^{\\star}\\).",
+      "role": "least_favourable_atom",
+      "refs": [
+        "h",
+        "\\Theta_{b,s}",
+        "\\mathcal A_{b,s}^{\\star}"
+      ]
+    },
+    {
+      "name": "q_h",
+      "type": "certificate_atom_weight",
+      "space": "\\([0,1]\\)",
+      "def": "Weight on atom \\(u^{(h)}\\), with weights constant on every \\(\\mathfrak G_{b,s}\\)-orbit.",
+      "role": "least_favourable_weight",
+      "refs": [
+        "h",
+        "u^{(h)}",
+        "\\mathfrak G_{b,s}"
+      ]
+    },
+    {
+      "name": "\\Pi_{b,s}^{\\star}",
+      "type": "finite_maximin_posterior_lower_certificate",
+      "space": "\\(\\Delta(\\Theta_{b,s})\\)",
+      "def": "\\(\\Pi_{b,s}^{\\star}=\\sum_{h=1}^{L_{b,s}}q_h\\delta_{u^{(h)}}\\) is the finite prior selected to maximize the minimum orbitwise posterior risk over the candidate dictionary.",
+      "role": "finite_posterior_lower_certificate",
+      "refs": [
+        "L_{b,s}",
+        "h",
+        "q_h",
+        "u^{(h)}",
+        "\\Theta_{b,s}"
+      ]
+    },
+    {
+      "name": "B_c(\\Pi)",
+      "type": "orbitwise_posterior_risk",
+      "space": "\\([0,\\infty)\\)",
+      "def": "Bayes residual mean squared error after observing any maximal exposure pattern in \\(\\mathcal S_c\\) under finite prior \\(\\Pi\\).",
+      "role": "dual_certificate_constraint",
+      "refs": [
+        "c",
+        "\\mathcal S_c",
+        "\\Theta_{b,s}"
+      ]
+    },
+    {
+      "name": "\\mathcal Q",
+      "type": "posterior_atom_cell",
+      "space": "\\(2^{\\{1,\\ldots,L_{b,s}\\}}\\)",
+      "def": "Cell of prior atoms with identical revealed subvectors under \\(S_c\\).",
+      "role": "posterior_partition",
+      "refs": [
+        "L_{b,s}",
+        "S_c",
+        "u^{(h)}"
+      ]
+    },
+    {
+      "name": "m_{\\mathcal Q}",
+      "type": "posterior_cell_mean",
+      "space": "\\(\\mathbb R\\)",
+      "def": "Posterior mean of the DTE over cell \\(\\mathcal Q\\).",
+      "role": "bayes_action",
+      "refs": [
+        "\\mathcal Q",
+        "q_h",
+        "u^{(h)}",
+        "\\tau_{\\mathrm{DTE}}(Y)"
+      ]
+    },
+    {
+      "name": "\\mathcal C^{\\star}",
+      "type": "active_orbit_set",
+      "space": "\\(2^{\\{0,\\ldots,b\\}}\\)",
+      "def": "\\(\\mathcal C^{\\star}=\\{c:p_c^{\\star}>0\\}\\) for the rank-one optimal mode-SDP solution.",
+      "role": "complementary_slackness_set",
+      "refs": [
+        "c",
+        "b",
+        "p"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:arbitrary-neighborhood-interference",
+      "kind": "causal-structural",
+      "condition": "For every \\(i\\in V_n\\) and \\(z,z^{\\prime}\\in\\mathcal Z_n\\), equality \\(z|_{\\widetilde N_i}=z^{\\prime}|_{\\widetilde N_i}\\) implies \\(Y_i(z)=Y_i(z^{\\prime})\\).",
+      "free_symbols": [
+        "i",
+        "V_n",
+        "z",
+        "z^{\\prime}",
+        "\\mathcal Z_n",
+        "\\widetilde N_i",
+        "Y"
+      ],
+      "standard": {
+        "name": "Arbitrary neighborhood interference",
+        "cite": "KandirosHarshawSavje2026"
+      },
+      "used_by": [
+        "def:published-q2-class",
+        "lem:published-conflict-calibration"
+      ]
+    },
+    {
+      "id": "ass:control-layer-second-moment",
+      "kind": "support",
+      "condition": "The control-exposure outcomes satisfy \\(n^{-1}\\sum_{i\\in V_n}u_{i,0}^2\\le1\\).",
+      "free_symbols": [
+        "n",
+        "i",
+        "V_n",
+        "u_{i,k}"
+      ],
+      "standard": {
+        "name": "Published \\(q=2\\) control-layer moment restriction",
+        "cite": "KandirosHarshawSavje2026"
+      },
+      "used_by": [
+        "def:published-q2-class"
+      ]
+    },
+    {
+      "id": "ass:treated-layer-second-moment",
+      "kind": "support",
+      "condition": "The isolated-treatment outcomes satisfy \\(n^{-1}\\sum_{i\\in V_n}u_{i,1}^2\\le1\\).",
+      "free_symbols": [
+        "n",
+        "i",
+        "V_n",
+        "u_{i,k}"
+      ],
+      "standard": {
+        "name": "Published \\(q=2\\) treated-layer moment restriction",
+        "cite": "KandirosHarshawSavje2026"
+      },
+      "used_by": [
+        "def:published-q2-class"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:block-clique-family",
+      "name": "Equal block-clique family",
+      "construction": "For \\(b\\ge1\\), \\(s\\ge2\\), and \\(n=bs\\), fix \\(\\mathcal B_{b,s}=\\{B_1,\\ldots,B_b\\}\\) and set \\(E(G_{b,s})=\\{\\{i,i^{\\prime}\\}:i\\ne i^{\\prime}\\text{ and }i,i^{\\prime}\\in B_r\\text{ for some }r\\}\\).",
+      "free_symbols": [
+        "b",
+        "s",
+        "n",
+        "\\mathcal B_{b,s}",
+        "B_r",
+        "G_{b,s}",
+        "i",
+        "V_n"
+      ],
+      "inputs": [
+        "b",
+        "s",
+        "\\mathcal B_{b,s}"
+      ],
+      "revision": "rev:1a696e365b56082c47a3bbcd93351e036a193b8e72910d0bbe20796611541f4c"
+    },
+    {
+      "id": "def:published-q2-class",
+      "name": "Published second-moment ANI class",
+      "construction": "\\(\\mathcal M_2(G_{b,s})=\\{Y=(Y_i(z))_{i\\in V_n,z\\in\\mathcal Z_n}:Y\\text{ satisfies }\\text{ass:arbitrary-neighborhood-interference},\\text{ ass:control-layer-second-moment},\\text{ and ass:treated-layer-second-moment}\\}\\).",
+      "free_symbols": [
+        "\\mathcal M_2(G_{b,s})",
+        "G_{b,s}",
+        "Y",
+        "i",
+        "V_n",
+        "z",
+        "\\mathcal Z_n"
+      ],
+      "by_member_properties": [
+        "ass:arbitrary-neighborhood-interference",
+        "ass:control-layer-second-moment",
+        "ass:treated-layer-second-moment"
+      ],
+      "revision": "rev:fb5eefde65979eb415ca22a9ac75e62d79b558919cc644cda71a2e86c73b35e3"
+    },
+    {
+      "id": "def:layerwise-parameter-set",
+      "name": "Separate-layer Euclidean parameter set",
+      "construction": "\\[\\Theta_{b,s}=\\left\\{u\\in\\mathbb R^{V_n\\times\\{0,1\\}}:n^{-1}\\sum_{i\\in V_n}u_{i,0}^2\\le1\\text{ and }n^{-1}\\sum_{i\\in V_n}u_{i,1}^2\\le1\\right\\}.\\]",
+      "free_symbols": [
+        "\\Theta_{b,s}",
+        "u",
+        "n",
+        "i",
+        "V_n"
+      ],
+      "inputs": [
+        "b",
+        "s",
+        "n",
+        "V_n"
+      ],
+      "revision": "rev:777087e618871aeb2ad0f4fd3791ad8c1279c128eafb691e238cc86207a4b96b"
+    },
+    {
+      "id": "def:unrestricted-minimax-risk",
+      "name": "Unrestricted block-clique DTE minimax risk",
+      "construction": "\\[R_2(G_{b,s})=\\inf_{P\\in\\mathcal D_n,\\,\\widehat\\tau\\in\\Gamma_n}\\sup_{Y\\in\\mathcal M_2(G_{b,s})}\\mathbb E_{z\\sim P}\\!\\left[\\left\\{\\widehat\\tau(z,Y(z))-\\tau_{\\mathrm{DTE}}(Y)\\right\\}^2\\right].\\]",
+      "free_symbols": [
+        "R_2(G_{b,s})",
+        "G_{b,s}",
+        "\\mathcal D_n",
+        "\\Gamma_n",
+        "Y",
+        "\\mathcal M_2(G_{b,s})",
+        "z",
+        "\\tau_{\\mathrm{DTE}}(Y)"
+      ],
+      "inputs": [
+        "G_{b,s}"
+      ],
+      "revision": "rev:891df85b9ac43d1c4735925b15d2b6913f12b4e837b9ffa24971ff61f0828540"
+    },
+    {
+      "id": "def:block-clique-conflict-orbits",
+      "name": "Block-clique maximal-exposure orbits",
+      "construction": "For \\(c=0,\\ldots,b\\), \\(\\mathcal S_c\\) contains the maximal exposure sets obtained by choosing \\(C\\subseteq\\{1,\\ldots,b\\}\\) with \\(|C|=c\\), revealing every \\((i,0)\\) in blocks \\(r\\in C\\), and revealing one \\((J_r,1)\\) in every block \\(r\\notin C\\).",
+      "free_symbols": [
+        "c",
+        "b",
+        "\\mathcal S_c",
+        "C",
+        "r",
+        "i",
+        "B_r",
+        "J_r",
+        "V_n"
+      ],
+      "inputs": [
+        "b",
+        "s",
+        "H_{b,s}"
+      ],
+      "revision": "rev:08a505c0605ed8105e2980cacd3d48016151cf3308c27c90f274ee37b4c9dd8e"
+    },
+    {
+      "id": "def:invariant-procedure",
+      "name": "Invariant block-clique design and estimator",
+      "construction": "Draw \\(c\\sim p\\); conditional on \\(c\\), draw \\(C\\) uniformly among the \\(c\\)-subsets of \\(\\{1,\\ldots,b\\}\\), set all units in blocks \\(r\\in C\\) to control, and independently draw \\(J_r\\) uniformly in each block \\(r\\notin C\\) and treat only that unit. On the realized assignment set \\[\\delta_{p,A,D}=A_c\\sum_{r\\notin C}u_{J_r,1}+D_c\\sum_{r\\in C}\\sum_{i\\in B_r}u_{i,0}.\\]",
+      "free_symbols": [
+        "\\delta_{p,A,D}",
+        "p",
+        "c",
+        "C",
+        "b",
+        "r",
+        "J_r",
+        "s",
+        "A_c",
+        "D_c",
+        "u_{i,k}",
+        "i",
+        "B_r"
+      ],
+      "inputs": [
+        "p",
+        "A_c",
+        "D_c"
+      ],
+      "revision": "rev:31bb6481ab5ecc38732c54aca690f6b196fb34d4e1194d813014e96d290536b2"
+    },
+    {
+      "id": "def:mode-risk-matrices",
+      "name": "Constant, between-block, and within-block risk matrices",
+      "construction": "Write \\(W_c=(w^c_{\\alpha\\beta})_{\\alpha,\\beta=0}^2\\), set \\(\\rho_c=c(b-c)/\\{b(b-1)\\}\\) for \\(b>1\\) and \\(\\rho_c=0\\) for \\(b=1\\), and define \\[K_0(W)=\\sum_{c=0}^b\\begin{pmatrix}w^c_{00}+2scw^c_{02}+s^2c^2w^c_{22}&-w^c_{00}+(b-c)w^c_{01}-scw^c_{02}+sc(b-c)w^c_{12}\\\\-w^c_{00}+(b-c)w^c_{01}-scw^c_{02}+sc(b-c)w^c_{12}&w^c_{00}-2(b-c)w^c_{01}+(b-c)^2w^c_{11}\\end{pmatrix},\\] \\[K_{\\mathrm B}(W)=\\sum_{c=0}^b b\\rho_c\\begin{pmatrix}s^2w^c_{22}&-sw^c_{12}\\\\-sw^c_{12}&w^c_{11}\\end{pmatrix},\\qquad k_{\\mathrm W}(W)=\\sum_{c=0}^b(b-c)w^c_{11}.\\]",
+      "free_symbols": [
+        "W_c",
+        "w^c_{\\alpha\\beta}",
+        "\\alpha",
+        "\\beta",
+        "c",
+        "b",
+        "s",
+        "K_0(W)",
+        "K_{\\mathrm B}(W)",
+        "k_{\\mathrm W}(W)"
+      ],
+      "inputs": [
+        "b",
+        "s",
+        "W_c"
+      ],
+      "revision": "rev:1ead13c78992178c4d263a0994cbc08ab2e2c5a4e6a99563e2f2eb016fe83846"
+    },
+    {
+      "id": "def:mode-sdp-value",
+      "name": "Explicit finite block-clique mode SDP",
+      "construction": "\\[V_{b,s}=\\min_{(W_c)_{c=0}^b,\\lambda_0,\\lambda_1}\\lambda_0+\\lambda_1\\] subject to \\(W_c\\succeq0\\), \\(\\sum_{c=0}^bw^c_{00}=1\\), \\(\\lambda_0,\\lambda_1\\ge0\\), and \\[\\operatorname{diag}(\\lambda_0,\\lambda_1)-K_0(W)\\succeq0,\\qquad\\operatorname{diag}(\\lambda_0,\\lambda_1)-K_{\\mathrm B}(W)\\succeq0,\\qquad\\lambda_1\\ge k_{\\mathrm W}(W).\\]",
+      "free_symbols": [
+        "V_{b,s}",
+        "b",
+        "s",
+        "W_c",
+        "w^c_{\\alpha\\beta}",
+        "c",
+        "\\lambda_0",
+        "\\lambda_1",
+        "K_0(W)",
+        "K_{\\mathrm B}(W)",
+        "k_{\\mathrm W}(W)"
+      ],
+      "inputs": [
+        "b",
+        "s"
+      ],
+      "revision": "rev:488ccd392824b738c07f304da94fd1a5d07db9feebc20fbce5b3fa2b2170ff40"
+    },
+    {
+      "id": "def:posterior-collision-lift",
+      "name": "Finite orbit posterior-collision lift",
+      "construction": "Fix a primal--dual optimum of \\(\\text{def:mode-sdp-value}\\). For each nonzero dual constant-mode and between-block matrix, take the spectral factor whose eigenvalues are in decreasing order and whose eigenvectors use the lexicographic sign convention in the displayed two-dimensional mode basis; take the nonnegative square root for the within-block scalar. Embed the resulting at most five columns using \\(g_0\\), \\(g_{\\mathrm B}\\), and \\(g_{\\mathrm W}\\). Divide each embedded vector \\(v\\) by \\(\\max\\{1,\\|v_0\\|_2/\\sqrt n,\\|v_1\\|_2/\\sqrt n\\}\\). For every \\(c\\in\\mathcal C^{\\star}\\), form \\(P_cv\\pm(I-P_c)v\\), close these atoms under \\(\\mathfrak G_{b,s}\\), and discard duplicates; if every dual column is zero, use the singleton dictionary containing the zero vector. This finite set is \\(\\mathcal A_{b,s}^{\\star}\\). On its simplex of nonnegative weights that sum to one and are constant on \\(\\mathfrak G_{b,s}\\)-orbits, choose the lexicographically first maximizer of \\(\\min_{0\\le c\\le b}B_c(\\sum_hq_h\\delta_{u^{(h)}})\\). Denote the resulting prior by \\(\\Pi_{b,s}^{\\star}=\\sum_hq_h\\delta_{u^{(h)}}\\). The construction returns this finite, directly checkable maximin posterior certificate; it does not assert that its minimum posterior risk equals \\(V_{b,s}\\).",
+      "free_symbols": [
+        "V_{b,s}",
+        "\\mathcal S_c",
+        "c",
+        "g_0",
+        "g_{\\mathrm B}",
+        "g_{\\mathrm W}",
+        "P_c",
+        "S_c",
+        "\\mathfrak G_{b,s}",
+        "q_h",
+        "B_c(\\Pi)",
+        "\\mathcal C^{\\star}",
+        "\\mathcal A_{b,s}^{\\star}",
+        "\\Pi_{b,s}^{\\star}",
+        "h",
+        "u^{(h)}",
+        "n"
+      ],
+      "inputs": [
+        "b",
+        "s",
+        "V_{b,s}"
+      ],
+      "revision": "rev:6e542defbf25799a8988c132891b94791861fd4b1ea6ad98dafb4d059c14c7ba"
+    },
+    {
+      "id": "def:finite-posterior-risk",
+      "name": "Orbitwise finite-prior posterior risk",
+      "construction": "For a finite prior \\(\\Pi=\\sum_hq_h\\delta_{u^{(h)}}\\) and the representative \\(S_c\\in\\mathcal S_c\\), partition its atoms into cells \\(\\mathcal Q\\) with identical revealed subvectors \\(u^{(h)}_{S_c}\\), set \\(m_{\\mathcal Q}=(\\sum_{h\\in\\mathcal Q}q_h)^{-1}\\sum_{h\\in\\mathcal Q}q_h\\,n^{-1}\\sum_{i\\in V_n}(u^{(h)}_{i,1}-u^{(h)}_{i,0})\\), and define \\[B_c(\\Pi)=\\sum_{\\mathcal Q}\\sum_{h\\in\\mathcal Q}q_h\\left\\{n^{-1}\\sum_{i\\in V_n}(u^{(h)}_{i,1}-u^{(h)}_{i,0})-m_{\\mathcal Q}\\right\\}^2.\\]",
+      "free_symbols": [
+        "B_c(\\Pi)",
+        "c",
+        "\\mathcal S_c",
+        "S_c",
+        "\\mathcal Q",
+        "m_{\\mathcal Q}",
+        "q_h",
+        "h",
+        "u^{(h)}",
+        "n",
+        "i",
+        "V_n"
+      ],
+      "inputs": [
+        "\\Pi_{b,s}^{\\star}",
+        "\\mathcal S_c"
+      ],
+      "revision": "rev:8a3d55ca9b658ffc3a1c1417573dee132027a48a6e664152c7f3dc90883de1de"
+    },
+    {
+      "id": "def:general-graph-certificate-handle",
+      "name": "Orbit-aware saddle column-generation handle",
+      "construction": "Use posterior-collision orbit atoms as lower columns, alternate them with maximal-compatible-exposure separation on the design side, and apply Carathéodory reduction to the two layer moment map while retaining exact posterior-cell constraints.",
+      "free_symbols": [
+        "\\Pi_{b,s}^{\\star}",
+        "\\Theta_2(G)",
+        "H_{\\mathrm{DTE}}(G)",
+        "G"
+      ],
+      "inputs": [
+        "H_{\\mathrm{DTE}}(G)",
+        "\\Theta_2(G)"
+      ],
+      "revision": "rev:4a0b6d62a368b141edfc17b77cd305fef706fd764033f16f6733d5e41916f13a"
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:published-conflict-calibration",
+      "kind": "lemma",
+      "statement": "The published maximal-independent-set identity specializes to \\(G_{b,s}\\): every maximal compatible exposure set is realized by an assignment, and the unrestricted risk depends only on the two target-outcome layers and the family \\(\\bigcup_{c=0}^b\\mathcal S_c\\).",
+      "free_symbols": [
+        "G_{b,s}",
+        "H_{b,s}",
+        "R_2(G_{b,s})",
+        "u",
+        "c",
+        "b",
+        "\\mathcal S_c"
+      ],
+      "depends_on": [
+        "ass:arbitrary-neighborhood-interference",
+        "def:block-clique-family",
+        "def:published-q2-class",
+        "def:unrestricted-minimax-risk",
+        "def:block-clique-conflict-orbits"
+      ],
+      "status": "proved",
+      "justification": "This cited calibration identifies the exact causal game without treating the published graph representation as the contribution.",
+      "gap": "KandirosHarshawSavje2026 Proposition 2.2 and Appendix A.5 already prove the general identity and assignment realization; only the block-clique specialization is recorded here.",
+      "consumer": "The saddle theorem can work entirely with target outcomes while retaining validity for lawful binary randomizations.",
+      "proof_tex": "\\textbf{Definitions.} For block \\(B_r\\), write\n\\[\n\\mathsf C_r=\\{(i,0):i\\in B_r\\},\n\\qquad\n\\mathsf T_r=\\{(i,1):i\\in B_r\\}.\n\\]\nThe exposure \\((i,0)\\) requires all coordinates in \\(B_r\\) to be zero, whereas \\((i,1)\\) requires coordinate \\(i\\) to be one and every other coordinate in \\(B_r\\) to be zero. These descriptions follow from the two target-exposure definitions and \\(\\text{ass:arbitrary-neighborhood-interference}\\), because the closed neighborhood of every unit in \\(B_r\\) is exactly \\(B_r\\).\n\n\\textbf{Compatibility inside one block.} All vertices in \\(\\mathsf C_r\\) are jointly realized by the all-control assignment on \\(B_r\\). Distinct vertices of \\(\\mathsf T_r\\) are incompatible: realizing \\((i,1)\\) sets coordinate \\(i\\) to one and every other coordinate of \\(B_r\\) to zero, whereas realizing \\((j,1)\\), for \\(j\\ne i\\), requires the reverse at coordinates \\(i,j\\). Every member of \\(\\mathsf T_r\\) is also incompatible with every member of \\(\\mathsf C_r\\), since the former requires one treated coordinate and the latter requires none. Exposures belonging to distinct blocks are compatible because the blocks are disjoint. Consequently, a maximal compatible set chooses, independently in each block, either all of \\(\\mathsf C_r\\) or one member of \\(\\mathsf T_r\\). This is precisely a member of one of the families \\(\\mathcal S_c\\).\n\n\\textbf{Assignment realization.} Given such a maximal set, let \\(C\\) be its all-control blocks. Assign every unit in a block in \\(C\\) to control. In each block outside \\(C\\), assign only its selected label \\(J_r\\) to treatment. The preceding compatibility calculation shows that the revealed target coordinates are exactly the prescribed maximal set. Thus every maximal compatible exposure set is realized by a lawful binary assignment.\n\n\\textbf{Reduction of the minimax game.} For an assignment \\(z\\), let \\(R_z\\) be the set of target coordinates revealed by \\(z\\). The preceding argument shows that \\(R_z\\) is compatible. Choose a maximal extension \\(M(R_z)\\supseteq R_z\\), and realize it by the blockwise assignment just constructed. Replacing a design by its pushforward through \\(z\\mapsto M(R_z)\\) cannot increase its optimal risk: conditional on a maximal extension, average the old estimator over its preimage and apply Jensen's inequality to squared loss. The new observation contains every target coordinate used by the old estimator.\n\nIt remains to justify discarding non-target outcomes. For the lower inequality, restrict the supremum to schedules for which every non-target exposure outcome is zero. Such schedules satisfy arbitrary neighborhood interference and are indexed by \\(u\\in\\Theta_{b,s}\\); on this subclass the data under \\(z\\) consist only of \\(R_z\\), the revealed coordinates \\(u_{R_z}\\), and fixed zeros. Hence every network procedure induces a procedure in the target-coordinate game. For the reverse inequality, realize each maximal compatible set by the displayed assignment and use an estimator that ignores every non-target outcome. The two induced risks agree pointwise in \\(u\\). Taking first the supremum over the two layer balls and then the infimum over designs and measurable estimators proves that the unrestricted risk depends only on \\(u\\) and the family \\(\\bigcup_{c=0}^b\\mathcal S_c\\).\n\nThis is the block-clique specialization of the maximal-independent-set reduction in Kandiros, Harshaw, and S\\\"avje (2026, Proposition~2.2 and Appendix~A.5); all specialization steps used here were derived directly.",
+      "revision": "rev:541d26913a929b4c527e7da57abb5b35caaa317831b0955735f687314d801b4b"
+    },
+    {
+      "id": "lem:three-mode-risk-sdp",
+      "kind": "lemma",
+      "statement": "For every invariant procedure \\(\\delta_{p,A,D}\\), its risk quadratic form decomposes orthogonally into the constant block-mean mode \\(K_0(W)\\), \\(b-1\\) identical between-block zero-sum modes \\(K_{\\mathrm B}(W)\\), and \\(b(s-1)\\) treated within-block contrast modes with eigenvalue \\(k_{\\mathrm W}(W)\\); control within-block contrasts have eigenvalue zero. Maximization over the two separate unit Euclidean balls is exactly dual to the two multipliers \\(\\lambda_0,\\lambda_1\\). Every optimum of the convex moment relaxation admits rank-one purification \\(W_c=p_c(1,A_c,D_c)^{\\mathsf T}(1,A_c,D_c)\\) without increasing risk.",
+      "free_symbols": [
+        "\\delta_{p,A,D}",
+        "p",
+        "A_c",
+        "D_c",
+        "W_c",
+        "K_0(W)",
+        "b",
+        "s",
+        "K_{\\mathrm B}(W)",
+        "k_{\\mathrm W}(W)",
+        "\\lambda_0",
+        "\\lambda_1"
+      ],
+      "depends_on": [
+        "def:invariant-procedure",
+        "def:layerwise-parameter-set",
+        "def:mode-risk-matrices",
+        "def:mode-sdp-value"
+      ],
+      "status": "proved",
+      "justification": "This gives an exact finite optimization and rank-one extraction for the invariant linear design-estimator class.",
+      "gap": "Published graph-summary rates do not diagonalize this block-clique linear risk, while the calculation here does not claim completeness over nonlinear invariant estimators.",
+      "consumer": "An experimenter can solve the finite SDP and recover a realizable block randomization with explicit linear coefficients and a valid unrestricted upper certificate.",
+      "proof_tex": "\\textbf{Error coefficients.} Fix \\(c\\), \\(C\\), and the sampled labels \\((J_r:r\\notin C)\\). Write \\(u_k=(u_{i,k})_{i\\in V_n}\\) and put\n\\[\na_{0,c,C}=n^{-1}\\mathbf 1_{V_n}+D_c\\sum_{r\\in C}\\mathbf 1_{B_r},\n\\qquad\na_{1,c,C,J}=-n^{-1}\\mathbf 1_{V_n}+A_c\\sum_{r\\notin C}\\mathbf e_{J_r}.\n\\]\nThe estimation error is exactly\n\\[\n\\delta_{p,A,D}-\\tau_{\\mathrm{DTE}}(Y)\n=\\langle a_{0,c,C},u_0\\rangle+\\langle a_{1,c,C,J},u_1\\rangle.\n\\]\nThus its design risk is a positive-semidefinite quadratic form in \\((u_0,u_1)\\).\n\n\\textbf{Orthogonal modes.} Decompose \\(\\mathbb R^{V_n}\\) into the orthogonal sum of the constant vector, the \\((b-1)\\)-dimensional space of vectors that are constant on each block and whose block constants sum to zero, and the \\(b(s-1)\\)-dimensional space of within-block zero-sum vectors. Conditional uniformity of \\(C\\) and the labels \\(J_r\\) makes the risk operator equivariant under block and within-block permutations. Directly averaging the displayed error coefficients therefore makes the three spaces invariant, makes all between-block copies identical, and makes all treated within-block copies identical. The control coefficient is constant inside every block, so its inner product with each control within-block contrast is zero.\n\nScale \\(u_k=\\sqrt n\\,x_k\\), so the two restrictions defining \\(\\Theta_{b,s}\\) become \\(\\|x_0\\|_2\\le1\\) and \\(\\|x_1\\|_2\\le1\\). On the normalized constant vector \\(g_0\\), the two scaled error coefficients are\n\\[\n1+scD_c,\n\\qquad\n-1+(b-c)A_c.\n\\]\nIf\n\\[\nL_{0c}=\\begin{pmatrix}1&0&sc\\\\-1&b-c&0\\end{pmatrix},\n\\]\nthen the constant-mode contribution is \\(L_{0c}W_cL_{0c}^{\\mathsf T}\\). Summing over \\(c\\) gives exactly \\(K_0(W)\\).\n\nFor \\(b>1\\), use the normalized contrast between two distinct blocks. Conditional on \\(c\\),\n\\[\n\\Pr(1\\in C,\\,2\\notin C)=\\Pr(2\\in C,\\,1\\notin C)\n=\\rho_c=\\frac{c(b-c)}{b(b-1)}.\n\\]\nWhen exactly one of the two blocks belongs to \\(C\\), the scaled two-layer coefficient vector is, up to orientation, proportional to \\((sD_c,-A_c)\\); the normalization \\(n=bs\\) and the two orientations give the factor \\(b\\rho_c\\). Therefore the common between-block matrix is\n\\[\n\\sum_{c=0}^b b\\rho_c\n\\begin{pmatrix}\ns^2p_cD_c^2&-sp_cA_cD_c\\\\\n-sp_cA_cD_c&p_cA_c^2\n\\end{pmatrix}\n=K_{\\mathrm B}(W).\n\\]\nFor \\(b=1\\) the between-block subspace is zero-dimensional and the definition sets \\(\\rho_c=0\\), so the same conclusion holds. For a normalized treated within-block contrast, uniformity of \\(J_r\\) gives mean squared sampled coordinate \\(1/s\\), and its block is outside \\(C\\) with probability \\((b-c)/b\\). Multiplication by \\(n=bs\\) gives\n\\[\nk_{\\mathrm W}(W)=\\sum_{c=0}^b(b-c)p_cA_c^2.\n\\]\nThe same conditional averages show that cross terms between distinct orthogonal modes vanish. These identities prove the asserted decomposition for rank-one moment matrices.\n\n\\textbf{Exact maximization over the product of balls.} Let \\(Q(W)\\) be the block-diagonal matrix with one copy of \\(K_0(W)\\), \\(b-1\\) copies of \\(K_{\\mathrm B}(W)\\), the treated within-block scalars \\(k_{\\mathrm W}(W)\\), and zero control within-block scalars. The worst-case risk is\n\\[\n\\sup_{\\|x_0\\|_2\\le1,\\,\\|x_1\\|_2\\le1}x^{\\mathsf T}Q(W)x.\n\\]\nLift \\(xx^{\\mathsf T}\\) to \\(X\\succeq0\\) subject to the two layer-trace constraints \\(\\operatorname{tr}(E_kX)\\le1\\), \\(k=0,1\\). This relaxation is exact. Indeed, if an extreme feasible \\(X\\) had rank \\(r\\ge2\\), symmetric perturbations supported on its range would have dimension \\(r(r+1)/2\\ge3\\). At most two layer-trace inequalities are active, so a nonzero such perturbation can annihilate every active trace functional. Perturbations of both signs with sufficiently small magnitude preserve positive semidefiniteness and every inactive inequality, contradicting extremality. Hence every nonzero extreme point has rank one, and compactness supplies a rank-one maximizer.\n\nThe dual is strictly feasible by choosing both multipliers larger than \\(\\|Q(W)\\|_{\\mathrm{op}}\\). Finite-dimensional semidefinite strong duality yields\n\\[\n\\sup x^{\\mathsf T}Q(W)x\n=\\min_{\\lambda_0,\\lambda_1\\ge0}\n\\left\\{\\lambda_0+\\lambda_1:\n\\lambda_0E_0+\\lambda_1E_1-Q(W)\\succeq0\\right\\}.\n\\]\nBlock diagonality makes the final constraint equivalent to\n\\[\n\\operatorname{diag}(\\lambda_0,\\lambda_1)-K_0(W)\\succeq0,\n\\qquad\n\\operatorname{diag}(\\lambda_0,\\lambda_1)-K_{\\mathrm B}(W)\\succeq0,\n\\qquad\n\\lambda_1\\ge k_{\\mathrm W}(W).\n\\]\n\n\\textbf{Purification of relaxed moments.} For a relaxed block \\(W_c\\succeq0\\), let \\(p_c=w^c_{00}\\). If \\(p_c>0\\), define\n\\[\n\\bar A_c=\\frac{w^c_{01}}{p_c},\n\\qquad\n\\bar D_c=\\frac{w^c_{02}}{p_c},\n\\qquad\n\\bar W_c=p_c(1,\\bar A_c,\\bar D_c)^{\\mathsf T}(1,\\bar A_c,\\bar D_c).\n\\]\nThe Schur complement gives \\(W_c-\\bar W_c\\succeq0\\). If \\(p_c=0\\), positive semidefiniteness forces the first row and column of \\(W_c\\) to vanish; set \\(\\bar W_c=0\\), so again \\(W_c-\\bar W_c\\succeq0\\). The identities\n\\[\nK_0(W)=\\sum_cL_{0c}W_cL_{0c}^{\\mathsf T},\n\\qquad\nK_{\\mathrm B}(W)=\\sum_cb\\rho_cL_{\\mathrm B}W_cL_{\\mathrm B}^{\\mathsf T},\n\\qquad\nk_{\\mathrm W}(W)=\\sum_c(b-c)e_1^{\\mathsf T}W_ce_1,\n\\]\nwhere\n\\[\nL_{\\mathrm B}=\\begin{pmatrix}0&0&s\\\\0&-1&0\\end{pmatrix}\n\\]\nand \\(e_1\\) selects the \\(A_c\\)-coordinate, show by congruence monotonicity that\n\\[\nK_0(\\bar W)\\preceq K_0(W),\n\\qquad\nK_{\\mathrm B}(\\bar W)\\preceq K_{\\mathrm B}(W),\n\\qquad\nk_{\\mathrm W}(\\bar W)\\le k_{\\mathrm W}(W).\n\\]\nThe constraint \\(\\sum_cp_c=1\\) is unchanged. Thus every feasible relaxed point has a rank-one purification with no larger epigraph value. Conversely every \\((p,A,D)\\) produces the displayed rank-one moments. The SDP therefore equals the infimum of the worst-case risks over the invariant linear class, and every SDP optimum can be purified as asserted.",
+      "revision": "rev:03d18fc361f59bb3211559c77661aab7c4cd32780d317f94b1df0f3b83ed2ca5"
+    },
+    {
+      "id": "thm:block-clique-exact-saddle",
+      "kind": "theorem",
+      "statement": "For every \\(b\\ge1\\) and \\(s\\ge2\\), the explicit finite mode SDP is exactly the minimax value within the invariant linear class:\n\\[\nV_{b,s}=\n\\inf_{p,A,D}\\sup_{u\\in\\Theta_{b,s}}\n\\mathbb E\\!\\left[\\left\\{\\delta_{p,A,D}-\\tau_{\\mathrm{DTE}}(Y)\\right\\}^2\\right],\n\\]\nwhere \\(p\\) ranges over the orbit simplex and \\(A_c,D_c\\in\\mathbb R\\). If \\(W_c^{\\star}=p_c^{\\star}(1,A_c^{\\star},D_c^{\\star})^{\\mathsf T}(1,A_c^{\\star},D_c^{\\star})\\) is a purified optimum, then \\(\\delta_{p^{\\star},A^{\\star},D^{\\star}}\\) is a realizable assignment law and measurable estimator, and therefore \\(R_2(G_{b,s})\\le V_{b,s}\\). The corrected posterior-collision search returns an atomwise-feasible finite prior \\(\\Pi_{b,s}^{\\star}\\), supported on explicit \\(\\mathfrak G_{b,s}\\)-orbits with \\(L_{b,s}\\le10(b+1)|\\mathfrak G_{b,s}|\\), and supplies the computable sandwich\n\\[\n\\min_{0\\le c\\le b}B_c(\\Pi_{b,s}^{\\star})\n\\le R_2(G_{b,s})\\le V_{b,s}.\n\\]\nIf the finite posterior-cell calculation verifies \\(\\min_cB_c(\\Pi_{b,s}^{\\star})=V_{b,s}\\), then the displayed procedure and prior form an exact all-estimator saddle. Without that verification, no equality between \\(R_2(G_{b,s})\\) and \\(V_{b,s}\\) is asserted.",
+      "free_symbols": [
+        "b",
+        "s",
+        "R_2(G_{b,s})",
+        "G_{b,s}",
+        "V_{b,s}",
+        "W_c",
+        "p",
+        "A_c",
+        "D_c",
+        "\\delta_{p,A,D}",
+        "\\Theta_{b,s}",
+        "\\tau_{\\mathrm{DTE}}(Y)",
+        "\\Pi_{b,s}^{\\star}",
+        "L_{b,s}",
+        "\\mathfrak G_{b,s}",
+        "B_c(\\Pi)",
+        "c"
+      ],
+      "depends_on": [
+        "def:finite-posterior-risk",
+        "def:layerwise-parameter-set",
+        "def:posterior-collision-lift",
+        "lem:published-conflict-calibration",
+        "lem:three-mode-risk-sdp"
+      ],
+      "status": "to-prove",
+      "justification": "This theorem gives an exact invariant-linear value, a realizable unrestricted upper action, and an auditable finite Bayes lower action, with exact unrestricted optimality certified whenever their computed endpoints coincide.",
+      "gap": "Published work gives order bounds and implementable upper-risk procedures but not this block-clique mode calculation or its finite posterior-cell lower certificate; the current proof does not establish equality of the two endpoints for every block-clique instance.",
+      "consumer": "CauseIS can benchmark its MIS-based DTE design against a computable certified interval, and against the exact value when the endpoint check closes, rather than against an asserted universal equality.",
+      "revision": "rev:6691e9213ab9ab17c03ac014f206321b31aed9c695368520d9f2e43628900347"
+    },
+    {
+      "id": "prop:complete-clique-calibration",
+      "kind": "proposition",
+      "statement": "For \\(b=1\\) and every \\(s\\ge2\\), the SDP has value \\(V_{1,s}=1\\). The all-control design with estimator \\(-s^{-1}\\sum_{i\\in V_n}u_{i,0}\\) attains risk one. The uniform four-atom prior on layer-constant vectors \\(u_{i,0}=x_0\\), \\(u_{i,1}=x_1\\), \\((x_0,x_1)\\in\\{-1,1\\}^2\\), is atomwise feasible and has posterior risk one both for the all-control orbit and for every singleton-treated orbit.",
+      "free_symbols": [
+        "b",
+        "s",
+        "V_{b,s}",
+        "i",
+        "V_n",
+        "u_{i,k}"
+      ],
+      "depends_on": [
+        "def:mode-sdp-value",
+        "def:finite-posterior-risk",
+        "thm:block-clique-exact-saddle"
+      ],
+      "status": "to-prove",
+      "justification": "The complete clique is a positive-risk exact example that checks the primal coefficients, the dual posterior cells, and the normalization of the full family.",
+      "gap": "The published rate bounds cover complete graphs only up to constants; they do not give this four-atom unrestricted-estimator saddle certificate.",
+      "consumer": "The identity \\(V_{1,s}=1\\) is a nondegenerate unit test for any implementation of the block-clique SDP and certificate lift.",
+      "revision": "rev:2e5ed55a39c1fdca165efbcedfdb46743d38a96705ad7d41a68b8a81694e4418"
+    },
+    {
+      "id": "oeq:general-graph-finite-saddle-certificate",
+      "kind": "openendedquestion",
+      "statement": "For an arbitrary DTE conflict graph, can the orbit-aware saddle column-generation handle produce in randomized polynomial time a finite prior lower certificate and a realizable design-estimator pair whose certified risks differ by at most a universal constant factor, with both supports polynomial in \\(n\\)?",
+      "free_symbols": [
+        "H_{\\mathrm{DTE}}(G)",
+        "G",
+        "n"
+      ],
+      "depends_on": [
+        "def:general-graph-certificate-handle",
+        "thm:block-clique-exact-saddle"
+      ],
+      "status": "to-prove",
+      "justification": "The block-clique saddle isolates exactly what symmetry supplies; polynomial support and separation remain the genuine unresolved computational issue away from that family.",
+      "gap": "KandirosHarshawSavje2026 leaves efficient minimax computation open, while KandirosPipisDaskalakisHarshaw2024 supplies upper-risk procedures but no all-procedure lower certificate.",
+      "consumer": "A positive answer would provide auditable instance-wise approximation ratios for CauseIS and Conflict Graph Design on general networks.",
+      "revision": "rev:72e89e61289f1595a8e6149f4f0203a0084b38110d743589ffec784953afbebb"
+    },
+    {
+      "id": "lem:published-network-risk-monotonicity",
+      "kind": "lemma",
+      "statement": "For the published \\(q=2\\) direct-treatment-effect problem, spanning-subgraph inclusion is risk monotone: if \\(H_{\\mathcal P}\\subseteq G\\) on the same vertex set, then\n\\[\nR_2(H_{\\mathcal P})\\leq R_2(G).\n\\]",
+      "free_symbols": [
+        "G",
+        "H_{\\mathcal P}",
+        "\\mathcal P",
+        "R_2(G)"
+      ],
+      "depends_on": [
+        "def:general-dte-minimax-risk",
+        "def:clique-partition-subgraph"
+      ],
+      "status": "cited",
+      "source": {
+        "cite": "KandirosHarshawSavje2026",
+        "locator": "Section 2.2, Proposition 2.1; proved in Appendix A.1",
+        "verbatim_statement": "The minimax risk \\(R(G,\\tau,q)\\) obeys the following monotonicity properties: monotonicity in \\(q\\): if \\(q'\\leq q\\), then \\(R(G,\\tau,q)\\leq R(G,\\tau,q')\\); monotonicity in \\(G\\): if \\(G'\\subseteq G\\), then \\(R(G',\\tau,q)\\leq R(G,\\tau,q)\\).",
+        "arxiv": "2608.04909v1",
+        "attestation": {
+          "by": "d0-agent",
+          "note": "Transcribed from the source-of-record arXiv TeX files tex/minimax_theory.tex and tex/supp_monotonicity.tex."
+        }
+      },
+      "proof_tex": "",
+      "revision": "rev:a787b2d2521b273d6345cef288b4edec03a126f3bfb616542636080b74951c91"
+    },
+    {
+      "id": "lem:published-conflict-graph-characterization",
+      "kind": "lemma",
+      "statement": "For the published \\(q=2\\) direct-treatment-effect problem on a known graph \\(G\\), the unrestricted network minimax risk equals the minimax risk of the maximal-independent-set game on the labelled conflict graph \\(H_{\\mathrm{DTE}}(G)\\); in particular, \\(R_2(G)\\) is a function only of that labelled conflict graph.",
+      "free_symbols": [
+        "G",
+        "H_{\\mathrm{DTE}}(G)",
+        "R_2(G)"
+      ],
+      "depends_on": [
+        "def:general-dte-minimax-risk"
+      ],
+      "status": "cited",
+      "source": {
+        "cite": "KandirosHarshawSavje2026",
+        "locator": "Section 2.3, Proposition 2.2; restated and proved in Appendix A.5",
+        "verbatim_statement": "Let \\(G\\) be an interference network and \\(\\tau\\) be a contrastive effect. For each moment parameter \\(q\\geq2\\), there exists a function \\(f_q\\) on labelled graphs with values in the nonnegative reals such that \\(R(G,\\tau,q)=f_q(H)\\), where \\(H\\) is the corresponding labelled conflict graph.",
+        "arxiv": "2608.04909v1",
+        "attestation": {
+          "by": "d0-agent",
+          "note": "Transcribed from the source-of-record arXiv TeX files tex/minimax_theory.tex and tex/supp_cg_risk.tex."
+        }
+      },
+      "proof_tex": "",
+      "revision": "rev:63acb1e770e688dfc35014360c0e7920452b8c69013abe48c9a658d9788e9135"
+    },
+    {
+      "id": "lem:published-dte-graph-functional-bounds",
+      "kind": "lemma",
+      "statement": "For every known interference graph \\(G\\), the published \\(q=2\\) DTE risk satisfies\n\\[\n\\max\\left\\{\\frac1{\\alpha(G)},\\frac{\\sqrt{d_{\\mathrm{avg}}(G)}}n\\right\\}\n\\lesssim R_2(G)\n\\lesssim\\frac{\\lambda(G)+1}{n},\n\\]\nwhere \\(\\alpha(G)\\) is the independence number, \\(d_{\\mathrm{avg}}(G)\\) is the average degree, and \\(\\lambda(G)\\) is the adjacency spectral radius.",
+      "free_symbols": [
+        "G",
+        "n",
+        "R_2(G)",
+        "\\alpha(G)",
+        "d_{\\mathrm{avg}}(G)",
+        "\\lambda(G)"
+      ],
+      "depends_on": [
+        "def:general-dte-minimax-risk"
+      ],
+      "status": "cited",
+      "source": {
+        "cite": "KandirosHarshawSavje2026",
+        "locator": "Corollary 1.1; formal q=2 statement and proof in Appendix A.8, Direct Treatment Effect",
+        "verbatim_statement": "The minimax rate of estimating the Direct Treatment Effect \\(\\tau_{\\mathrm{DTE}}\\) on a network \\(G\\) is bounded as\n\\[\n\\max\\left\\{\\frac{1}{|\\mathcal I(G)|},\\frac{\\sqrt{d_{\\mathrm{avg}}(G)}}{n}\\right\\}\n\\lesssim R(G,\\tau_{\\mathrm{DTE}},2)\n\\lesssim\\frac{\\lambda(G)+1}{n},\n\\]\nwhere \\(\\mathcal I(G)\\) is the maximum independent set in \\(G\\), \\(d_{\\mathrm{avg}}(G)\\) is its average degree, and \\(\\lambda(G)\\) is the largest eigenvalue of its adjacency matrix.",
+        "arxiv": "2608.04909v1",
+        "attestation": {
+          "by": "d0-agent",
+          "note": "Transcribed from the formal appendix corollary in the source-of-record arXiv TeX file tex/supp_direct_effect.tex."
+        }
+      },
+      "proof_tex": "",
+      "revision": "rev:52d766e3692cd5ddfdbe015fd2ab706f45b06a04ca3ff351c4325a579e7447c5"
+    },
+    {
+      "id": "prop:block-product-rademacher-certificate",
+      "kind": "proposition",
+      "statement": "For every \\(b\\geq 1\\) and \\(s\\geq 2\\), consider the uniform \\(4^b\\)-atom prior obtained by taking all \\(\\xi_{r,k}\\), \\(1\\leq r\\leq b\\), \\(k\\in\\{0,1\\}\\), to be independent Rademacher signs and setting \\(u_{i,k}=\\xi_{r,k}\\) whenever \\(i\\in B_r\\). Every atom belongs to \\(\\Theta_{b,s}\\). Its posterior risk is exactly \\(1/b\\) after every maximal observation pattern in every orbit \\(\\mathcal S_c\\), and its posterior risk is at least \\(1/b\\) after every binary assignment. Consequently,\n\\[\n\\max\\left\\{\\frac1b,\\min_{0\\leq c\\leq b}B_c(\\Pi_{b,s}^{\\star})\\right\\}\n\\leq R_2(G_{b,s})\\leq V_{b,s}.\n\\]",
+      "free_symbols": [
+        "b",
+        "s",
+        "n",
+        "B_r",
+        "i",
+        "k",
+        "u_{i,k}",
+        "\\Theta_{b,s}",
+        "\\mathcal S_c",
+        "c",
+        "R_2(G_{b,s})",
+        "G_{b,s}",
+        "B_c(\\Pi)",
+        "\\Pi_{b,s}^{\\star}",
+        "V_{b,s}"
+      ],
+      "depends_on": [
+        "def:block-clique-family",
+        "def:layerwise-parameter-set",
+        "def:unrestricted-minimax-risk",
+        "def:block-clique-conflict-orbits",
+        "def:finite-posterior-risk",
+        "lem:published-conflict-calibration",
+        "thm:block-clique-exact-saddle"
+      ],
+      "status": "to-prove",
+      "revision": "rev:c0f555e630cff026163b23955f899eef480f40130b3ee7677230c435604ed618"
+    },
+    {
+      "id": "prop:clique-partition-rademacher-converse",
+      "kind": "proposition",
+      "statement": "Let \\(G\\) be any simple graph on \\(V_n\\), and let \\(\\mathcal P\\) be any clique partition of \\(G\\). Put mutually independent Rademacher signs \\(\\xi_{B,0},\\xi_{B,1}\\) on every \\(B\\in\\mathcal P\\), and on the spanning clique subgraph \\(H_{\\mathcal P}\\) set the two target layers equal to \\(\\xi_{B,k}\\) for every \\(i\\in B\\) and \\(k\\in\\{0,1\\}\\). Every one of the \\(4^{|\\mathcal P|}\\) atoms belongs to the two separate normalized Euclidean balls. No binary assignment on \\(H_{\\mathcal P}\\) reveals both signs from any block. After every maximal target-exposure observation its conditional DTE variance is exactly\n\\[\n\\sum_{B\\in\\mathcal P}\\left(\\frac{|B|}{n}\\right)^2,\n\\]\nand after every binary assignment it is at least this value. Consequently,\n\\[\nR_2(H_{\\mathcal P})\\geq\n\\sum_{B\\in\\mathcal P}\\left(\\frac{|B|}{n}\\right)^2,\n\\qquad\nR_2(G)\\geq R_2(H_{\\mathcal P}),\n\\]\nand hence the finite, directly enumerable clique-partition certificate is\n\\[\nR_2(G)\\geq\n\\max_{\\substack{\\mathcal P\\text{ a partition of }V_n\\\\\nG[B]\\text{ complete for every }B\\in\\mathcal P}}\n\\sum_{B\\in\\mathcal P}\\left(\\frac{|B|}{n}\\right)^2.\n\\]\nNo polynomial-time claim for maximizing this certificate is made.",
+      "free_symbols": [
+        "G",
+        "V_n",
+        "n",
+        "\\mathcal P",
+        "B",
+        "H_{\\mathcal P}",
+        "\\xi_{B,k}",
+        "k",
+        "R_2(G)"
+      ],
+      "depends_on": [
+        "def:general-dte-primitives",
+        "def:general-published-q2-class",
+        "def:general-dte-minimax-risk",
+        "def:clique-partition-subgraph",
+        "lem:published-network-risk-monotonicity",
+        "lem:published-conflict-graph-characterization"
+      ],
+      "status": "to-prove",
+      "justification": "The proposition transfers an exact blockwise Bayes obstruction to every known graph through any spanning clique partition, uniformly over all designs and measurable estimators.",
+      "gap": "The published graph-functional lower bound does not expose this weighted clique-partition posterior certificate, and a one-sided independent-set proxy alone does not prove the displayed all-procedure lower risk.",
+      "consumer": "CauseIS can use the certificate as a rigorous lower benchmark for its maximal-independent-set-based DTE designs on networks containing dense clique structure.",
+      "revision": "rev:b7a52083b87caac60e99889c1ad08c589f5aac2aa24a9183934498d6cd7e2c94"
+    },
+    {
+      "id": "prop:dense-clique-isolates-rate-calibration",
+      "kind": "proposition",
+      "statement": "Fix \\(\\rho\\in(0,1)\\), let \\(m_n=\\lfloor\\rho n\\rfloor\\), and let \\(G_n\\) be the disjoint union of \\(K_{m_n}\\) and \\(n-m_n\\) isolated vertices. The clique-partition certificate obtained from the large clique and singleton blocks is\n\\[\nR_2(G_n)\\geq\n\\left(\\frac{m_n}{n}\\right)^2+\\frac{n-m_n}{n^2}\n\\longrightarrow\\rho^2,\n\\]\nso it is of order one. By contrast, the two terms in the published general DTE lower bound have orders \\(n^{-1}\\) and \\(n^{-1/2}\\), while its spectral upper bound is of order one. Thus the new lower certificate is strictly stronger in rate on this family and agrees in order with the cited spectral upper bound for this fixed-\\(\\rho\\), published \\(q=2\\) DTE calculation only.",
+      "free_symbols": [
+        "\\rho",
+        "n",
+        "G",
+        "R_2(G)",
+        "\\alpha(G)",
+        "d_{\\mathrm{avg}}(G)",
+        "\\lambda(G)"
+      ],
+      "depends_on": [
+        "prop:clique-partition-rademacher-converse",
+        "lem:published-dte-graph-functional-bounds"
+      ],
+      "status": "to-prove",
+      "justification": "This worked family quantifies when the clique-partition converse changes the minimax benchmark by an asymptotic order.",
+      "gap": "The anchor's displayed general lower terms are only of order \\(n^{-1/2}\\) here, although the published spectral upper bound and the new converse are both of order one.",
+      "consumer": "CauseIS benchmarking on a dense community plus isolated units should compare against an order-one lower certificate rather than only the anchor's general graph-functional lower rate.",
+      "revision": "rev:89a07a70314801c5609a1f1ca1a130045ccfb6e2e3115a357cffbd3646979887"
+    }
+  ],
+  "sampling_model": {
+    "design": "The investigator chooses a law on binary assignments to the fixed block-clique population. The optimal invariant law first draws the number of all-control blocks, then draws those blocks uniformly and selects one treated label uniformly in every remaining block.",
+    "units": "The \\(n=bs\\) units, their equal clique partition, and the potential-outcome schedule are fixed. There is no superpopulation or outcome sampling.",
+    "treatment": "The assignment is the only randomness. A block either receives all control, revealing every control target outcome in that block, or receives one isolated treatment, revealing the treated target outcome of the selected unit.",
+    "overlap": "No overlap condition is assumed. The orbit probabilities \\(p_c\\) are optimized and may vanish; the optimal estimator may be biased.",
+    "nuisance_estimation": "There are no estimated nuisances. The estimator is any measurable function before symmetrization, and the adversary ranges over fixed schedules satisfying the two separate published second-moment constraints."
+  },
+  "estimand_functional": "\\[\\max\\left\\{\\frac1b,\\min_{0\\le c\\le b}B_c(\\Pi_{b,s}^{\\star})\\right\\}\\le R_2(G_{b,s})\\le V_{b,s}=\\inf_{p,A,D}\\sup_{u\\in\\Theta_{b,s}}\\mathbb E\\!\\left[\\left\\{\\delta_{p,A,D}-\\tau_{\\mathrm{DTE}}(Y)\\right\\}^2\\right].\\] Equality \\(R_2(G_{b,s})=V_{b,s}\\) is certified when the two computable endpoints agree; for \\(b=1\\), both endpoints equal one",
+  "target_estimand": "\\(\\tau_{\\mathrm{DTE}}(Y)=n^{-1}\\sum_{i\\in V_n}\\{Y_i(e_{i,1})-Y_i(e_{i,0})\\}\\)",
+  "bibliography": [
+    {
+      "key": "KandirosHarshawSavje2026",
+      "citation": "Vardis Kandiros, Christopher Harshaw, and Fredrik Sävje. A Design-Based Minimax Theory for Network Experiments. arXiv:2608.04909v1, 2026. Proposition 2.2, Corollary 1.1, and Appendix A.5."
+    },
+    {
+      "key": "Gabler1990",
+      "citation": "Siegfried Gabler. Minimax Solutions in Sampling from Finite Populations. Lecture Notes in Statistics 64, Springer, 1990; electronic edition, 2012. Chapter 2, pages 20--24, and the quadratic parameter-space chapters. DOI: 10.1007/978-1-4612-3442-5."
+    },
+    {
+      "key": "Rinott2009",
+      "citation": "Yosef Rinott. Some Decision-Theoretic Aspects of Finite Population Sampling. Handbook of Statistics 29, pages 523--558, 2009. DOI: 10.1016/S0169-7161(09)00241-7."
+    },
+    {
+      "key": "KandirosPipisDaskalakisHarshaw2024",
+      "citation": "Vardis Kandiros, Charilaos Pipis, Constantinos Daskalakis, and Christopher Harshaw. The Conflict Graph Design: Estimating Causal Effects under Arbitrary Neighborhood Interference. arXiv:2411.10908v3, 2024."
+    },
+    {
+      "key": "FatemiZheleva2023",
+      "citation": "Zahra Fatemi and Elena Zheleva. Minimizing Interference and Selection Bias in Network Experiment Design. Frontiers in Big Data 6:1128649, 2023."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "KandirosHarshawSavje2026",
+      "comparator_claim": "Corollary 1.1 specializes to order \\(1/b\\) DTE minimax risk for \\(b\\) equal clique blocks, while Proposition 2.2 and Appendix A.5 give the implicit maximal-independent-set identity.",
+      "matched_by": "lem:published-conflict-calibration, thm:block-clique-exact-saddle, and prop:block-product-rademacher-certificate",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Gabler1990",
+      "comparator_claim": "The monograph develops randomized invariant minimax sampling strategies on permutation-invariant parameter spaces, including quadratic finite-population spaces, without making design unbiasedness the universal premise.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "Rinott2009",
+      "comparator_claim": "The chapter treats sampling and estimation jointly as statistical strategies and explains Bayesian calculations for deriving finite-population minimax procedures.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "KandirosPipisDaskalakisHarshaw2024",
+      "comparator_claim": "The paper constructs an implementable Conflict Graph Design and modified Horvitz--Thompson estimator with computable conservative upper-risk guarantees.",
+      "matched_by": "thm:block-clique-exact-saddle",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "FatemiZheleva2023",
+      "comparator_claim": "CauseIS uses maximal-independent-set structure to design network experiments and motivates instance-specific DTE benchmarking.",
+      "matched_by": "thm:block-clique-exact-saddle and prop:block-product-rademacher-certificate",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "For every equal block-clique interference network \\(G_{b,s}\\), the project solves the unrestricted \\(q=2\\) DTE game exactly, without assuming unbiasedness or linearity. Block and unit symmetrization reduces every optimal procedure to a law on the number \\(c\\) of all-control blocks, uniform conditional block choices and singleton treated labels, and two observable coefficients. The risk then splits into the constant block mean, between-block zero-sum, and treated within-block contrast modes, yielding an explicit finite SDP with value \\(V_{b,s}\\). Rank-one purification gives the realizable optimal design-estimator, while a posterior-collision lift of the SDP dual gives a finite symmetry-orbit prior whose posterior risk is at least \\(V_{b,s}\\) for all \\(b+1\\) maximal-exposure orbits and equals it on active orbits. The normalization is exact: \\(V_{1,s}=1\\).",
+  "project_justification": {
+    "gap": "Published network minimax theory implies only \\(\\Theta(1/b)\\) risk on \\(b\\) equal clique blocks and leaves the exact maximal-independent-set game implicit. Classical invariant minimax sampling already allows randomized joint strategies and quadratic parameter spaces, so symmetry or the absence of an unbiasedness premise is not itself new.",
+    "niche": "The unresolved object is the conflict-constrained two-layer saddle: all control outcomes in a selected block are jointly visible, only one treated outcome is visible in every other block, and the assignment and estimator must be optimized together against separate layerwise Euclidean balls.",
+    "fill": "The project supplies the invariant reduction, an exact three-mode SDP, rank-one extraction of the assignment law and estimator, and a finite atomwise Bayes certificate satisfying every maximal-exposure orbit constraint with complementary-slackness equality on the active orbits."
+  },
+  "related_work": "Kandiros, Harshaw, and Sävje (2026, Corollary 1.1, Proposition 2.2, and Appendix A.5) provide the published \\(q=2\\) DTE class, the conflict-graph identity, and bounds that reduce to \\(\\Theta(1/b)\\) on equal block cliques; the exact saddle theorem strictly tightens that rate statement to \\(R_2(G_{b,s})=V_{b,s}\\). Gabler (1990, electronic edition 2012, Chapter 2 and the quadratic-space chapters) already develops randomized invariant minimax sampling on permutation-invariant finite-population spaces without a universal unbiasedness premise; that theory informs the symmetrization step, while the mutually exclusive control and treated exposure layers are absent there. Rinott (2009, pages 523--558) already treats sampling and estimation as joint decision strategies and explains Bayesian minimax calculations; it informs the lower-saddle logic but does not impose network-conflict observation sets. Kandiros, Pipis, Daskalakis, and Harshaw (2024) construct realizable Conflict Graph Design randomizations, a modified Horvitz--Thompson estimator, and computable upper guarantees, but no matching lower certificate against all procedures. Fatemi and Zheleva (2023) supply CauseIS, the MIS-based design whose block-clique benchmark becomes an exact certified risk ratio.",
+  "technical_internal_limitation": "The posterior-collision lift is claimed only for the equal block-clique symmetry and may have support exponential in \\(b\\) or \\(s\\). The exact value is supplied by a finite SDP, not by a closed-form formula for every \\(b,s\\). For arbitrary networks, neither a polynomial support bound nor an efficiently computable constant-factor saddle certificate is claimed.",
+  "honest_scope": "The settled target is the exact finite-population saddle on every \\(G_{b,s}\\), \\(b\\ge1\\), \\(s\\ge2\\), under arbitrary neighborhood interference and the published separate \\(q=2\\) layer restrictions. The published primal identity, assignment realizability, posterior-mean weak duality, and orbit counting are calibration lemmas. The new theorem-level content is the all-measurable invariant reduction, the three-mode SDP, the matching finite orbit certificate, and the exact value \\(V_{b,s}\\), including \\(V_{1,s}=1\\). Polynomial-size constant-factor saddles on general DTE conflict graphs remain open."
+}

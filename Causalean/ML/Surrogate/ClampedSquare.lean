@@ -33,6 +33,7 @@ agrees with `t ↦ t²` on `[-c, c]`. -/
 noncomputable def clampedSq (c t : ℝ) : ℝ := (clipIcc (-c) c t) ^ 2
 
 /-- The clamped square is continuous. -/
+@[fun_prop]
 lemma continuous_clampedSq (c : ℝ) : Continuous (clampedSq c) :=
   (continuous_clipIcc _ _).pow 2
 

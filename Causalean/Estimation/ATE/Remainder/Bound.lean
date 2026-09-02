@@ -10,6 +10,7 @@ identity is established in `Remainder/Identity.lean`.
 -/
 
 import Causalean.Estimation.ATE.Remainder.Identity
+import Causalean.Tactic.IntegralLinearity
 import Causalean.Stat.Limit.Convergence
 import Causalean.Stat.Orthogonality.ConditionalOp
 import Mathlib.MeasureTheory.Function.LpSpace.Basic
@@ -203,9 +204,7 @@ theorem aipw_remainder_bound
                 aipw_rem_const ε * ‖dμF x * de x‖) by
             funext x
             simp [Real.norm_eq_abs]]
-          rw [integral_add (hprodT_int.norm.const_mul (aipw_rem_const ε))
-            (hprodF_int.norm.const_mul (aipw_rem_const ε))]
-          rw [integral_const_mul, integral_const_mul]
+          integral_linearity
           simp [Real.norm_eq_abs]
     _ ≤ aipw_rem_const ε *
           ((eLpNorm dμT 2 S.P_X).toReal * (eLpNorm de 2 S.P_X).toReal) +

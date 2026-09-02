@@ -41,7 +41,9 @@ private lemma hasDerivAt_softplus (x : ℝ) : HasDerivAt softplus (Real.sigmoid 
   rw [hd]
   exact h'
 
-private theorem continuous_softplus : Continuous softplus := by
+/-- The softplus function `x ↦ log(1 + eˣ)` is continuous on the whole real line. -/
+@[fun_prop]
+theorem continuous_softplus : Continuous softplus := by
   exact continuous_iff_continuousAt.2 fun x => (hasDerivAt_softplus x).continuousAt
 
 /-- The empirical logistic risk at coefficient `β`: average score-space log-loss
@@ -101,6 +103,7 @@ theorem convexOn_logisticEmpRisk (Z : ι → E × Bool) :
     (hfin Finset.univ).smul (inv_nonneg.mpr (Nat.cast_nonneg (Fintype.card ι)))
 
 /-- The empirical logistic risk is continuous. -/
+@[fun_prop]
 theorem continuous_logisticEmpRisk (Z : ι → E × Bool) :
     Continuous (logisticEmpRisk Z) := by
   classical

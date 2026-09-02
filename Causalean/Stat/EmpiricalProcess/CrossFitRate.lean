@@ -350,8 +350,8 @@ theorem IsBigOp.of_sq_lintegral_le {Vn : ℕ → ℝ}
     set Y : Ω → ℝ := Xn n with hY_def
     have hY_aemeas : AEMeasurable Y μ := by
       simpa [Y] using hX n
-    have hY_sq_aemeas : AEMeasurable (fun ω => ENNReal.ofReal ((Y ω) ^ 2)) μ :=
-      (hY_aemeas.pow_const 2).ennreal_ofReal
+    have hY_sq_aemeas : AEMeasurable (fun ω => ENNReal.ofReal ((Y ω) ^ 2)) μ := by
+      fun_prop
     by_cases hVzero : Vn n = 0
     · have hInt_zero :
           ∫⁻ ω, ENNReal.ofReal ((Y ω) ^ 2) ∂μ = 0 := by
@@ -664,8 +664,8 @@ theorem sampleMean_sub_meas_ge_le
     dsimp [D, IIDSample.sampleMean]
     exact (measurable_const.mul
       (Finset.measurable_sum _ fun i _ => hf_meas.comp (S.meas i))).sub measurable_const
-  have hD_sq_aemeas : AEMeasurable (fun ω => ENNReal.ofReal ((D ω) ^ 2)) μ :=
-    (hD_meas.aemeasurable.pow_const 2).ennreal_ofReal
+  have hD_sq_aemeas : AEMeasurable (fun ω => ENNReal.ofReal ((D ω) ^ 2)) μ := by
+    fun_prop
   have ht_sq_pos : 0 < t ^ 2 := pow_pos ht 2
   have ht_sq_ne_zero : ENNReal.ofReal (t ^ 2) ≠ 0 := by
     rw [ENNReal.ofReal_ne_zero_iff]
@@ -752,8 +752,8 @@ theorem sampleMean_sub_isBigOp
           simpa [D, A, hAzero] using hsecond
         rw [ENNReal.ofReal_zero] at hb
         exact le_antisymm hb bot_le
-      have hD_sq_aemeas : AEMeasurable (fun ω => ENNReal.ofReal ((D ω) ^ 2)) μ :=
-        ((hD_meas n).aemeasurable.pow_const 2).ennreal_ofReal
+      have hD_sq_aemeas : AEMeasurable (fun ω => ENNReal.ofReal ((D ω) ^ 2)) μ := by
+        fun_prop
       have hae_zero : (fun ω => ENNReal.ofReal ((D ω) ^ 2)) =ᵐ[μ] 0 :=
         (MeasureTheory.lintegral_eq_zero_iff' hD_sq_aemeas).mp hInt_zero
       have hnull : μ {ω | Mε * Real.sqrt (A / n) < |D ω|} = 0 := by

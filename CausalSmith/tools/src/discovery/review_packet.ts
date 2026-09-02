@@ -31,7 +31,9 @@ import type { WorkingState } from "./stages/d0_working.js";
 export const REVIEW_PACKET_CONTRACT =
   "Review the full current paper together with all same-round deltas. " +
   "For any id in provisional_proofs, that completed payload supersedes core/prose proof text " +
-  "during adjudication. open_question_partial_results are context only and never discharge an OEQ. " +
+  "during adjudication. citation_revalidations are byte-faithful cited-source receipts that apply " +
+  "may consume only against this same atomic postimage. open_question_partial_results are context " +
+  "only and never discharge an OEQ. " +
   "Agent-added nodes absent from proto_core persist through durable_working_state and must be " +
   "reviewed there, not treated as dropped.";
 
@@ -46,6 +48,7 @@ export interface ReviewPacketInput {
    * remain visible if a solve round regenerates the proposal carrier. */
   requiredCoreEditMandates?: WorkingState["required_core_edit_mandates"];
   provisionalProofs: unknown[];
+  citationRevalidations?: unknown[];
   /** Provenance for a mechanically recovered packet; omitted on the normal path. */
   recovery?: Record<string, unknown>;
 }
@@ -69,5 +72,6 @@ export function buildReviewPacket(input: ReviewPacketInput): Record<string, unkn
     required_core_edit_mandates:
       input.requiredCoreEditMandates ?? input.working.required_core_edit_mandates ?? [],
     provisional_proofs: input.provisionalProofs,
+    citation_revalidations: input.citationRevalidations ?? [],
   };
 }

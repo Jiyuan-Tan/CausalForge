@@ -25,6 +25,8 @@ Key population facts (the Neyman-orthogonality content):
 -/
 
 import Causalean.PO.ID.Exact.PartialLinear.Setup
+import Causalean.Tactic.CondexpLinearity
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.Probability.ConditionalExpectation
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
 
@@ -90,7 +92,8 @@ lemma condExp_resid_sigmaX
   have hsub :
       P.μ[M.factualD - M.mReg | M.sigmaX]
         =ᵐ[P.μ] P.μ[M.factualD | M.sigmaX] - P.μ[M.mReg | M.sigmaX] :=
-    MeasureTheory.condExp_sub hD MeasureTheory.integrable_condExp M.sigmaX
+    by condexp_linearity
+      [MeasureTheory.integrable_condExp (μ := P.μ) (m := M.sigmaX) (f := M.factualD)]
   have hidem : P.μ[M.mReg | M.sigmaX] =ᵐ[P.μ] M.mReg := by
     unfold mReg
     exact MeasureTheory.condExp_condExp_of_le le_rfl M.sigmaX_le
@@ -110,9 +113,7 @@ lemma integral_U_resid
     ∫ ω, M.U ω * M.resid ω ∂P.μ = 0 := by
   -- `resid = D − mReg` is `σ(X,D)`-strongly-measurable.
   have hD_sm : StronglyMeasurable[M.sigmaXD] M.factualD := by
-    have heq : M.factualD = Prod.snd ∘ M.factualXD := rfl
-    rw [heq]
-    exact (measurable_snd.comp (comap_measurable M.factualXD)).stronglyMeasurable
+    fun_prop
   have hmReg_sm : StronglyMeasurable[M.sigmaXD] M.mReg := by
     refine MeasureTheory.stronglyMeasurable_condExp.mono M.sigmaX_le_sigmaXD
   have hresid_sm : StronglyMeasurable[M.sigmaXD] M.resid := by
@@ -169,13 +170,13 @@ lemma lReg_eq
         =ᵐ[P.μ]
         P.μ[fun ω => M.b (M.factualX ω) + M.θ * M.factualD ω | M.sigmaX]
           + P.μ[M.U | M.sigmaX] :=
-    MeasureTheory.condExp_add (hbX_int.add hθD_int) hU M.sigmaX
+    by condexp_linearity
   have hsplit2 :
       P.μ[fun ω => M.b (M.factualX ω) + M.θ * M.factualD ω | M.sigmaX]
         =ᵐ[P.μ]
         P.μ[fun ω => M.b (M.factualX ω) | M.sigmaX]
           + P.μ[fun ω => M.θ * M.factualD ω | M.sigmaX] :=
-    MeasureTheory.condExp_add hbX_int hθD_int M.sigmaX
+    by condexp_linearity
   have hbXce : P.μ[fun ω => M.b (M.factualX ω) | M.sigmaX]
       = fun ω => M.b (M.factualX ω) :=
     MeasureTheory.condExp_of_stronglyMeasurable M.sigmaX_le hbX_sm hbX_int
@@ -183,7 +184,7 @@ lemma lReg_eq
       =ᵐ[P.μ] fun ω => M.θ * M.mReg ω := by
     have hsmul : P.μ[fun ω => M.θ • M.factualD ω | M.sigmaX]
         =ᵐ[P.μ] M.θ • P.μ[M.factualD | M.sigmaX] :=
-      MeasureTheory.condExp_smul M.θ M.factualD M.sigmaX
+      by condexp_linearity
     refine hsmul.trans ?_
     filter_upwards with ω
     simp [Pi.smul_apply, mReg, smul_eq_mul]
@@ -219,8 +220,8 @@ lemma integral_partialled
       = M.θ * ∫ ω, M.resid ω ^ 2 ∂P.μ := by
   rw [integral_congr_ae
     (g := fun ω => M.θ * M.resid ω ^ 2 + M.U ω * M.resid ω) ?_]
-  · rw [integral_add (hVsq.const_mul M.θ) hUV, integral_const_mul,
-      M.integral_U_resid hU hUV, add_zero]
+  · integral_linearity
+    rw [M.integral_U_resid hU hUV, add_zero]
   · filter_upwards [M.factualY_sub_lReg hD hbX hU] with ω h
     rw [h]; ring
 

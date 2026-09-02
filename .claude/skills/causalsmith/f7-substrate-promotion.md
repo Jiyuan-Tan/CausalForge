@@ -61,6 +61,10 @@ independently redo). After the moves, for the banked flagship theorem this run p
   green build alone is not evidence.
 - **Fit:** you searched Mathlib + Causalean and either reused an existing primitive or can justify the new
   one; no run-jargon leaked into shared names.
+- **Docstrings + crosslinks:** every promoted declaration has a docstring-canonical first paragraph with
+  `[phrase](hyp:binder)` on every hypothesis/explicit binder and `[phrase](goal)` on the conclusion; any
+  `headline_theorems` entry you add is annotated. Then `lake exe library_index`, `npm run embed:library`,
+  and `npm run lint:nl-links` → 0 errors (the export and the /library page hard-fail otherwise).
 
 **Report back, per helper:** promoted path, full build status, the `#print axioms` output. Main
 independently re-verifies the regression gate itself before accepting — attach real evidence, not a

@@ -84,6 +84,30 @@ describe("F1 plan gate — P1 coverage", () => {
     (plan.nodes as Record<string, unknown>)["ass:bogus"] = { lean_kind: "assumption", lean_name: "x", disposition: "define-local" };
     expect(codes(runPlanGate(plan, makeCore()).violations)).toContain("P1");
   });
+  it("accepts a secondary theorem only after it is synchronized into both core and plan", () => {
+    const plan = makePlan();
+    (plan.nodes as Record<string, unknown>)["thm:secondary-comparison"] = {
+      lean_kind: "theorem",
+      lean_name: "secondaryComparison",
+      disposition: "define-local",
+      target_file: "Comparison.lean",
+      hyps: [],
+      delivery_role: "secondary",
+    };
+    expect(runPlanGate(plan, makeCore()).violations).toContainEqual(
+      expect.objectContaining({ code: "P1", where: "thm:secondary-comparison" }),
+    );
+    const core = makeCore();
+    core.statements.push({
+      id: "thm:secondary-comparison",
+      kind: "theorem",
+      statement: "secondary comparison",
+      depends_on: [],
+      proof_tex: "Immediate from the proved comparison.",
+      status: "proved",
+    });
+    expect(runPlanGate(plan, core).violations).toEqual([]);
+  });
   it("flags an unbound symbol", () => {
     const plan = makePlan();
     plan.env[0].binds_symbols = ["X", "Y"]; // drops 'e'
@@ -321,13 +345,14 @@ function makeCitedPlan() {
 }
 
 describe("F1 plan gate — P9 cited mapping", () => {
-  it("the F1 prompt preserves cited provenance even on a headline dependency", () => {
+  it("the F1 prompt preserves cited provenance and requires headline citations to be discharged", () => {
     const prompt = readFileSync(
       new URL("../../src/formalization/prompts/F1/stage1_template.txt", import.meta.url),
       "utf8",
     );
-    expect(prompt).toMatch(/If it is load-bearing for a headline, the delivered headline is honestly CONDITIONAL/);
-    expect(prompt).toMatch(/importance does not change provenance/);
+    expect(prompt).toMatch(/supported citation-discharge path/);
+    expect(prompt).toMatch(/Formalize every cited node needed by a delivered headline or headline-support result/);
+    expect(prompt).toMatch(/only a secondary cited node with no delivered main-contribution consumer may remain conditional/);
     expect(prompt).not.toMatch(/Headline carve-out/);
   });
 
@@ -335,6 +360,92 @@ describe("F1 plan gate — P9 cited mapping", () => {
     const res = runPlanGate(makeCitedPlan(), makeCitedCore());
     expect(res.violations).toEqual([]);
     expect(res.ok).toBe(true);
+  });
+
+  it("accepts a source-reviewed non-Prop metadata carrier without threading it as a hypothesis", () => {
+    const plan = makeCitedPlan();
+    Object.assign(plan.nodes["lem:borrowed-upper"], {
+      lean_kind: "def",
+      lean_name: "borrowedScopeMetadata",
+      gate: true,
+      gate_class: "cited",
+    });
+    plan.nodes["thm:main"].hyps = ["ass:reg"];
+    expect(runPlanGate(plan, makeCitedCore()).violations).toEqual([]);
+  });
+
+  it("rejects the proved shape without the gate.ts discharge stamp (F1 cannot self-discharge)", () => {
+    const plan = makeCitedPlan();
+    Object.assign(plan.nodes["lem:borrowed-upper"], {
+      lean_kind: "theorem",
+      lean_name: "borrowedUpperDischarge",
+      gate: false,
+      gate_class: undefined,
+      target_file: "BorrowedUpperDischarge.lean",
+      hyps: [],
+    });
+    plan.nodes["thm:main"].hyps = ["ass:reg"];
+    expect(runPlanGate(plan, makeCitedCore()).violations).toContainEqual(
+      expect.objectContaining({ code: "P9", where: "lem:borrowed-upper" }),
+    );
+  });
+
+  it("accepts the supported discharged form as a proved non-gate theorem with retained provenance", () => {
+    const plan = makeCitedPlan();
+    Object.assign(plan.nodes["lem:borrowed-upper"], {
+      lean_kind: "theorem",
+      lean_name: "borrowedUpperDischarge",
+      gate: false,
+      gate_class: undefined,
+      citation_discharged: true,
+      target_file: "BorrowedUpperDischarge.lean",
+      hyps: [],
+    });
+    plan.nodes["thm:main"].hyps = ["ass:reg"];
+    const res = runPlanGate(plan, makeCitedCore());
+    expect(res.violations).toEqual([]);
+    expect(res.ok).toBe(true);
+  });
+
+  it("requires the discharged cited node to match one sorry-free emitted declaration at F2", () => {
+    const plan = makeCitedPlan();
+    Object.assign(plan.nodes["lem:borrowed-upper"], {
+      lean_kind: "theorem",
+      lean_name: "borrowedUpperDischarge",
+      gate: false,
+      gate_class: undefined,
+      citation_discharged: true,
+      target_file: "BorrowedUpperDischarge.lean",
+      hyps: [],
+    });
+    plan.nodes["thm:main"].hyps = ["ass:reg"];
+    const badDecl: ExtractedDecl = {
+      nodeId: "lem:borrowed-upper",
+      declKind: "theorem",
+      declName: "Demo.borrowedUpperDischarge",
+      namespace: "Demo",
+      file: "BorrowedUpperDischarge.lean",
+      statement: "theorem borrowedUpperDischarge : True := by sorry",
+      hasSorry: true,
+    };
+    expect(runPlanGate(plan, makeCitedCore(), { annotatedDecls: [badDecl] }).violations).toContainEqual(
+      expect.objectContaining({ code: "P9", where: "lem:borrowed-upper" }),
+    );
+    expect(runPlanGate(plan, makeCitedCore(), {
+      annotatedDecls: [{ ...badDecl, hasSorry: false }],
+    }).violations).toEqual([]);
+  });
+
+  it("rejects clearing a cited gate without mapping it to a proved lemma/theorem", () => {
+    const plan = makeCitedPlan();
+    Object.assign(plan.nodes["lem:borrowed-upper"], {
+      gate: false,
+      gate_class: undefined,
+    });
+    plan.nodes["thm:main"].hyps = ["ass:reg"];
+    expect(runPlanGate(plan, makeCitedCore()).violations).toContainEqual(
+      expect.objectContaining({ code: "P9", where: "lem:borrowed-upper" }),
+    );
   });
 
   it("flags re-laundering a cited statement as a non-cited gate", () => {

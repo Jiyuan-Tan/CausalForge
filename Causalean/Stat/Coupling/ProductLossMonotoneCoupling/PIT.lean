@@ -55,6 +55,7 @@ lemma monotoneOn_quantile (μ : Measure ℝ) :
 
 /-- The quantile function is a.e.-measurable with respect to the uniform measure
 on `(0,1)`; it is monotone there, and a monotone function is measurable. -/
+@[fun_prop]
 lemma aemeasurable_quantile_unifOI (μ : Measure ℝ) :
     AEMeasurable (quantile μ) unifOI := by
   exact aemeasurable_restrict_of_monotoneOn measurableSet_Ioo (monotoneOn_quantile μ)

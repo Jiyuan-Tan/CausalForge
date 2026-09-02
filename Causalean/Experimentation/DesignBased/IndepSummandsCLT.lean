@@ -137,7 +137,7 @@ theorem prodDesign_clt
   -- Match the prelimit sequences pointwise.
   refine hclt.congr (fun n => ?_)
   have hWmeas : Measurable (depSum (X n)) := by
-    rw [hdepSum n]; exact Finset.measurable_sum _ (fun i _ => hmeas n i)
+    fun_prop
   have hset : {w | (∑ i, g n i (w i)) ≤ s} = (depSum (X n)) ⁻¹' Set.Iic s := by
     rw [hdepSum n]; rfl
   rw [hμ] at *

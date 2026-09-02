@@ -1,0 +1,1256 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{scm\_\allowbreak{}monotone\_\allowbreak{}ctf\_\allowbreak{}complete\_\allowbreak{}calculus}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} For finite binary recursive semi-Markovian diagrams with signed local monotonicity, the paper gives a signed canonical response-type reduction with Dedekind-number support bounds, a globally complete finite response-profile oracle, a canonical order-normal district factorization, and fixed-branch empirical-cell inference.  The oracle returns an observed-menu functional \(F\) exactly when the conditional counterfactual target is constant on every compatible positive-denominator fiber, and otherwise returns a checkable pair of finite signed-isotone countermodels.  The published \(\mathsf{MID}\) success set is strictly smaller on the common subclass: for \(X\to Y\leftarrow Z\), monotonicity forces \(P(Y_{11}=1\mid Y_{10}=1,Y_{01}=1)=1\) throughout the broader published common-input binary class although published Algorithms 1--2 return \(\mathsf{FAIL}\).  What remains open is graphical compression of the global oracle into a terminating district-compositional order-AMWN and ctf-calculus with a local failure-trace compiler.
+
+\section{Project justification}
+
+\paragraph{Gap.} MaitiPleckoBareinboim2025 supplies sound monotonicity-aware reductions but no sufficient-and-necessary general algorithm; on the explicit binary collider family, its Algorithms 1--2 delete an order-entailed join literal and then fail on the incomparable residual pair.  Unrestricted graphical completeness arguments do not transfer automatically because their parity countermodels can violate signed local monotonicity.
+
+\paragraph{Niche.} After sign normalization, every finite binary local response table is an up-set of a Boolean lattice.  This yields Dedekind-number response counts, an exact finite semialgebraic decision problem, and a sound finite order-closure repair, while keeping the broader published binary pointwise claim distinct from the narrower semi-Markovian oracle-completeness domain.
+
+\paragraph{Fill.} The proved contribution is a canonical signed finite-SCM reduction, an explicit globally complete response-profile oracle with algebraic identifying expressions and decoded countermodels, order-normal district factorization, empty-sign recovery, locally regular plug-in inference, and a checked antichain/join family proving strict improvement over the published \(\mathsf{MID}\) procedure on the common subclass.  A full district-local graphical calculus and local failure compiler remain open.
+
+\section{Related work}
+
+MaitiPleckoBareinboim2025 supplies the signed monotonicity rules and the published \(\mathsf{MID}\) procedure.  The present antichain/join theorem proves a broader-class pointwise constant family missed by its Algorithms 1--2 and gives the executable \(\mathsf{MID}^{+}\) order-closure precheck; only the finite-binary recursive semi-Markovian subclass supports the present oracle-completeness claim.  CorreaLeeBareinboim2021 supplies conditional CTFID completeness on unrestricted recursive semi-Markovian models, recovered extensionally when \(M=\varnothing\).  ZhangTianBareinboim2022 motivates canonical finite counterfactual reductions, refined here to signed-isotone response tables.  CorreaBareinboim2025 supplies AMWNs and ctf-calculus transformations, while the district-compositional signed completeness step remains open.  DuarteEtAl2024 motivates the polynomial-program checking substrate.  PleckoBareinboim2024 provides the causal-fairness consumer family, and Maiti's implementation can use the collider and antichain/join family as regression tests.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\theta_Q=P_{\mathfrak m}(A_Q\mid B_Q)\).
+Primary functional / estimator / diagnostic: \(\theta_Q(\mathfrak m)=F(P_{\mathcal Z}(\mathfrak m))\) when \(\mathsf{MCTFID}(G,M,\mathcal Z,Q)=F\), with \(\widehat\theta_Q=F(\widehat p)\).
+\begin{itemize}
+  \item \texttt{V} --- \texttt{finite endogenous vertex set}; \(2^{\mathbb N}\); \texttt{graph vertices}
+  \par\smallskip\noindent\emph{Definition.} \(V\) indexes the observed variables.
+  \item \texttt{Xv} --- \texttt{endogenous variable family}; \(\{0,1\}^{V}\); \texttt{causal variables}
+  \par\smallskip\noindent\emph{Definition.} \(X_v\in\{0,1\}\) is the observed variable at vertex \(v\in V\).
+  \item \texttt{G} --- \texttt{acyclic directed mixed graph}; \(\operatorname{ADMG}(V)\); \texttt{causal diagram}
+  \par\smallskip\noindent\emph{Definition.} \(G=(V,E^{\to},E^{\leftrightarrow})\) is the latent projection of a recursive semi-Markovian causal model.
+  \item \texttt{Edir} --- \texttt{directed edge set}; \(V\times V\); \texttt{directed causal structure}
+  \par\smallskip\noindent\emph{Definition.} \(E^{\to}=\{(w,v):w\to v\text{ in }G\}\).
+  \item \texttt{Ebi} --- \texttt{bidirected edge set}; \(\{\{v,w\}:v,w\in V\}\); \texttt{latent confounding structure}
+  \par\smallskip\noindent\emph{Definition.} \(E^{\leftrightarrow}=\{\{v,w\}:v\leftrightarrow w\text{ in }G\}\).
+  \item \texttt{pa} --- \texttt{observed parent map}; \(V\to 2^V\); \texttt{local mechanism domain}
+  \par\smallskip\noindent\emph{Definition.} \(\operatorname{pa}_G(v)=\{w\in V:(w,v)\in E^{\to}\}\).
+  \item \texttt{districts} --- \texttt{district partition}; \(2^{2^V}\); \texttt{factorization blocks}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal D(G)\) is the partition of \(V\) into maximal bidirected-connected sets.
+  \item \texttt{M} --- \texttt{signed local-\allowbreak{}monotonicity set}; \(E^{\to}\times\{+1,-1\}\); \texttt{shape restriction}
+  \par\smallskip\noindent\emph{Definition.} \(M\) assigns at most one sign to each directed edge whose parent effect is restricted.
+  \item \texttt{Sv} --- \texttt{signed-\allowbreak{}parent set}; \(2^V\); \texttt{ordered mechanism coordinates}
+  \par\smallskip\noindent\emph{Definition.} \(S_v=\{w\in\operatorname{pa}_G(v):((w,v),s)\in M\text{ for some }s\in\{+1,-1\}\}\).
+  \item \texttt{mv} --- \texttt{number of signed parents}; \(\mathbb N\); \texttt{order dimension}
+  \par\smallskip\noindent\emph{Definition.} \(m_v=|S_v|\).
+  \item \texttt{rv} --- \texttt{number of unrestricted parents}; \(\mathbb N\); \texttt{unrestricted mechanism dimension}
+  \par\smallskip\noindent\emph{Definition.} \(r_v=|\operatorname{pa}_G(v)\setminus S_v|\).
+  \item \texttt{Dm} --- \texttt{Dedekind number sequence}; \(\mathbb N\to\mathbb N\); \texttt{response-\allowbreak{}type count}
+  \par\smallskip\noindent\emph{Definition.} \(D_m\) is the number of up-sets of the Boolean lattice \(\{0,1\}^m\), equivalently the number of isotone Boolean functions on \(m\) coordinates.
+  \item \texttt{Tv} --- \texttt{signed-\allowbreak{}isotone response-\allowbreak{}type count}; \(\mathbb N\); \texttt{local finite-\allowbreak{}state bound}
+  \par\smallskip\noindent\emph{Definition.} \(T_v=D_{m_v}^{2^{r_v}}\).
+  \item \texttt{UG} --- \texttt{canonical exogenous index set}; \(V\sqcup E^{\leftrightarrow}\); \texttt{semi-\allowbreak{}Markovian expansion}
+  \par\smallskip\noindent\emph{Definition.} \(U_G=\{u_v:v\in V\}\cup\{u_e:e\in E^{\leftrightarrow}\}\), with one private latent index per vertex and one shared latent index per bidirected edge.
+  \item \texttt{chU} --- \texttt{observed children of an exogenous index}; \(U_G\to 2^V\); \texttt{latent incidence map}
+  \par\smallskip\noindent\emph{Definition.} \(\operatorname{ch}(u_v)=\{v\}\) and \(\operatorname{ch}(u_{\{v,w\}})=\{v,w\}\).
+  \item \texttt{CU} --- \texttt{maximal observed confounded-\allowbreak{}component map}; \(U_G\to 2^V\); \texttt{canonical partition block}
+  \par\smallskip\noindent\emph{Definition.} \(C(u)\) is the maximal set of observed vertices reachable from \(\operatorname{ch}(u)\) through a chain of exogenous indices with successive indices sharing an observed child; in the latent projection it is the district containing \(\operatorname{ch}(u)\).
+  \item \texttt{bU} --- \texttt{canonical exogenous support bound}; \(\mathbb N^{U_G}\); \texttt{latent cardinality bound}
+  \par\smallskip\noindent\emph{Definition.} \(b_u=\prod_{v\in C(u)}T_v\).
+  \item \texttt{RGM} --- \texttt{joint canonical response-\allowbreak{}configuration bound}; \(\mathbb N\); \texttt{termination and certificate-\allowbreak{}size bound}
+  \par\smallskip\noindent\emph{Definition.} \(R_{G,M}=\prod_{u\in U_G}b_u\).
+  \item \texttt{fv} --- \texttt{binary local structural mechanism family}; \((x_{\operatorname{pa}_G(v)},u_{\operatorname{pa}_U(v)})\mapsto f_v(x_{\operatorname{pa}_G(v)},u_{\operatorname{pa}_U(v)})\in\{0,1\}\); \texttt{structural primitive}
+  \par\smallskip\noindent\emph{Definition.} \(f_v\) is the recursive response mechanism for \(X_v\).
+  \item \texttt{OmegaU} --- \texttt{exogenous support family}; \(\prod_{u\in U_G}\Omega_u\); \texttt{latent state space}
+  \par\smallskip\noindent\emph{Definition.} \(\Omega_u\) is the support of the canonical exogenous variable indexed by \(u\in U_G\).
+  \item \texttt{muU} --- \texttt{independent exogenous law family}; \(\bigotimes_{u\in U_G}\Delta(\Omega_u)\); \texttt{latent distribution}
+  \par\smallskip\noindent\emph{Definition.} \(\mu=\bigotimes_{u\in U_G}\mu_u\) is the product law of the semi-Markovian exogenous variables.
+  \item \texttt{mfrak} --- \texttt{recursive semi-\allowbreak{}Markovian structural causal model}; models over \(G\); \texttt{data-\allowbreak{}generating model}
+  \par\smallskip\noindent\emph{Definition.} \(\mathfrak m=(f,\mu)\) consists of binary structural mechanisms \(f_v\) and mutually independent exogenous laws indexed by \(U_G\).
+  \item \texttt{Mclass} --- \texttt{signed-\allowbreak{}monotone model class}; \(2^{\{\mathfrak m\}}\); \texttt{identification class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathfrak M(G,M)\) is the class in Definition \(\mathrm{def:model\text{-}class}\).
+  \item \texttt{K} --- \texttt{number of available regimes}; \(\mathbb N_{\ge 1}\); \texttt{menu size}
+  \par\smallskip\noindent\emph{Definition.} \(K\) is fixed and finite.
+  \item \texttt{AQ} --- \texttt{unnested counterfactual numerator event}; \texttt{finite conjunctions of binary potential-\allowbreak{}response literals}; \texttt{query numerator}
+  \par\smallskip\noindent\emph{Definition.} \(A_Q\) is a finite unnested event over potential responses generated by \(G\).
+  \item \texttt{BQ} --- \texttt{unnested counterfactual conditioning event}; \texttt{finite conjunctions of binary potential-\allowbreak{}response literals}; \texttt{query denominator}
+  \par\smallskip\noindent\emph{Definition.} \(B_Q\) is a finite unnested event over potential responses generated by \(G\).
+  \item \texttt{Q} --- \texttt{positive-\allowbreak{}denominator conditional counterfactual query}; \texttt{causal target syntax}
+  \par\smallskip\noindent\emph{Definition.} \(Q=(A_Q,B_Q)\) denotes the query \(P(A_Q\mid B_Q)\).
+  \item \texttt{thetaQ} --- \texttt{conditional counterfactual parameter}; \([0,1]\); \texttt{causal estimand}
+  \par\smallskip\noindent\emph{Definition.} For every \(\mathfrak m\) with \(P_{\mathfrak m}(B_Q)>0\), \(\theta_Q(\mathfrak m)=P_{\mathfrak m}(A_Q\cap B_Q)/P_{\mathfrak m}(B_Q)\).
+  \item \texttt{kappa} --- \texttt{fixed denominator margin}; \((0,1)\); \texttt{regularity margin}
+  \par\smallskip\noindent\emph{Definition.} \(\kappa\) is a fixed positive constant.
+  \item \texttt{OQ} --- \texttt{signed order-\allowbreak{}annotated ancestral multi-\allowbreak{}world network}; \texttt{finite labeled mixed graphs}; \texttt{graphical normalizer}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf O_{G,M}(Q)\) is the construction in Definition \(\mathrm{def:order\text{-}amwn}\).
+  \item \texttt{NQ} --- \texttt{canonical order-\allowbreak{}normal event form}; \texttt{finite signed sums of district order cells}; \texttt{canonical query representation}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf N_{G,M}(Q)\) is the construction in Definition \(\mathrm{def:order\text{-}normal\text{-}form}\).
+  \item \texttt{FAIL} --- \texttt{terminal procedure output}; \texttt{failure marker}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf{FAIL}\) records that no identifying expression was returned by the procedure.
+  \item \texttt{m0} --- \texttt{first compiled signed-\allowbreak{}monotone model}; \(\mathfrak M(G,M)\); \texttt{nonidentification witness}
+  \item \texttt{m1} --- \texttt{second compiled signed-\allowbreak{}monotone model}; \(\mathfrak M(G,M)\); \texttt{nonidentification witness}
+  \item \texttt{alpha} --- \texttt{nominal error probability}; \((0,1)\); \texttt{coverage level}
+  \par\smallskip\noindent\emph{Definition.} \(\alpha\) indexes a two-sided Wald confidence interval.
+  \item \texttt{Ncan} --- \texttt{canonical free-\allowbreak{}mass dimension bound}; \(\mathbb N\); \texttt{quantifier-\allowbreak{}elimination variable bound}
+  \par\smallskip\noindent\emph{Definition.} \(N_{G,M}=\sum_{u\in U_G}(b_u-1)\).
+  \item \texttt{Acan} --- \texttt{canonical signed structural-\allowbreak{}profile bound}; \(\mathbb N\); \texttt{finite structural enumeration bound}
+  \par\smallskip\noindent\emph{Definition.} \(A_{G,M}=\prod_{v\in V}T_v^{\prod_{u\in U_G:\,v\in\operatorname{ch}(u)}b_u}\).
+  \item \texttt{Wk} --- \texttt{hard-\allowbreak{}intervention target family}; \((2^V)^K\); \texttt{regime intervention targets}
+  \par\smallskip\noindent\emph{Definition.} \(W_k\subseteq V\) is the vertex set intervened upon in regime \(k\); \(W_k=\varnothing\) denotes the observational regime.
+  \item \texttt{wk} --- \texttt{hard-\allowbreak{}intervention assignment family}; \(\prod_{k=1}^{K}\{0,1\}^{W_k}\); \texttt{regime intervention values}
+  \par\smallskip\noindent\emph{Definition.} \(w_k\in\{0,1\}^{W_k}\) is the constant assignment imposed on \(X_{W_k}\) in regime \(k\).
+  \item \texttt{Zmenu} --- \texttt{deterministic hard-\allowbreak{}intervention menu}; \(\{\operatorname{do}(X_W=w):W\subseteq V,\ w\in\{0,1\}^{W}\}^{K}\); \texttt{available deterministic regimes}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal Z=\{z_1,\ldots,z_K\}\) with \(z_k=\operatorname{do}(X_{W_k}=w_k)\), where \(W_k\subseteq V\), \(w_k\in\{0,1\}^{W_k}\), and \(W_k=\varnothing\) denotes observation. No stochastic intervention kernel is implicit.
+  \item \texttt{pk} --- \texttt{regime cell-\allowbreak{}probability vector}; \(\Delta_{2^{|V|}-1}\); \texttt{observable primitive}
+  \par\smallskip\noindent\emph{Definition.} \(p_k=(P_{z_k}(X_V=x):x\in\{0,1\}^{V})\).
+  \item \texttt{p} --- \texttt{stacked menu-\allowbreak{}law vector}; \(\prod_{k=1}^{K}\Delta_{2^{|V|}-1}\); \texttt{functional argument and sampling law}
+  \par\smallskip\noindent\emph{Definition.} \(p=(p_1,\ldots,p_K)\).
+  \item \texttt{PZ} --- \texttt{model-\allowbreak{}to-\allowbreak{}menu-\allowbreak{}law map}; \(\mathfrak M(G,M)\to\prod_{k=1}^{K}\Delta_{2^{|V|}-1}\); \texttt{global observational equivalence map}
+  \par\smallskip\noindent\emph{Definition.} \(P_{\mathcal Z}(\mathfrak m)=(P_{\mathfrak m,z_k}(X_V=x):1\le k\le K,\ x\in\{0,1\}^{V})\).
+  \item \texttt{Fiber} --- \texttt{compatible menu fiber}; \(2^{\mathfrak M(G,M)}\); \texttt{sampling-\allowbreak{}law compatibility fiber}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal F_{G,M,\mathcal Z}(p)=\{\mathfrak m\in\mathfrak M(G,M):P_{\mathfrak m,z_k}(X_V)=p_k\text{ for every }k\}\).
+  \item \texttt{IDcrit} --- \texttt{global signed-\allowbreak{}monotone functional-\allowbreak{}identification indicator}; \(\{0,1\}\); \texttt{global functional-\allowbreak{}identification decision}
+  \par\smallskip\noindent\emph{Definition.} \(\operatorname{GID}_{G,M,\mathcal Z}(Q)\) is the global menu-equivalence criterion in Definition \(\mathrm{def:identification\text{-}criterion}\).
+  \item \texttt{Rexpr} --- \texttt{finite semialgebraic menu-\allowbreak{}law expression grammar}; expressions over \(p\); \texttt{identifying-\allowbreak{}functional language}
+  \par\smallskip\noindent\emph{Definition.} \(\mathcal R(p)\) is the grammar in Definition \(\mathrm{def:expression\text{-}grammar}\).
+  \item \texttt{CTFID} --- \texttt{ordinary complete counterfactual identification procedure}; \((G,\mathcal Z,Q)\to\text{functional or }\mathsf{FAIL}\); \texttt{unrestricted comparator}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf{CTFID}\) is the procedure of Correa, Lee, and Bareinboim.
+  \item \texttt{MID} --- \texttt{sound monotonicity-\allowbreak{}aware identification procedure}; \((G,M,\mathcal Z,Q)\to\text{functional or }\mathsf{FAIL}\); \texttt{monotonicity comparator}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf{MID}\) is Algorithm 1 of Maiti, Plecko, and Bareinboim.
+  \item \texttt{pstar} --- \texttt{common countermodel menu-\allowbreak{}law vector}; \(\prod_{k=1}^{K}\Delta_{2^{|V|}-1}\); \texttt{failure-\allowbreak{}witness observable law}
+  \par\smallskip\noindent\emph{Definition.} \(p^{\star}=P_{\mathcal Z}(\mathfrak m_0)=P_{\mathcal Z}(\mathfrak m_1)\) for a compiled nonidentification pair.
+  \item \texttt{trace} --- \texttt{exact algebraic failure certificate}; \texttt{finite quantifier-\allowbreak{}elimination sample certificates}; \texttt{checkable global nonidentification certificate}
+  \par\smallskip\noindent\emph{Definition.} \(\tau_{\mathsf F}(G,M,\mathcal Z,Q)\) records the two canonical structural profiles, exact algebraic product-simplex masses, sign conditions, positive denominators, common menu vector, and unequal query cross-product returned by the satisfiable nonidentification system.
+  \item \texttt{MCTFID} --- \texttt{signed-\allowbreak{}monotone counterfactual identification procedure}; \((G,M,\mathcal Z,Q)\to\mathcal R(p)\cup\{(\mathsf{FAIL},\tau_{\mathsf F})\}\); \texttt{focal algorithm}
+  \item \texttt{Cfail} --- \texttt{signed countermodel compiler}; \((G,M,\mathcal Z,Q,\tau_{\mathsf F})\to(\mathfrak m_0,\mathfrak m_1,p^{\star})\); \texttt{failure certificate compiler}
+  \item \texttt{nk} --- \texttt{regime sample sizes}; \(\mathbb N^K\); \texttt{multisample allocation}
+  \par\smallskip\noindent\emph{Definition.} \(n_k\) is the independent sample size from regime \(z_k\).
+  \item \texttt{n} --- \texttt{total sample size}; \(\mathbb N\); \texttt{asymptotic index}
+  \par\smallskip\noindent\emph{Definition.} \(n=\sum_{k=1}^{K}n_k\).
+  \item \texttt{rhok} --- \texttt{limiting regime sampling shares}; \((0,1)^K\); \texttt{asymptotic allocation}
+  \par\smallskip\noindent\emph{Definition.} \(\rho_k=\lim_{n\to\infty}n_k/n\).
+  \item \texttt{phat} --- \texttt{stacked empirical cell vector}; \(\prod_{k=1}^{K}\Delta_{2^{|V|}-1}\); \texttt{plug-\allowbreak{}in input}
+  \par\smallskip\noindent\emph{Definition.} \(\widehat p=(\widehat p_1,\ldots,\widehat p_K)\), where \(\widehat p_k\) is the empirical multinomial cell vector in regime \(k\).
+  \item \texttt{F} --- \texttt{successful identifying functional}; \(\prod_{k=1}^{K}\Delta_{2^{|V|}-1}\to[0,1]\); \texttt{identified functional}
+  \par\smallskip\noindent\emph{Definition.} \(F\) is the finite expression returned by \(\mathsf{MCTFID}(G,M,\mathcal Z,Q)\).
+  \item \texttt{lambdaF} --- \texttt{local analytic-\allowbreak{}branch margin}; \([0,\infty)\); \texttt{local branch stability certificate}
+  \par\smallskip\noindent\emph{Definition.} \(\lambda_F(p)\) is the minimum absolute value, at \(p\), of every branch guard, every active-branch division denominator, every active isolated-root derivative, and every active root-to-isolating-interval endpoint distance in the finite expression tree \(F\); the minimum of an empty list is \(1\).
+  \item \texttt{thetaHat} --- \texttt{empirical-\allowbreak{}cell plug-\allowbreak{}in estimator}; \(\mathbb R\); \texttt{estimator}
+  \par\smallskip\noindent\emph{Definition.} \(\widehat\theta_Q=F(\widehat p)\).
+  \item \texttt{Sigmak} --- \texttt{regime multinomial covariance}; \texttt{positive semidefinite matrices}; \texttt{sampling covariance}
+  \par\smallskip\noindent\emph{Definition.} \(\Sigma_k=\operatorname{diag}(p_k)-p_kp_k^{\mathsf T}\).
+  \item \texttt{sigma2} --- \texttt{plug-\allowbreak{}in asymptotic variance}; \([0,\infty)\); \texttt{limit variance}
+  \par\smallskip\noindent\emph{Definition.} \(\sigma_F^2(p)=\sum_{k=1}^{K}\rho_k^{-1}\nabla_kF(p)^{\mathsf T}\Sigma_k\nabla_kF(p)\).
+  \item \texttt{sigmaHat} --- \texttt{plug-\allowbreak{}in standard-\allowbreak{}error estimator}; \([0,\infty)\); \texttt{standard error}
+  \par\smallskip\noindent\emph{Definition.} \(\widehat\sigma_F\) is obtained from \(\sigma_F(p)\) by substituting \(\widehat p_k\), \(n_k/n\), and the recursively evaluated gradients.
+  \item \texttt{CI} --- \texttt{two-\allowbreak{}sided Wald confidence interval}; intervals in \(\mathbb R\); \texttt{confidence set}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf{CI}_{1-\alpha}\) is the interval in Definition \(\mathrm{def:wald\text{-}interval}\).
+  \item \texttt{Mpub} --- \texttt{published common-\allowbreak{}input binary CGMA/\allowbreak{}general-\allowbreak{}SCM model class}; \(2^{\{\mathfrak s\}}\); \texttt{published comparator model class}
+  \par\smallskip\noindent\emph{Definition.} \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\) is the broader model class in Definition \(\mathrm{def:published\text{-}binary\text{-}cgma\text{-}class}\).
+  \item \texttt{MIDplus} --- \texttt{signed order-\allowbreak{}closure extension of the published monotonicity-\allowbreak{}aware procedure}; \((G,M,\mathcal Z,Q)\to\{0,1\}\cup\{\text{functional},\mathsf{FAIL}\}\); \texttt{sound antichain/\allowbreak{}join preprocessing repair}
+  \par\smallskip\noindent\emph{Definition.} \(\mathsf{MID}^{+}\) is the finite order-closure precheck and fallback procedure in Definition \(\mathrm{def:midplus\text{-}order\text{-}closure}\).
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:finite-binary]\label{ass:finite-binary}
+\(V\) is finite and \(X_v\in\{0,1\}\) for every \(v\in V\).
+\par\smallskip\noindent\emph{Standard} (finite discrete endogenous state spaces, \cite{ZhangTianBareinboim2022}).
+\end{assumption}
+
+\begin{assumption}[ass:semi-markovian]\label{ass:semi-markovian}
+\(G\) is acyclic and \(\mathfrak m\) has the recursive semi-Markovian expansion indexed by \(U_G\).
+\par\smallskip\noindent\emph{Standard} (recursive semi-Markovian causal model, \cite{ShpitserPearl2008}).
+\end{assumption}
+
+\begin{assumption}[ass:signed-local-monotonicity]\label{ass:signed-local-monotonicity}
+For every \(((w,v),s)\in M\), every latent assignment, and every fixed assignment of \(\operatorname{pa}_G(v)\setminus\{w\}\), the map \(x_w\mapsto f_v(x_{\operatorname{pa}_G(v)},u)\) is nondecreasing when \(s=+1\) and nonincreasing when \(s=-1\).
+\par\smallskip\noindent\emph{Standard} (signed local monotonicity, \cite{MaitiPleckoBareinboim2025}).
+\end{assumption}
+
+\begin{assumption}[ass:menu-compatibility]\label{ass:menu-compatibility}
+There exists one \(\mathfrak m\in\mathfrak M(G,M)\) such that \(P_{\mathcal Z}(\mathfrak m)=p\).
+\par\smallskip\noindent\emph{Standard} (common-SCM compatibility of surrogate experiments, \cite{CorreaLeeBareinboim2021}).
+\end{assumption}
+
+\begin{assumption}[ass:positive-query-denominator]\label{ass:positive-query-denominator}
+\(\inf_{\mathfrak m\in\mathcal F_{G,M,\mathcal Z}(p)}P_{\mathfrak m}(B_Q)\ge\kappa\).
+\par\smallskip\noindent\emph{Standard} (positive denominator for conditional counterfactual reduction, \cite{CorreaLeeBareinboim2021}).
+\end{assumption}
+
+\begin{assumption}[ass:independent-regime-sampling]\label{ass:independent-regime-sampling}
+Within regime \(k\), the \(n_k\) observations are independent draws from \(p_k\), and samples from distinct regimes are independent.
+\par\smallskip\noindent\emph{Standard} (independent finite multinomial samples, \cite{VanDerVaart1998}).
+\end{assumption}
+
+\begin{assumption}[ass:stable-regime-shares]\label{ass:stable-regime-shares}
+\(n_k/n\to\rho_k\in(0,1)\) for every \(1\le k\le K\).
+\par\smallskip\noindent\emph{Standard} (stable multisample allocation, \cite{VanDerVaart1998}).
+\end{assumption}
+
+\begin{assumption}[ass:analytic-branch-margin]\label{ass:analytic-branch-margin}
+\(\lambda_F(p)\ge\kappa\).
+\par\smallskip\noindent\emph{Standard} (regular point of a finite piecewise-analytic functional, including a locally fixed branch, \cite{VanDerVaart1998}).
+\end{assumption}
+
+\begin{assumption}[ass:nondegenerate-variance]\label{ass:nondegenerate-variance}
+\(\sigma_F^2(p)>0\).
+\par\smallskip\noindent\emph{Standard} (nondegenerate delta-method variance, \cite{VanDerVaart1998}).
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:model-class]\label{def:model-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Mclass}
+\par\smallskip\noindent\emph{Construction.} \(\mathfrak M(G,M)=\{\mathfrak m=(f,\mu):\mathfrak m\text{ satisfies }\mathrm{ass:finite\text{-}binary},\ \mathrm{ass:semi\text{-}markovian},\text{ and }\mathrm{ass:signed\text{-}local\text{-}monotonicity}\}\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}finite-\allowbreak{}binary}; \texttt{ass:\allowbreak{}semi-\allowbreak{}markovian}; \texttt{ass:\allowbreak{}signed-\allowbreak{}local-\allowbreak{}monotonicity}.
+\end{definition}
+
+\begin{definition}[def:signed-response-types]\label{def:signed-response-types}
+\par\smallskip\noindent\emph{Defined object.} \texttt{signed response types}
+\par\smallskip\noindent\emph{Construction.} For each \(v\), sign-normalize a restricted parent by \(z_w=x_w\) for sign \(+1\) and \(z_w=1-x_w\) for sign \(-1\); a local type is a map assigning to every unrestricted-parent configuration an up-set of \(\{0,1\}^{m_v}\), so its count is \(T_v=D_{m_v}^{2^{r_v}}\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{ass:\allowbreak{}signed-\allowbreak{}local-\allowbreak{}monotonicity}.
+\end{definition}
+
+\begin{definition}[def:canonical-bound]\label{def:canonical-bound}
+\par\smallskip\noindent\emph{Defined object.} \texttt{canonical response bound}
+\par\smallskip\noindent\emph{Construction.} Assign each \(u\in U_G\) at most \(b_u=\prod_{v\in C(u)}T_v\) support points; the induced joint latent assignment space has at most \(R_{G,M}=\prod_{u\in U_G}b_u\) points, and the vector of free exogenous masses has dimension at most \(\sum_{u\in U_G}(b_u-1)\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}signed-\allowbreak{}response-\allowbreak{}types}.
+\end{definition}
+
+\begin{definition}[def:menu-fiber]\label{def:menu-fiber}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Fiber}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal F_{G,M,\mathcal Z}(p)=\{\mathfrak m\in\mathfrak M(G,M):P_{\mathfrak m,\operatorname{do}(X_{W_k}=w_k)}(X_V=x)=p_k(x)\text{ for every }x\in\{0,1\}^{V}\text{ and }1\le k\le K\}\) for the specified deterministic hard-intervention menu \(\mathcal Z=\{\operatorname{do}(X_{W_k}=w_k):1\le k\le K\}\), with \(W_k=\varnothing\) representing observation.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}model-\allowbreak{}class}.
+\end{definition}
+
+\begin{definition}[def:identification-criterion]\label{def:identification-criterion}
+\par\smallskip\noindent\emph{Defined object.} \texttt{global signed-\allowbreak{}monotone functional-\allowbreak{}identification criterion}
+\par\smallskip\noindent\emph{Construction.} \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=1\) exactly when, for every \(\mathfrak m_0,\mathfrak m_1\in\mathfrak M(G,M)\) with \(P_{\mathfrak m_i}(B_Q)>0\), \(P_{\mathcal Z}(\mathfrak m_0)=P_{\mathcal Z}(\mathfrak m_1)\) implies \(\theta_Q(\mathfrak m_0)=\theta_Q(\mathfrak m_1)\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}model-\allowbreak{}class}.
+\end{definition}
+
+\begin{definition}[def:order-amwn]\label{def:order-amwn}
+\par\smallskip\noindent\emph{Defined object.} \texttt{OQ}
+\par\smallskip\noindent\emph{Construction.} Construct the ordinary ancestral multi-world network for the literals in \(A_Q\cup B_Q\); merge copies licensed by consistency and exclusion; sign-normalize every parent coordinate in \(S_v\); and annotate each pair of copies of \(X_v\) by the induced Boolean-lattice order relation between their normalized parent assignments. The resulting finite labeled mixed graph is \(\mathsf O_{G,M}(Q)\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{ass:\allowbreak{}finite-\allowbreak{}binary}; \texttt{ass:\allowbreak{}semi-\allowbreak{}markovian}; \texttt{ass:\allowbreak{}signed-\allowbreak{}local-\allowbreak{}monotonicity}.
+\end{definition}
+
+\begin{definition}[def:order-normal-form]\label{def:order-normal-form}
+\par\smallskip\noindent\emph{Defined object.} \texttt{NQ}
+\par\smallskip\noindent\emph{Construction.} Apply the following construction separately to \(E=A_Q\cap B_Q\) and \(E=B_Q\). Let \(\mathcal T_v\) be the finite set of signed-isotone complete local response tables specified by Definition \(\mathrm{def:signed\text{-}response\text{-}types}\), and let \(R_v\) denote the realized complete local response table. For every \(t=(t_v)_{v\in V}\in\prod_{v\in V}\mathcal T_v\), recursively evaluate the literals of \(E\) in topological order in \(\mathsf O_{G,M}(Q)\), after deleting every local restriction inconsistent with the normalized Boolean-lattice order. If \(e_E(t)\in\{0,1\}\) is the resulting event indicator, define
+\[
+ \mathsf N_{G,M}(Q;E)
+ =\sum_{t:e_E(t)=1}\prod_{D\in\mathcal D(G)}
+ \mathbf 1\{(R_v)_{v\in D}=t_D\},
+\]
+with terms ordered lexicographically by a fixed ordering of vertices and local tables. The two forms for \(A_Q\cap B_Q\) and \(B_Q\) constitute \(\mathsf N_{G,M}(Q)\). Thus the normal form is the expansion in the fixed exact response-type atom basis, rather than an unspecified choice among algebraically equivalent M\"obius expansions.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}order-\allowbreak{}amwn}; \texttt{def:\allowbreak{}signed-\allowbreak{}response-\allowbreak{}types}.
+\end{definition}
+
+\begin{definition}[def:expression-grammar]\label{def:expression-grammar}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Rexpr}
+\par\smallskip\noindent\emph{Construction.} \(\mathcal R(p)\) is the grammar of finite expression trees containing menu cells and rational constants and closed under finite sums, products, quotients on guarded positive denominators, and finite total branches guarded by rational polynomial sign conditions.  Its algebraic-section terms are \(\operatorname{Root}_j(h;I)\), when the active branch certifies that the rational interval \(I\) contains exactly the indexed real root of \(h(t,p)\), and \(\operatorname{ThomRoot}_{\sigma}(h)\), the unique real root whose derivative-sign vector has the finite Thom encoding \(\sigma\) on the active semialgebraic branch.  Every root term carries an existence-and-uniqueness guard, and every expression has a rational default on branches where that guard fails.  The polynomial \(h\) and all branch guards have rational coefficients.  At an arbitrary population vector \(p\), exact symbolic evaluation means evaluation in the ordered real field supplied with exact polynomial-sign queries: the active guard is selected by its exact sign vector and each root term denotes its uniquely certified real section.  When the coordinates of \(p\) are given exactly as rational or real-algebraic numbers, this semantics is implemented by a finite standard algorithm using algebraic arithmetic, sign determination, Thom encodings, and real-root isolation.  No finite bit-computation claim is made for an arbitrary transcendental input encoding without such a sign oracle.
+\end{definition}
+
+\begin{definition}[def:mctfid-handle]\label{def:mctfid-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{MCTFID}
+\par\smallskip\noindent\emph{Construction.} Define the exact finite response-profile oracle \(\mathsf{MCTFID}(G,M,\mathcal Z,Q)\) for a menu \(\mathcal Z=\{z_k:1\le k\le K\}\) of specified deterministic hard interventions \(z_k=\operatorname{do}(X_{W_k}=w_k)\), including \(W_k=\varnothing\).  If \(M=\varnothing\), first run the published conditional \(\mathsf{CTFID}(G,\mathcal Z,Q)\); if \(M\ne\varnothing\), first run \(\mathsf{MID}(G,M,\mathcal Z,Q)\).  A successful front end is used only as a sound certificate that the query is constant on compatible positive-denominator menu fibers.  Its expression is not returned unchanged and is not asserted to belong literally to \(\mathcal R(p)\).  Whether the applicable front end succeeds or fails, the oracle's returned functional is compiled by the guarded construction below.
+
+Enumerate at most
+\[
+ A_{G,M}=\prod_{v\in V}T_v^{\prod_{u\in U_G:\,v\in\operatorname{ch}(u)}b_u}
+\]
+canonical signed-isotone structural-table profiles.  For each profile \(a\), use product-simplex mass coordinates \(\lambda\).  Under the hard intervention \(z_k\), topological evaluation gives the integer-coefficient polynomial menu cells \(\phi_{a,k,x}(\lambda)\) and the polynomial counterfactual numerator and denominator \(h_a(\lambda)\) and \(d_a(\lambda)\).  Exact real quantifier elimination decides the finite disjunction over profile pairs imposing both product-simplex systems, \(d_{a_0}>0\), \(d_{a_1}>0\), equality of every \(\phi_{a_i,k,x}\), and
+\[
+ h_{a_0}d_{a_1}\ne h_{a_1}d_{a_0}.
+\]
+If the disjunction is satisfiable, exact algebraic sample-point extraction records the profiles, masses, sign conditions, common menu vector, and unequal cross-products in \(\tau_{\mathsf F}\), and the oracle returns \((\mathsf{FAIL},\tau_{\mathsf F})\).  If it is unsatisfiable, form
+\[
+ \Gamma_Q=\{(p,t):\exists a,\lambda,\ \Lambda_a(\lambda),\ p=\phi_a(\lambda),\ d_a(\lambda)>0,\ t d_a(\lambda)=h_a(\lambda)\}.
+\]
+Use effective sign-invariant cylindrical algebraic decomposition and Thom encodings to compile its singleton fibers into a finite expression \(F\in\mathcal R(p)\), and set \(F(p)=0\) off the projection of \(\Gamma_Q\).  Thus a front-end success can skip the nonidentification search after its soundness implication has been checked, but it cannot skip this guarded compilation.  The oracle examines at most \(A_{G,M}\) profiles and \(A_{G,M}^2\) ordered profile pairs; a pair has at most \(2N_{G,M}=2\sum_{u\in U_G}(b_u-1)\) free mass coordinates, and each model sum has at most \(R_{G,M}\) joint latent monomials.  This definition is the global semantic decision and checking substrate; it does not define the unresolved district-local order-AMWN rewrite system or a compiler from a local graphical failure trace.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}expression-\allowbreak{}grammar}; \texttt{def:\allowbreak{}canonical-\allowbreak{}bound}; \texttt{def:\allowbreak{}identification-\allowbreak{}criterion}; \texttt{thm:\allowbreak{}finite-\allowbreak{}decision}; \texttt{lem:\allowbreak{}conditional-\allowbreak{}ctfid-\allowbreak{}completeness}; \texttt{lem:\allowbreak{}mid-\allowbreak{}soundness}; \texttt{lem:\allowbreak{}effective-\allowbreak{}cad-\allowbreak{}thom-\allowbreak{}sections}.
+\end{definition}
+
+\begin{definition}[def:fail-compiler-handle]\label{def:fail-compiler-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Cfail}
+\par\smallskip\noindent\emph{Construction.} The failure compiler \(\mathsf C_{\mathsf F}\) is the exact decoder for the algebraic certificate \(\tau_{\mathsf F}\) returned by \(\mathsf{MCTFID}\).  It reads the two enumerated signed-isotone structural-table profiles and their exact algebraic product-simplex masses, deletes zero-mass padding states, and returns the resulting finite canonical models \((\mathfrak m_0,\mathfrak m_1)\) together with the recorded common menu vector \(p^{\star}\).  Before returning, it checks every simplex constraint, every structural-table sign constraint, every menu-cell equality, both strict denominator inequalities, and the unequal query cross-product.  Thus \(\mathsf C_{\mathsf F}\) decodes a globally checkable quantifier-elimination sample certificate; it is not a compiler from a district-local graphical failure trace.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}mctfid-\allowbreak{}handle}; \texttt{def:\allowbreak{}signed-\allowbreak{}response-\allowbreak{}types}; \texttt{def:\allowbreak{}canonical-\allowbreak{}bound}; \texttt{thm:\allowbreak{}finite-\allowbreak{}decision}.
+\end{definition}
+
+\begin{definition}[def:analytic-branch-margin]\label{def:analytic-branch-margin}
+\par\smallskip\noindent\emph{Defined object.} \texttt{lambdaF}
+\par\smallskip\noindent\emph{Construction.} Traverse the finite expression tree \(F\) at \(p\), retain the guards and algebraic operations on the selected branch, and set \(\lambda_F(p)\) equal to the minimum of the absolute branch-guard values, active division denominators, active isolated-root derivatives, and active root-to-isolating-interval endpoint distances; set \(\lambda_F(p)=1\) if this list is empty.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}expression-\allowbreak{}grammar}.
+\end{definition}
+
+\begin{definition}[def:plugin-estimator]\label{def:plugin-estimator}
+\par\smallskip\noindent\emph{Defined object.} \texttt{thetaHat}
+\par\smallskip\noindent\emph{Construction.} For a successful output \(F\in\mathcal R(p)\), evaluate the same finite expression tree at the empirical regime cell vectors: \(\widehat\theta_Q=F(\widehat p)\). On the locally selected branch certified by \(\lambda_F(p)>0\), differentiate sums, products, quotients, and isolated roots recursively to obtain \(\nabla_kF(\widehat p)\) whenever \(\widehat p\) remains on that branch.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}expression-\allowbreak{}grammar}; \texttt{def:\allowbreak{}analytic-\allowbreak{}branch-\allowbreak{}margin}; \texttt{ass:\allowbreak{}analytic-\allowbreak{}branch-\allowbreak{}margin}.
+\end{definition}
+
+\begin{definition}[def:wald-interval]\label{def:wald-interval}
+\par\smallskip\noindent\emph{Defined object.} \texttt{plug-\allowbreak{}in Wald interval}
+\par\smallskip\noindent\emph{Construction.} \(\mathsf{CI}_{1-\alpha}=\bigl[\widehat\theta_Q-z_{1-\alpha/2}\widehat\sigma_F/\sqrt n,\widehat\theta_Q+z_{1-\alpha/2}\widehat\sigma_F/\sqrt n\bigr]\), where \(\widehat\sigma_F^2\) substitutes \(\widehat p_k\), \(n_k/n\), and \(\nabla_kF(\widehat p)\) into \(\sigma_F^2(p)\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}plugin-\allowbreak{}estimator}.
+\end{definition}
+
+\begin{definition}[def:published-binary-cgma-class]\label{def:published-binary-cgma-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Mpub}
+\par\smallskip\noindent\emph{Construction.} Define the published common-input binary CGMA class by
+\[
+ \mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)
+ =\left\{\mathfrak s=(V,U,F,P_U):
+ \begin{array}{l}
+ \mathfrak s\text{ is a recursive general SCM whose directed and latent-dependence relations are compatible with }G,\\
+ X_v\in\{0,1\}\text{ for every }v\in V,\text{ and }P_U\text{ has full support on its declared exogenous support},\\
+ \text{for every }((w,v),+1)\in M,\ f_v(1,x_{-w},u)\ge f_v(0,x_{-w},u),\\
+ \text{and for every }((w,v),-1)\in M,\ f_v(1,x_{-w},u)\le f_v(0,x_{-w},u),\\
+ \text{for every fixed assignment }x_{-w}\text{ of the other observed parents and every exogenous assignment }u
+ \end{array}
+ \right\}.
+\]
+No finite exogenous-support, mutual-independence, private/edge-specific latent expansion, or semi-Markovian restriction is imposed by this definition.  The class concerns only the model; the common deterministic intervention menu and counterfactual query remain separate inputs.
+\par\smallskip\noindent\emph{Member properties.} .
+\end{definition}
+
+\begin{definition}[def:midplus-order-closure]\label{def:midplus-order-closure}
+\par\smallskip\noindent\emph{Defined object.} \texttt{MIDplus}
+\par\smallskip\noindent\emph{Construction.} For a finite binary unnested conditional query whose numerator is the single literal \(L\), call a literal \(W_{t,s}=b\) parent-fixed when its intervention explicitly assigns every observed parent of \(W\), with \(t\) the sign-normalized assignment of the parents restricted by \(M\), \(s\) the assignment of the remaining parents, and \(b\in\{0,1\}\).  Initialize the signed order closure with the parent-fixed response literals occurring in \(B_Q\); non-parent-fixed conditioning literals remain part of \(B_Q\) but generate no order insertions.  For fixed \(W\) and \(s\), repeatedly apply
+\[
+ W_{t,s}=1,\ t\le t'
+ \quad\Longrightarrow\quad W_{t',s}=1,
+ \qquad
+ W_{t,s}=0,\ t'\le t
+ \quad\Longrightarrow\quad W_{t',s}=0.
+\tag{1}
+\]
+The fixed point is denoted \(\operatorname{cl}_M(B_Q)\).  If \(L\) is parent-fixed, \(\mathsf{MID}^{+}\) returns the constant one when \(L\in\operatorname{cl}_M(B_Q)\) and the constant zero when \(\overline L\in\operatorname{cl}_M(B_Q)\); in every other case it runs \(\mathsf{MID}(G,M,\mathcal Z,Q)\).  On a positive-denominator input the first two cases cannot conflict.  There are at most
+\[
+ 2\sum_{v\in V}2^{|\operatorname{pa}_G(v)|}
+\]
+distinct binary parent-fixed full-parent response literals, so fixed-point saturation terminates after at most that many distinct insertions.
+\par\smallskip\noindent\emph{Inputs.} \texttt{def:\allowbreak{}published-\allowbreak{}binary-\allowbreak{}cgma-\allowbreak{}class}.
+\end{definition}
+
+\section{Main results}
+
+\begin{theorem}[thm:signed-canonical-reduction]\label{thm:signed-canonical-reduction}
+For every \(\mathfrak m\in\mathfrak M(G,M)\), there exists a counterfactually equivalent finite \(\widetilde{\mathfrak m}\in\mathfrak M(G,M)\) whose local mechanism at \(v\) uses at most \(T_v=D_{m_v}^{2^{r_v}}\) signed-isotone response types and whose exogenous support satisfies \(|\Omega_u|\le b_u\) for every \(u\in U_G\). Hence every finite menu law and every finite counterfactual law are preserved using at most \(R_{G,M}\) joint latent configurations. If \(m_v>0\), then \(T_v<2^{2^{|\operatorname{pa}_G(v)|}}\), the unrestricted Boolean response-function count.
+\end{theorem}
+\begin{proof}
+\paragraph{Response tables.}
+Fix \(\mathfrak m\in\mathfrak M(G,M)\).  For a complete exogenous assignment \(u\), define the local response table
+\[
+ R_v(u)(x_{\operatorname{pa}_G(v)})
+ =f_v(x_{\operatorname{pa}_G(v)},u_{\operatorname{pa}_U(v)}).
+\]
+For \(w\in S_v\), put \(z_w=x_w\) when the sign of \(w\to v\) is \(+1\), and put \(z_w=1-x_w\) when it is \(-1\).  Assumption \(\mathrm{ass:signed\text{-}local\text{-}monotonicity}\) implies, coordinate by coordinate, that the normalized table is nondecreasing in every \(z_w\).  Hence, for each fixed assignment of the \(r_v\) unrestricted parents, the normalized signed-parent assignments on which the output is one form an up-set of \(\{0,1\}^{m_v}\).  There are \(D_{m_v}\) such up-sets and \(2^{r_v}\) unrestricted-parent assignments.  Therefore the set \(\mathcal T_v\) of possible complete local response tables satisfies
+\[
+ |\mathcal T_v|\le D_{m_v}^{2^{r_v}}=T_v.
+\]
+
+\paragraph{A finite-dimensional barycenter lemma.}
+We use the following elementary fact, proving it here to avoid any closed-convex-hull gap.  If a random vector \(Y\) takes values in a bounded set \(S\subset\mathbb R^q\), then \(E(Y)\in\operatorname{conv}(S)\).  Let \(C=\overline{\operatorname{conv}(S)}\), and induct on the affine dimension of \(C\).  Approximation of \(Y\) by simple random vectors gives \(E(Y)\in C\).  If \(E(Y)\in\operatorname{relint}(C)\), choose a sufficiently small relative simplex around \(E(Y)\) contained in \(C\).  Density of \(\operatorname{conv}(S)\) in \(C\) permits its vertices to be perturbed into \(\operatorname{conv}(S)\) while their convex hull still contains \(E(Y)\); convexity then gives \(E(Y)\in\operatorname{conv}(S)\).  Otherwise a supporting affine functional \(\ell\) at \(E(Y)\) satisfies \(\ell(y)\le \ell(E(Y))\) for every \(y\in C\).  The nonnegative random variable \(\ell(E(Y))-\ell(Y)\) has expectation zero, so it is zero almost surely.  Thus \(Y\) lies almost surely in the proper supporting face \(C\cap\{\ell=\ell(E(Y))\}\), and the induction hypothesis applies in its strictly smaller affine dimension.  The zero-dimensional case is immediate.  This proves membership in the actual convex hull, not merely in its closure.
+
+If a convex representation in the affine hyperplane \(\sum_{j=1}^q y_j=1\) uses more than \(q\) points, affine dependence gives coefficients \(c_i\), not all zero, with \(\sum_i c_i=0\) and \(\sum_i c_i y_i=0\).  Moving the convex weights by \(-\varepsilon c_i\), with \(\varepsilon>0\) maximal subject to nonnegativity, deletes at least one point without changing the barycenter.  Iteration leaves at most \(q\) points.  Consequently, a simplex-valued random vector with \(q\) coordinates has a barycentric representation using at most \(q\) values from its actual range.
+
+\paragraph{Finite support within districts.}
+For a district \(D\in\mathcal D(G)\), let
+\[
+ U_D=\{u\in U_G:C(u)=D\},
+ \qquad
+ \mathcal T_D=\prod_{v\in D}\mathcal T_v,
+ \qquad
+ q_D=|\mathcal T_D|\le\prod_{v\in D}T_v.
+\]
+Every exogenous parent of a vertex in \(D\) belongs to \(U_D\), so the district response-table vector is a measurable map
+\[
+ R_D=(R_v:v\in D)=H_D(U_D)\in\mathcal T_D.
+\]
+The sets \(U_D\) are disjoint across districts, and their coordinates are independent by \(\mathrm{ass:semi\text{-}markovian}\).
+
+Fix \(u_0\in U_D\), temporarily retaining the current laws of the other coordinates.  For a value \(a\) of \(u_0\), let
+\[
+ q_a(t)=P\{H_D(a,U_D\setminus\{u_0\})=t\},
+ \qquad t\in\mathcal T_D.
+\]
+Each \(q_a\) lies in \(\Delta_{q_D-1}\), and the current law of \(R_D\) is the barycenter
+\[
+ \bar q=\int q_a\,d\mu_{u_0}(a).
+\]
+Apply the proved barycenter lemma to the actual range of \(a\mapsto q_a\), discarding at most a null set on which a chosen version is undefined.  The affine-dependence reduction then supplies values \(a_1,\ldots,a_\ell\) and weights \(\lambda_j\ge0\) such that
+\[
+ \ell\le q_D,
+ \qquad
+ \sum_{j=1}^{\ell}\lambda_j=1,
+ \qquad
+ \bar q=\sum_{j=1}^{\ell}\lambda_jq_{a_j}.
+\]
+Replacing \(\mu_{u_0}\) by \(\sum_j\lambda_j\delta_{a_j}\) therefore leaves the complete law of \(R_D\) unchanged and preserves the product form of the exogenous law.  Perform this replacement successively for every \(u\in U_D\) and then for every district.  At each step the same argument is applied to the current laws, so the current district response-vector law is preserved.  Since \(U_G\) is finite, the construction terminates and gives
+\[
+ |\Omega_u|\le q_{C(u)}\le\prod_{v\in C(u)}T_v=b_u
+ \qquad (u\in U_G).
+\]
+
+The selected structural tables are unchanged and hence remain signed-isotone.  The construction preserves the response-table-vector law in each district.  Independence of the disjoint district exogenous blocks therefore preserves the joint law of the complete response-table vector.  By acyclicity, every finite vector of potential responses is a deterministic recursive function of that complete vector; its law is unchanged.  Thus the resulting \(\widetilde{\mathfrak m}\) belongs to \(\mathfrak M(G,M)\), is counterfactually equivalent to \(\mathfrak m\), and satisfies
+\[
+ \left|\prod_{u\in U_G}\Omega_u\right|
+ \le\prod_{u\in U_G}b_u=R_{G,M}.
+\]
+In particular, every finite menu law and every finite counterfactual law are preserved.
+
+Finally, \(S_v\) and \(\operatorname{pa}_G(v)\setminus S_v\) partition the parents, so \(|\operatorname{pa}_G(v)|=m_v+r_v\).  If \(m_v>0\), the Boolean map \(z\mapsto1-z_1\) is not isotone, whereas the unrestricted count includes every Boolean map.  Hence
+\[
+ D_{m_v}<2^{2^{m_v}},
+ \qquad
+ T_v=D_{m_v}^{2^{r_v}}
+ <\left(2^{2^{m_v}}\right)^{2^{r_v}}
+ =2^{2^{m_v+r_v}}
+ =2^{2^{|\operatorname{pa}_G(v)|}}.
+\]
+This proves the strict response-type reduction and the theorem.
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem converts signed local shape restrictions into an exact finite carrier using a supporting-face barycenter proof and exposes the Dedekind-number reduction used by every later certificate. \textit{Gap.} ZhangTianBareinboim2022 uses unrestricted local response functions; the present result preserves and counts the signed-isotone subfamily. \textit{Consumer.} DuarteEtAl2024 can delete order-violating response types before finite optimization, and the M-ID implementation gains an exact bounded regression domain.
+
+\begin{theorem}[thm:finite-decision]\label{thm:finite-decision}
+Suppose every regime in \(\mathcal Z\) is the specified deterministic hard intervention \(z_k=\operatorname{do}(X_{W_k}=w_k)\), with \(W_k\subseteq V\) and \(w_k\in\{0,1\}^{W_k}\); \(W_k=\varnothing\) denotes observation. After finite enumeration of the signed-isotone structural tables, the global sentence \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=1\) is decidable by exact real quantifier elimination. Each enumerated pair of canonical models uses at most \(2\sum_{u\in U_G}(b_u-1)\) free exogenous-mass variables and at most \(2R_{G,M}\) joint latent configurations in total. When the sentence is false, the same finite system returns \(\mathfrak m_0,\mathfrak m_1\in\mathfrak M(G,M)\) and their common law \(p^{\star}=P_{\mathcal Z}(\mathfrak m_0)=P_{\mathcal Z}(\mathfrak m_1)\), with positive query denominators and \(\theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1)\).
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+By Theorem \(\mathrm{thm:signed\text{-}canonical\text{-}reduction}\), every model in Definition \(\mathrm{def:identification\text{-}criterion}\) can be replaced by a counterfactually equivalent canonical model satisfying \(|\Omega_u|\le b_u\) for all \(u\in U_G\).  This replacement preserves every hard-intervention menu law and both counterfactual probabilities entering \(Q\).  Pad a smaller support by zero-mass states.  For a fixed enumerated signed-isotone structural profile \(a\), write the exogenous product-simplex coordinates as
+\[
+ \lambda_{u,j}\ge0,
+ \qquad
+ \sum_{j=1}^{b_u}\lambda_{u,j}=1.
+\tag{1}
+\]
+Eliminating \(\lambda_{u,b_u}\) leaves at most
+\[
+ N_{G,M}=\sum_{u\in U_G}(b_u-1)
+\tag{2}
+\]
+free real coordinates for one model.
+
+For \(\omega\in\prod_{u\in U_G}\{1,\ldots,b_u\}\), the probability of the joint exogenous state is the monomial
+\[
+ w_\lambda(\omega)=\prod_{u\in U_G}\lambda_{u,\omega_u}.
+\tag{3}
+\]
+Fix a regime \(z_k=\operatorname{do}(X_{W_k}=w_k)\).  Replace the structural equation of every vertex in \(W_k\) by its declared constant in \(w_k\), retain every other equation from profile \(a\), and evaluate the remaining equations in a topological order.  Acyclicity makes the resulting vector \(X^{a,z_k}(\omega)\in\{0,1\}^{V}\) unique.  Consequently every full regime cell is the integer-coefficient polynomial
+\[
+ \phi_{a,k,x}(\lambda)
+ =\sum_{\omega}
+   \mathbf 1\{X^{a,z_k}(\omega)=x\}
+   w_\lambda(\omega).
+\tag{4}
+\]
+This is the step for which deterministic hard-intervention syntax is load-bearing.  No stochastic intervention kernel is being treated as an unstated rational coefficient array.
+
+The same recursive evaluation determines every unnested literal in \(A_Q\) and \(B_Q\).  Hence the denominator and numerator are the integer-coefficient polynomials
+\[
+ d_a(\lambda)
+ =\sum_{\omega}\mathbf 1\{B_Q(\omega)\}w_\lambda(\omega),
+ \qquad
+ h_a(\lambda)
+ =\sum_{\omega}\mathbf 1\{A_Q(\omega)\cap B_Q(\omega)\}w_\lambda(\omega).
+\tag{5}
+\]
+Every sum in (4)--(5) has at most
+\(
+ R_{G,M}=\prod_{u\in U_G}b_u
+\)
+monomials.
+
+Let \(\Lambda_a(\lambda)\) denote the finite system (1).  Nonidentification is exactly the finite disjunction, over ordered profile pairs \((a_0,a_1)\), of
+\[
+ \exists\lambda^0,\lambda^1\;\left[
+ \begin{aligned}
+ &\Lambda_{a_0}(\lambda^0)\wedge\Lambda_{a_1}(\lambda^1),\\
+ &d_{a_0}(\lambda^0)>0\wedge d_{a_1}(\lambda^1)>0,\\
+ &\phi_{a_0,k,x}(\lambda^0)=\phi_{a_1,k,x}(\lambda^1)
+       &&\text{for every \(k\) and \(x\)},\\
+ &h_{a_0}(\lambda^0)d_{a_1}(\lambda^1)
+   \ne h_{a_1}(\lambda^1)d_{a_0}(\lambda^0).
+ \end{aligned}\right]
+\tag{6}
+\]
+The last line is equivalent to unequal conditional query values because the preceding line makes both denominators strictly positive.  By (2), each disjunct has at most \(2N_{G,M}\) free mass coordinates.  Lemma \(\mathrm{lem:effective\text{-}real\text{-}closed\text{-}field\text{-}decision}\) decides (6) and extracts an exact algebraic sample point when it is satisfiable.
+
+If (6) is satisfiable, the sampled profiles and product-simplex masses define \(\mathfrak m_0,\mathfrak m_1\in\mathfrak M(G,M)\).  The table enumeration enforces every signed local-monotonicity restriction, and (1) enforces the semi-Markovian product law.  Equations (4) and (6) give
+\[
+ p^star_{k,x}
+ =\phi_{a_0,k,x}(\lambda^0)
+ =\phi_{a_1,k,x}(\lambda^1)
+\]
+for every menu cell, while (5)--(6) give positive denominators and
+\(
+ \theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1)
+\).
+Each model uses at most \(R_{G,M}\) joint latent configurations, so the pair uses at most \(2R_{G,M}\).
+
+Conversely, if \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=0\), Definition \(\mathrm{def:identification\text{-}criterion}\) supplies two models with the same specified hard-intervention menu law, positive query denominators, and unequal query values.  Apply Theorem \(\mathrm{thm:signed\text{-}canonical\text{-}reduction}\) to each.  Preservation of all finite counterfactual laws preserves every menu cell in (4) and both quantities in (5), so the resulting canonical pair satisfies one disjunct of (6).  Thus (6) is satisfiable if and only if the global identification criterion is false.  Effective real quantifier elimination proves decidability, and exact sample-point extraction proves the asserted countermodel conclusion. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is an exact semantic regression oracle for specified deterministic hard-intervention menus. \textit{Gap.} Its whole-profile real-algebraic search is a specialization of canonical finite-SCM and polynomial-program methodology, not the local graphical novelty claim. \textit{Consumer.} Maiti's implementation can use it to validate proposed rules and extract exact failing examples.
+
+\begin{theorem}[thm:order-normal-factorization]\label{thm:order-normal-factorization}
+For every finite unnested event \(A_Q\cap B_Q\), \(\mathsf N_{G,M}(Q)\) is a unique finite signed sum of order-consistent cells. Each summand factors into one response-type cell per district in \(\mathcal D(G)\), every deleted cell has probability zero in every \(\mathfrak m\in\mathfrak M(G,M)\), and summing the normal form equals \(P_{\mathfrak m}(A_Q\cap B_Q)\) for every such model. The same claim holds for \(B_Q\).
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Let \(\mathcal T_v\) be the finite set of signed-isotone complete response tables from Definition \(\mathrm{def:signed\text{-}response\text{-}types}\), and set
+\[
+ \mathcal T=\prod_{v\in V}\mathcal T_v.
+\]
+Fix first \(E=A_Q\cap B_Q\).  A table vector \(t\in\mathcal T\), together with the acyclic order of \(G\), determines every unnested potential-response literal in \(E\) by recursive substitution.  Thus the event indicator \(e_E(t)\in\{0,1\}\) in Definition \(\mathrm{def:order\text{-}normal\text{-}form}\) is well-defined.
+
+For a district \(D\in\mathcal D(G)\), write
+\[
+ C_D(t_D)=\{(R_v)_{v\in D}=t_D\},
+ \qquad
+ C(t)=\bigcap_{D\in\mathcal D(G)}C_D(t_D).
+\]
+The exact table atoms \(\{C(t):t\in\mathcal T\}\) are pairwise disjoint and partition the formal complete response-table space.  Pointwise on that space,
+\[
+ \mathbf 1_E
+ =\sum_{t\in\mathcal T:e_E(t)=1}\mathbf 1_{C(t)}
+ =\sum_{t\in\mathcal T:e_E(t)=1}
+   \prod_{D\in\mathcal D(G)}\mathbf 1_{C_D(t_D)}.
+\tag{1}
+\]
+The sum is finite by Assumption \(\mathrm{ass:finite\text{-}binary}\), and each term contains exactly one response-type cell for each district.
+
+The expansion is unique in the fixed exact-atom basis.  Indeed, if
+\[
+ \mathbf 1_E=\sum_{t\in\mathcal T}c_t\mathbf 1_{C(t)},
+\]
+then evaluation at the formal atom \(C(t_0)\) gives \(c_{t_0}=e_E(t_0)\).  Hence every coefficient is uniquely fixed, and the lexicographic convention in Definition \(\mathrm{def:order\text{-}normal\text{-}form}\) fixes the displayed order.  In particular, this is a signed sum whose nonzero coefficients happen all to be \(+1\).
+
+It remains to justify the order deletions and the probability factorization.  Sign normalization turns every restricted parent coordinate into a coordinate in which Assumption \(\mathrm{ass:signed\text{-}local\text{-}monotonicity}\) makes the local table nondecreasing.  Therefore a local cell requiring output one at a normalized assignment \(z\) and output zero at a comparable assignment \(z'\ge z\) is empty.  These are precisely the order-inconsistent local restrictions removed in the construction of \(e_E\).  Every removed cell consequently has probability zero in every \(\mathfrak m\in\mathfrak M(G,M)\).  This conclusion uses no positivity assumption: it is a pointwise structural impossibility.
+
+For a district \(D\), every exogenous coordinate on which \((R_v)_{v\in D}\) depends belongs to the block
+\[
+ U_D=\{u\in U_G:C(u)=D\}.
+\]
+The blocks \(U_D\) are disjoint across districts.  Assumption \(\mathrm{ass:semi\text{-}markovian}\) makes all exogenous coordinates mutually independent, and hence makes the district response vectors independent.  Thus
+\[
+ P_{\mathfrak m}\{C(t)\}
+ =\prod_{D\in\mathcal D(G)}P_{\mathfrak m}\{C_D(t_D)\}.
+\tag{2}
+\]
+Taking expectations in (1) and using (2) yields
+\[
+ P_{\mathfrak m}(A_Q\cap B_Q)
+ =\sum_{t:e_E(t)=1}
+   \prod_{D\in\mathcal D(G)}P_{\mathfrak m}\{C_D(t_D)\},
+\]
+which is exactly the value of \(\mathsf N_{G,M}(Q;A_Q\cap B_Q)\).  Repeating the identical construction with \(E=B_Q\) proves the denominator assertion. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem provides a deterministic exact response-atom intermediate representation and proves district probability factorization. \textit{Gap.} It does not characterize which district atom probabilities are realizable by the private-and-edge latent product structure, so it is not itself a completeness theorem. \textit{Consumer.} A future local calculus can use the normal form as syntax while separately proving realizability-preserving rewrite invariants.
+
+\begin{theorem}[thm:empty-sign-sanity]\label{thm:empty-sign-sanity}
+When \(M=\varnothing\), for every \(v\in V\) one has \(m_v=0\), \(r_v=|\operatorname{pa}_G(v)|\), \(D_0=2\), and therefore \(T_v=D_0^{2^{r_v}}=2^{2^{|\operatorname{pa}_G(v)|}}\), exactly the unrestricted Boolean response-function count. All order annotations are then vacuous, and \(\mathsf N_{G,\varnothing}(Q)\) is the ordinary AMWN event normalization. On the common finite-binary recursive semi-Markovian domain, \(\mathsf{MCTFID}(G,\varnothing,\mathcal Z,Q)\) and \(\mathsf{CTFID}(G,\mathcal Z,Q)\) have the same success set. More precisely, whenever \(\mathsf{CTFID}(G,\mathcal Z,Q)\) succeeds and the completed procedure returns \(\mathsf{MCTFID}(G,\varnothing,\mathcal Z,Q)=F\), the successful \(\mathsf{CTFID}\) output and \(F\) both evaluate at \(P_{\mathcal Z}(\mathfrak m)\) to \(\theta_Q(\mathfrak m)\) for every \(\mathfrak m\in\mathfrak M(G,\varnothing)\) with \(P_{\mathfrak m}(B_Q)>0\). No equality of the two expression trees, or of their extensions away from compatible positive-denominator menu laws, is asserted.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Fix \(v\in V\) and suppose \(M=\varnothing\).  By the definition of the signed-parent set,
+\[
+ S_v
+ =\{w\in\operatorname{pa}_G(v):((w,v),s)\in M
+       \text{ for some }s\in\{+1,-1\}\}
+ =\varnothing.
+\]
+Consequently,
+\[
+ m_v=|S_v|=0,
+ \qquad
+ r_v=|\operatorname{pa}_G(v)\setminus S_v|
+     =|\operatorname{pa}_G(v)|.
+\tag{1}
+\]
+The Boolean lattice \(\{0,1\}^{0}\) is a singleton.  Its only up-sets are the empty set and the singleton itself, and hence
+\[
+ D_0=2.
+\tag{2}
+\]
+For each of the \(2^{r_v}\) unrestricted-parent configurations, Definition \(\mathrm{def:signed\text{-}response\text{-}types}\) independently chooses one of these two up-sets.  Membership of the unique normalized-parent point in the selected up-set specifies an arbitrary output bit.  Thus these choices are in bijection with all Boolean maps
+\[
+ \{0,1\}^{\operatorname{pa}_G(v)}\longrightarrow\{0,1\}.
+\]
+Using (1), (2), and the definition of \(T_v\), their number is
+\[
+ T_v
+ =D_{m_v}^{2^{r_v}}
+ =D_0^{2^{r_v}}
+ =2^{2^{|\operatorname{pa}_G(v)|}}.
+\tag{3}
+\]
+This proves both the asserted count and the stronger fact that the signed response atoms are exactly, rather than merely equinumerous with, the unrestricted Boolean response functions.
+
+We next compare the graphical normalizations.  Definition \(\mathrm{def:order\text{-}amwn}\) adds a sign normalization and an order comparison only for coordinates belonging to \(S_v\).  Equation (1) shows that there is no such coordinate at any vertex.  The remaining consistency and exclusion merges are precisely those of the ordinary ancestral multi-world network.  In Definition \(\mathrm{def:order\text{-}normal\text{-}form}\), equation (3) makes each local table set \(\mathcal T_v\) the full unrestricted Boolean response-table set, and no table is deleted by a signed order restriction.  Therefore the recursive event indicator and its exact district response-atom expansion coincide term by term with the ordinary AMWN event normalization.  Hence \(\mathsf N_{G,\varnothing}(Q)\) is the ordinary normalization.
+
+It remains to compare the procedures.  All comparisons below are on the common finite-binary recursive semi-Markovian domain.  When \(M=\varnothing\), Assumption \(\mathrm{ass:signed\text{-}local\text{-}monotonicity}\) is vacuous.  Definition \(\mathrm{def:model\text{-}class}\) therefore makes \(\mathfrak M(G,\varnothing)\) exactly the unrestricted recursive semi-Markovian class on this fixed binary signature.  There is no hidden finite-support restriction in this equality.  Moreover, Theorem \(\mathrm{thm:signed\text{-}canonical\text{-}reduction}\), specialized to \(M=\varnothing\), maps every member of this class to a counterfactually equivalent finite canonical member without changing any menu law or either counterfactual probability entering the query.  Thus restricting the decision step to canonical finite response types neither creates nor removes a menu-equivalent pair that separates the query.
+
+Lemma \(\mathrm{lem:conditional\text{-}ctfid\text{-}completeness}\), specialized to the present deterministic hard-intervention menu and fixed binary signature, and Definition \(\mathrm{def:identification\text{-}criterion}\) give
+\[
+ \mathsf{CTFID}(G,\mathcal Z,Q)\text{ succeeds}
+ \quad\Longleftrightarrow\quad
+ \operatorname{GID}_{G,\varnothing,\mathcal Z}(Q)=1.
+\tag{4}
+\]
+Indeed, if \(\mathsf{CTFID}\) returns an expression \(H\), its cited soundness clause gives
+\[
+ H(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m)
+\tag{5}
+\]
+for every compatible model with positive query denominator, which makes the query constant on each menu fiber.  Conversely, constancy on every such fiber is identification on this unrestricted fixed-signature class, so the cited completeness clause makes \(\mathsf{CTFID}\) succeed.  The canonical reduction in the preceding paragraph is the explicit countermodel-transfer justification for applying this equivalence to the finite response-type decision domain.
+
+The success and failure clauses of Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\) give
+\[
+ \mathsf{MCTFID}(G,\varnothing,\mathcal Z,Q)\text{ succeeds}
+ \quad\Longleftrightarrow\quad
+ \operatorname{GID}_{G,\varnothing,\mathcal Z}(Q)=1.
+\tag{6}
+\]
+Combining (4) and (6) proves equality of the two success sets.
+
+Finally, suppose that this common success condition holds, let \(H\) be the successful \(\mathsf{CTFID}\) output, and let the completed oracle return \(F\).  For every \(\mathfrak m\in\mathfrak M(G,\varnothing)\) satisfying \(P_{\mathfrak m}(B_Q)>0\), equation (5) and the successful-output clause of Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\) yield, respectively,
+\[
+ H(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m),
+ \qquad
+ F(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m).
+\]
+Thus both expressions evaluate to the causal target on every compatible positive-denominator menu law.  The guarded compilation of \(F\) may select a different expression tree and may use a different totalization away from that set, so neither literal tree equality nor equality of off-model extensions follows.  This proves the theorem. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem is an exact regression test: empty signs recover all unrestricted Boolean response tables, ordinary AMWN normalization, and the conditional \(\mathsf{CTFID}\) success set, with only extensional equality of successful functionals on compatible positive-denominator laws. \textit{Gap.} CorreaLeeBareinboim2021 supplies unrestricted conditional completeness; the new step is the exact empty-sign collapse and canonical countermodel transfer into the finite signed oracle. \textit{Consumer.} Ordinary \(\mathsf{CTFID}\) implementations can use the theorem to test every empty-sign oracle execution without requiring expression-tree identity.
+
+\begin{theorem}[thm:plugin-limit]\label{thm:plugin-limit}
+If \(\mathsf{MCTFID}(G,M,\mathcal Z,Q)=F\in\mathcal R(p)\), then under \(\mathrm{ass:menu\text{-}compatibility}\), \(\mathrm{ass:positive\text{-}query\text{-}denominator}\), \(\mathrm{ass:independent\text{-}regime\text{-}sampling}\), \(\mathrm{ass:stable\text{-}regime\text{-}shares}\), \(\mathrm{ass:analytic\text{-}branch\text{-}margin}\), and \(\mathrm{ass:nondegenerate\text{-}variance}\), the empirical vector remains on the branch selected at \(p\) with probability tending to one and \(\sqrt n\{F(\widehat p)-F(p)\}\rightsquigarrow N(0,\sigma_F^2(p))\). For every generating \(\mathfrak m\in\mathcal F_{G,M,\mathcal Z}(p)\), the branch-local recursively differentiated variance estimator is consistent and \(P_{\mathfrak m}\{\theta_Q(\mathfrak m)\in\mathsf{CI}_{1-\alpha}\}\to1-\alpha\).
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Let \(d=2^{|V|}\), and enumerate the binary cells as \(x_1,\ldots,x_d\).  Assumption \(\mathrm{ass:menu\text{-}compatibility}\) makes the fiber \(\mathcal F_{G,M,\mathcal Z}(p)\) nonempty.  Fix an arbitrary generating model
+\[
+ \mathfrak m\in\mathcal F_{G,M,\mathcal Z}(p).
+\]
+By Definition \(\mathrm{def:menu\text{-}fiber}\),
+\[
+ P_{\mathcal Z}(\mathfrak m)=p. \tag{1}
+\]
+Assumption \(\mathrm{ass:positive\text{-}query\text{-}denominator}\) gives
+\[
+ P_{\mathfrak m}(B_Q)\geq\kappa>0. \tag{2}
+\]
+The successful-output soundness clause of Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\), applied to \(\mathsf{MCTFID}(G,M,\mathcal Z,Q)=F\), now yields
+\[
+ F\bigl(P_{\mathcal Z}(\mathfrak m)\bigr)=\theta_Q(\mathfrak m).
+\]
+Together with (1), this proves the centering identity
+\[
+ F(p)=\theta_Q(\mathfrak m). \tag{3}
+\]
+Thus \(\theta_Q(\mathfrak m)\) is the causal target, whereas \(F(p)\) is the observed-menu functional; their equality in (3) is a consequence of identification and (2), not a definition.  The uniform lower bound in (2) is used here through its pointwise positivity consequence.  Branch stability below is supplied separately by \(\lambda_F(p)>0\).
+
+We next prove the required local regularity rather than assume differentiability as an additional condition.  The expression tree of \(F\) is finite, and Assumption \(\mathrm{ass:analytic\text{-}branch\text{-}margin}\) states
+\[
+ \lambda_F(p)\geq\kappa>0. \tag{4}
+\]
+We claim that there are an ambient open neighborhood \(U\subset\mathbb R^{Kd}\) of \(p\) and a continuously differentiable function \(F_p^{\circ}:U\to\mathbb R\) such that \(F(q)=F_p^{\circ}(q)\) for every menu vector \(q\in U\).  Moreover, the gradient of \(F_p^{\circ}\) is the recursively evaluated gradient specified in Definition \(\mathrm{def:plugin\text{-}estimator}\).
+
+To prove the claim, traverse the finite active expression tree.  Cell coordinates and rational constants are analytic, and sums and products preserve continuous differentiability.  Every polynomial guard \(g\) on the branch selected at \(p\) satisfies \(|g(p)|\geq\kappa\) by (4).  By continuity, all finitely many such guards retain their signs on a common neighborhood of \(p\).  Likewise, if \(a(q)/b(q)\) is an active quotient, then \(|b(p)|\geq\kappa\), so after shrinking the neighborhood, \(|b(q)|\geq\kappa/2\).  Quotient differentiation is therefore valid there.
+
+It remains to justify active root nodes.  Write an active root as \(t_0\), with defining polynomial equation
+\[
+ h(t_0,p)=0,
+ \qquad
+ |\partial_t h(t_0,p)|\geq\kappa. \tag{5}
+\]
+For an interval-isolated root, (4) also places \(t_0\) at distance at least \(\kappa\) from both endpoints of its active isolating interval.  Choose \(0<\varepsilon<\kappa/2\).  Continuity of \(\partial_t h\) and (5) give a rectangle \((t_0-\varepsilon,t_0+\varepsilon)\times U_0\) on which \(\partial_t h\) has a constant sign and absolute value at least \(\kappa/2\).  After reducing \(\varepsilon\) if necessary, the mean-value theorem makes \(h(t_0-\varepsilon,p)\) and \(h(t_0+\varepsilon,p)\) have opposite signs.  Their signs persist after shrinking \(U_0\).  The intermediate-value theorem and strict monotonicity in \(t\) therefore give, for every \(q\in U_0\), a unique root \(t(q)\in(t_0-\varepsilon,t_0+\varepsilon)\).  The isolating-interval endpoint margins and the nonzero active root guards in (4) ensure that the same indexed interval selector is active.  For a Thom root, the finitely many derivative-sign and uniqueness guards belonging to its active encoding retain their signs by the same argument, so the same Thom selector is active.
+
+For \(q,q'\) in a sufficiently small common neighborhood, the mean-value theorem in \(t\) and the local Lipschitz property of the polynomial coefficients give a constant \(C<\infty\) such that
+\[
+ |t(q)-t(q')|
+ \leq \frac{2}{\kappa}
+       |h(t(q'),q)-h(t(q'),q')|
+ \leq C\lVert q-q'\rVert. \tag{6}
+\]
+Using \(h(t(q),q)=0\), take a first-order polynomial expansion at \((t(q),q)\).  Bound (6) makes its remainder \(o(\lVert q'-q\rVert)\), and division is legitimate by the lower derivative bound.  Hence
+\[
+ \nabla t(q)
+ =-\frac{\nabla_q h(t(q),q)}{\partial_t h(t(q),q)}. \tag{7}
+\]
+The right side is continuous.  Formula (7) is exactly the recursive derivative rule for the root node.  Induction through the finite active tree, followed by intersection of its finitely many neighborhoods, proves the claim.  In particular,
+\[
+ q\longmapsto\nabla F_p^{\circ}(q)
+ \quad\text{is continuous on }U. \tag{8}
+\]
+The construction is ambient: it does not require \(p\) to be in the relative interior of a probability simplex.
+
+We now derive the sampling limit from the primitive regimewise sampling assumptions.  For observation \(i\) in regime \(k\), define the one-hot vector
+\[
+ Y_{ki}=\bigl(\mathbf 1\{X_{ki}=x_1\},\ldots,
+                    \mathbf 1\{X_{ki}=x_d\}\bigr)^{\mathsf T}.
+\]
+Assumption \(\mathrm{ass:independent\text{-}regime\text{-}sampling}\) implies independence within and across regimes and
+\[
+ E(Y_{ki})=p_k,
+ \qquad
+ \operatorname{Cov}(Y_{ki})
+ =\operatorname{diag}(p_k)-p_kp_k^{\mathsf T}
+ =\Sigma_k. \tag{9}
+\]
+These vectors are bounded.  Assumption \(\mathrm{ass:stable\text{-}regime\text{-}shares}\) gives \(n_k\to\infty\) and
+\[
+ \frac{n}{n_k}\longrightarrow\rho_k^{-1}<\infty. \tag{10}
+\]
+Apply Lemma \(\mathrm{lem:multivariate\text{-}iid\text{-}clt}\) within each regime.  Since \(K\) is fixed and the regime samples are independent, the joint characteristic function is the product of the regimewise characteristic functions.  Combining this joint convergence with (10) gives
+\[
+ \sqrt n\,(\widehat p-p)
+ \rightsquigarrow
+ N_{Kd}(0,\Omega),
+ \qquad
+ \Omega=\operatorname{blockdiag}
+ \bigl(\rho_1^{-1}\Sigma_1,\ldots,
+       \rho_K^{-1}\Sigma_K\bigr). \tag{11}
+\]
+No individual cell-positivity or covariance-rank assumption is required.  In particular, a zero-probability cell merely creates a zero row and column, and the simplex constraint makes \(\Omega\) singular; the multivariate central limit theorem permits a positive semidefinite, possibly singular, covariance matrix.
+
+Direct calculation from (9) gives
+\[
+ E\lVert\widehat p-p\rVert^2
+ =\sum_{k=1}^{K}\frac{\operatorname{tr}(\Sigma_k)}{n_k}
+ \longrightarrow0. \tag{12}
+\]
+Markov's inequality implies \(\widehat p\to p\) in probability.  Because \(U\) is an ambient neighborhood of \(p\), including when \(p\) lies on a simplex boundary,
+\[
+ P_{\mathfrak m}(\widehat p\in U)\longrightarrow1. \tag{13}
+\]
+On the event in (13), every branch guard, quotient, and root selector is the one selected at \(p\).  This proves the branch-stability assertion.
+
+To apply the local map without imposing any condition away from \(U\), choose an open ball \(U_1\) whose closure contains \(p\) and is contained in \(U\), and define \(\widetilde p=\widehat p\) on \(\{\widehat p\in U_1\}\) and \(\widetilde p=p\) otherwise.  Then \(P_{\mathfrak m}(\widetilde p\ne\widehat p)\to0\), and (11) is unchanged when \(\widehat p\) is replaced by \(\widetilde p\).  Lemma \(\mathrm{lem:finite\text{-}dimensional\text{-}delta\text{-}method}\), applied to \(F_p^{\circ}\) and \(\widetilde p\), yields
+\[
+ \sqrt n\{F(\widehat p)-F(p)\}
+ \rightsquigarrow N\bigl(0,\nabla F(p)^{\mathsf T}\Omega\nabla F(p)\bigr), \tag{14}
+\]
+because \(F(\widehat p)=F_p^{\circ}(\widetilde p)\) except on an event whose probability tends to zero.  The covariance in (14) equals
+\[
+ \nabla F(p)^{\mathsf T}\Omega\nabla F(p)
+ =\sum_{k=1}^{K}\rho_k^{-1}
+   \nabla_kF(p)^{\mathsf T}\Sigma_k\nabla_kF(p)
+ =\sigma_F^2(p). \tag{15}
+\]
+Equations (14)--(15) prove the asserted limit law.
+
+For variance consistency, set
+\[
+ \widehat\Sigma_k
+ =\operatorname{diag}(\widehat p_k)
+  -\widehat p_k\widehat p_k^{\mathsf T}.
+\]
+On the event in (13), continuity in (8), convergence in (10), and \(\widehat p\to p\) imply
+\[
+ \nabla_kF(\widehat p)\to\nabla_kF(p),
+ \qquad
+ \widehat\Sigma_k\to\Sigma_k,
+ \qquad
+ (n_k/n)^{-1}\to\rho_k^{-1} \tag{16}
+\]
+in probability.  Values assigned to the branch-local recursive derivative outside the event in (13) are irrelevant for convergence in probability because the probability of that event's complement tends to zero.  Substitution into the finite variance sum gives
+\[
+ \widehat\sigma_F^2
+ =\sum_{k=1}^{K}(n_k/n)^{-1}
+   \nabla_kF(\widehat p)^{\mathsf T}
+   \widehat\Sigma_k
+   \nabla_kF(\widehat p)
+ \longrightarrow\sigma_F^2(p). \tag{17}
+\]
+Assumption \(\mathrm{ass:nondegenerate\text{-}variance}\) supplies the boundary condition \(\sigma_F^2(p)>0\); hence
+\[
+ \widehat\sigma_F\longrightarrow\sigma_F(p)>0 \tag{18}
+\]
+in probability.  Lemma \(\mathrm{lem:slutsky\text{-}studentization}\), (14)--(15), and (18) therefore imply
+\[
+ \frac{\sqrt n\{F(\widehat p)-F(p)\}}
+      {\widehat\sigma_F}
+ \rightsquigarrow N(0,1). \tag{19}
+\]
+
+Finally, (3) and Definition \(\mathrm{def:wald\text{-}interval}\) show, on an event whose probability tends to one, that
+\[
+ \left\{\theta_Q(\mathfrak m)\in\mathsf{CI}_{1-\alpha}\right\}
+ =
+ \left\{
+ \left|
+ \frac{\sqrt n\{F(\widehat p)-F(p)\}}
+      {\widehat\sigma_F}
+ \right|
+ \leq z_{1-\alpha/2}
+ \right\}. \tag{20}
+\]
+The standard normal law has no mass at the two boundary points in (20), so (19) gives
+\[
+ P_{\mathfrak m}\{\theta_Q(\mathfrak m)\in\mathsf{CI}_{1-\alpha}\}
+ \longrightarrow
+ P\{|Z|\leq z_{1-\alpha/2}\}
+ =1-\alpha,
+ \qquad Z\sim N(0,1). \tag{21}
+\]
+The model \(\mathfrak m\) was arbitrary in the fiber, and all models in that fiber induce the same sampling vector \(p\).  Hence (17) and (21) hold for every generating \(\mathfrak m\in\mathcal F_{G,M,\mathcal Z}(p)\).  The stated positivity, overlap, boundary, and rank conditions have all been accounted for: \(P_{\mathfrak m}(B_Q)\geq\kappa\), \(\rho_k>0\), and \(\lambda_F(p)\geq\kappa\) are used explicitly, while cell positivity and full covariance rank are unnecessary.  This proves the theorem. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The result supplies standard implementation support for a fixed successful guarded branch. \textit{Gap.} It is a finite-dimensional multinomial delta-method corollary, not a new semiparametric efficiency or adaptive-selection theorem. \textit{Consumer.} Analysts can attach plug-in standard errors and Wald intervals away from branch boundaries.
+
+\begin{lemma}[lem:effective-real-closed-field-decision]\label{lem:effective-real-closed-field-decision}
+\texttt{Every first-\allowbreak{}order formula over a real closed field whose atomic predicates are polynomial equalities or inequalities can be eliminated effectively to an equivalent quantifier-\allowbreak{}free formula.  In particular,\allowbreak{} closed formulas are decidable,\allowbreak{} and a satisfiable finite semialgebraic system with rational coefficients admits exact algebraic sample-\allowbreak{}point extraction.}
+\end{lemma}
+
+\begin{lemma}[lem:multivariate-iid-clt]\label{lem:multivariate-iid-clt}
+Let \(Y_1,Y_2,\ldots\) be independent and identically distributed random vectors in \(\mathbb R^d\) with mean \(\mu\), finite second moment, and covariance matrix \(\Sigma\). If \(\overline Y_m=m^{-1}\sum_{i=1}^mY_i\), then
+\[
+ \sqrt m\,\bigl(\overline Y_m-\mu\bigr)\rightsquigarrow N_d(0,\Sigma).
+\]
+\end{lemma}
+
+\begin{lemma}[lem:finite-dimensional-delta-method]\label{lem:finite-dimensional-delta-method}
+Let \(a_n\to\infty\), let \(T_n\) be random vectors taking values in a subset of \(\mathbb R^d\), and suppose that \(a_n(T_n-\vartheta)\rightsquigarrow T\). If \(\phi\) is defined on a neighborhood of \(\vartheta\) and is differentiable at \(\vartheta\), then
+\[
+ a_n\{\phi(T_n)-\phi(\vartheta)\}\rightsquigarrow \phi'_{\vartheta}(T).
+\]
+\end{lemma}
+
+\begin{lemma}[lem:slutsky-studentization]\label{lem:slutsky-studentization}
+If \(Z_n\rightsquigarrow Z\) and \(S_n\to c\ne0\) in probability, then \(Z_n/S_n\rightsquigarrow Z/c\). In particular, if \(Z\sim N(0,\sigma^2)\), \(\sigma>0\), and \(S_n\to\sigma\), then \(Z_n/S_n\rightsquigarrow N(0,1)\).
+\end{lemma}
+
+\begin{lemma}[lem:effective-cad-thom-sections]\label{lem:effective-cad-thom-sections}
+\texttt{Given finitely many rational polynomials,\allowbreak{} an effective sign-\allowbreak{}invariant cylindrical algebraic decomposition partitions real space into finitely many semialgebraic cells with exact sample points.  Over each base cell,\allowbreak{} its sections are graphs of continuous semialgebraic real-\allowbreak{}root functions,\allowbreak{} and a real root is uniquely distinguished by its Thom derivative-\allowbreak{}sign encoding.}
+\end{lemma}
+
+\begin{lemma}[lem:conditional-ctfid-completeness]\label{lem:conditional-ctfid-completeness}
+For the unrestricted recursive semi-Markovian model class, a positive-denominator conditional counterfactual query \(Q\) is identifiable from \((G,\mathcal Z)\) if and only if \(\mathsf{CTFID}(G,\mathcal Z,Q)\) returns an expression; every returned expression evaluates to the query in every compatible model.
+\end{lemma}
+
+\begin{lemma}[lem:mid-soundness]\label{lem:mid-soundness}
+Whenever \(\mathsf{MID}(G,M,\mathcal Z,Q)\) returns an expression \(H\), one has \(H(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m)\) for every \(\mathfrak m\in\mathfrak M(G,M)\) with \(P_{\mathfrak m}(B_Q)>0\).
+\end{lemma}
+
+\begin{theorem}[thm:finite-oracle-complete-mctfid]\label{thm:finite-oracle-complete-mctfid}
+Fix the class in which \(V\) is finite, every \(X_v\) is binary, \(G\) is acyclic, every model has the recursive semi-Markovian expansion indexed by \(U_G\), and every edge in \(M\) obeys its stated signed local-monotonicity restriction; equivalently, fix \(\mathfrak M(G,M)\) of Definition \(\mathrm{def:model\text{-}class}\).  Also require every regime in \(\mathcal Z\) to be a specified deterministic hard intervention \(z_k=\operatorname{do}(X_{W_k}=w_k)\), with the empty intervention allowed.  On this domain the global finite response-profile oracle \(\mathsf{MCTFID}\), with failure decoder \(\mathsf C_{\mathsf F}\), has the following properties.  Put
+\[
+ N_{G,M}=\sum_{u\in U_G}(b_u-1),
+ \qquad
+ A_{G,M}=\prod_{v\in V}T_v^{\prod_{u\in U_G:\,v\in\operatorname{ch}(u)}b_u}.
+\]
+The oracle enumerates at most \(A_{G,M}\) canonical signed-isotone structural profiles, tests at most \(A_{G,M}^2\) ordered profile pairs, uses at most \(2N_{G,M}\) free mass coordinates and \(2R_{G,M}\) joint latent configurations per pair, and makes finitely many exact quantifier-elimination, sample-point, and cylindrical-decomposition calls on the resulting rational polynomial systems.  It returns a globally totalized \(F\in\mathcal R(p)\) if and only if \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=1\), and then
+\[
+ F(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m)
+\]
+for every \(\mathfrak m\in\mathfrak M(G,M)\) with \(P_{\mathfrak m}(B_Q)>0\).  Otherwise it returns \((\mathsf{FAIL},\tau_{\mathsf F})\), and \(\mathsf C_{\mathsf F}(G,M,\mathcal Z,Q,\tau_{\mathsf F})=(\mathfrak m_0,\mathfrak m_1,p^{\star})\) gives two finite district-factorized signed-isotone SCMs satisfying \(|\Omega_u|\le b_u\), positive query denominators,
+\[
+ P_{\mathcal Z}(\mathfrak m_0)=p^{\star}=P_{\mathcal Z}(\mathfrak m_1),
+ \qquad
+ \theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1).
+\]
+A successful \(\mathsf{CTFID}\) or \(\mathsf{MID}\) front end is used only as a sound identification certificate; the returned \(F\) is compiled separately through the guarded grammar and is asserted equal to the frontend functional only on compatible positive-denominator menu laws.  No literal equality of expression trees or off-model totalizations is asserted.  On the common empty-sign finite-binary domain, canonical countermodel transfer and conditional \(\mathsf{CTFID}\) completeness give equality of the \(\mathsf{CTFID}\) and oracle success sets.  On the common signed domain, \(\operatorname{Succ}(\mathsf{MID})\subseteq\operatorname{Succ}(\mathsf{MCTFID})\).  The oracle is a global semantic decision and checking substrate.  Its if-and-only-if proof uses global response-profile enumeration and real algebraic elimination; it is not a district-compositional order-AMWN or ctf-calculus completeness theorem and does not supply a compiler from a terminal local graphical failure trace.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+\paragraph{Finite parameterization.}
+The model domain in the statement is exactly Definition \(\mathrm{def:model\text{-}class}\).  By Theorem \(\mathrm{thm:signed\text{-}canonical\text{-}reduction}\), every model relevant to menu equivalence may be replaced, without changing any specified hard-intervention menu cell or any finite counterfactual law, by one satisfying \(|\Omega_u|\le b_u\) for every \(u\in U_G\).  Pad a smaller support by zero-mass states.  For
+\[
+ U(v)=\{u\in U_G:v\in\operatorname{ch}(u)\},
+\]
+there are \(\prod_{u\in U(v)}b_u\) exogenous-parent configurations at vertex \(v\), and at most \(T_v\) admissible signed-isotone complete response tables at each configuration.  Hence the number of joint structural profiles is at most
+\[
+ \prod_{v\in V}T_v^{\prod_{u\in U(v)}b_u}=A_{G,M}.
+\tag{1}
+\]
+For a fixed profile, write the mass of support point \(j\) of exogenous coordinate \(u\) as \(\lambda_{u,j}\).  The constraints
+\[
+ \lambda_{u,j}\ge0,
+ \qquad
+ \sum_{j=1}^{b_u}\lambda_{u,j}=1
+\tag{2}
+\]
+define a product of simplexes.  Eliminating one coordinate from every simplex leaves at most
+\[
+ N_{G,M}=\sum_{u\in U_G}(b_u-1)
+\tag{3}
+\]
+free coordinates for one model.  An ordered pair therefore has at most \(2N_{G,M}\) free mass coordinates.  A model sum ranges over at most \(R_{G,M}=\prod_{u\in U_G}b_u\) joint latent states, and a pair over at most \(2R_{G,M}\).
+
+For each specified hard intervention \(z_k=\operatorname{do}(X_{W_k}=w_k)\), Theorem \(\mathrm{thm:finite\text{-}decision}\) replaces the equations at \(W_k\) by the declared constants and evaluates the remaining acyclic system.  For every profile \(a\), it thereby constructs integer-coefficient menu polynomials \(\phi_{a,k,x}(\lambda)\), together with the counterfactual numerator and denominator polynomials \(h_a(\lambda)\) and \(d_a(\lambda)\).  Each is a sum of at most \(R_{G,M}\) product-mass monomials.  The same theorem proves that the finite ordered-profile-pair system in Definition \(\mathrm{def:mctfid\text{-}handle}\), namely equality of all menu cells, strict positivity of both denominators, and
+\[
+ h_{a_0}(\lambda^0)d_{a_1}(\lambda^1)
+ \ne
+ h_{a_1}(\lambda^1)d_{a_0}(\lambda^0),
+\tag{4}
+\]
+is satisfiable exactly when
+\[
+ \operatorname{GID}_{G,M,\mathcal Z}(Q)=0.
+\tag{5}
+\]
+Lemma \(\mathrm{lem:effective\text{-}real\text{-}closed\text{-}field\text{-}decision}\) makes both the decision and exact algebraic sample-point extraction finite and effective.
+
+\paragraph{Failure and its global decoder.}
+Suppose (5) holds.  Sample-point extraction supplies two enumerated signed-isotone profiles and exact algebraic product-simplex masses.  The table enumeration enforces every signed local-monotonicity condition, and (2) supplies mutually independent exogenous coordinates with the required product law.  The sampled menu equalities and denominator inequalities give
+\[
+ P_{\mathcal Z}(\mathfrak m_0)=p^{\star}=P_{\mathcal Z}(\mathfrak m_1),
+ \qquad
+ d_{a_i}(\lambda^i)>0\quad(i=0,1).
+\tag{6}
+\]
+Dividing (4) by the positive product \(d_{a_0}(\lambda^0)d_{a_1}(\lambda^1)\) yields
+\[
+ \theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1).
+\tag{7}
+\]
+Every exogenous coordinate affecting a district \(D\) lies in the block \(\{u:C(u)=D\}\); these blocks are disjoint, and the exogenous coordinates are independent.  The two constructed models are therefore district-factorized.  Definition \(\mathrm{def:fail\text{-}compiler\text{-}handle}\) deletes only zero-mass padding states and checks every simplex constraint, structural-table sign constraint, menu-cell equality, strict denominator inequality, and unequal cross-product before returning.  Its decoded models retain \(|\Omega_u|\le b_u\) and all properties in (6)--(7).  This decoder is global: nothing in this step reinterprets the profile-pair certificate as a district-local graphical failure trace.
+
+\paragraph{Compilation on the identified branch.}
+Now suppose the pair system is unsatisfiable.  Form the finite semialgebraic relation
+\[
+ \Gamma_Q
+ =\bigcup_a\left\{(p,t):\exists\lambda\,
+ \left[
+ \Lambda_a(\lambda)\wedge p=\phi_a(\lambda)
+ \wedge d_a(\lambda)>0
+ \wedge t d_a(\lambda)=h_a(\lambda)
+ \right]\right\},
+\tag{8}
+\]
+where \(\Lambda_a\) denotes the product-simplex constraints.  Every nonempty fiber of (8) is a singleton.  Indeed, two distinct ordinates \(t_0\ne t_1\) over a common \(p\) would yield two feasible canonical models with equal menu cells and positive denominators.  Since \(t_i=h_{a_i}(\lambda^i)/d_{a_i}(\lambda^i)\), their inequality would imply (4), contradicting unsatisfiability.
+
+Real quantifier elimination first gives a finite rational-polynomial description of \(\Gamma_Q\).  Lemma \(\mathrm{lem:effective\text{-}cad\text{-}thom\text{-}sections}\) then provides a finite sign-invariant cylindrical decomposition of the projected menu space and, over each cell in the projection, a continuous algebraic root section uniquely selected by an isolating interval or a Thom derivative-sign encoding.  Use the cell's polynomial sign description as the branch guard, its unique root section as the branch value, and the rational value zero off the projection.  Definition \(\mathrm{def:expression\text{-}grammar}\) is closed under these finite guarded branches and root terms, so this construction gives a globally totalized \(F\in\mathcal R(p)\).
+
+For any \(\mathfrak m\in\mathfrak M(G,M)\) with \(P_{\mathfrak m}(B_Q)>0\), canonical reduction supplies a finite model preserving its menu law, numerator, and denominator.  Therefore
+\[
+ \bigl(P_{\mathcal Z}(\mathfrak m),\theta_Q(\mathfrak m)\bigr)\in\Gamma_Q.
+\]
+The singleton-fiber construction then gives
+\[
+ F(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m).
+\tag{9}
+\]
+Equation (9) is the identifying equality between the observed-menu functional and the causal target on compatible positive-denominator laws; it is not a definition of the target and does not assert equality away from the model image.
+
+Conversely, if the oracle returns such an \(F\), equation (9) makes \(\theta_Q\) constant for any two positive-denominator models having the same menu law.  Definition \(\mathrm{def:identification\text{-}criterion}\) therefore gives \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=1\).  Together with (5), this proves the claimed if-and-only-if dichotomy.
+
+\paragraph{Frontend certificates.}
+If \(\mathsf{MID}\) succeeds, Lemma \(\mathrm{lem:mid\text{-}soundness}\) makes the query constant on every compatible positive-denominator menu fiber.  Definition \(\mathrm{def:identification\text{-}criterion}\) then gives \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=1\).  The oracle may therefore skip the separating-pair search after checking that implication, but it still compiles \(F\) from (8); it never treats the published expression as a literal member of the custom grammar.  Hence, on the common signed domain,
+\[
+ \operatorname{Succ}(\mathsf{MID})
+ \subseteq
+ \operatorname{Succ}(\mathsf{MCTFID}).
+\tag{10}
+\]
+
+When \(M=\varnothing\), the signed restrictions are vacuous and the local response tables are all Boolean response functions.  Lemma \(\mathrm{lem:conditional\text{-}ctfid\text{-}completeness}\), specialized to the present deterministic hard-intervention menu and fixed binary signature, identifies \(\mathsf{CTFID}\) success with functional identification on the unrestricted recursive semi-Markovian class.  Theorem \(\mathrm{thm:signed\text{-}canonical\text{-}reduction}\), also specialized to \(M=\varnothing\), is the required countermodel-transfer step: any separating pair on that class has a counterfactually equivalent finite canonical pair preserving the entire menu and query.  Thus restricting the oracle search to canonical pairs neither loses nor creates a separating pair, and the \(\mathsf{CTFID}\) and oracle success sets coincide on the common empty-sign domain.  If \(\mathsf{CTFID}\) returns \(H\), its cited soundness clause and (9) give only the extensional equality
+\[
+ H(P_{\mathcal Z}(\mathfrak m))
+ =F(P_{\mathcal Z}(\mathfrak m))
+ =\theta_Q(\mathfrak m)
+\]
+on compatible positive-denominator laws.  No equality of syntax or off-model totalizations is used.
+
+Finally, (1)--(3) give the advertised profile, pair, coordinate, and latent-configuration bounds.  The two real-algebraic lemmas terminate every decision, sample-point, and section-compilation call.  Equations (5), (8), and (9) prove the semantic dichotomy, while (6)--(7) prove the explicit failure witness.  The construction is a global semantic decision and checking substrate; the proof establishes neither a terminating district-local ctf-calculus nor a compiler from a terminal local graphical trace.  This proves every clause of the theorem. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem supplies the exact computable semantic dichotomy, explicit termination bounds, a guarded observed-menu functional on success, and concrete signed-isotone SCM witnesses on failure. \textit{Gap.} The result is global and real-algebraic; it does not establish the unresolved district-compositional order-AMWN recursion or a compiler from local graphical failures. \textit{Consumer.} Maiti's implementation and the Causal Fairness Analysis toolkit can use the oracle for finite-domain regression checks, identifying-functional evaluation, and explicit global obstruction witnesses.
+
+\begin{lemma}[lem:mid-incomparable-failure]\label{lem:mid-incomparable-failure}
+In the published \(\mathsf{MID}\) procedure, if, after the simplification rule, one ctf-factor contains two potential responses of the same variable whose assignments on its monotone parents are not totally ordered, then the reduction subroutine returns \(\mathsf{FAIL}\), and \(\mathsf{MID}\) propagates that output as \(\mathsf{FAIL}\).
+\end{lemma}
+
+\begin{theorem}[thm:mid-success-strictness-witness]\label{thm:mid-success-strictness-witness}
+With both success sets restricted to the common finite-binary recursive semi-Markovian signed-local-monotonicity domain of Definition \(\mathrm{def:model\text{-}class}\), the inclusion
+\[
+ \operatorname{Succ}(\mathsf{MID})
+ \subseteq
+ \operatorname{Succ}(\mathsf{MCTFID})
+\]
+is strict.  A witness is the three-vertex DAG \(G\) with directed edges \(X\to Y\leftarrow Z\), no bidirected edges, positive signs on both directed edges, the observational menu \(\mathcal Z=\{\varnothing\}\), and the positive-denominator query
+\[
+ Q=P\bigl(Y_{11}=1\mid Y_{10}=1,\,Y_{01}=1\bigr),
+\]
+where the two subscript coordinates give the interventions on \((X,Z)\).  Pointwise in every model of the broader published common-input binary class \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\) for which the conditioning event has positive probability, this query equals one, while the published Algorithms 1--2 return \(\mathsf{FAIL}\) on the same graph, menu, and query.  In particular, on the narrower class \(\mathfrak M(G,M)\), one has \(\operatorname{GID}_{G,M,\mathcal Z}(Q)=1\), so \(\mathsf{MCTFID}\) returns an identifying expression \(F\) satisfying
+\[
+ F(P_{\mathcal Z}(\mathfrak m))=1
+\]
+for every compatible model \(\mathfrak m\in\mathfrak M(G,M)\) with \(P_{\mathfrak m}(B_Q)>0\).  Hence the published \(\mathsf{MID}\) procedure is not success-set maximal even on the common three-binary-variable unconfounded DAG subclass.  The broader-class pointwise identification and failure trace do not broaden the completeness domain of \(\mathsf{MCTFID}\), and no claim is made that \(\mathsf{MCTFID}\) solves the broader ordered-variable or general-SCM completeness problem considered by the published \(\mathsf{MID}\) work.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+We first separate the two model scopes.  Theorem \(\mathrm{thm:published\text{-}class\text{-}failure\text{-}transfer}\) proves the common-input inclusion
+\[
+ \mathfrak M(G,M)\subseteq
+ \mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M),
+\tag{1}
+\]
+but it also records that completeness of the finite oracle is asserted only on the class on the left of (1).
+
+Now take the unconfounded three-vertex DAG \(X\to Y\leftarrow Z\), put a positive sign on both arrows, and let \(\mathcal Z=\{\varnothing\}\).  In the notation of Theorem \(\mathrm{thm:mid\text{-}antichain\text{-}join\text{-}failure\text{-}family}\), choose
+\[
+ W=Y,
+ \qquad
+ t_1=(1,0),
+ \qquad
+ t_2=(0,1),
+ \qquad
+ t_1\vee t_2=(1,1),
+\tag{2}
+\]
+and take the assignment of nonmonotone parents to be empty.  The assignments \(t_1\) and \(t_2\) are incomparable.  The cited Algorithm 1--2 trace incorporated in that theorem therefore gives
+\[
+ \mathsf{MID}(G,M,\mathcal Z,Q)=\mathsf{FAIL}.
+\tag{3}
+\]
+The same theorem proves, pointwise in every model in the broader published binary CGMA class, that
+\[
+ \{Y_{10}=1,Y_{01}=1\}
+ \subseteq
+ \{Y_{11}=1\}.
+\tag{4}
+\]
+Indeed, for every exogenous assignment \(u\), signed local monotonicity gives
+\[
+ Y_{10}(u)\le Y_{11}(u),
+ \qquad
+ Y_{01}(u)\le Y_{11}(u).
+\tag{5}
+\]
+Thus (4) holds without any semi-Markovian independence or finite-support argument.  Whenever the denominator is positive,
+\[
+ P(Y_{11}=1\mid Y_{10}=1,Y_{01}=1)
+ =\frac{P(Y_{11}=1,Y_{10}=1,Y_{01}=1)}
+ {P(Y_{10}=1,Y_{01}=1)}
+ =1.
+\tag{6}
+\]
+The positive-denominator domain is nonempty: the recursive SCM with independent private exogenous variables, arbitrary binary roots \(X,Z\), and \(Y=X\lor Z\) belongs to \(\mathfrak M(G,M)\) and has denominator one.
+
+By (1), equation (6) holds in particular for every member of \(\mathfrak M(G,M)\).  Hence the query is constant on every positive-denominator observational-menu fiber.  Definition \(\mathrm{def:identification\text{-}criterion}\) yields
+\[
+ \operatorname{GID}_{G,M,\mathcal Z}(Q)=1.
+\tag{7}
+\]
+Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\), whose completeness domain is precisely the subclass \(\mathfrak M(G,M)\), now returns some \(F\in\mathcal R(p)\) and gives
+\[
+ F(P_{\mathcal Z}(\mathfrak m))
+ =\theta_Q(\mathfrak m)
+ =1
+\tag{8}
+\]
+for every compatible \(\mathfrak m\in\mathfrak M(G,M)\) with \(P_{\mathfrak m}(B_Q)>0\).
+
+The weak inclusion of success sets follows from the frontend-soundness clause of Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\).  Equations (3) and (8) exhibit an element of the oracle success set outside the published \(\mathsf{MID}\) success set, proving strictness on the common subclass.  Moreover, (4)--(6) and the Algorithm 1--2 failure trace hold on the broader published binary CGMA class; only the claim of \(\mathsf{MCTFID}\) success remains subclass-scoped.
+
+For an exact finite stress test, the six isotone Boolean tables, with coordinates ordered as \((Y_{00},Y_{01},Y_{10},Y_{11})\), are
+\[
+ 0000,\quad 0001,\quad 0011,\quad 0101,\quad 0111,\quad 1111.
+\]
+The conditioning event in (6) selects exactly \(0111\) and \(1111\), both of which have \(Y_{11}=1\).  If the two sign restrictions are removed, the XOR table \(0110\) has the conditioning event equal to one and the numerator equal to zero.  Signed monotonicity is therefore load-bearing.  Nothing in this argument constructs a district-local recursion or a signed-isotone gluing theorem. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The collider is the smallest member of the antichain/join family: the broader published binary class supports the pointwise constant-one and Algorithms 1--2 failure claims, while oracle success and success-set strictness are asserted on the common finite-binary recursive semi-Markovian subclass. \textit{Gap.} The published reduction removes the order-entailed join literal and then encounters two incomparable monotone-parent assignments, even though isotonicity already forces the conditional query to equal one. \textit{Consumer.} Maiti's implementation can use this witness and the general antichain/join family as regression tests for the \(\mathsf{MID}^{+}\) precheck; causal fairness analyses can use the pointwise constant functional whenever the conditioning probability is positive.
+
+\begin{lemma}[lem:mid-binary-simplification-flow]\label{lem:mid-binary-simplification-flow}
+In the published \(\mathsf{MID}\) procedure, for binary \(W\) and normalized monotone-parent assignments \(t\le t'\), a ctf-factor containing \(W_t=1\) and \(W_{t'}=1\) is simplified by deleting the upper literal \(W_{t'}=1\). Algorithm 1 constructs the joint ctf-factor for numerator and conditioning terms, invokes the reduction before forming the conditional ratio, and propagates a reduction failure as \(\mathsf{FAIL}\).
+\end{lemma}
+
+\begin{lemma}[lem:published-mid-soundness]\label{lem:published-mid-soundness}
+On the class \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\), whenever \(\mathsf{MID}(G,M,\mathcal Z,Q)\) returns an expression from the available interventional and observational distributions, that expression equals the counterfactual query in every compatible model.
+\end{lemma}
+
+\begin{theorem}[thm:published-class-failure-transfer]\label{thm:published-class-failure-transfer}
+Let \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\) be the published common-input binary CGMA/general-SCM class of Definition \(\mathrm{def:published\text{-}binary\text{-}cgma\text{-}class}\).  Then
+\[
+ \mathfrak M(G,M)\subseteq\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M).
+\]
+For any common finite deterministic hard-intervention menu \(\mathcal Z\) and positive-denominator unnested query \(Q\), if \(\mathsf{MCTFID}\) returns \((\mathsf{FAIL},\tau_{\mathsf F})\), every decoded pair
+\[
+ \mathsf C_{\mathsf F}(G,M,\mathcal Z,Q,\tau_{\mathsf F})
+ = (\mathfrak m_0,\mathfrak m_1,p^{\star})
+\]
+is a pair of legal finite members of \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\).  After zero-mass padding is deleted, every retained exogenous support point has positive mass, both query denominators are positive, and
+\[
+ P_{\mathcal Z}(\mathfrak m_0)=p^{\star}=P_{\mathcal Z}(\mathfrak m_1),
+ \qquad
+ \theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1).
+\]
+Thus oracle failure certifies nonidentification in both the finite semi-Markovian subclass and the broader published binary CGMA class on the common input.  The converse direction is not asserted: oracle success and completeness remain restricted to \(\mathfrak M(G,M)\), and inclusion of that subclass does not transfer identification upward.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Take \(\mathfrak m=(f,\mu)\in\mathfrak M(G,M)\).  By Definition \(\mathrm{def:model\text{-}class}\), its endogenous variables are binary, its equations are recursive, and every signed edge satisfies the stated pointwise local monotonicity inequality.  Regard the finite family of independent private and edge-specific exogenous coordinates as one general exogenous vector \(U\).  A shared edge coordinate is simply a latent input common to its two observed children, while a private coordinate is a latent input of one child.  Consequently the directed argument relation and the latent-dependence relation are compatible with \(G\).  The product restriction on \(\mu\) is allowed, because Definition \(\mathrm{def:published\text{-}binary\text{-}cgma\text{-}class}\) imposes no contrary dependence requirement.  Taking each declared exogenous state space to be the support of its law gives full support.  Hence
+\[
+ \mathfrak m\in\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M),
+\]
+which proves the class inclusion.
+
+Suppose now that the oracle returns \((\mathsf{FAIL},\tau_{\mathsf F})\).  The failure clause of Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\), together with Definition \(\mathrm{def:fail\text{-}compiler\text{-}handle}\), gives finite \(\mathfrak m_0,\mathfrak m_1\in\mathfrak M(G,M)\) satisfying \(|\Omega_u|\le b_u\), positive query denominators, the common-menu identity
+\[
+ P_{\mathcal Z}(\mathfrak m_0)=p^{\star}=P_{\mathcal Z}(\mathfrak m_1),
+\tag{1}
+\]
+and the strict separation
+\[
+ \theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1).
+\tag{2}
+\]
+The decoder deletes every zero-mass padding state.  Therefore every state remaining in each finite marginal exogenous support has strictly positive marginal mass; because the decoded semi-Markovian law is a product law, every remaining joint latent configuration also has positive mass.  The inclusion already proved makes both decoded models legal members of \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\).  Equations (1)--(2), with the positive denominators, are an explicit separating pair in the broader class, so the query is not identified there.
+
+Finally, the logical direction is one-sided.  A separating pair in a subclass remains a separating pair after the class is enlarged.  Constancy of a query on each menu fiber of a subclass need not persist when additional models are admitted.  Thus no success or completeness conclusion on the broader published class follows from the finite oracle theorem. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem exposes the logically valid one-sided scope transfer: an explicit failure pair survives enlargement of the model class, while oracle success does not. \textit{Gap.} The finite oracle theorem is semi-Markovian, whereas MaitiPleckoBareinboim2025 works with a broader general-SCM class; this theorem connects them without overextending completeness. \textit{Consumer.} A failure certificate produced by the finite oracle can be used as a legal nonidentification witness in broader binary CGMA analyses.
+
+\begin{theorem}[thm:mid-antichain-join-failure-family]\label{thm:mid-antichain-join-failure-family}
+Let \(W\) be binary in the published common-input class \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\).  Sign-normalize the monotone parents of \(W\), fix one assignment \(s\) of its nonmonotone parents, and let \(t_1,t_2\) be incomparable normalized monotone-parent assignments with coordinatewise join \(t_{\vee}=t_1\vee t_2\).  For the positive-denominator query
+\[
+ Q_{t_1,t_2,s}
+ =P\bigl(W_{t_{\vee},s}=1\mid W_{t_1,s}=1,\,W_{t_2,s}=1\bigr),
+\]
+one has \(Q_{t_1,t_2,s}=1\) in every compatible published binary CGMA model.  Nevertheless, the published \(\mathsf{MID}\) procedure deletes the upper literal \(W_{t_{\vee},s}=1\), retains the incomparable pair \(W_{t_1,s}=W_{t_2,s}=1\), and returns \(\mathsf{FAIL}\).  The order-closure procedure \(\mathsf{MID}^{+}\) of Definition \(\mathrm{def:midplus\text{-}order\text{-}closure}\) instead returns the constant one before invoking \(\mathsf{MID}\).
+
+More generally, for a finite binary positive-denominator conditional query with a single numerator literal \(L\), every constant returned by \(\mathsf{MID}^{+}\) is sound throughout \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\).  If \(L\) is parent-fixed, it returns one when \(L\in\operatorname{cl}_M(B_Q)\) and zero when \(\overline L\in\operatorname{cl}_M(B_Q)\).  If \(L\) is not parent-fixed or neither certificate is present, it invokes the published \(\mathsf{MID}\), whose successful output remains sound.  The closure terminates after at most \(2\sum_{v\in V}2^{|\operatorname{pa}_G(v)|}\) distinct literal insertions.  This precheck is not a completeness claim.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Fix a model in \(\mathfrak M_{\mathrm{PB}}^{\mathrm{bin}}(G,M)\) and an exogenous assignment \(u\).  After sign normalization, the local response of \(W\) is isotone in its monotone-parent coordinates while \(s\) and \(u\) are held fixed.  Since
+\[
+ t_1\le t_{\vee},
+ \qquad
+ t_2\le t_{\vee},
+\]
+we have
+\[
+ W_{t_1,s}(u)\le W_{t_{\vee},s}(u),
+ \qquad
+ W_{t_2,s}(u)\le W_{t_{\vee},s}(u).
+\tag{1}
+\]
+All three responses are binary.  Hence
+\[
+ \{W_{t_1,s}=1,W_{t_2,s}=1\}
+ \subseteq
+ \{W_{t_{\vee},s}=1\}
+\tag{2}
+\]
+pointwise, independently of the exogenous law or latent dependence structure.  Dividing the probability of the intersection in (2) by the assumed positive probability of its left-hand event gives
+\[
+ Q_{t_1,t_2,s}=1.
+\tag{3}
+\]
+
+For the published control flow, Algorithm 1 first forms the joint numerator-and-conditioning ctf-factor and calls the reduction before taking the conditional ratio, as recorded in Lemma \(\mathrm{lem:mid\text{-}binary\text{-}simplification\text{-}flow}\).  That factor contains
+\[
+ W_{t_{\vee},s}=1,
+ \qquad
+ W_{t_1,s}=1,
+ \qquad
+ W_{t_2,s}=1.
+\tag{4}
+\]
+Because \(t_i\le t_{\vee}\), the binary equal-one simplification rule deletes the upper literal \(W_{t_{\vee},s}=1\).  Neither residual literal can delete the other because \(t_1\) and \(t_2\) are incomparable.  Lemma \(\mathrm{lem:mid\text{-}incomparable\text{-}failure}\) therefore makes the reduction return \(\mathsf{FAIL}\), which Algorithm 1 propagates.  This proves the asserted family of published-procedure failures.
+
+It remains to verify the precheck.  Every closure insertion in Definition \(\mathrm{def:midplus\text{-}order\text{-}closure}\) is pointwise valid.  If \(W_{t,s}=1\) and \(t\le t'\), isotonicity gives \(1=W_{t,s}(u)\le W_{t',s}(u)\), so \(W_{t',s}(u)=1\).  If \(W_{t,s}=0\) and \(t'\le t\), isotonicity gives \(W_{t',s}(u)\le W_{t,s}(u)=0\), so \(W_{t',s}(u)=0\).  Induction over the finite sequence of insertions shows that the conditioning event \(B_Q\) pointwise entails every literal in \(\operatorname{cl}_M(B_Q)\).
+
+Consequently, if \(L\in\operatorname{cl}_M(B_Q)\), then \(B_Q\subseteq L\) and the positive-denominator conditional probability is one.  If \(\overline L\in\operatorname{cl}_M(B_Q)\), then \(B_Q\subseteq\overline L\), so \(B_Q\cap L=\varnothing\) and the conditional probability is zero.  If the precheck falls through, Lemma \(\mathrm{lem:published\text{-}mid\text{-}soundness}\) supplies soundness of every successful published \(\mathsf{MID}\) output on this class.  Finally, a vertex \(v\) has exactly \(2^{|\operatorname{pa}_G(v)|}\) full binary parent assignments and two response values, so there are at most \(2\sum_{v\in V}2^{|\operatorname{pa}_G(v)|}\) distinct literals available for insertion.  The fixed-point computation therefore terminates with the stated bound.
+
+For the antichain query, either lower one-valued literal in the conditioning event inserts the upper one-valued join literal, so \(\mathsf{MID}^{+}\) returns one before reaching the failing fallback.  The argument establishes only this finite sound preprocessing rule and not a complete order-AMWN calculus. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem turns a single regression witness into an explicit antichain/join family and supplies a finite sound preprocessing repair. \textit{Gap.} The published simplification rule removes an order-entailed upper literal before checking the incomparable lower pair, so Algorithms 1--2 fail on pointwise constant queries. \textit{Consumer.} Maiti's implementation can add the order-closure precheck, and causal fairness queries with the same monotone response pattern can return constants without invoking the failing reduction.
+
+\begin{openendedquestion}[oeq:graphical-oracle-compression]\label{oeq:graphical-oracle-compression}
+Can the exact finite oracle \(\mathsf{MCTFID}\) be compressed into a district-compositional order-AMWN and ctf-calculus procedure whose uniform local failure trace compiles into binary signed-isotone countermodels, without using unrestricted parity or multi-bit gadgets?
+\end{openendedquestion}
+For each \(E\in\left\{A_Q\cap B_Q,B_Q\right\}\), Theorem \(\mathrm{thm:order\text{-}normal\text{-}factorization}\) gives the unique finite identity
+\[
+ \mathbf 1_E
+ =\sum_{t:e_E(t)=1}\prod_{D\in\mathcal D(G)}
+   \mathbf 1_{\left\{(R_v)_{v\in D}=t_D\right\}},
+\]
+and every deleted order-inconsistent cell is null in every \(\mathfrak m\in\mathfrak M(G,M)\).  Theorem \(\mathrm{thm:finite\text{-}oracle\text{-}complete\text{-}mctfid}\) gives
+\[
+ \operatorname{GID}_{G,M,\mathcal Z}(Q)=1
+ \quad\Longleftrightarrow\quad
+ \mathsf{MCTFID}(G,M,\mathcal Z,Q)=F\in\mathcal R(p),
+\]
+with \(F(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m)\) for every compatible model satisfying \(P_{\mathfrak m}(B_Q)>0\).  On the complementary branch its exact global algebraic certificate decodes into finite binary district-factorized signed-isotone models \(\mathfrak m_0\) and \(\mathfrak m_1\) such that
+\[
+ P_{\mathcal Z}(\mathfrak m_0)=P_{\mathcal Z}(\mathfrak m_1),\qquad
+ P_{\mathfrak m_i}(B_Q)>0\ \ (i=0,1),\qquad
+ \theta_Q(\mathfrak m_0)\ne\theta_Q(\mathfrak m_1).
+\]
+Thus the canonical local syntax, order-null deletions, semantic identification dichotomy, and finite signed-isotone global countermodels are established.  The sole residual is their realization by a terminating district-local graphical recursion with a uniform local-to-global failure compiler.
+\par\smallskip\noindent \textit{Justification.} A positive resolution would replace global CAD certificates by smaller district-local graphical derivations and interpretable signed countermodel traces. \textit{Gap.} The missing ingredient is a uniform signed-isotone gluing theorem that preserves cross-district menu equalities and target separation; unrestricted parity or multi-bit gadgets do not establish it. \textit{Consumer.} The AMWN and ctf-calculus toolchain would use the result to turn the semantic oracle into a local audit procedure.
+
+\section{Interpretation}
+
+The causal target remains \(\theta_Q(\mathfrak m)=P_{\mathfrak m}(A_Q\mid B_Q)\).  A successful oracle output \(F\) is a computable functional of the observed menu law, and \(F(P_{\mathcal Z}(\mathfrak m))=\theta_Q(\mathfrak m)\) is a theorem only on compatible positive-denominator laws.  For the collider witness, isotonicity gives the stronger pointwise implication \(\{Y_{10}=1,Y_{01}=1\}\subseteq\{Y_{11}=1\}\) throughout the broader published binary class, so the conditional target is one whenever its denominator is positive; this does not enlarge the oracle's completeness class.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+The complete procedure is a global semantic oracle based on finite structural-profile enumeration, exact real quantifier elimination, and cylindrical algebraic decomposition.  Its failure certificate is globally decoded, not compiled from a district-local graphical trace.  Algebraic root sections are required because an identified finite polynomial model need not yield a rational expression.  The plug-in limit law is restricted to positive query denominators, stable regime shares, nonzero asymptotic variance, and analytic branches separated from every guard, division, derivative, and root-isolation boundary.
+
+\section{Honest scope}
+
+Completeness of \(\mathsf{MCTFID}\), equality with ordinary conditional \(\mathsf{CTFID}\) at \(M=\varnothing\), and strict containment of published \(\mathsf{MID}\) successes are proved only on the finite-binary recursive semi-Markovian signed-local-monotonicity class.  The collider's constant-one implication and the published Algorithms 1--2 failure trace hold pointwise on the broader common-input binary CGMA/general-SCM class, but identification does not transfer upward from subclass oracle success.  The unresolved problem is a uniform district-compositional order-AMWN/ctf-calculus recursion whose terminal local obstruction compiles into signed-isotone countermodels without unrestricted parity gadgets.  Continuous variables, stochastic interventions, nested syntax before unnesting, zero conditioning denominators, branch-boundary inference, and a general-SCM completeness theorem are excluded.
+
+\begin{thebibliography}{99}
+
+  \bibitem{MaitiPleckoBareinboim2025} Aurghya Maiti, Drago Plecko, and Elias Bareinboim. Counterfactual Identification Under Monotonicity Constraints. Proceedings of the AAAI Conference on Artificial Intelligence, 39(25):26841--26850, 2025. DOI: \(10.1609/aaai.v39i25.34888\).
+
+  \bibitem{CorreaLeeBareinboim2021} Juan D. Correa, Sanghack Lee, and Elias Bareinboim. Nested Counterfactual Identification from Arbitrary Surrogate Experiments. Advances in Neural Information Processing Systems, 34:6856--6867, 2021. arXiv: \(2107.03190\).
+
+  \bibitem{CorreaBareinboim2025} Juan D. Correa and Elias Bareinboim. Counterfactual Graphical Models: Constraints and Inference. Proceedings of the 42nd International Conference on Machine Learning, 267:11245--11254, 2025.
+
+  \bibitem{RaghavanBareinboim2026} Arvind Raghavan and Elias Bareinboim. Causal Identification from Counterfactual Data: Completeness and Bounding Results. arXiv preprint \(2602.23541\), 2026.
+
+  \bibitem{ZhangTianBareinboim2022} Junzhe Zhang, Jin Tian, and Elias Bareinboim. Partial Counterfactual Identification from Observational and Experimental Data. Proceedings of the 39th International Conference on Machine Learning, 2022. arXiv: \(2110.05690\).
+
+  \bibitem{DuarteEtAl2024} Guilherme Duarte, Noam Finkelstein, Dean Knox, Jonathan Mummolo, and Ilya Shpitser. An Automated Approach to Causal Inference in Discrete Settings. Journal of the American Statistical Association, 119(547):1778--1793, 2024.
+
+  \bibitem{ShpitserPearl2008} Ilya Shpitser and Judea Pearl. Complete Identification Methods for the Causal Hierarchy. Journal of Machine Learning Research, 9:1941--1979, 2008.
+
+  \bibitem{LeeCorreaBareinboim2020} Sanghack Lee, Juan D. Correa, and Elias Bareinboim. General Identifiability with Arbitrary Surrogate Experiments. Proceedings of the 35th Conference on Uncertainty in Artificial Intelligence, 115:389--398, 2020.
+
+  \bibitem{BhattacharyaNabiShpitser2022} Rohit Bhattacharya, Razieh Nabi, and Ilya Shpitser. Semiparametric Inference for Causal Effects in Graphical Models with Hidden Variables. Journal of Machine Learning Research, 23:1--76, 2022. arXiv: \(2003.12659\).
+
+  \bibitem{PleckoBareinboim2024} Drago Plecko and Elias Bareinboim. Causal Fairness Analysis: A Causal Toolkit for Fair Machine Learning. Foundations and Trends in Machine Learning, 17(3):304--589, 2024.
+
+  \bibitem{HashimotoKawakamiTian2026} Naoya Hashimoto, Yuta Kawakami, and Jin Tian. Bounds and Identification of Joint Probabilities of Potential Outcomes and Observed Variables Under Monotonicity Assumptions. Proceedings of AISTATS, 2026. arXiv: \(2602.18762\).
+
+  \bibitem{VanDerVaart1998} Aad W. van der Vaart. Asymptotic Statistics. Cambridge University Press, 1998.
+
+  \bibitem{BasuPollackRoy2006} Saugata Basu, Richard Pollack, and Marie-Fran\c{c}oise Roy. Algorithms in Real Algebraic Geometry, second edition. Springer, 2006. DOI: \(10.1007/3-540-33099-2\).
+
+\end{thebibliography}
+
+\end{document}

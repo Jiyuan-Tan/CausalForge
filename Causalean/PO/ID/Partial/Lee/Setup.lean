@@ -113,19 +113,24 @@ def selectedControl : Set P.Ω := S.aEvent false ∩ S.selEvent true
 /-! ### Measurability -/
 
 /-- Counterfactual selection under any fixed arm is measurable. -/
+@[fun_prop]
 lemma measurable_SelOfA (a : Bool) : Measurable (S.SelOfA a) :=
   S.selVar.measurable_cfUnder S.aVar a
 
 /-- For [a fixed treatment arm `a`](hyp:a), [the counterfactual outcome `Y(a)` is
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_YofA (a : Bool) : Measurable (S.YofA a) :=
   S.yVar.measurable_cfUnder S.aVar a
 
 /-- Factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualA : Measurable S.factualA := S.aVar.measurable_factual
 /-- Factual selection is measurable. -/
+@[fun_prop]
 lemma measurable_factualSel : Measurable S.factualSel := S.selVar.measurable_factual
 /-- Factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- Each factual treatment arm event is measurable. -/

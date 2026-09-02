@@ -20,6 +20,7 @@ only the constant-case Cauchy–Schwarz bound from
 -/
 
 import Causalean.Estimation.ATE.Score.AIPWMoment
+import Causalean.Tactic.IntegralLinearity
 import Causalean.Estimation.ATE.Score.MeanZero
 import Causalean.Estimation.ATE.Score.ScorePullout
 import Causalean.Stat.Limit.Convergence
@@ -96,6 +97,7 @@ noncomputable def aipw_rem_const (ε : ℝ) : ℝ := 2 / (ε * (1 - ε))
 
 /-- The AIPW moment functional is measurable in the observed data triple for
 any fixed nuisance vector and target value. -/
+@[fun_prop]
 lemma measurable_aipwMomentFunctional
     (η : NuisanceVec γ) (θ : ℝ) :
     Measurable (fun z : γ × Bool × ℝ => aipwMomentFunctional η z θ) := by
@@ -309,9 +311,7 @@ lemma aipw_remainder_identity
               ∫ _ : P.Ω, S.θ₀ ∂P.μ := by
             rw [show base = (fun ω => (S.μ_val true (X ω) -
                 S.μ_val false (X ω)) - S.θ₀) from rfl]
-            rw [integral_sub]
-            · exact hdiff
-            · exact integrable_const (S.θ₀)
+            integral_linearity
       _ = S.θ₀ - S.θ₀ := by rw [← hθ, hconst]
       _ = 0 := by ring
   have hrT_zero : ∫ ω, rT ω ∂P.μ = 0 := by
@@ -387,15 +387,7 @@ lemma aipw_remainder_identity
             MeasureTheory.integral_congr_ae hmoment_eq
       _ = (∫ ω, base ω ∂P.μ) + (∫ ω, rT ω ∂P.μ) -
             (∫ ω, rF ω ∂P.μ) + (∫ ω, crossInd ω ∂P.μ) := by
-            have hbr : Integrable (fun ω => base ω + rT ω) P.μ :=
-              hbase_int.add hrT_int
-            have hbrf : Integrable (fun ω => base ω + rT ω - rF ω) P.μ :=
-              hbr.sub hrF_int
-            rw [show (fun ω => base ω + rT ω - rF ω + crossInd ω) =
-                (fun ω => (base ω + rT ω - rF ω) + crossInd ω) from rfl]
-            rw [integral_add hbrf hcrossInd_int]
-            rw [integral_sub hbr hrF_int]
-            rw [integral_add hbase_int hrT_int]
+            integral_linearity
       _ = ∫ ω, crossInd ω ∂P.μ := by rw [hbase_zero, hrT_zero, hrF_zero]; ring
   have hpT_int : Integrable pT P.μ := by
     have hpT_meas : AEStronglyMeasurable pT P.μ := by
@@ -572,24 +564,7 @@ lemma aipw_remainder_identity
                 ∫ ω, (dμT ω - dμF ω - iT ω) + iF ω ∂P.μ =
                   (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
                     (∫ ω, iT ω ∂P.μ) + (∫ ω, iF ω ∂P.μ) := by
-              rw [show (fun ω => dμT ω - dμF ω - iT ω + iF ω) =
-                  (fun ω => dμT ω - dμF ω - iT ω) + iF by
-                funext ω
-                rfl]
-              change ∫ ω, (dμT - dμF - iT) ω + iF ω ∂P.μ =
-                (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
-                  (∫ ω, iT ω ∂P.μ) + (∫ ω, iF ω ∂P.μ)
-              rw [integral_add ((hdμT_int.sub hdμF_int).sub hiT_int) hiF_int]
-              change (∫ ω, (dμT - dμF) ω - iT ω ∂P.μ) +
-                  (∫ ω, iF ω ∂P.μ) =
-                (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
-                  (∫ ω, iT ω ∂P.μ) + (∫ ω, iF ω ∂P.μ)
-              rw [integral_sub (hdμT_int.sub hdμF_int) hiT_int]
-              change ((∫ ω, dμT ω - dμF ω ∂P.μ) - ∫ ω, iT ω ∂P.μ) +
-                  (∫ ω, iF ω ∂P.μ) =
-                (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
-                  (∫ ω, iT ω ∂P.μ) + (∫ ω, iF ω ∂P.μ)
-              rw [integral_sub hdμT_int hdμF_int]
+              integral_linearity
             exact hsplit
       _ = (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
               (∫ ω, pT ω ∂P.μ) + (∫ ω, pF ω ∂P.μ) := by
@@ -599,24 +574,7 @@ lemma aipw_remainder_identity
                 ∫ ω, (dμT ω - dμF ω - pT ω) + pF ω ∂P.μ =
                   (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
                     (∫ ω, pT ω ∂P.μ) + (∫ ω, pF ω ∂P.μ) := by
-              rw [show (fun ω => dμT ω - dμF ω - pT ω + pF ω) =
-                  (fun ω => dμT ω - dμF ω - pT ω) + pF by
-                funext ω
-                rfl]
-              change ∫ ω, (dμT - dμF - pT) ω + pF ω ∂P.μ =
-                (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
-                  (∫ ω, pT ω ∂P.μ) + (∫ ω, pF ω ∂P.μ)
-              rw [integral_add ((hdμT_int.sub hdμF_int).sub hpT_int) hpF_int]
-              change (∫ ω, (dμT - dμF) ω - pT ω ∂P.μ) +
-                  (∫ ω, pF ω ∂P.μ) =
-                (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
-                  (∫ ω, pT ω ∂P.μ) + (∫ ω, pF ω ∂P.μ)
-              rw [integral_sub (hdμT_int.sub hdμF_int) hpT_int]
-              change ((∫ ω, dμT ω - dμF ω ∂P.μ) - ∫ ω, pT ω ∂P.μ) +
-                  (∫ ω, pF ω ∂P.μ) =
-                (∫ ω, dμT ω ∂P.μ) - (∫ ω, dμF ω ∂P.μ) -
-                  (∫ ω, pT ω ∂P.μ) + (∫ ω, pF ω ∂P.μ)
-              rw [integral_sub hdμT_int hdμF_int]
+              integral_linearity
             exact hsplit.symm
   have hcrossProp_eq_rem : crossProp =ᵐ[P.μ] remΩ := by
     filter_upwards [hη_X] with ω hηω

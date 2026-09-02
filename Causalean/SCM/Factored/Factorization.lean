@@ -78,6 +78,7 @@ noncomputable def orderedLatentPrefixFullToRandom (M : Causalean.SCM N Ω) :
 /-- `orderedLatentPrefixFullToRandom` is measurable.  Case-split mirrors the
     definition; the observed branch composes `observedPrefixValue` with a
     `cast`. -/
+@[fun_prop]
 theorem measurable_orderedLatentPrefixFullToRandom (M : Causalean.SCM N Ω) :
     Measurable M.orderedLatentPrefixFullToRandom := by
   classical

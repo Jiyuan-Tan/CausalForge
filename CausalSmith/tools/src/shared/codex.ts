@@ -102,6 +102,33 @@ export interface CodexRunInput {
   onUsage?: (usage: ModelTokenUsage) => void;
 }
 
+const CODEX_REASONING_EFFORTS = new Set<CodexRunInput["reasoningEffort"]>([
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+]);
+
+/**
+ * Resolve a task-scoped operator override without changing the checked-in model plan.
+ * This is useful when one coordinated run must pin every Codex role to the same effort;
+ * callers that do not set the environment variable retain their normal per-role plan.
+ */
+export function resolveCodexReasoningEffort(
+  requested: CodexRunInput["reasoningEffort"],
+): NonNullable<CodexRunInput["reasoningEffort"]> {
+  const override = process.env.CAUSALSMITH_CODEX_EFFORT_OVERRIDE?.trim();
+  if (!override) return requested ?? "high";
+  if (!CODEX_REASONING_EFFORTS.has(override as CodexRunInput["reasoningEffort"])) {
+    throw new Error(
+      `invalid CAUSALSMITH_CODEX_EFFORT_OVERRIDE=${JSON.stringify(override)}; ` +
+        "expected minimal, low, medium, high, or xhigh",
+    );
+  }
+  return override as NonNullable<CodexRunInput["reasoningEffort"]>;
+}
+
 export type CodexSandboxMode = LocalConfig["codexSandbox"];
 
 /**
@@ -377,7 +404,7 @@ export async function runCodex(input: CodexRunInput): Promise<{ stdout: string; 
     // passes an explicit `input.model` (codexKernel = gpt-5.5), so this default only applies
     // to unspecified/clerical codex calls.
     `-c model=${shellQuote(input.model ?? MODELS.codexMechanical)}`,
-    `-c model_reasoning_effort=${shellQuote(input.reasoningEffort ?? "high")}`,
+    `-c model_reasoning_effort=${shellQuote(resolveCodexReasoningEffort(input.reasoningEffort))}`,
     // Hosted live web search (`web_search`, server-side, no sandbox egress).
     // DEFAULT-ON; opt out with `webSearch: false`. Inert unless the prompt calls
     // it. NB: the interactive `--search` flag does NOT exist on `codex exec`;

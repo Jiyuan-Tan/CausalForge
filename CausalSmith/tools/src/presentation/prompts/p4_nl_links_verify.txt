@@ -1,0 +1,49 @@
+The website highlights a paper's formal statement and its Lean statement together: hovering one
+side lights up the other. Another model decided which paper segments state which Lean rows, and
+which declaration each displayed formula realizes. Nothing has checked those decisions. That is
+your job. Assume some are wrong.
+
+For each object below you are given its PAPER SEGMENTS (the whole block, split, each with an id),
+its LEAN ROWS (each with an id), its labelled DECLARATIONS, and the CLAIMS TO AUDIT. A single list
+of every declaration of this development follows the objects.
+
+{{claims_payload}}
+
+Judge each claim on its own:
+- `r1 -> s2, s3` claims those segments state that row. It is wrong if they state something else,
+  if they state only part of the row while reading as the whole, if they differ in direction,
+  bound, quantifier, or index set, or if they are prose that carries none of the row's content.
+  Extra segments that add nothing also make it wrong. A faithful but compressed statement in
+  ordinary words is CORRECT: prose states things in words, not in Lean syntax.
+- `r4 UNSTATED` claims the block does not state that row at all. This is the claim most often
+  wrong, so check it directly: read the segments looking for the row's content. If any segment
+  does state it, the claim is wrong and you must say which segments it should have had.
+- `s5 -> SomeDecl, OtherDecl` claims that display realizes exactly those declarations — the list
+  is the claim, so it is wrong if one of them is not realized by the display, AND wrong if the
+  display defines a further named quantity the list omits. It is also wrong if it names a helper
+  the display merely references rather than the declaration for a quantity the display defines.
+  The named declarations need not be listed ones — any declaration of this paper's Lean
+  development may realize a display.
+- `s6 PRESENTATION-ONLY` claims NO declaration realizes that display; it is wrong if some
+  declaration of the development does, listed or not — including when the display also introduces
+  notation, since realizing a declaration settles it either way.
+
+Output exactly one JSON object, nothing else, with one verdict per claim:
+{"verdicts": [
+  {"obj_id": "<object id>", "claim": "<row or segment id>", "ok": true},
+  {"obj_id": "<object id>", "claim": "r4", "ok": false, "segments": ["s2"]},
+  {"obj_id": "<object id>", "claim": "r7", "ok": false, "unstated": true},
+  {"obj_id": "<object id>", "claim": "s5", "ok": false, "decls": ["<declaration name>", "<and any others>"]},
+  {"obj_id": "<object id>", "claim": "s6", "ok": false, "presentationOnly": true}
+]}
+
+Every claim above must be judged exactly once, and no other claim may appear; a reply that skips
+one, or invents one, is discarded in full and the whole request is re-run. When `ok` is false you
+must give the replacement in the same verdict: for a row, either the segments it should name or
+`"unstated": true`; for a display, either the COMPLETE list of declarations it should name — add
+the missing ones, drop the wrong ones — or `"presentationOnly": true`.
+Use the ids exactly as given, and COPY any declaration name from the NAMEABLE DECLARATIONS list at
+the end of this request, character for character. A name that is not on that list does not exist:
+if no listed declaration realizes a display, the right correction is `"presentationOnly": true`,
+never an invented name. A correction is a judgement like any other —
+make it only where you are confident the claim is wrong.

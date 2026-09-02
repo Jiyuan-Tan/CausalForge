@@ -62,7 +62,17 @@ export type StatementWitness = {
   detail: string;
 };
 /** Where a flagged statement defect's fault lives (the reviewer classifies; the loop routes). */
-export type ReviewerEscalation = { kind: string; obj_id?: string; reason: string; witness?: StatementWitness };
+export type ReviewerEscalation = {
+  kind: string;
+  obj_id?: string;
+  reason: string;
+  witness?: StatementWitness;
+  /** True when `kind` was SYNTHESIZED here because the model emitted an escalate object with a
+   *  reason but no kind — not a kind the reviewer actually chose. The loop protects an EXPLICIT
+   *  `unadjudicable` from auto-repair (an unjudged target must not be re-scaffolded into a pass);
+   *  a synthesized one is just schema drift and stays scaffold-fixable. */
+  kind_synthesized?: boolean;
+};
 
 export interface ReviewerResult {
   graph: FormalizationGraph;
@@ -110,7 +120,13 @@ function normalizeEscalate(raw: unknown): ReviewerEscalation | null {
   if (kindRaw == null && !reason) return null;
   const kind = String(kindRaw ?? "unadjudicable").trim();
   const witness = normalizeWitness(e.witness);
-  return { kind, reason, ...(objId ? { obj_id: String(objId) } : {}), ...(witness ? { witness } : {}) };
+  return {
+    kind,
+    reason,
+    ...(kindRaw == null ? { kind_synthesized: true } : {}),
+    ...(objId ? { obj_id: String(objId) } : {}),
+    ...(witness ? { witness } : {}),
+  };
 }
 
 /** Parse the model's `witness` object; drop it unless BOTH a recognized type and a non-empty detail

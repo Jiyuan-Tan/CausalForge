@@ -6,12 +6,16 @@ import os from "node:os";
 import path from "node:path";
 import {
   runStage0Solve,
+  assertClaimChangingStatementReplacementsArePaired,
   groupToProveByComponent,
+  planStagedSolveDispatch,
+  normalizeEmptySolveUnitContainers,
   repairSolveUnitLatexSerialization,
   selectDirectiveEmissionOwnerLabel,
   selectSemanticTargetOwners,
   collectConflictingSolveEmissions,
   projectOutputsToWriteCapabilities,
+  selectLiveDurableProofOwners,
 } from "../../src/discovery/stages/d0_solve.js";
 import { runStage0Typed, partitionProposedChanges, findingKeys } from "../../src/discovery/stages/d0.js";
 import { applyProposedChanges, discardAllProposedChanges } from "../../src/discovery/stages/d0_apply.js";
@@ -27,6 +31,8 @@ import {
   RequiredCoreEditMandateCancellationSchema,
   resolveRequiredCoreEditMandates,
 } from "../../src/discovery/solve/mandates.js";
+import { solveReuseReceiptsDir } from "../../src/discovery/solve/dispatch.js";
+import { pruneOrphanStatementNotes } from "../../src/discovery/solve/merge.js";
 
 /** Seed proposal kinds onto the SOLE carrier (`d0_working.json:proposals`),
  *  merging with any working state a test already wrote. */
@@ -43,8 +49,14 @@ async function seedWorkingProposals(
     ...prior,
     ...kinds,
   };
-  await mkdir(path.dirname(wp), { recursive: true });
-  await writeFile(wp, JSON.stringify(working), "utf8");
+  await saveWorkingState(ctx, working as never);
+  const persisted = await loadWorkingState(ctx);
+  const carriesReviewedBundle = Object.values(kinds).some((entries) => (entries?.length ?? 0) > 0);
+  if (carriesReviewedBundle && persisted?.proposals !== undefined) {
+    const proto = CoreSchema.parse(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")));
+    persisted.proposals.basis_revision = coreRevision(CoreSchema.parse(assembleCore(proto, persisted)));
+    await saveWorkingState(ctx, persisted);
+  }
 }
 
 /** The surfaced payload on the carrier (empty object when no working state). */
@@ -55,11 +67,13 @@ async function readSurfacedProposals(ctx: PipelineContext): Promise<Record<strin
 }
 import {
   appendEscalationLog,
+  computeValidNodes,
   escalationLogPath,
   loadWorkingState,
   readEscalationLog,
   saveWorkingState,
   snapshotMember,
+  symbolBasis,
   workingPath,
   pruneOrphanLemmas,
 } from "../../src/discovery/stages/d0_working.js";
@@ -67,9 +81,23 @@ import { canonicalLeanSubdir, promptPath, statePath } from "../../src/paths.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
 import type { CoreStatement } from "../../src/discovery/core/schema.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
+import { coreRevision, definitionRevision } from "../../src/discovery/core/revision.js";
+import { assembleCore } from "../../src/discovery/core/assemble.js";
+import { CoreSchema } from "../../src/discovery/core/schema.js";
+import { oeqSourceFingerprint } from "../../src/discovery/solve/oeq_source.js";
 
 const QID = "stat_solvetest";
 const SPEC = "v1";
+
+it("normalizes only a literally empty prose update to omission", () => {
+  const empty: Record<string, unknown> = { prose_updates: {}, proofs: [] };
+  normalizeEmptySolveUnitContainers(empty);
+  expect(empty).toEqual({ proofs: [] });
+
+  const populated: Record<string, unknown> = { prose_updates: { tldr: "changed" } };
+  normalizeEmptySolveUnitContainers(populated);
+  expect(populated).toEqual({ prose_updates: { tldr: "changed" } });
+});
 
 it("canonicalizes under-escaped LaTeX throughout a solve-unit payload", () => {
   const body = {
@@ -86,6 +114,32 @@ it("canonicalizes under-escaped LaTeX throughout a solve-unit payload", () => {
   // letter is a lost TeX backslash and is restored (a wrong restore is visible
   // TeX garbage; the pre-repair alternative was silent corruption).
   expect(body.prose_updates.tldr).toBe(String.raw`ordinary\ttab`);
+});
+
+it("rejects an unpaired claim-changing statement replacement before merge", () => {
+  const current = PROTO.statements[0] as CoreStatement;
+  const proposed = `${current.statement} on the certified region`;
+  const output = SolveUnitOutputSchema.parse({
+    proofs: [{ id: current.id, proof_tex: "Proof of the proposed claim.", argues_proposed: true }],
+    proposed_core_edits: [{
+      kind: "statement-replace",
+      id: current.id,
+      proposed: { ...current, statement: proposed, free_symbols: [] },
+      reason: "repair the claim",
+      direction: "correct",
+    }],
+  });
+  expect(() => assertClaimChangingStatementReplacementsArePaired(output, PROTO.statements as CoreStatement[]))
+    .toThrow(/claim-changing statement-replace thm:main.*exactly one paired/i);
+});
+
+it("rejects argues_proposed proof bytes without a complete claim transaction", () => {
+  const current = PROTO.statements[0] as CoreStatement;
+  const output = SolveUnitOutputSchema.parse({
+    proofs: [{ id: current.id, proof_tex: "Proof of a different claim.", argues_proposed: true }],
+  });
+  expect(() => assertClaimChangingStatementReplacementsArePaired(output, PROTO.statements as CoreStatement[]))
+    .toThrow(/argues_proposed=true.*exactly one changed statement and post-image/i);
 });
 
 it("rejects empty obligation evidence and divergent duplicate dispositions", () => {
@@ -122,7 +176,80 @@ it("rejects empty obligation evidence and divergent duplicate dispositions", () 
   );
 });
 
-it("allows only the semantic or directive owner to emit an obligation", () => {
+it("rejects cross-channel-inconsistent correction bundles", () => {
+  const definitionChange = {
+    id: "def:band",
+    current: "old formula",
+    proposed: "new formula",
+    reason: "correct the construction",
+    direction: "correct",
+  };
+  const definitionReplace = {
+    kind: "definition-replace",
+    id: "def:band",
+    proposed: {
+      id: "def:band",
+      name: "Band",
+      construction: "new formula",
+      free_symbols: [],
+      inputs: [],
+    },
+    reason: "synchronize complete metadata",
+    direction: "correct",
+  };
+  expect(SolveUnitOutputSchema.safeParse({
+    proposed_definition_changes: [definitionChange],
+  }).success).toBe(false);
+  expect(SolveUnitOutputSchema.safeParse({
+    proposed_definition_changes: [definitionChange],
+    proposed_core_edits: [{
+      ...definitionReplace,
+      proposed: { ...definitionReplace.proposed, construction: "stale formula" },
+    }],
+  }).success).toBe(false);
+  expect(SolveUnitOutputSchema.safeParse({
+    proposed_definition_changes: [definitionChange],
+    proposed_core_edits: [definitionReplace],
+  }).success).toBe(true);
+
+  const statementChange = {
+    id: "thm:band",
+    current: "old claim",
+    proposed: "new claim",
+    reason: "narrow the claim",
+    direction: "narrow",
+  };
+  const statementReplace = {
+    kind: "statement-replace",
+    id: "thm:band",
+    proposed: {
+      id: "thm:band",
+      kind: "theorem",
+      statement: "new claim",
+      free_symbols: [],
+      depends_on: [],
+      status: "to-prove",
+    },
+    reason: "synchronize the post-change proof basis",
+    direction: "correct",
+  };
+  expect(SolveUnitOutputSchema.safeParse({
+    proposed_statement_changes: [statementChange],
+  }).success).toBe(false);
+  expect(SolveUnitOutputSchema.safeParse({
+    proposed_statement_changes: [statementChange],
+    proposed_core_edits: [{
+      ...statementReplace,
+      proposed: { ...statementReplace.proposed, statement: "old claim" },
+    }],
+  }).success).toBe(false);
+  expect(SolveUnitOutputSchema.safeParse({
+    proposed_statement_changes: [statementChange],
+    proposed_core_edits: [statementReplace],
+  }).success).toBe(true);
+});
+
+it("quarantines an obligation emitted by neither the semantic nor directive owner", () => {
   const empty = () => SolveUnitOutputSchema.parse({});
   const obligation = SolveUnitOutputSchema.parse({
     open_obligations: [{
@@ -132,7 +259,7 @@ it("allows only the semantic or directive owner to emit an obligation", () => {
       attempted: "standard routes",
     }],
   });
-  expect(() => projectOutputsToWriteCapabilities({
+  const projected = projectOutputsToWriteCapabilities({
     outputs: [empty(), empty(), obligation],
     dispatch: [
       { label: "oeq:tightness", targets: [{ id: "oeq:tightness" } as any], priorContext: "" },
@@ -146,7 +273,460 @@ it("allows only the semantic or directive owner to emit an obligation", () => {
     ]),
     directiveOwnerLabel: "thm:main",
     requiredCoreTargets: new Set(["oeq:tightness"]),
-  })).toThrow(/unauthorized-only open-obligation.*lem:unrelated/i);
+  });
+  expect(projected.outputs[2].open_obligations).toEqual([]);
+  expect(projected.quarantined).toContainEqual(expect.objectContaining({
+    category: "open-obligation", target: "oeq:tightness", unit: "lem:unrelated",
+  }));
+});
+
+it("quarantines a sibling's exact claim correction despite an authorized proof", () => {
+  const ownerProof = SolveUnitOutputSchema.parse({
+    proofs: [{ id: "prop:exact", proof_tex: "Proof of the unchanged exact claim." }],
+  });
+  const siblingCorrection = SolveUnitOutputSchema.parse({
+    proposed_statement_changes: [{
+      id: "prop:exact",
+      current: "the unchanged exact claim",
+      proposed: "the sibling's corrected exact claim",
+      reason: "cross-component correction",
+      direction: "narrow",
+    }],
+    proposed_core_edits: [{
+      kind: "statement-replace",
+      id: "prop:exact",
+      proposed: {
+        id: "prop:exact", kind: "proposition",
+        statement: "the sibling's corrected exact claim",
+        free_symbols: [], depends_on: [], status: "to-prove",
+      },
+      reason: "cross-component replacement",
+      direction: "correct",
+    }],
+  });
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [ownerProof, siblingCorrection],
+    dispatch: [
+      { label: "prop:exact", targets: [{ id: "prop:exact" } as any], priorContext: "" },
+      { label: "thm:coordinator", targets: [{ id: "thm:coordinator" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([
+      ["prop:exact", "prop:exact"],
+      ["thm:coordinator", "thm:coordinator"],
+    ]),
+    directiveOwnerLabel: "thm:coordinator",
+    requiredCoreTargets: new Set(["prop:exact"]),
+    existingStatementIds: new Set(["prop:exact"]),
+  });
+  expect(result.outputs[1].proposed_statement_changes).toEqual([]);
+  expect(result.outputs[1].proposed_core_edits).toEqual([]);
+  expect(result.quarantined).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      unit: "thm:coordinator", owner: "prop:exact",
+      category: "statement-change", target: "prop:exact",
+    }),
+    expect.objectContaining({
+      unit: "thm:coordinator", owner: "prop:exact",
+      category: "core-edit", target: "prop:exact", operation: "statement-replace",
+    }),
+  ]));
+});
+
+it("uses durable ownership only to arbitrate an undispatched proof refresh", () => {
+  const ownerOutput = SolveUnitOutputSchema.parse({
+    proofs: [{ id: "lem:carried", proof_tex: "Refreshed proof.", argues_proposed: true }],
+    proposed_statement_changes: [{
+      id: "lem:carried",
+      current: "old carried claim",
+      proposed: "narrowed carried claim",
+      reason: "narrow to the proved statement",
+      direction: "narrow",
+    }],
+    proposed_core_edits: [{
+      kind: "statement-replace",
+      id: "lem:carried",
+      proposed: {
+        id: "lem:carried", kind: "lemma", statement: "narrowed carried claim",
+        free_symbols: [], depends_on: [], status: "to-prove",
+      },
+      reason: "carry the narrowed agent-authored node",
+      direction: "correct",
+    }],
+  });
+  const siblingOutput = SolveUnitOutputSchema.parse({
+    proofs: [{ id: "lem:carried", proof_tex: "Sibling overwrite." }],
+  });
+  const empty = SolveUnitOutputSchema.parse({});
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [ownerOutput, siblingOutput],
+    dispatch: [
+      { label: "thm:owner", targets: [{ id: "thm:owner" } as any], priorContext: "" },
+      { label: "thm:sibling", targets: [{ id: "thm:sibling" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([
+      ["thm:owner", "thm:owner"],
+      ["thm:sibling", "thm:sibling"],
+    ]),
+    durableTargetOwners: new Map([["lem:carried", "thm:owner"]]),
+    directiveOwnerLabel: "thm:owner",
+    requiredCoreTargets: new Set(),
+    existingStatementIds: new Set(["lem:carried"]),
+  });
+  expect(result.outputs[0].proofs).toEqual([
+    expect.objectContaining({ id: "lem:carried", proof_tex: "Refreshed proof.", argues_proposed: true }),
+  ]);
+  expect(result.outputs[1].proofs).toEqual(empty.proofs);
+  expect(result.quarantined).toContainEqual(expect.objectContaining({
+    unit: "thm:sibling", owner: "thm:owner", category: "proof", target: "lem:carried",
+  }));
+});
+
+it("keeps existing-node notes with the directive-wide prose owner", () => {
+  const output = SolveUnitOutputSchema.parse({
+    prose_updates: {
+      tldr: "valid paper-wide prose",
+      statement_notes: [{ id: "lem:carried", consumer: "directive-owned node metadata" }],
+    },
+  });
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [output],
+    dispatch: [{ label: "thm:prose-owner", targets: [{ id: "thm:prose-owner" } as any], priorContext: "" }],
+    semanticTargetOwners: new Map([["thm:prose-owner", "thm:prose-owner"]]),
+    durableTargetOwners: new Map([["lem:carried", "thm:other-owner"]]),
+    directiveOwnerLabel: "thm:prose-owner",
+    requiredCoreTargets: new Set(),
+    existingStatementIds: new Set(["lem:carried"]),
+  });
+  expect(result.outputs[0].prose_updates?.tldr).toBe("valid paper-wide prose");
+  expect(result.outputs[0].prose_updates?.statement_notes).toEqual([
+    expect.objectContaining({ id: "lem:carried", consumer: "directive-owned node metadata" }),
+  ]);
+  expect(result.quarantined).not.toContainEqual(expect.objectContaining({
+    category: "statement-note", target: "lem:carried",
+  }));
+});
+
+it("keeps a unique cited addition local to its downstream emitter", () => {
+  const empty = SolveUnitOutputSchema.parse({});
+  const cited = SolveUnitOutputSchema.parse({
+    added_lemmas: [{
+      id: "lem:new-cited", kind: "lemma", statement: "external fact", depends_on: [],
+      status: "cited", source: { cite: "External2026", locator: "Theorem 1" },
+    }],
+  });
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [empty, cited],
+    dispatch: [
+      { label: "thm:directive-owner", targets: [{ id: "thm:directive-owner" } as any], priorContext: "" },
+      { label: "thm:sibling", targets: [{ id: "thm:sibling" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([
+      ["thm:directive-owner", "thm:directive-owner"], ["thm:sibling", "thm:sibling"],
+    ]),
+    directiveOwnerLabel: "thm:directive-owner",
+    requiredCoreTargets: new Set(),
+  });
+  expect(result.outputs[1].added_lemmas).toEqual([expect.objectContaining({ id: "lem:new-cited" })]);
+  expect(result.quarantined).not.toContainEqual(expect.objectContaining({
+    category: "cited-added-node", target: "lem:new-cited",
+  }));
+});
+
+it("does not let a sibling delete another owner's durable node", () => {
+  const empty = SolveUnitOutputSchema.parse({});
+  const deletion = SolveUnitOutputSchema.parse({
+    proposed_core_edits: [{
+      kind: "statement-delete", id: "lem:durable-owned", replacement_id: "lem:replacement",
+      reason: "unrelated deletion", direction: "delete-obsolete",
+    }],
+  });
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [empty, deletion],
+    dispatch: [
+      { label: "thm:owner", targets: [{ id: "thm:owner" } as any], priorContext: "" },
+      { label: "thm:sibling", targets: [{ id: "thm:sibling" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([["thm:owner", "thm:owner"], ["thm:sibling", "thm:sibling"]]),
+    durableTargetOwners: new Map([["lem:durable-owned", "thm:owner"]]),
+    directiveOwnerLabel: "thm:owner",
+    requiredCoreTargets: new Set(),
+    existingStatementIds: new Set(["lem:durable-owned"]),
+  });
+  expect(result.outputs[1].proposed_core_edits).toEqual([]);
+  expect(result.quarantined).toContainEqual(expect.objectContaining({
+    unit: "thm:sibling", owner: "thm:owner", category: "core-edit", target: "lem:durable-owned",
+  }));
+});
+
+it("assigns same-round new-node notes to the node emitter", () => {
+  const note = SolveUnitOutputSchema.parse({
+    prose_updates: { statement_notes: [{ id: "lem:new-owned", consumer: "guessed metadata" }] },
+  });
+  const node = SolveUnitOutputSchema.parse({
+    added_lemmas: [{
+      id: "lem:new-owned", kind: "lemma", statement: "new fact", depends_on: [],
+      status: "proved", proof_tex: "Proof.",
+    }],
+  });
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [note, node],
+    dispatch: [
+      { label: "thm:directive-owner", targets: [{ id: "thm:directive-owner" } as any], priorContext: "" },
+      { label: "thm:node-owner", targets: [{ id: "thm:node-owner" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([
+      ["thm:directive-owner", "thm:directive-owner"], ["thm:node-owner", "thm:node-owner"],
+    ]),
+    directiveOwnerLabel: "thm:directive-owner",
+    requiredCoreTargets: new Set(),
+  });
+  expect(result.outputs[0].prose_updates?.statement_notes).toEqual([]);
+  expect(result.outputs[1].added_lemmas).toHaveLength(1);
+  expect(result.quarantined).toContainEqual(expect.objectContaining({
+    unit: "thm:directive-owner", owner: "thm:node-owner", category: "statement-note", target: "lem:new-owned",
+  }));
+});
+
+it("lets only the durable owner re-emit an existing shelved node through added_lemmas", () => {
+  const recovered = {
+    id: "prop:recovered-shelved", kind: "proposition", statement: "the durable proposition",
+    depends_on: [], status: "proved", proof_tex: "Recovered proof.",
+  } as any;
+  const ownerOutput = SolveUnitOutputSchema.parse({ added_lemmas: [recovered] });
+  const siblingOutput = SolveUnitOutputSchema.parse({
+    added_lemmas: [{ ...recovered, proof_tex: "Sibling overwrite." }],
+  });
+  const result = projectOutputsToWriteCapabilities({
+    outputs: [ownerOutput, siblingOutput],
+    dispatch: [
+      { label: "thm:canonical", targets: [{ id: "thm:member" } as any], priorContext: "" },
+      { label: "thm:sibling", targets: [{ id: "thm:sibling" } as any], priorContext: "" },
+    ],
+    semanticTargetOwners: new Map([
+      ["thm:member", "thm:canonical"],
+      ["thm:sibling", "thm:sibling"],
+    ]),
+    durableTargetOwners: new Map([[recovered.id, "thm:canonical"]]),
+    directiveOwnerLabel: "thm:canonical",
+    requiredCoreTargets: new Set(),
+    existingStatementIds: new Set([recovered.id]),
+  });
+  expect(result.outputs[0].added_lemmas).toEqual([recovered]);
+  expect(result.outputs[1].added_lemmas).toEqual([]);
+  expect(result.quarantined).toContainEqual(expect.objectContaining({
+    unit: "thm:sibling", owner: "thm:canonical", category: "added-node", target: recovered.id,
+  }));
+});
+
+it("recovers durable owners through the live assembled dependency closure", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const helper2 = node("lem:helper-2");
+  const helper1 = node("lem:helper-1", [helper2.id]);
+  const unrelated = node("lem:unrelated-history");
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:main", [helper1.id])],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:main", "thm:main"]]),
+    durableRecords: new Map([
+      [helper1.id, { owner: "thm:historical", node: helper1 }],
+      [helper2.id, { owner: "thm:historical", node: helper2 }],
+      [unrelated.id, { owner: "thm:other", node: unrelated }],
+    ]),
+  });
+  expect(owners).toEqual(new Map([
+    [helper1.id, "thm:main"],
+    [helper2.id, "thm:main"],
+  ]));
+});
+
+it("normalizes a durable mathematical owner through its current WCC unit label", () => {
+  const child = {
+    id: "prop:durable-child", kind: "proposition", statement: "child",
+    depends_on: [], status: "to-prove",
+  } as any;
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [],
+    requiredIds: new Set([child.id]),
+    activeTargetOwners: new Map([["thm:component-member", "thm:canonical-label"]]),
+    durableRecords: new Map([[child.id, {
+      owner: "thm:component-member", node: child,
+    }]]),
+  });
+  expect(owners.get(child.id)).toBe("thm:canonical-label");
+});
+
+// Supersedes the fail-closed ambiguity contract: two active components reaching one
+// shared durable node is a NORMAL consequence of the dispatch partition (coupling
+// edges run only through OPEN statements), and throwing here aborted whole paid
+// rounds deterministically on every resume (exp_multiarm 3x, eid_periodic,
+// exp_two_wave, 2026-08-29/30). The node is now left unowned (sole emissions land
+// via the sole-emitter fallback; competing ones are conflict-dropped), unless its
+// durable record names one of the reaching components, which then keeps it.
+it("leaves a shared shelved durable helper unowned instead of aborting", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const helper = node("lem:shared-shelved");
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:a", [helper.id]), node("thm:b", [helper.id])],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:a", "thm:a"], ["thm:b", "thm:b"]]),
+    durableRecords: new Map([[helper.id, { owner: "thm:historical", node: helper }]]),
+  });
+  expect(owners.has(helper.id)).toBe(false);
+  expect(warn.mock.calls.flat().join("\n")).toMatch(
+    /shared live durable node 'lem:shared-shelved'.*thm:a, thm:b/i,
+  );
+  warn.mockRestore();
+});
+
+it("keeps a shared durable helper with its recorded owner when that owner is reaching", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const helper = node("lem:shared-owned");
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:a", [helper.id]), node("thm:b", [helper.id])],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:a", "thm:a"], ["thm:b", "thm:b"]]),
+    durableRecords: new Map([[helper.id, { owner: "thm:a", node: helper }]]),
+  });
+  expect(owners.get(helper.id)).toBe("thm:a");
+});
+
+it("leaves an untouched shared durable helper unowned", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const helper = node("lem:shared-immutable");
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:a", [helper.id]), node("thm:b", [helper.id])],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:a", "thm:a"], ["thm:b", "thm:b"]]),
+    durableRecords: new Map([[helper.id, { owner: "thm:historical", node: helper }]]),
+    writableIds: new Set(),
+  });
+  expect(owners.has(helper.id)).toBe(false);
+});
+
+it("leaves a written shared durable helper unowned instead of aborting", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const helper = node("lem:shared-written");
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:a", [helper.id]), node("thm:b", [helper.id])],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:a", "thm:a"], ["thm:b", "thm:b"]]),
+    durableRecords: new Map([[helper.id, { owner: "thm:historical", node: helper }]]),
+    writableIds: new Set([helper.id]),
+  });
+  expect(owners.has(helper.id)).toBe(false);
+  expect(warn.mock.calls.flat().join("\n")).toMatch(/lem:shared-written/);
+  warn.mockRestore();
+});
+
+it("stops durable reachability at an explicitly owned sibling target", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const privateLeaf = node("lem:private-leaf");
+  const ownedTarget = node("prop:owned-target", [privateLeaf.id]);
+  const consumerA = node("thm:consumer-a", [ownedTarget.id]);
+  const consumerB = node("thm:consumer-b", [ownedTarget.id]);
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [consumerA, consumerB, ownedTarget],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([
+      [consumerA.id, consumerA.id],
+      [consumerB.id, consumerB.id],
+      [ownedTarget.id, ownedTarget.id],
+    ]),
+    durableRecords: new Map([
+      [ownedTarget.id, { owner: "thm:historical", node: ownedTarget }],
+      [privateLeaf.id, { owner: "thm:historical", node: privateLeaf }],
+    ]),
+  });
+  expect(owners.has(ownedTarget.id)).toBe(false);
+  expect(owners.get(privateLeaf.id)).toBe(ownedTarget.id);
+});
+
+it("finds a shelved durable helper through an ordinary current-core bridge", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const helper = node("lem:shelved-leaf");
+  const bridge = node("prop:current-bridge", [helper.id]);
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:main", [bridge.id]), bridge],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:main", "thm:main"]]),
+    durableRecords: new Map([[helper.id, { owner: "thm:old", node: helper }]]),
+  });
+  expect(owners.get(helper.id)).toBe("thm:main");
+});
+
+it("assigns reachable published ownerless core nodes to the sole active root", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "proved", proof_tex: `Proof of ${id}.`,
+  }) as any;
+  const leaf = node("lem:published-ownerless-leaf");
+  const bridge = node("lem:published-ownerless-bridge", [leaf.id]);
+  const root = node("thm:main", [bridge.id]);
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [root, bridge, leaf],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([[root.id, root.id]]),
+    durableRecords: new Map(),
+  });
+  expect(owners).toEqual(new Map([
+    [bridge.id, root.id],
+    [leaf.id, root.id],
+  ]));
+});
+
+it("leaves a published ownerless core node reached by two roots unowned", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "proved", proof_tex: `Proof of ${id}.`,
+  }) as any;
+  const shared = node("lem:published-ownerless-shared");
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [node("thm:a", [shared.id]), node("thm:b", [shared.id]), shared],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([["thm:a", "thm:a"], ["thm:b", "thm:b"]]),
+    durableRecords: new Map(),
+  });
+  expect(owners.has(shared.id)).toBe(false);
+  expect(warn.mock.calls.flat().join("\n")).toMatch(/published-ownerless-shared/);
+  warn.mockRestore();
+});
+
+it("follows an authorized statement postimage and durable proof-snapshot edges", () => {
+  const node = (id: string, depends_on: string[] = []) => ({
+    id, kind: "lemma", statement: id, depends_on, status: "to-prove",
+  }) as any;
+  const leaf = node("lem:snapshot-leaf");
+  const helper = node("lem:durable-helper");
+  const root = node("thm:main");
+  const owners = selectLiveDurableProofOwners({
+    coreStatements: [root],
+    requiredIds: new Set(),
+    activeTargetOwners: new Map([[root.id, root.id]]),
+    statementPostimages: new Map([[root.id, { ...root, depends_on: [helper.id] }]]),
+    durableRecords: new Map([
+      [helper.id, { owner: "thm:old", node: helper, proofDependencies: [leaf.id] }],
+      [leaf.id, { owner: "thm:old", node: leaf }],
+    ]),
+  });
+  expect(owners).toEqual(new Map([
+    [helper.id, root.id],
+    [leaf.id, root.id],
+  ]));
 });
 
 const PROTO = {
@@ -174,6 +754,51 @@ const PROTO = {
   target_estimand: "tau = E[Y(1) - Y(0)]",
   bibliography: [{ key: "Rosenbaum1983" }],
 };
+
+/** Keep correction fixtures on the production contract: a formula/claim
+ * correction and its complete core post-image travel as one pair. */
+function withCorrectionPairs(
+  body: Record<string, any>,
+  core: Record<string, any> = PROTO,
+): Record<string, any> {
+  const edits = [...(body.proposed_core_edits ?? [])];
+  for (const change of body.proposed_definition_changes ?? []) {
+    if (edits.some((edit) => edit.kind === "definition-replace" && edit.id === change.id)) continue;
+    const prior = core.definitions?.find((definition: any) => definition.id === change.id) ?? {
+      id: change.id, name: change.id, inputs: [],
+    };
+    edits.push({
+      kind: "definition-replace",
+      id: change.id,
+      proposed: { ...prior, construction: change.proposed, free_symbols: prior.free_symbols ?? [] },
+      reason: "synchronize the complete corrected definition",
+      direction: "correct",
+    });
+  }
+  for (const change of body.proposed_statement_changes ?? []) {
+    if (edits.some((edit) => edit.kind === "statement-replace" && edit.id === change.id)) continue;
+    const prior = core.statements?.find((statement: any) => statement.id === change.id) ?? {
+      id: change.id,
+      kind: change.id.startsWith("lem:") ? "lemma" : "theorem",
+      depends_on: [],
+      status: "to-prove",
+    };
+    const { proof_tex: _proofTex, ...metadata } = prior;
+    edits.push({
+      kind: "statement-replace",
+      id: change.id,
+      proposed: {
+        ...metadata,
+        statement: change.proposed,
+        status: prior.status === "proved" ? "to-prove" : (prior.status ?? "to-prove"),
+        free_symbols: prior.free_symbols ?? [],
+      },
+      reason: "synchronize the complete corrected statement",
+      direction: "correct",
+    });
+  }
+  return edits.length > 0 ? { ...body, proposed_core_edits: edits } : body;
+}
 
 let repoRoot: string;
 
@@ -261,7 +886,7 @@ function solverDeps(mode: "prove" | "propose" | "propose-def" | "propose-def-cla
       } else {
         body = { proofs: targets.map((t) => ({ id: t.id, proof_tex: "QED." })), added_lemmas: [], proposed_statement_changes: [] };
       }
-      await writeFile(outPath, JSON.stringify(body), "utf8");
+      await writeFile(outPath, JSON.stringify(withCorrectionPairs(body)), "utf8");
       return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
     },
     runClaude: async () => { throw new Error("unused"); },
@@ -389,6 +1014,141 @@ describe("incremental reuse across escalation rounds", () => {
     expect(existsSync(path.join(discoveryDir, "solve_prop_aux.json"))).toBe(false);
   });
 
+  it("accepts a valid persisted artifact when only the stdout receipt is malformed", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(REUSE_PROTO), "utf8");
+    let calls = 0;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        calls += 1;
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "thm:a", proof_tex: "QED." }],
+        }), "utf8");
+        return { stdout: "not a JSON completion receipt", stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect("status" in result).toBe(false);
+    expect(calls).toBe(1);
+    expect(warn.mock.calls.flat().join("\n")).toMatch(/stdout receipt was unparseable.*accepting it without a model retry/i);
+    warn.mockRestore();
+  });
+
+  it("repairs common JSON/TeX serialization in the orchestrator without a second model call", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(REUSE_PROTO), "utf8");
+    let calls = 0;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        calls += 1;
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        // Deliberately invalid JSON escapes around TeX. The raw-byte normalizer
+        // can recover these exactly, so Sol must not be called again.
+        await writeFile(
+          outPath,
+          String.raw`{"proofs":[{"id":"thm:a","proof_tex":"Proof of \(\theta=0\)."}]}`,
+          "utf8",
+        );
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect("status" in result).toBe(false);
+    expect(calls).toBe(1);
+  });
+
+  it("repeats Sol only when a damaged JSON carrier cannot be accepted deterministically", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(REUSE_PROTO), "utf8");
+    const prompts: string[] = [];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        prompts.push(prompt);
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        if (prompt.includes("MODEL-CALL RECOVERY — NO TRUSTWORTHY ARTIFACT")) {
+          await writeFile(outPath, JSON.stringify({
+            proofs: [{ id: "thm:a", proof_tex: "QED." }],
+          }), "utf8");
+        } else {
+          // Usable mathematical content, mechanically truncated JSON carrier.
+          await writeFile(outPath, '{"proofs":[{"id":"thm:a","proof_tex":"QED."}]', "utf8");
+        }
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect("status" in result).toBe(false);
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("MODEL-CALL RECOVERY — NO TRUSTWORTHY ARTIFACT");
+    expect(prompts[1]).toContain("FROZEN CORE");
+    expect(prompts[1]).not.toContain("D0 ORCHESTRATOR MECHANICAL ARTIFACT REPAIR");
+  });
+
+  it("treats residual unsealable TeX as a failed model call, not a clerical model task", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(REUSE_PROTO), "utf8");
+    const prompts: string[] = [];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        prompts.push(prompt);
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const repaired = prompt.includes("MODEL-CALL RECOVERY — NO TRUSTWORTHY ARTIFACT");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{
+            id: "thm:a",
+            proof_tex: repaired ? String.raw`Proof of \(A\).` : String.raw`Proof of \(A.`,
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect("status" in result).toBe(false);
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("MODEL-CALL RECOVERY — NO TRUSTWORTHY ARTIFACT");
+    expect(prompts[1]).not.toContain("D0 ORCHESTRATOR MECHANICAL ARTIFACT REPAIR");
+  });
+
+  it("drains every sibling solve worker before propagating a unit failure", async () => {
+    const ctx = makeCtx(repoRoot);
+    let siblingFinished = false;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        if (outPath.includes("thm_main")) throw new Error("intentional fast unit failure");
+        await new Promise((resolve) => setTimeout(resolve, 75));
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "prop:aux", proof_tex: "Delayed sibling proof." }],
+          added_lemmas: [],
+        }), "utf8");
+        siblingFinished = true;
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /intentional fast unit failure/,
+    );
+    expect(siblingFinished).toBe(true);
+    expect(existsSync(path.join(path.dirname(protoCoreJsonPath(ctx)), "solve_prop_aux.json"))).toBe(true);
+  });
+
   it("rejects conflicting duplicate helper emissions instead of choosing by unit order", async () => {
     const ctx = makeCtx(repoRoot);
     await appendEscalationLog(ctx, {
@@ -400,7 +1160,7 @@ describe("incremental reuse across escalation rounds", () => {
       runCodex: async ({ prompt }: { prompt: string }) => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const target = outPath.includes("prop_aux") ? "prop:aux" : "thm:main";
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: [{ id: target, proof_tex: "QED." }],
           added_lemmas: [{
             id: "lem:shared-helper",
@@ -410,7 +1170,7 @@ describe("incremental reuse across escalation rounds", () => {
             status: "proved",
             proof_tex: "Proof.",
           }],
-        }), "utf8");
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -436,6 +1196,302 @@ describe("incremental reuse across escalation rounds", () => {
     expect(result, "a withheld collision must checkpoint on its own").toHaveProperty("status", "checkpoint");
     expect(String((result as { message?: string }).message ?? ""), "the diagnostic must name the colliding id")
       .toMatch(/lem:shared-helper/);
+  });
+
+  it("quarantines consumers of a withheld helper while committing unrelated work", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "lem:unrelated", kind: "lemma", statement: "an unrelated target",
+      depends_on: [], status: "to-prove",
+      justification: "regression witness", gap: "none", consumer: "test",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const owner = targets.some((target) => target.id === "thm:main")
+          ? "main"
+          : targets.some((target) => target.id === "prop:aux") ? "aux" : null;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `QED ${target.id}.` })),
+          added_lemmas: owner === null ? [] : [
+            {
+              id: "lem:shared-helper", kind: "lemma",
+              statement: owner === "main" ? "first incompatible helper" : "second incompatible helper",
+              depends_on: [], status: "proved", proof_tex: `Proof of ${owner} helper.`,
+            },
+            {
+              id: `lem:${owner}-consumer`, kind: "lemma", statement: `${owner} consumer`,
+              depends_on: owner === "main" ? [] : ["lem:main-consumer"], status: "proved",
+              proof_tex: owner === "main" ? "By lem:shared-helper." : "By lem:main-consumer.",
+            },
+          ],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "lem:unrelated")?.status).toBe("proved");
+    expect(core.statements.some((statement: any) =>
+      ["lem:shared-helper", "lem:main-consumer", "lem:aux-consumer"].includes(statement.id)
+    )).toBe(false);
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.conflict_consumers).toEqual(["lem:aux-consumer", "lem:main-consumer"]);
+  });
+
+  it("quarantines an inline proved consumer that reaches a conflict through an unchanged intermediate", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.push(
+      {
+        id: "lem:existing-shared", kind: "lemma", statement: "the durable shared claim",
+        depends_on: [], status: "proved", proof_tex: "Durable proof.",
+        justification: "regression witness", gap: "none", consumer: "intermediate",
+      },
+      {
+        id: "lem:unchanged-mid", kind: "lemma", statement: "the unchanged intermediate",
+        depends_on: ["lem:existing-shared"], status: "proved", proof_tex: "By the shared claim.",
+        justification: "regression witness", gap: "none", consumer: "downstream",
+      },
+    );
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const owner = targets.some((target) => target.id === "thm:main")
+          ? "main"
+          : targets.some((target) => target.id === "prop:aux") ? "aux" : null;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `QED ${target.id}.` })),
+          added_lemmas: owner === null ? [] : [
+            {
+              id: "lem:existing-shared", kind: "lemma",
+              statement: owner === "main" ? "first incompatible correction" : "second incompatible correction",
+              depends_on: [], status: "proved", proof_tex: `Proof of ${owner} correction.`,
+            },
+            ...(owner === "main" ? [{
+              id: "lem:indirect-inline-consumer", kind: "lemma",
+              statement: "an inline result authored against the contested variant",
+              depends_on: ["lem:unchanged-mid"], status: "proved", proof_tex: "By the unchanged intermediate.",
+            }] : []),
+          ],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "lem:existing-shared")?.statement)
+      .toBe("the durable shared claim");
+    expect(core.statements.some((statement: any) => statement.id === "lem:indirect-inline-consumer"))
+      .toBe(false);
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.conflict_consumers).toContain("lem:indirect-inline-consumer");
+  });
+
+  it("quarantines a definition proposal that consumes a conflicted definition", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "lem:unrelated", kind: "lemma", statement: "unrelated definition-conflict witness",
+      depends_on: [], status: "to-prove",
+      justification: "regression witness", gap: "none", consumer: "test",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const owner = targets.some((target) => target.id === "thm:main")
+          ? "main"
+          : targets.some((target) => target.id === "prop:aux") ? "aux" : null;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `QED ${target.id}.` })),
+          proposed_core_edits: owner === null ? [] : [
+            {
+              kind: "definition-add", id: "def:shared",
+              proposed: {
+                id: "def:shared", name: "shared",
+                construction: owner === "main" ? "first incompatible definition" : "second incompatible definition",
+                inputs: [],
+              },
+              reason: "unit-local shared construction", direction: "correct",
+            },
+            ...(owner === "main" ? [{
+              kind: "definition-add" as const, id: "def:consumer",
+              proposed: {
+                id: "def:consumer", name: "consumer",
+                construction: "constructed from def:shared", inputs: ["def:shared"],
+              },
+              reason: "consume the shared construction", direction: "correct" as const,
+            }] : []),
+          ],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.conflict_consumers).toContain("def:consumer");
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "core-edit", target: "def:consumer", reason: "conflicted-dependency-consumer",
+        payload: expect.objectContaining({ kind: "definition-add", id: "def:consumer" }),
+      }),
+    ]));
+    const proposals = await readSurfacedProposals(ctx);
+    expect(proposals.coreEdits ?? []).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "def:consumer" }),
+    ]));
+  });
+
+  it("surfaces a conflict-quarantined exact target instead of aborting unrelated work", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "lem:unrelated", kind: "lemma", statement: "an unrelated exact-round target",
+      depends_on: [], status: "to-prove",
+      justification: "regression witness", gap: "none", consumer: "test",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "repair thm:main exactly",
+      required_core_targets: ["thm:main", "prop:aux", "lem:unrelated"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const hasMain = targets.some((target) => target.id === "thm:main");
+        const hasAux = targets.some((target) => target.id === "prop:aux");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({
+            id: target.id,
+            proof_tex: target.id === "thm:main" ? "By lem:shared-helper." : `QED ${target.id}.`,
+          })),
+          added_lemmas: hasMain || hasAux ? [{
+            id: "lem:shared-helper", kind: "lemma",
+            statement: hasMain ? "first incompatible helper" : "second incompatible helper",
+            depends_on: [], status: "proved", proof_tex: "Helper proof.",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "lem:unrelated")?.status).toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.conflict_consumers).toContain("thm:main");
+  });
+
+  it("persists an invalid OEQ resolution as withheld content on an otherwise complete round", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "resolve the remaining question and preserve all unrelated proofs",
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const isMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `QED ${target.id}.` })),
+          resolved_oeqs: isMain ? [{
+            source_id: "oeq:no-longer-live",
+            theorem: {
+              id: "thm:stale-answer", kind: "theorem", statement: "a stale answer",
+              depends_on: [], status: "proved", proof_tex: "Stale proof.",
+            },
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.invalid_resolutions).toEqual(["oeq:no-longer-live→thm:stale-answer"]);
+  });
+
+  it("surfaces an ownership-rejected invalid OEQ resolution before projection can erase it", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:mislabelled", kind: "theorem", statement: "not actually an OEQ",
+      depends_on: [], status: "to-prove",
+      justification: "regression witness", gap: "none", consumer: "test",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const isMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `QED ${target.id}.` })),
+          resolved_oeqs: isMain ? [{
+            source_id: "oeq:mislabelled",
+            theorem: {
+              id: "thm:mislabelled-answer", kind: "theorem", statement: "an invalid sibling answer",
+              depends_on: [], status: "proved", proof_tex: "Invalid answer proof.",
+            },
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.invalid_resolutions).toEqual(["oeq:mislabelled→thm:mislabelled-answer"]);
+    expect(withheld.capability_emissions).toContain("oeq-resolution:oeq:mislabelled@thm:main");
   });
 
   it("checkpoints when a WITHHELD helper collision is the round's only defect", async () => {
@@ -573,17 +1629,15 @@ describe("incremental reuse across escalation rounds", () => {
 
     const result = await runStage0Solve({ ctx, state: makeState(), deps });
     expect(result).toHaveProperty("status", "checkpoint");
-    expect(prompts).toHaveLength(2);
+    expect(prompts).toHaveLength(1);
     const ownerPrompts = prompts.filter((prompt) =>
       prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads")
     );
     expect(ownerPrompts).toHaveLength(1);
+    expect(prompts[0]).toBe(ownerPrompts[0]);
     // Equal-size components prefer the headline theorem, not dispatch/Promise
     // completion order, as the deterministic integration point.
     expect(ownerPrompts[0]).toContain('"id": "thm:main"');
-    const localPrompt = prompts.find((prompt) => prompt.includes("You are FORBIDDEN to"))!;
-    expect(localPrompt).toContain("cite or add that exact id to `depends_on`");
-    expect(localPrompt).toContain("lem:shared-comparator, sym:tau, sym:t_pi");
 
     const edits = (await readSurfacedProposals(ctx)).coreEdits;
     expect(edits).toEqual(expect.arrayContaining([
@@ -620,7 +1674,7 @@ describe("incremental reuse across escalation rounds", () => {
         diagnostic: "core-edit.*def:env",
         edit: (marker: string) => ({
           kind: "definition-replace", id: "def:env",
-          proposed: { ...PROTO.definitions[0], construction: `${marker} envelope` },
+          proposed: { ...PROTO.definitions[0], construction: `${marker} envelope`, free_symbols: [] },
           reason: `${marker} definition repair`, direction: "correct",
         }),
       },
@@ -636,7 +1690,15 @@ describe("incremental reuse across escalation rounds", () => {
     ] as const).map(({ name, diagnostic, edit }) => ({
       name,
       diagnostic,
-      build: (marker: string) => ({ proposed_core_edits: [edit(marker)] }),
+      build: (marker: string) => name === "definition catalog edit"
+        ? {
+            proposed_definition_changes: [{
+              id: "def:env", current: "U = a", proposed: `${marker} envelope`,
+              reason: `${marker} definition repair`, direction: "correct",
+            }],
+            proposed_core_edits: [edit(marker)],
+          }
+        : { proposed_core_edits: [edit(marker)] },
       artifact: workingPath,
     })),
     {
@@ -658,18 +1720,6 @@ describe("incremental reuse across escalation rounds", () => {
       artifact: workingPath,
     },
     {
-      name: "cited comparator addition",
-      diagnostic: "cited-added-node.*lem:singleton-comparator",
-      build: (marker: string) => ({ added_lemmas: [{
-        id: "lem:singleton-comparator", kind: "lemma", statement: `${marker} comparator statement`,
-        depends_on: [], status: "cited",
-        source: {
-          cite: "Rosenbaum1983", locator: "Section 1", verbatim_statement: `${marker} source excerpt`,
-        },
-      }] }),
-      artifact: coreJsonPath,
-    },
-    {
       name: "new exact required node",
       diagnostic: "added-node.*lem:required-singleton",
       required: "lem:required-singleton",
@@ -688,8 +1738,8 @@ describe("incremental reuse across escalation rounds", () => {
   ];
 
   it.each(singletonCapabilityCases)(
-    "projects non-owner $name through the directive-wide capability owner",
-    async ({ diagnostic, required, build, artifact }) => {
+    "routes $name through the directive-wide capability owner",
+    async ({ required, build, artifact }) => {
       const ctx = makeCtx(repoRoot);
       await appendEscalationLog(ctx, {
         round: 1,
@@ -703,32 +1753,32 @@ describe("incremental reuse across escalation rounds", () => {
           const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
           const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
           const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
-          await writeFile(outPath, JSON.stringify({
+          await writeFile(outPath, JSON.stringify(withCorrectionPairs({
             proofs: targets.map(({ id }) => ({ id, proof_tex: `Proof of ${id}.` })),
             ...build(owner ? "OWNER" : "SIBLING"),
-          }), "utf8");
+          })), "utf8");
           return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
         },
         runClaude: async () => { throw new Error("unused"); },
         lean: undefined as never,
       };
 
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-      try {
-        await runStage0Solve({ ctx, state: makeState(), deps });
-        expect(warn).toHaveBeenCalledWith(expect.stringMatching(
-          new RegExp(`quarantined unauthorized ${diagnostic}.*SIBLING|quarantined unauthorized ${diagnostic}.*prop:aux`, "i"),
-        ));
-      } finally {
-        warn.mockRestore();
-      }
+      let calls = 0;
+      const originalRunCodex = deps.runCodex;
+      deps.runCodex = async (input: any) => {
+        calls += 1;
+        return originalRunCodex(input);
+      };
+      await runStage0Solve({ ctx, state: makeState(), deps });
+      expect(calls).toBe(required ? 1 : 2);
       const canonical = await readFile(artifact(ctx), "utf8");
       expect(canonical).toContain("OWNER");
       expect(canonical).not.toContain("SIBLING");
     },
   );
 
-  it("fails closed when an exact catalog target has only a non-owner emission", async () => {
+  // Downstream is not paid until the staged owner's postimage has been accepted.
+  it("defers downstream for a global exact catalog target", async () => {
     const ctx = makeCtx(repoRoot);
     await appendEscalationLog(ctx, {
       round: 1,
@@ -745,7 +1795,11 @@ describe("incremental reuse across escalation rounds", () => {
         const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
         await writeFile(outPath, JSON.stringify({
           proofs: targets.map(({ id }) => ({ id, proof_tex: "QED." })),
-          proposed_core_edits: owner ? [] : [{
+          proposed_core_edits: owner ? [{
+            kind: "symbol-replace", name: "tau",
+            proposed: { ...PROTO.symbols[0], role: "authorized staged symbol repair" },
+            reason: "the shared owner performs the exact repair", direction: "correct",
+          }] : [{
             kind: "symbol-replace", name: "tau",
             proposed: { ...PROTO.symbols[0], role: "unauthorized-only symbol repair" },
             reason: "sibling attempted the only exact emission", direction: "correct",
@@ -757,10 +1811,97 @@ describe("incremental reuse across escalation rounds", () => {
       lean: undefined as never,
     };
 
-    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
-      /exact target sym:tau had unauthorized-only core-edit.*prop:aux.*capability owner thm:main emitted no authorized payload/i,
-    );
-    expect(existsSync(coreJsonPath(ctx))).toBe(false);
+    let calls = 0;
+    const originalRunCodex = deps.runCodex;
+    deps.runCodex = async (input: any) => {
+      calls += 1;
+      return originalRunCodex(input);
+    };
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(calls).toBe(1);
+    expect(result).toHaveProperty("status", "checkpoint");
+    const surfaced = JSON.stringify(await readSurfacedProposals(ctx));
+    expect(surfaced).toContain("authorized staged symbol repair");
+    expect(surfaced).not.toContain("unauthorized-only symbol repair");
+    // The round reached a committed checkpoint, so its reuse receipts are consumed:
+    // nothing from this round can be replayed into the next dispatch.
+    expect(existsSync(solveReuseReceiptsDir(ctx))).toBe(false);
+  });
+
+  // An exact-target directive pays only for the components it names; an
+  // unrelated open component is deferred to an undirected round instead of
+  // being blindly re-solved (and re-paid) alongside every repair.
+  it("defers unrelated open components on an exact-target directive", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "re-prove thm:main exactly",
+      required_core_targets: ["thm:main"],
+    });
+    const dispatchedUnits: string[] = [];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        dispatchedUnits.push(/TARGET STATEMENT\(S\) TO SOLVE \(unit: ([^)]+)\)/.exec(prompt)![1]);
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: "QED." })),
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(warn.mock.calls.flat().join("\n")).toMatch(/deferring unrelated open component/i);
+    warn.mockRestore();
+    expect(dispatchedUnits).toEqual(["thm:main"]);
+  });
+
+  // A merge/gate fatal lands AFTER every unit is paid for. A resume with an
+  // unchanged directive used to clear the outputs and re-pay every model call just
+  // to reach the same deterministic error (observed back-to-back: exp_mixed
+  // 2026-08-09 19:26→19:32, stat_transport 2026-08-30 15:51→16:00). The reuse lane
+  // binds each validated output to its exact prompt; an unchanged resume replays
+  // the persisted outputs with zero model calls.
+  it("reuses persisted unit outputs on an unchanged resume after an uncommitted fatal", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "prove everything and also emit the missing frontier node",
+      require_core_changes: true,
+      required_core_targets: ["thm:never-emitted"],
+    });
+    let codexCalls = 0;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        codexCalls += 1;
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: "QED." })),
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(/thm:never-emitted/);
+    const paidCalls = codexCalls;
+    expect(paidCalls).toBeGreaterThan(0);
+    expect(existsSync(solveReuseReceiptsDir(ctx))).toBe(true);
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(/thm:never-emitted/);
+    expect(warn.mock.calls.flat().join("\n")).toMatch(/reusing the persisted validated output/i);
+    warn.mockRestore();
+    expect(codexCalls).toBe(paidCalls);
   });
 
   // Supersedes an earlier contract that REJECTED two reverse-dependency rebuilds whose
@@ -854,6 +1995,62 @@ describe("incremental reuse across escalation rounds", () => {
     expect(main.status, "the same-round proof must still land").toBe("proved");
   });
 
+  it("keeps TeX-comment whitespace claim changes exact and their proof provisional", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].statement = "A % comment\nand B";
+    const proposed = "A % comment and B";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair the TeX-sensitive claim bytes exactly",
+      require_core_changes: true,
+      required_core_targets: ["thm:main"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({
+            id,
+            proof_tex: `Proof of ${id}.`,
+            ...(id === "thm:main" ? { argues_proposed: true } : {}),
+          })),
+          proposed_statement_changes: ownsMain ? [{
+            id: "thm:main", current: proto.statements[0].statement, proposed,
+            reason: "the newline changes TeX comment scope", direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...proto.statements[0], statement: proposed, free_symbols: [] },
+            reason: "preserve the exact post-image", direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.proposals.statements).toContainEqual(expect.objectContaining({ id: "thm:main", proposed }));
+    expect(working.proposals.proofs).toContainEqual(expect.objectContaining({ id: "thm:main", argues_proposed: true }));
+    expect(working.solved["thm:main"]).toMatchObject({ partial: true });
+    const changed = await applyProposedChanges({ ctx, note: "accept exact TeX-sensitive correction" });
+    expect(changed).toContainEqual(expect.objectContaining({ id: "thm:main", kind: "statement" }));
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.statements.find((statement: any) => statement.id === "thm:main").statement).toBe(proposed);
+    const appliedWorking = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(appliedWorking.solved["thm:main"]).toMatchObject({ proof_tex: "Proof of thm:main." });
+    expect(appliedWorking.solved["thm:main"].partial).not.toBe(true);
+  });
+
   it("selects the same directive owner when dispatch order is reversed", () => {
     const units = [
       { label: "thm:zeta", targets: [{ id: "thm:zeta" }] },
@@ -875,10 +2072,37 @@ describe("incremental reuse across escalation rounds", () => {
       "thm:zeta": "thm:zeta",
     });
     expect(Object.fromEntries(reversedSemantic)).toEqual(Object.fromEntries(semantic));
-    expect(() => selectSemanticTargetOwners([
+    expect(Object.fromEntries(selectSemanticTargetOwners([
       { label: "thm:first", targets: [{ id: "lem:shared" }] },
       { label: "thm:second", targets: [{ id: "lem:shared" }] },
-    ])).toThrow(/ambiguous semantic ownership.*lem:shared.*thm:first,\s*thm:second/i);
+    ]))).toEqual({});
+  });
+
+  it("quarantines every carrier for a target duplicated across dispatch labels", () => {
+    const dispatch = [
+      { label: "thm:first", targets: [{ id: "lem:shared" } as any], priorContext: "" },
+      { label: "thm:second", targets: [{ id: "lem:shared" } as any], priorContext: "" },
+    ];
+    const outputs = ["first", "second"].map((name) => SolveUnitOutputSchema.parse({
+      proofs: [{ id: "lem:shared", proof_tex: `${name} proof` }],
+      open_obligations: [{
+        node_id: "lem:shared", what_is_open: `${name} residual`,
+        obstruction: "contested ownership", attempted: "local proof",
+      }],
+    }));
+    const result = projectOutputsToWriteCapabilities({
+      outputs,
+      dispatch,
+      semanticTargetOwners: selectSemanticTargetOwners(dispatch),
+      directiveOwnerLabel: "thm:first",
+      requiredCoreTargets: new Set(["lem:shared"]),
+      existingStatementIds: new Set(["lem:shared"]),
+    });
+    expect(result.outputs.every((output) =>
+      output.proofs.length === 0 && output.open_obligations.length === 0
+    )).toBe(true);
+    expect(result.quarantined.filter((receipt) => receipt.target === "lem:shared")).toHaveLength(4);
+    expect(result.quarantined.every((receipt) => receipt.owner === "(contested dispatch ownership)")).toBe(true);
   });
 
   it("gives an existing shared statement to its own semantic solve unit, not the cross-cutting owner", async () => {
@@ -1077,12 +2301,14 @@ describe("incremental reuse across escalation rounds", () => {
           ...proto.statements[0],
           statement: "The LF witness belongs along the capped LF schedule.",
           depends_on: ["ass:overlap", "def:lf-admissible-schedules"],
+          free_symbols: [],
         };
         const siblingReplacement = {
           ...proto.statements[0],
           depends_on: ["ass:overlap", "def:upper-schedule", "def:lf-admissible-schedules"],
+          free_symbols: [],
         };
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets
             .filter(({ id }) => id !== "lem:lf-membership")
             .map(({ id }) => ({ id, proof_tex: `Proof of ${id}.` })),
@@ -1100,7 +2326,7 @@ describe("incremental reuse across escalation rounds", () => {
             reason: lowerOwner ? "canonical lower-owner repair" : "forbidden frontier dependency repair",
             direction: "correct",
           }],
-        }), "utf8");
+        })), "utf8");
         completionOrder.push(label);
         return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
       },
@@ -1132,14 +2358,17 @@ describe("incremental reuse across escalation rounds", () => {
     })]);
   });
 
-  it("fails closed when an exact statement target has only an unauthorized sibling payload", async () => {
+  it("checkpoints when an exact statement target has only an unauthorized sibling payload", async () => {
     const ctx = makeCtx(repoRoot);
     await appendEscalationLog(ctx, {
       round: 1,
       changed: [],
       directive: "repair prop:aux through its semantic owner",
       require_core_changes: true,
-      required_core_targets: ["prop:aux"],
+      // thm:main is named too so BOTH components dispatch: exact-target scoping
+      // now defers unrelated open components, and this scenario needs the
+      // sibling unit alive to attempt the cross-component interference.
+      required_core_targets: ["prop:aux", "thm:main"],
     });
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
@@ -1166,10 +2395,123 @@ describe("incremental reuse across escalation rounds", () => {
       lean: undefined as never,
     };
 
-    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
-      /exact target prop:aux had unauthorized-only core-edit.*thm:main.*capability owner prop:aux emitted no authorized payload/i,
-    );
-    expect(existsSync(coreJsonPath(ctx))).toBe(false);
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.capability_emissions).toContain("core-edit:prop:aux@thm:main");
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "core-edit", target: "prop:aux", unit: "thm:main",
+        payload: expect.objectContaining({ kind: "statement-replace", id: "prop:aux" }),
+      }),
+    ]));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.escalation_entries_consumed).toBe(0);
+  });
+
+  it("does not let a no-op owner correction mask a sibling's exact claim correction", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair prop:aux through its semantic owner",
+      require_core_changes: true,
+      // thm:main is named too so BOTH components dispatch: exact-target scoping
+      // now defers unrelated open components, and this scenario needs the
+      // sibling unit alive to attempt the cross-component interference.
+      required_core_targets: ["prop:aux", "thm:main"],
+    });
+    const current = PROTO.statements[1];
+    const proposed = `${current.statement} on the narrowed domain`;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsProp = targets.some(({ id }) => id === "prop:aux");
+        const statement = ownsProp ? current.statement : proposed;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `Proof of ${id}.` })),
+          proposed_statement_changes: [{
+            id: "prop:aux", current: current.statement, proposed: statement,
+            reason: ownsProp ? "stale no-op owner echo" : "genuine sibling correction",
+            direction: "narrow",
+          }],
+          proposed_core_edits: [{
+            kind: "statement-replace", id: "prop:aux",
+            proposed: { ...current, statement, free_symbols: [] },
+            reason: ownsProp ? "stale no-op owner replacement" : "genuine sibling replacement",
+            direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.capability_emissions).toEqual(expect.arrayContaining([
+      "statement-change:prop:aux@thm:main",
+      "core-edit:prop:aux@thm:main",
+    ]));
+  });
+
+  it("accepts a claim-only owner correction while quarantining sibling correction noise", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair prop:aux through its semantic owner",
+      require_core_changes: true,
+      required_core_targets: ["prop:aux"],
+    });
+    const current = PROTO.statements[1];
+    const ownerClaim = `${current.statement} on the owner-certified domain`;
+    const siblingClaim = `${current.statement} on an incompatible sibling domain`;
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsProp = targets.some(({ id }) => id === "prop:aux");
+        const statement = ownsProp ? ownerClaim : siblingClaim;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({
+            id, proof_tex: `Proof of ${id}.`,
+            ...(id === "prop:aux" ? { argues_proposed: true } : {}),
+          })),
+          proposed_statement_changes: [{
+            id: "prop:aux", current: current.statement, proposed: statement,
+            reason: ownsProp ? "owner claim correction" : "sibling correction noise",
+            direction: "narrow",
+          }],
+          proposed_core_edits: [{
+            kind: "statement-replace", id: "prop:aux",
+            proposed: { ...current, statement, status: "to-prove", free_symbols: [] },
+            reason: ownsProp ? "owner claim replacement" : "sibling replacement noise",
+            direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.statements).toContainEqual(expect.objectContaining({
+      id: "prop:aux", proposed: ownerClaim,
+    }));
+    expect(JSON.stringify(surfaced)).not.toContain(siblingClaim);
   });
 
   it("still rejects incompatible duplicate edits emitted inside the authorized owner's own output", async () => {
@@ -1259,7 +2601,10 @@ describe("incremental reuse across escalation rounds", () => {
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
-        await writeFile(outPath, JSON.stringify({
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        const body = ownsMain ? withCorrectionPairs({
           proofs: [{ id: "thm:main", proof_tex: "QED.", argues_proposed: true }],
           proposed_statement_changes: [{
             id: "thm:main",
@@ -1268,7 +2613,8 @@ describe("incremental reuse across escalation rounds", () => {
             reason: "substantive theorem repair",
             direction: "narrow",
           }],
-        }), "utf8");
+        }) : { proofs: targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })) };
+        await writeFile(outPath, JSON.stringify(body), "utf8");
         return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -1562,7 +2908,7 @@ describe("incremental reuse across escalation rounds", () => {
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
         calls.push(targets.map((target) => target.id));
         const ownsRequired = targets.some((target) => target.id === required.id);
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets
             .filter((target) => target.id !== required.id)
             .map((target) => ({ id: target.id, proof_tex: "QED." })),
@@ -1575,7 +2921,7 @@ describe("incremental reuse across escalation rounds", () => {
             direction: "narrow",
           }] : [],
           proposed_definition_changes: [],
-        }), "utf8");
+        }, { ...PROTO, statements: [...PROTO.statements, required] })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -1695,7 +3041,7 @@ describe("incremental reuse across escalation rounds", () => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets.filter((t) => t.id !== "thm:agent-a").map((t) => ({ id: t.id, proof_tex: "QED." })),
           added_lemmas: [],
           proposed_statement_changes: targets.some((t) => t.id === "thm:agent-a") ? [{
@@ -1706,7 +3052,10 @@ describe("incremental reuse across escalation rounds", () => {
             direction: "narrow",
           }] : [],
           proposed_definition_changes: [],
-        }), "utf8");
+        }, {
+          ...PROTO,
+          statements: [...PROTO.statements, agentNode("thm:agent-a"), agentNode("thm:agent-b")],
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -1766,8 +3115,8 @@ describe("incremental reuse across escalation rounds", () => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<Record<string, any>>;
-        const main = targets.find((t) => t.id === "thm:main");
-        await writeFile(outPath, JSON.stringify({
+        const main = targets.some((t) => t.id === "thm:main") ? PROTO.statements[0] : undefined;
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets.filter((t) => t.id !== "thm:main").map((t) => ({ id: t.id, proof_tex: "QED." })),
           added_lemmas: [],
           proposed_core_edits: main ? [{
@@ -1784,7 +3133,7 @@ describe("incremental reuse across escalation rounds", () => {
             reason: "wire the environment definition the proof uses",
             direction: "correct",
           }] : [],
-        }), "utf8");
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -1840,7 +3189,7 @@ describe("incremental reuse across escalation rounds", () => {
         id: "thm:main",
         based_on_revision: displayedRevision,
         proposed: {
-          id: main.id, kind: main.kind, statement: main.statement, status: main.status,
+          id: main.id, kind: main.kind, statement: "tau is identified on the overlap region", status: main.status,
           depends_on: [...main.depends_on, "def:env"],
           justification: main.justification, gap: main.gap, consumer: main.consumer,
         },
@@ -1863,7 +3212,7 @@ describe("incremental reuse across escalation rounds", () => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<Record<string, any>>;
-        const main = targets.find((t) => t.id === "thm:main");
+        const main = targets.some((t) => t.id === "thm:main") ? PROTO.statements[0] : undefined;
         await writeFile(outPath, JSON.stringify({
           proofs: targets.filter((t) => t.id !== "thm:main").map((t) => ({ id: t.id, proof_tex: "QED." })),
           added_lemmas: [],
@@ -1889,6 +3238,160 @@ describe("incremental reuse across escalation rounds", () => {
     expect(result.status).toBe("checkpoint");
     // The apply refuses the stale edit fail-safe, naming the hash.
     await expect(applyProposedChanges({ ctx })).rejects.toThrow(/rev:0{64}|matches no current view/);
+  });
+
+  it("quarantines an exact claim correction whose structural postimage is stale", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "independent downstream use";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "repair the exact headline claim",
+      require_core_changes: true,
+      required_core_targets: ["thm:main"],
+    });
+    const proposedClaim = "tau is identified on the certified overlap region";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: ownsMain ? [{
+            id: "thm:main", proof_tex: "Proof of the proposed headline.", argues_proposed: true,
+          }] : targets.map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          proposed_statement_changes: ownsMain ? [{
+            id: "thm:main", current: proto.statements[0].statement, proposed: proposedClaim,
+            reason: "narrow to the certified region", direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace", id: "thm:main",
+            based_on_revision: `rev:${"0".repeat(64)}`,
+            proposed: { ...proto.statements[0], statement: proposedClaim, free_symbols: [] },
+            reason: "stale structural postimage", direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.statements ?? []).not.toContainEqual(expect.objectContaining({ id: "thm:main" }));
+    expect(surfaced.coreEdits ?? []).not.toContainEqual(expect.objectContaining({ id: "thm:main" }));
+    expect(surfaced.proofs ?? []).not.toContainEqual(expect.objectContaining({ id: "thm:main" }));
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("to-prove");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: "statement-change", target: "thm:main", reason: "correction-pair-inapplicable" }),
+      expect.objectContaining({ category: "core-edit", target: "thm:main", reason: "correction-pair-inapplicable" }),
+      expect.objectContaining({ category: "proof", target: "thm:main", reason: "correction-pair-inapplicable" }),
+    ]));
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
+  });
+
+  it("surfaces a complete correction triple for an explicitly dispatched carried partial", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "thm:carried-correction", kind: "theorem", statement: "the old carried claim",
+      depends_on: ["ass:overlap"], free_symbols: [], status: "to-prove",
+    } as any;
+    const sibling = {
+      ...carried,
+      id: "thm:carried-correction-sibling",
+      statement: "the old sibling carried claim",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 8,
+      solved: {
+        [carried.id]: {
+          node: carried,
+          owner: "thm:historical-owner",
+          partial: true,
+          proof_tex: "",
+          snapshot: snapshotMember(PROTO as any, carried),
+        },
+        [sibling.id]: {
+          node: sibling,
+          owner: "thm:different-historical-owner",
+          partial: true,
+          proof_tex: "",
+          snapshot: snapshotMember(PROTO as any, sibling),
+        },
+      },
+    } as never);
+    await appendEscalationLog(ctx, {
+      round: 9,
+      changed: [],
+      directive: "correct exactly the carried theorem through its current dispatched owner",
+      require_core_changes: true,
+      required_core_targets: [carried.id, sibling.id],
+    });
+    const proposedById = new Map([
+      [carried.id, "the corrected carried claim"],
+      [sibling.id, "the corrected sibling carried claim"],
+    ]);
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const targetId = /TARGET STATEMENT\(S\) TO SOLVE[\s\S]*?"id":\s*"([^"]+)"/.exec(prompt)?.[1]!;
+        const target = targetId === carried.id ? carried : sibling;
+        const proposed = proposedById.get(targetId)!;
+        const revision = new RegExp(`"id":\\s*"${targetId}"[\\s\\S]*?"revision":\\s*"([^"]+)"`).exec(prompt)?.[1];
+        expect(revision).toMatch(/^rev:[a-f0-9]{64}$/);
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: targetId, proof_tex: `Proof of the corrected claim for ${targetId}.`, argues_proposed: true }],
+          proposed_statement_changes: [{
+            id: targetId, current: target.statement, proposed,
+            based_on_revision: revision, reason: "repair the carried claim", direction: "correct",
+          }],
+          proposed_core_edits: [{
+            kind: "statement-replace", id: targetId, based_on_revision: revision,
+            proposed: { ...target, statement: proposed },
+            reason: "paired structural postimage", direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const surfaced = await readSurfacedProposals(ctx);
+    for (const target of [carried, sibling]) {
+      expect(surfaced.statements).toContainEqual(expect.objectContaining({ id: target.id, proposed: proposedById.get(target.id) }));
+      expect(surfaced.coreEdits).toContainEqual(expect.objectContaining({ kind: "statement-replace", id: target.id }));
+      expect(surfaced.proofs).toContainEqual(expect.objectContaining({ id: target.id, argues_proposed: true }));
+    }
+    const withheldPath = path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json");
+    if (existsSync(withheldPath)) {
+      const withheld = JSON.parse(await readFile(withheldPath, "utf8"));
+      expect(withheld.withheld_payloads ?? []).not.toContainEqual(
+        expect.objectContaining({ reason: "correction-pair-inapplicable" }),
+      );
+    }
+    await applyProposedChanges({ ctx });
+    const applied = assembleCore(
+      JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")),
+      JSON.parse(await readFile(workingPath(ctx), "utf8")),
+    );
+    for (const target of [carried, sibling]) {
+      expect(applied.statements.find((statement: any) => statement.id === target.id)).toMatchObject({
+        statement: proposedById.get(target.id),
+        status: "proved",
+      });
+    }
   });
 
   it("does not re-dispatch or republish a pruned proto orphan on an unrelated round (audit R2F3)", async () => {
@@ -1968,6 +3471,54 @@ describe("incremental reuse across escalation rounds", () => {
       kind: "comparator-promise-table-replace",
       id: "metadata:comparator-promise-table",
     }));
+  });
+
+  it("applies a sealed metadata mandate mechanically without dispatching Sol", async () => {
+    const ctx = makeCtx(repoRoot);
+    const working = {
+      round: 3,
+      proposal_revision: "angle:0/version:1",
+      escalation_entries_consumed: 0,
+      solved: Object.fromEntries(PROTO.statements.map((statement) => [statement.id, {
+        proof_tex: `Proof of ${statement.id}.`,
+        snapshot: snapshotMember(PROTO as any, statement as any),
+      }])),
+    } as any;
+    await saveWorkingState(ctx, working);
+    const edit = {
+      kind: "rebuild-reverse-dependencies" as const,
+      id: "metadata:reverse-dependencies" as const,
+      reason: "mechanically rebuild the derived reverse edge table",
+      direction: "correct" as const,
+    };
+    await appendEscalationLog(ctx, {
+      round: 4,
+      changed: [],
+      directive: "apply the already-adjudicated reverse-dependency rebuild",
+      require_core_changes: true,
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: PROTO as any,
+        working,
+        edit,
+        proposalRevision: "angle:0/version:1",
+      })],
+    });
+    let solverCalls = 0;
+    const deps: StageDeps = {
+      runCodex: async () => {
+        solverCalls += 1;
+        throw new Error("sealed mechanical edit must not dispatch a solver");
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeVersionedState(), deps }) as any;
+    expect(solverCalls).toBe(0);
+    expect(result.status).toBe("checkpoint");
+    expect((await readSurfacedProposals(ctx)).coreEdits).toEqual([
+      expect.objectContaining({ kind: "rebuild-reverse-dependencies" }),
+    ]);
   });
 
   it("surfaces a statement-replace whose ONLY delta is free_symbols", async () => {
@@ -2073,9 +3624,11 @@ describe("incremental reuse across escalation rounds", () => {
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
         const ownsRate = targets.some((target) => target.id === rate.id);
         const body = !corrected && ownsRate ? {
-          proofs: targets
-            .filter((target) => target.id !== rate.id)
-            .map((target) => ({ id: target.id, proof_tex: `Reproved ${target.id}.` })),
+          proofs: targets.map((target) => ({
+            id: target.id,
+            proof_tex: `Reproved ${target.id}.`,
+            ...(target.id === rate.id ? { argues_proposed: true } : {}),
+          })),
           added_lemmas: [{
             id: "lem:agent-score", kind: "lemma", statement: "The score rate holds.",
             depends_on: [rate.id], status: "proved", proof_tex: "Use the corrected rate.",
@@ -2112,7 +3665,10 @@ describe("incremental reuse across escalation rounds", () => {
           proposed_core_edits: [],
         };
         if (ownsRate) corrected = true;
-        await writeFile(outPath, JSON.stringify(body), "utf8");
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs(body, {
+          ...PROTO,
+          statements: [...PROTO.statements, rate, remainder, theorem],
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -2136,7 +3692,7 @@ describe("incremental reuse across escalation rounds", () => {
     expect(existsSync(coreJsonPath(ctx))).toBe(false);
     const afterApply = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     expect(afterApply.solved[rate.id].node.statement).toBe("The corrected transport-only rate holds.");
-    expect(afterApply.solved[rate.id]).toMatchObject({ partial: true });
+    expect(afterApply.solved[rate.id].partial).toBeUndefined();
     expect(afterApply.solved[remainder.id]).toBeDefined();
     expect(afterApply.solved[theorem.id]).toBeDefined();
 
@@ -2200,6 +3756,64 @@ describe("incremental reuse across escalation rounds", () => {
     });
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     expect(Object.keys(working.solved)).toEqual(expect.arrayContaining(["thm:main", "prop:finite-certificate"]));
+  });
+
+  it("persists an exact new target as partial when its proof awaits a same-round claim edit", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements = [proto.statements[0]];
+    const main = proto.statements[0];
+    const proposed = `${main.statement} Strengthened post-image.`;
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "revise the main claim and add its exact dependent comparison",
+      required_core_targets: [main.id, "thm:new-comparison"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: main.id, proof_tex: "The revised main claim follows.", argues_proposed: true }],
+          added_lemmas: [{
+            id: "thm:new-comparison",
+            kind: "theorem",
+            statement: "The new comparison follows from the revised main claim.",
+            depends_on: [main.id],
+            status: "proved",
+            proof_tex: "Apply the revised main claim.",
+          }],
+          proposed_statement_changes: [{
+            id: main.id,
+            current: main.statement,
+            proposed,
+            reason: "separate the reviewed comparison",
+            direction: "narrow",
+          }],
+          proposed_core_edits: [{
+            kind: "statement-replace",
+            id: main.id,
+            proposed: { ...main, statement: proposed, free_symbols: [] },
+            reason: "synchronize dependencies and metadata",
+            direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:new-comparison"]).toMatchObject({
+      partial: true,
+      node: { id: "thm:new-comparison", status: "to-prove" },
+    });
+    expect(working.proposals.statements).toHaveLength(1);
+    expect(working.proposals.coreEdits).toHaveLength(1);
   });
 
   it("keeps an exact theorem target pending when only a prerequisite edit is emitted", async () => {
@@ -2363,6 +3977,134 @@ describe("incremental reuse across escalation rounds", () => {
     ).consumer).toBe(PROTO.statements[0].consumer);
   });
 
+  it("prunes orphan statement notes from the durable overlay while preserving live notes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const dormantHelper: CoreStatement = {
+      id: "lem:dormant-helper",
+      kind: "lemma",
+      statement: "The dormant helper remains available for a later exact-target revival.",
+      depends_on: [],
+      status: "to-prove",
+      justification: "durable helper",
+      gap: "later repair",
+      consumer: "future theorem",
+    };
+    await saveWorkingState(ctx, {
+      round: 1,
+      solved: {
+        [dormantHelper.id]: {
+          proof_tex: "Partial argument.",
+          snapshot: snapshotMember(PROTO as never, dormantHelper as never),
+          node: dormantHelper,
+          partial: true,
+          shelved: true,
+        },
+      },
+      prose_overlay: {
+        statement_notes: {
+          "thm:main": { consumer: "live durable note" },
+          [dormantHelper.id]: { consumer: "revivable shelved note" },
+          "oeq:retired-question": { consumer: "stale question note" },
+          "thm:retired-answer": { justification: "stale answer note" },
+        },
+      },
+    });
+
+    await runStage0Solve({ ctx, state: makeState(), deps: solverDeps("prove") });
+
+    const cursor = await loadWorkingState(ctx);
+    expect(cursor?.prose_overlay?.statement_notes).toEqual({
+      "thm:main": { consumer: "live durable note" },
+      [dormantHelper.id]: { consumer: "revivable shelved note" },
+    });
+    const rendered = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(rendered.statements.find((statement: any) => statement.id === "thm:main")?.consumer)
+      .toBe("live durable note");
+  });
+
+  it("preserves notes for reversible resolved-OEQ and shelved-node records", () => {
+    const source: CoreStatement = {
+      id: "oeq:resolved-source",
+      kind: "openendedquestion",
+      statement: "Can the residual bound be sharpened?",
+      depends_on: [],
+      status: "to-prove",
+      justification: "durable question",
+      gap: "sharpness",
+      consumer: "future narrowing",
+    };
+    const shelved: CoreStatement = {
+      id: "lem:shelved-helper",
+      kind: "lemma",
+      statement: "A helper retained for a later revival.",
+      depends_on: [],
+      status: "to-prove",
+      justification: "durable helper",
+      gap: "later repair",
+      consumer: "future theorem",
+    };
+    const agentSourceId = "oeq:agent-resolved-source";
+    const agentSource: CoreStatement = {
+      ...source,
+      id: agentSourceId,
+      statement: "Can an agent-authored residual question be answered?",
+    };
+    const agentAnswer: CoreStatement = {
+      id: "thm:agent-resolved-answer",
+      kind: "theorem",
+      statement: "The agent-authored residual has a negative answer.",
+      depends_on: [],
+      status: "proved",
+      proof_tex: "Direct argument.",
+    };
+    const proto = structuredClone(PROTO) as any;
+    proto.statements.push(source);
+    const working = {
+      round: 1,
+      solved: {
+        [shelved.id]: {
+          proof_tex: "Partial argument.",
+          snapshot: snapshotMember(proto as never, shelved as never),
+          node: shelved,
+          partial: true as const,
+          shelved: true,
+        },
+        [agentAnswer.id]: {
+          proof_tex: agentAnswer.proof_tex!,
+          snapshot: snapshotMember(proto as never, agentAnswer as never),
+          node: agentAnswer,
+          owner: agentSourceId,
+        },
+      },
+      resolved_oeqs: {
+        [agentSourceId]: {
+          theorem_id: agentAnswer.id,
+          source_fingerprint: oeqSourceFingerprint(agentSource),
+        },
+      },
+      prose_overlay: {
+        statement_notes: {
+          [source.id]: { consumer: "restore this if the resolution detaches" },
+          [shelved.id]: { consumer: "restore this if a root revives it" },
+          [agentSourceId]: { consumer: "restore this agent source if its answer is deleted" },
+          "thm:deleted": { consumer: "orphaned note" },
+        },
+      },
+    };
+
+    expect(pruneOrphanStatementNotes(proto, working)).toEqual(["thm:deleted"]);
+    expect(working.prose_overlay.statement_notes[source.id]).toEqual({
+      consumer: "restore this if the resolution detaches",
+    });
+    expect(working.prose_overlay.statement_notes[shelved.id]).toEqual({
+      consumer: "restore this if a root revives it",
+    });
+    expect(working.prose_overlay.statement_notes[agentSourceId]).toEqual({
+      consumer: "restore this agent source if its answer is deleted",
+    });
+    expect(working.prose_overlay.statement_notes).not.toHaveProperty("thm:deleted");
+  });
+
   it("does not credit a byte-identical statement note for an exact metadata target", async () => {
     const ctx = makeCtx(repoRoot);
     await appendEscalationLog(ctx, {
@@ -2423,6 +4165,516 @@ describe("incremental reuse across escalation rounds", () => {
     );
   });
 
+  it("rejects a sibling-target self-contradiction before capability quarantine", async () => {
+    const ctx = makeCtx(repoRoot);
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: ownsMain
+            ? [
+              { id: "thm:main", proof_tex: "Main proof." },
+              { id: "prop:aux", proof_tex: "Unauthorized sibling proof." },
+            ]
+            : [{ id: "prop:aux", proof_tex: "Owner proof." }],
+          open_obligations: ownsMain ? [{
+            node_id: "prop:aux",
+            what_is_open: "the same sibling is also claimed open",
+            obstruction: "self-contradictory sibling assessment",
+            attempted: "the sibling route",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /mutually exclusive terminal dispositions for prop:aux.*open-obligation.*proof/i,
+    );
+  });
+
+  it("rejects a same-worker proof plus deletion of the same target", async () => {
+    const ctx = makeCtx(repoRoot);
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-delete", id: "thm:main",
+            reason: "simultaneously claimed obsolete", direction: "delete-obsolete",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /mutually exclusive terminal dispositions for thm:main.*proof.*statement-delete/i,
+    );
+  });
+
+  it("quarantines a cross-worker proof versus sibling deletion", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "independent downstream use";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "settle both targets without discarding unrelated work",
+      required_core_targets: ["thm:main", "prop:aux"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsAux = targets.some(({ id }) => id === "prop:aux");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `Owner proof for ${id}.` })),
+          proposed_core_edits: ownsAux ? [{
+            kind: "statement-delete", id: "thm:main",
+            reason: "sibling claims it obsolete", direction: "delete-obsolete",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("to-prove");
+    expect(core.statements.find((statement: any) => statement.id === "prop:aux")?.status).toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: "proof", target: "thm:main", reason: "cross-unit-terminal-disposition" }),
+      expect.objectContaining({ category: "statement-delete", target: "thm:main", reason: "cross-unit-terminal-disposition" }),
+    ]));
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
+  });
+
+  it("quarantines a proofless claim correction versus sibling deletion", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "independent downstream use";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "repair both exact targets without losing deletion disputes",
+      require_core_changes: true, required_core_targets: ["thm:main", "prop:aux"],
+    });
+    const proposedClaim = "tau is identified on the certified region";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        const ownsAux = targets.some(({ id }) => id === "prop:aux");
+        await writeFile(outPath, JSON.stringify({
+          proofs: ownsAux ? [{ id: "prop:aux", proof_tex: "Independent auxiliary proof." }] : [],
+          proposed_statement_changes: ownsMain ? [{
+            id: "thm:main", current: proto.statements[0].statement, proposed: proposedClaim,
+            reason: "narrow the claim", direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...proto.statements[0], statement: proposedClaim, free_symbols: [] },
+            reason: "complete correction postimage", direction: "correct",
+          }] : ownsAux ? [{
+            kind: "statement-delete", id: "thm:main",
+            reason: "sibling instead declares it obsolete", direction: "delete-obsolete",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.statements ?? []).not.toContainEqual(expect.objectContaining({ id: "thm:main" }));
+    expect(surfaced.coreEdits ?? []).not.toContainEqual(expect.objectContaining({ id: "thm:main" }));
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")).toMatchObject({
+      statement: proto.statements[0].statement, status: "to-prove",
+    });
+    expect(core.statements.find((statement: any) => statement.id === "prop:aux")?.status).toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({ category: "statement-mutation", target: "thm:main", reason: "cross-unit-terminal-disposition" }),
+      expect.objectContaining({ category: "statement-delete", target: "thm:main", reason: "cross-unit-terminal-disposition" }),
+    ]));
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
+  });
+
+  it("quarantines an authorized proof that races an unauthorized sibling open receipt", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "independent downstream use";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "settle both exact targets while retaining disagreements",
+      required_core_targets: ["thm:main", "prop:aux"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsAux = targets.some(({ id }) => id === "prop:aux");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `Owner proof for ${id}.` })),
+          open_obligations: ownsAux ? [{
+            node_id: "thm:main",
+            what_is_open: "the sibling disputes the main proof",
+            obstruction: "a sibling-side obstruction",
+            attempted: "the sibling route",
+            partial_result: "Sibling partial bytes.",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("to-prove");
+    expect(core.statements.find((statement: any) => statement.id === "prop:aux")?.status).toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "proof", target: "thm:main", reason: "cross-unit-terminal-disposition",
+        payload: expect.objectContaining({ proof_tex: "Owner proof for thm:main." }),
+      }),
+      expect.objectContaining({
+        category: "open-obligation", target: "thm:main", reason: "cross-unit-terminal-disposition",
+        payload: expect.objectContaining({ partial_result: "Sibling partial bytes." }),
+      }),
+    ]));
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
+  });
+
+  it("quarantines an authorized proof when a sibling emits an incompatible settled version", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "independent downstream use";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "settle both exact targets while retaining version disputes",
+      required_core_targets: ["thm:main", "prop:aux"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsAux = targets.some(({ id }) => id === "prop:aux");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `Owner proof for ${id}.` })),
+          added_lemmas: ownsAux ? [{
+            ...proto.statements[0],
+            statement: "INCOMPATIBLE SIBLING CLAIM",
+            status: "proved", proof_tex: "Sibling incompatible proof.",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")).toMatchObject({
+      statement: proto.statements[0].statement, status: "to-prove",
+    });
+    expect(core.statements.find((statement: any) => statement.id === "prop:aux")?.status).toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "added-node", target: "thm:main", reason: "capability-quarantine",
+        payload: expect.objectContaining({ statement: "INCOMPATIBLE SIBLING CLAIM" }),
+      }),
+      expect.objectContaining({
+        category: "proof", target: "thm:main", reason: "conflicted-dependency-consumer",
+        payload: expect.objectContaining({ carrier: expect.objectContaining({ proof_tex: "Owner proof for thm:main." }) }),
+      }),
+    ]));
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
+  });
+
+  it("quarantines cross-unit proof/open dispositions while committing unrelated work", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "settle the two targets without discarding unrelated work on disagreement",
+      required_core_targets: ["thm:main", "prop:aux"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const mainUnit = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          open_obligations: mainUnit && !targets.some(({ id }) => id === "prop:aux") ? [{
+            node_id: "prop:aux",
+            what_is_open: "the directive owner reports a residual gap",
+            obstruction: "a competing obstruction assessment",
+            attempted: "the directive-wide route",
+            partial_result: "Partial prop:aux argument.",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("proved");
+    expect(core.statements.find((statement: any) => statement.id === "prop:aux")?.status).toBe("to-prove");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "proof", target: "prop:aux", reason: "cross-unit-terminal-disposition",
+      }),
+      expect.objectContaining({
+        category: "open-obligation", target: "prop:aux", reason: "cross-unit-terminal-disposition",
+      }),
+    ]));
+  });
+
+  it("quarantines both OEQ endpoints and answer consumers when Q-to-T races open T", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:terminal-race", kind: "openendedquestion",
+      statement: "Is the terminal rate sharp?", depends_on: ["ass:overlap"], status: "to-prove",
+      justification: "residual question", gap: "vs prior", consumer: "applied",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "settle or attest the rate question while preserving unrelated work",
+      required_core_targets: ["thm:main", "oeq:terminal-race", "thm:terminal-answer"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        const ownsQuestion = targets.some(({ id }) => id === "oeq:terminal-race");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => !id.startsWith("oeq:"))
+            .map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          resolved_oeqs: ownsQuestion ? [{
+            source_id: "oeq:terminal-race",
+            theorem: {
+              id: "thm:terminal-answer", kind: "theorem", statement: "The terminal rate is sharp.",
+              depends_on: ["ass:overlap"], status: "proved", proof_tex: "Sharp answer proof.",
+            },
+          }] : [],
+          added_lemmas: ownsQuestion ? [{
+            id: "lem:answer-consumer", kind: "lemma", statement: "A consequence of the sharp answer.",
+            depends_on: ["thm:terminal-answer"], status: "proved", proof_tex: "Consumer proof.",
+          }] : [],
+          open_obligations: ownsMain && !ownsQuestion ? [{
+            node_id: "thm:terminal-answer",
+            what_is_open: "whether the proposed answer theorem is established",
+            obstruction: "a competing obstruction assessment",
+            attempted: "the directive-wide route",
+            partial_result: "Partial question analysis.",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("proved");
+    expect(core.statements.find((statement: any) => statement.id === "oeq:terminal-race")?.status)
+      .toBe("to-prove");
+    expect(core.statements.some((statement: any) =>
+      statement.id === "thm:terminal-answer" || statement.id === "lem:answer-consumer"
+    )).toBe(false);
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.conflict_consumers).toContain("lem:answer-consumer");
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: "oeq-resolution", target: "oeq:terminal-race",
+        reason: "cross-unit-terminal-disposition",
+        payload: expect.objectContaining({ theorem: expect.objectContaining({ proof_tex: "Sharp answer proof." }) }),
+      }),
+      expect.objectContaining({
+        category: "oeq-resolution", target: "thm:terminal-answer",
+        reason: "cross-unit-terminal-disposition",
+      }),
+      expect.objectContaining({
+        category: "statement", target: "lem:answer-consumer",
+        reason: "conflicted-dependency-consumer",
+        payload: expect.objectContaining({ proof_tex: "Consumer proof." }),
+      }),
+    ]));
+  });
+
+  it("quarantines both OEQ endpoints when the answer transitively consumes a conflicted helper", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:transitive-resolution-race", kind: "openendedquestion",
+      statement: "Is the transitive answer sharp?", depends_on: [], status: "to-prove",
+      justification: "residual question", gap: "vs prior", consumer: "applied",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "answer the sharpness question while preserving unrelated progress",
+      require_core_changes: true,
+      required_core_targets: ["oeq:transitive-resolution-race", "thm:main"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsQuestion = targets.some(({ id }) => id === "oeq:transitive-resolution-race");
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        const shared = {
+          id: "lem:transitive-shared", kind: "lemma",
+          statement: ownsQuestion ? "the first helper variant" : "the competing helper variant",
+          depends_on: ["ass:overlap"], status: "proved",
+          proof_tex: ownsQuestion ? "First helper proof." : "Competing helper proof.",
+        };
+        await writeFile(outPath, JSON.stringify({
+          proofs: ownsMain ? [{ id: "thm:main", proof_tex: "Unrelated accepted proof." }] : [],
+          added_lemmas: [shared],
+          resolved_oeqs: ownsQuestion ? [{
+            source_id: "oeq:transitive-resolution-race",
+            theorem: {
+              id: "thm:transitive-answer", kind: "theorem",
+              statement: "The transitive answer is sharp.",
+              depends_on: [shared.id], status: "proved", proof_tex: "Answer via the shared helper.",
+            },
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("proved");
+    expect(core.statements.find((statement: any) => statement.id === "oeq:transitive-resolution-race")?.status)
+      .toBe("to-prove");
+    expect(core.statements.some((statement: any) => statement.id === "thm:transitive-answer")).toBe(false);
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.conflict_consumers).toEqual(expect.arrayContaining([
+      "oeq:transitive-resolution-race", "thm:transitive-answer",
+    ]));
+    for (const endpoint of ["oeq:transitive-resolution-race", "thm:transitive-answer"]) {
+      expect(withheld.withheld_payloads).toContainEqual(expect.objectContaining({
+        category: "oeq-resolution", target: endpoint,
+        reason: "conflicted-dependency-consumer",
+        payload: expect.objectContaining({
+          source_id: "oeq:transitive-resolution-race",
+          theorem: expect.objectContaining({ id: "thm:transitive-answer" }),
+        }),
+      }));
+    }
+  });
+
+  it("rejects same-unit Q-to-T resolution plus open T as self-contradictory", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO);
+    proto.statements.push({
+      id: "oeq:same-unit-terminal-race", kind: "openendedquestion",
+      statement: "Is the same-unit rate sharp?", depends_on: [], status: "to-prove",
+      justification: "residual question", gap: "vs prior", consumer: "applied",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsQuestion = targets.some(({ id }) => id === "oeq:same-unit-terminal-race");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => !id.startsWith("oeq:"))
+            .map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          resolved_oeqs: ownsQuestion ? [{
+            source_id: "oeq:same-unit-terminal-race",
+            theorem: {
+              id: "thm:same-unit-answer", kind: "theorem", statement: "The same-unit rate is sharp.",
+              depends_on: [], status: "proved", proof_tex: "Answer proof.",
+            },
+          }] : [],
+          open_obligations: ownsQuestion ? [{
+            node_id: "thm:same-unit-answer",
+            what_is_open: "the emitted answer theorem remains open",
+            obstruction: "self-reported obstruction",
+            attempted: "the same solve route",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /mutually exclusive terminal dispositions for thm:same-unit-answer.*oeq-resolution.*open-obligation/i,
+    );
+  });
+
   it("rejects settling an existing OEQ through added_lemmas while leaving it open", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO);
@@ -2466,9 +4718,12 @@ describe("incremental reuse across escalation rounds", () => {
       lean: undefined as never,
     };
 
-    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
-      /attempted to settle OEQ oeq:tightness in added_lemmas.*must use resolved_oeqs/i,
-    );
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).resolves.toMatchObject({
+      status: "checkpoint", advance: false,
+    });
+    const rendered = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(rendered.statements.find((statement: any) => statement.id === "oeq:tightness"))
+      .toMatchObject({ kind: "openendedquestion", status: "to-prove" });
   });
 
   it("does not let a definition-change payload masquerade as an exact OEQ disposition", async () => {
@@ -2497,7 +4752,7 @@ describe("incremental reuse across escalation rounds", () => {
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
         const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets.filter(({ id }) => !id.startsWith("oeq:")).map(({ id }) => ({ id, proof_tex: "QED." })),
           proposed_definition_changes: owner ? [{
             id: "oeq:tightness",
@@ -2506,16 +4761,14 @@ describe("incremental reuse across escalation rounds", () => {
             reason: "wrong payload channel",
             direction: "correct",
           }] : [],
-        }), "utf8");
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
       lean: undefined as never,
     };
 
-    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
-      /required exact structured target.*oeq:tightness.*omitted oeq:tightness/i,
-    );
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(/invalid solve JSON/i);
   });
 
   it("does not let a no-op definition echo consume an exact structured target", async () => {
@@ -2533,7 +4786,7 @@ describe("incremental reuse across escalation rounds", () => {
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
         const owner = prompt.includes("You are the ONLY solve unit allowed to emit directive-wide shared payloads");
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets.map(({ id }) => ({ id, proof_tex: "QED." })),
           proposed_definition_changes: owner ? [{
             id: "def:env",
@@ -2549,16 +4802,14 @@ describe("incremental reuse across escalation rounds", () => {
             reason: "wrong-channel fallback",
             direction: "narrow",
           }] : [],
-        }), "utf8");
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
       lean: undefined as never,
     };
 
-    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
-      /no accepted substantive payload remained for def:env after normalization/i,
-    );
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(/invalid solve JSON/i);
   });
 
   it("drops a re-proposal of an assumption the proto already holds verbatim (no-op echo)", async () => {
@@ -2572,7 +4823,7 @@ describe("incremental reuse across escalation rounds", () => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets.map((t) => ({ id: t.id, proof_tex: "QED." })),
           proposed_assumptions: [{
             id: "ass:overlap",
@@ -2581,7 +4832,7 @@ describe("incremental reuse across escalation rounds", () => {
             standard_or_novel: "standard: Rosenbaum1983",
             not_crux: "background condition",
           }],
-        }), "utf8");
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -2630,6 +4881,920 @@ describe("incremental reuse across escalation rounds", () => {
     expect(lem?.proof_tex).toBe("The helper follows by direct computation.");
   });
 
+  it("accepts the durable owner's proposed proof for a shelved agent node", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "lem:carried-partial",
+      kind: "lemma",
+      statement: "the broad carried claim",
+      depends_on: [],
+      status: "to-prove",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [carried.id]: {
+          proof_tex: "Partial argument.",
+          snapshot: { stmt: carried.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: carried,
+          owner: "thm:main",
+          partial: true,
+          shelved: true,
+        },
+      },
+    });
+    await appendEscalationLog(ctx, {
+      round: 4,
+      changed: [],
+      directive: "narrow the carried helper and complete the main result",
+      require_core_changes: true,
+      required_core_targets: ["thm:main"],
+    });
+    const proposed = "the narrowed carried claim";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsMain
+              ? [{ id: carried.id, proof_tex: "Complete narrowed proof.", argues_proposed: true }]
+              : []),
+          ],
+          proposed_statement_changes: ownsMain ? [{
+            id: carried.id,
+            current: carried.statement,
+            proposed,
+            reason: "the argument establishes exactly the narrower form",
+            direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace",
+            id: carried.id,
+            proposed: { ...carried, statement: proposed, free_symbols: [] },
+            reason: "publish the complete narrowed agent-node metadata",
+            direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.proofs).toContainEqual({
+      id: carried.id,
+      proof_tex: "Complete narrowed proof.",
+      argues_proposed: true,
+    });
+    expect(surfaced.statements).toContainEqual(expect.objectContaining({ id: carried.id, proposed }));
+  });
+
+  it("keeps sole-directive-owner proofs across a reachable paired postimage chain", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:paired-chain-helper", kind: "lemma", statement: "old helper claim",
+      depends_on: [], status: "to-prove",
+    } as any;
+    const bridge = {
+      id: "lem:paired-chain-bridge", kind: "lemma", statement: "old bridge claim",
+      depends_on: [], status: "to-prove",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Old helper proof.", snapshot: { stmt: helper.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: { ...helper, status: "proved", proof_tex: "Old helper proof." }, owner: "thm:stale-owner",
+        },
+        [bridge.id]: {
+          proof_tex: "Old bridge proof.", snapshot: { stmt: bridge.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: { ...bridge, status: "proved", proof_tex: "Old bridge proof." }, owner: "thm:stale-owner",
+        },
+      },
+    });
+    await appendEscalationLog(ctx, {
+      round: 4,
+      changed: [],
+      directive: "repair the root and its reachable paired helper chain",
+      require_core_changes: true,
+      required_core_targets: ["thm:main"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        const mainClaim = "tau is identified through the paired chain";
+        const bridgeClaim = "new bridge claim";
+        const helperClaim = "new helper claim";
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.`, argues_proposed: ownsMain })),
+            ...(ownsMain ? [
+              { id: bridge.id, proof_tex: "Proved new bridge claim.", argues_proposed: true },
+              { id: helper.id, proof_tex: "Proved new helper claim.", argues_proposed: true },
+            ] : []),
+          ],
+          proposed_statement_changes: ownsMain ? [
+            { id: "thm:main", current: PROTO.statements[0].statement, proposed: mainClaim, reason: "root repair", direction: "narrow" },
+            { id: bridge.id, current: bridge.statement, proposed: bridgeClaim, reason: "bridge repair", direction: "narrow" },
+            { id: helper.id, current: helper.statement, proposed: helperClaim, reason: "helper repair", direction: "narrow" },
+          ] : [],
+          proposed_core_edits: ownsMain ? [
+            {
+              kind: "statement-replace", id: "thm:main",
+              proposed: { ...PROTO.statements[0], statement: mainClaim, depends_on: ["ass:overlap", bridge.id], free_symbols: [] },
+              reason: "wire bridge", direction: "correct",
+            },
+            {
+              kind: "statement-replace", id: bridge.id,
+              proposed: { ...bridge, statement: bridgeClaim, depends_on: [helper.id], free_symbols: [] },
+              reason: "wire helper", direction: "correct",
+            },
+            {
+              kind: "statement-replace", id: helper.id,
+              proposed: { ...helper, statement: helperClaim, free_symbols: [] },
+              reason: "publish helper repair", direction: "correct",
+            },
+          ] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    const proofs = (await readSurfacedProposals(ctx)).proofs;
+    expect(proofs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: bridge.id, proof_tex: "Proved new bridge claim." }),
+      expect.objectContaining({ id: helper.id, proof_tex: "Proved new helper claim." }),
+    ]));
+  });
+
+  it("keeps sole-root paired revalidations for reachable published ownerless core nodes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const leaf = {
+      id: "lem:published-ownerless-leaf", kind: "lemma", statement: "old published leaf",
+      depends_on: [], status: "proved", proof_tex: "Old published leaf proof.",
+    } as any;
+    const bridge = {
+      id: "lem:published-ownerless-bridge", kind: "lemma", statement: "old published bridge",
+      depends_on: [leaf.id], status: "proved", proof_tex: "Old published bridge proof.",
+    } as any;
+    const root = { ...PROTO.statements[0], depends_on: ["ass:overlap", bridge.id] } as any;
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
+      ...PROTO,
+      statements: [root, PROTO.statements[1], bridge, leaf],
+    }), "utf8");
+    await saveWorkingState(ctx, {
+      round: 1,
+      solved: {
+        [bridge.id]: {
+          proof_tex: bridge.proof_tex,
+          snapshot: { stmt: bridge.statement, depends_on: bridge.depends_on, defs: {}, assumptions: {} },
+          node: bridge,
+        },
+        [leaf.id]: {
+          proof_tex: leaf.proof_tex,
+          snapshot: { stmt: leaf.statement, depends_on: leaf.depends_on, defs: {}, assumptions: {} },
+          node: leaf,
+        },
+      },
+    });
+    await appendEscalationLog(ctx, {
+      round: 2,
+      changed: [],
+      directive: "revalidate the published ownerless proof chain under the sole theorem root",
+      require_core_changes: true,
+      required_core_targets: [root.id],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsRoot = targets.some((target) => target.id === root.id);
+        const bridgeClaim = "revalidated published bridge";
+        const leafClaim = "revalidated published leaf";
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.filter((target) => target.id !== bridge.id && target.id !== leaf.id)
+              .map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsRoot ? [
+              { id: bridge.id, proof_tex: "Fresh published bridge proof.", argues_proposed: true },
+              { id: leaf.id, proof_tex: "Fresh published leaf proof.", argues_proposed: true },
+            ] : []),
+          ],
+          proposed_statement_changes: ownsRoot ? [
+            { id: bridge.id, current: bridge.statement, proposed: bridgeClaim, reason: "definition-triggered revalidation", direction: "narrow" },
+            { id: leaf.id, current: leaf.statement, proposed: leafClaim, reason: "definition-triggered revalidation", direction: "narrow" },
+          ] : [],
+          proposed_core_edits: ownsRoot ? [
+            {
+              kind: "statement-replace", id: bridge.id,
+              proposed: { ...bridge, statement: bridgeClaim, status: "to-prove", proof_tex: undefined, free_symbols: [] },
+              reason: "publish revalidated bridge", direction: "correct",
+            },
+            {
+              kind: "statement-replace", id: leaf.id,
+              proposed: { ...leaf, statement: leafClaim, status: "to-prove", proof_tex: undefined, free_symbols: [] },
+              reason: "publish revalidated leaf", direction: "correct",
+            },
+          ] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.proofs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: bridge.id, proof_tex: "Fresh published bridge proof." }),
+      expect.objectContaining({ id: leaf.id, proof_tex: "Fresh published leaf proof." }),
+    ]));
+  });
+
+  it("does not resurrect an explicitly shelved agent proposition as an independent root", async () => {
+    const ctx = makeCtx(repoRoot);
+    const shelved = {
+      id: "prop:shelved-rejected", kind: "proposition", statement: "a rejected partial proposition",
+      depends_on: ["prop:aux"], status: "to-prove",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        [shelved.id]: {
+          proof_tex: "Rejected partial proof.",
+          snapshot: { stmt: shelved.statement, depends_on: shelved.depends_on, defs: {}, assumptions: {} },
+          node: shelved,
+          owner: "thm:main",
+          partial: true,
+          shelved: true,
+        },
+      },
+    });
+    const calls: string[][] = [];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        calls.push(targets.map((target) => target.id));
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(calls.flat()).not.toContain(shelved.id);
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[shelved.id]).toMatchObject({ partial: true, shelved: true });
+  });
+
+  it("revokes a downstream chain proof when its intermediate postimage is inapplicable", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = { id: "lem:rollback-chain-helper", kind: "lemma", statement: "old rollback helper", depends_on: [], status: "to-prove" } as any;
+    const bridge = { id: "lem:rollback-chain-bridge", kind: "lemma", statement: "old rollback bridge", depends_on: [], status: "to-prove" } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Old helper proof.", snapshot: { stmt: helper.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: { ...helper, status: "proved", proof_tex: "Old helper proof." }, owner: "thm:stale-owner",
+        },
+        [bridge.id]: {
+          proof_tex: "Old bridge proof.", snapshot: { stmt: bridge.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: { ...bridge, status: "proved", proof_tex: "Old bridge proof." }, owner: "thm:stale-owner",
+        },
+      },
+    });
+    await appendEscalationLog(ctx, {
+      round: 4, changed: [], directive: "repair the root chain with one stale intermediate",
+      require_core_changes: true, required_core_targets: ["thm:main"],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        const claims = { root: "new rollback root", bridge: "new rollback bridge", helper: "new rollback helper" };
+        await writeFile(outPath, JSON.stringify({
+          proofs: ownsMain ? [
+            { id: "thm:main", proof_tex: "New root proof.", argues_proposed: true },
+            { id: bridge.id, proof_tex: "New bridge proof.", argues_proposed: true },
+            { id: helper.id, proof_tex: "New helper proof.", argues_proposed: true },
+          ] : targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+          proposed_statement_changes: ownsMain ? [
+            { id: "thm:main", current: PROTO.statements[0].statement, proposed: claims.root, reason: "root", direction: "narrow" },
+            { id: bridge.id, current: "a stale nonmatching bridge claim", proposed: claims.bridge, reason: "bridge", direction: "narrow" },
+            { id: helper.id, current: helper.statement, proposed: claims.helper, reason: "helper", direction: "narrow" },
+          ] : [],
+          proposed_core_edits: ownsMain ? [
+            {
+              kind: "statement-replace", id: "thm:main",
+              proposed: { ...PROTO.statements[0], statement: claims.root, depends_on: ["ass:overlap", bridge.id], free_symbols: [] },
+              reason: "wire bridge", direction: "correct",
+            },
+            {
+              kind: "statement-replace", id: bridge.id,
+              proposed: { ...bridge, statement: claims.bridge, depends_on: [helper.id], free_symbols: [] },
+              reason: "stale intermediate", direction: "correct", based_on_revision: `rev:${"0".repeat(64)}`,
+            },
+            {
+              kind: "statement-replace", id: helper.id,
+              proposed: { ...helper, statement: claims.helper, free_symbols: [] },
+              reason: "downstream correction", direction: "correct",
+            },
+          ] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.proofs ?? [])
+      .not.toContainEqual(expect.objectContaining({ id: helper.id, proof_tex: "New helper proof." }));
+    expect(surfaced.statements ?? [])
+      .not.toContainEqual(expect.objectContaining({ id: helper.id }));
+    expect(surfaced.coreEdits ?? [])
+      .not.toContainEqual(expect.objectContaining({ id: helper.id }));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id].proof_tex).toBe("Old helper proof.");
+  });
+
+  it("carries a recovered partial added-helper proof into provisional review", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:reviewed-recovered-helper",
+      kind: "lemma",
+      statement: "the recovered helper claim",
+      depends_on: [],
+      status: "to-prove",
+    } as any;
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].depends_on = ["ass:overlap", helper.id];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Historical partial helper proof.",
+          snapshot: { stmt: helper.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: helper,
+          owner: "thm:main",
+          partial: true,
+          shelved: true,
+        },
+      },
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        const ownsHelper = targets.some((target) => target.id === helper.id);
+        const proposed = "tau is identified with the recovered helper";
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((target) => target.id !== helper.id)
+            .map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.`, argues_proposed: ownsMain })),
+          added_lemmas: ownsHelper ? [{ ...helper, status: "proved", proof_tex: "Complete reviewed helper proof." }] : [],
+          proposed_statement_changes: ownsMain ? [{
+            id: "thm:main", current: proto.statements[0].statement, proposed,
+            reason: "narrow the root while retaining its helper", direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...proto.statements[0], statement: proposed, free_symbols: [] },
+            reason: "publish the narrowed root", direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(result.status).toBe("checkpoint");
+    expect((await readSurfacedProposals(ctx)).proofs).toContainEqual({
+      id: helper.id,
+      proof_tex: "Complete reviewed helper proof.",
+    });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id]).toMatchObject({ partial: true });
+  });
+
+  it("does not replace shelved durable metadata through added_lemmas", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:shelved-added-identity", kind: "lemma", statement: "the durable old claim",
+      depends_on: [], status: "to-prove",
+    } as any;
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].depends_on = ["ass:overlap", helper.id];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Historical partial proof.",
+          snapshot: { stmt: helper.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: helper, owner: "thm:main", partial: true, shelved: true,
+        },
+      },
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter((target) => target.id !== helper.id)
+            .map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+          added_lemmas: ownsMain ? [{
+            ...helper,
+            free_symbols: ["invented_symbol"],
+            status: "proved",
+            proof_tex: "Proof under substituted metadata.",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id].node.statement).toBe(helper.statement);
+    expect(working.solved[helper.id].proof_tex).toBe("Historical partial proof.");
+    expect(JSON.stringify(working.solved[helper.id])).not.toContain("invented_symbol");
+    expect(JSON.stringify(await readSurfacedProposals(ctx))).not.toContain("invented_symbol");
+  });
+
+  it("revokes a shelved helper proof when its enabling root postimage is inapplicable", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:postimage-only-helper",
+      kind: "lemma",
+      statement: "the postimage-only helper claim",
+      depends_on: [],
+      status: "to-prove",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Historical partial argument.",
+          snapshot: { stmt: helper.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: helper,
+          owner: "thm:historical",
+          partial: true,
+          shelved: true,
+        },
+      },
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        const proposed = "tau is identified on the narrowed postimage";
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.`, argues_proposed: ownsMain })),
+            ...(ownsMain ? [{ id: helper.id, proof_tex: "Improperly retained helper proof." }] : []),
+          ],
+          proposed_statement_changes: ownsMain ? [{
+            id: "thm:main",
+            current: "tau is identified",
+            proposed,
+            reason: "test an inapplicable root postimage",
+            direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace",
+            id: "thm:main",
+            proposed: {
+              ...PROTO.statements[0], statement: proposed,
+              depends_on: ["ass:overlap", helper.id], free_symbols: [],
+            },
+            reason: "stale root replacement must not mint helper authority",
+            direction: "correct",
+            based_on_revision: `rev:${"0".repeat(64)}`,
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id]).toMatchObject({
+      partial: true,
+      shelved: true,
+      proof_tex: "Historical partial argument.",
+    });
+  });
+
+  it("does not authorize downstream proofs from an incomplete semantic-owner postimage", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:incomplete-postimage-helper", kind: "lemma",
+      statement: "the incomplete-postimage helper claim", depends_on: [], status: "to-prove",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [helper.id]: {
+          proof_tex: "Historical partial argument.",
+          snapshot: { stmt: helper.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: helper, owner: "thm:historical", partial: true, shelved: true,
+        },
+      },
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        const proposed = "tau is identified through an incomplete postimage";
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsMain ? [{ id: helper.id, proof_tex: "Must not be authorized." }] : []),
+          ],
+          proposed_statement_changes: ownsMain ? [{
+            id: "thm:main", current: PROTO.statements[0].statement, proposed,
+            reason: "exercise an incomplete proof transaction", direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...PROTO.statements[0], statement: proposed, depends_on: ["ass:overlap", helper.id], free_symbols: [] },
+            reason: "the postimage lacks an argues_proposed proof", direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    expect((await readSurfacedProposals(ctx)).proofs ?? [])
+      .not.toContainEqual(expect.objectContaining({ id: helper.id }));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id]).toMatchObject({
+      partial: true, shelved: true, proof_tex: "Historical partial argument.",
+    });
+  });
+
+  it("does not let a sibling correction bootstrap the owner's shelved proof", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "lem:shelved-bootstrap",
+      kind: "lemma",
+      statement: "the historical broad claim",
+      depends_on: [],
+      status: "to-prove",
+    } as any;
+    const leaf = {
+      id: "lem:sibling-minted-leaf",
+      kind: "lemma",
+      statement: "the downstream leaf claim",
+      depends_on: [],
+      status: "to-prove",
+    } as any;
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].depends_on = ["ass:overlap", carried.id];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [carried.id]: {
+          proof_tex: "Historical partial argument.",
+          snapshot: { stmt: carried.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: carried,
+          owner: "thm:main",
+          partial: true,
+          shelved: true,
+        },
+        [leaf.id]: {
+          proof_tex: "Historical leaf fragment.",
+          snapshot: { stmt: leaf.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: leaf,
+          owner: "thm:main",
+          partial: true,
+          shelved: true,
+        },
+      },
+    });
+    const proposed = "the sibling's narrower claim";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets
+              .filter((target) => target.id !== carried.id && target.id !== leaf.id)
+              .map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsMain
+              ? [{ id: leaf.id, proof_tex: "Owner's newly reachable leaf proof." }]
+              : [{ id: carried.id, proof_tex: "Sibling correction proof.", argues_proposed: true }]),
+          ],
+          proposed_statement_changes: ownsMain ? [] : [{
+            id: carried.id,
+            current: carried.statement,
+            proposed,
+            reason: "unauthorized sibling correction",
+            direction: "narrow",
+          }],
+          proposed_core_edits: ownsMain ? [] : [{
+            kind: "statement-replace",
+            id: carried.id,
+            proposed: { ...carried, statement: proposed, depends_on: [leaf.id], free_symbols: [] },
+            reason: "unauthorized sibling replacement",
+            direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    // An existing id the emitter does not own is an OWNERSHIP withhold, not an id fault.
+    expect(String((result as { message?: string }).message ?? "")).toMatch(/OWNERSHIP.*lem:shelved-bootstrap.*owner/i);
+    expect(String((result as { message?: string }).message ?? "")).not.toMatch(/named no core statement/);
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[carried.id]).toMatchObject({ partial: true });
+    expect(working.solved[carried.id].proof_tex).toBe("Historical partial argument.");
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.statements ?? []).not.toContainEqual(expect.objectContaining({ id: carried.id }));
+    expect(surfaced.coreEdits ?? []).not.toContainEqual(expect.objectContaining({ id: carried.id }));
+    expect(surfaced.proofs ?? []).not.toContainEqual(expect.objectContaining({ id: carried.id }));
+    expect(surfaced.proofs ?? []).not.toContainEqual(expect.objectContaining({ id: leaf.id }));
+  });
+
+  it("fails closed on byte-identical complete correction transactions from two units", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "lem:duplicate-correction", kind: "lemma", statement: "the old duplicate claim",
+      depends_on: [], status: "to-prove",
+    } as any;
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].depends_on = ["ass:overlap", carried.id];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [carried.id]: {
+          proof_tex: "Old partial proof.",
+          snapshot: { stmt: carried.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: carried, owner: "thm:main", partial: true, shelved: true,
+        },
+      },
+    });
+    const proposed = "the identical narrowed duplicate claim";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            { id: carried.id, proof_tex: "Identical correction proof.", argues_proposed: true },
+          ],
+          proposed_statement_changes: [{
+            id: carried.id, current: carried.statement, proposed,
+            reason: "identical cross-unit correction", direction: "narrow",
+          }],
+          proposed_core_edits: [{
+            kind: "statement-replace", id: carried.id,
+            proposed: { ...carried, statement: proposed, free_symbols: [] },
+            reason: "identical cross-unit replacement", direction: "correct",
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const surfaced = await readSurfacedProposals(ctx);
+    expect(surfaced.statements ?? []).not.toContainEqual(expect.objectContaining({ id: carried.id }));
+    expect(surfaced.coreEdits ?? []).not.toContainEqual(expect.objectContaining({ id: carried.id }));
+    expect(surfaced.proofs ?? []).not.toContainEqual(expect.objectContaining({ id: carried.id }));
+  });
+
+  it("does not let a no-op correction revive the owner's shelved proof", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "lem:no-op-revival",
+      kind: "lemma",
+      statement: "the unchanged historical claim",
+      depends_on: [],
+      status: "to-prove",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [carried.id]: {
+          proof_tex: "Historical partial argument.",
+          snapshot: { stmt: carried.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: carried,
+          owner: "thm:main",
+          partial: true,
+          shelved: true,
+        },
+      },
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsMain ? [{ id: carried.id, proof_tex: "Improperly revived proof.", argues_proposed: true }] : []),
+          ],
+          proposed_statement_changes: ownsMain ? [{
+            id: carried.id,
+            current: carried.statement,
+            proposed: carried.statement,
+            reason: "no-op correction",
+            direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace",
+            id: carried.id,
+            proposed: { ...carried, free_symbols: [] },
+            reason: "no-op replacement",
+            direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).rejects.toThrow(
+      /proof lem:no-op-revival sets argues_proposed=true but has 0 complete claim-change transaction\(s\)/i,
+    );
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[carried.id]).toMatchObject({ partial: true, shelved: true });
+    expect(working.solved[carried.id].proof_tex).toBe("Historical partial argument.");
+  });
+
+  it("restores current-round invalidation rather than a stale full prior record", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "lem:invalidated-before-merge",
+      kind: "lemma",
+      statement: "the previously proved agent claim",
+      depends_on: ["def:env"],
+      status: "proved",
+      proof_tex: "Previously complete proof.",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 3,
+      solved: {
+        [carried.id]: {
+          proof_tex: carried.proof_tex,
+          snapshot: {
+            stmt: carried.statement,
+            depends_on: carried.depends_on,
+            defs: { "def:env": "a stale construction" },
+            assumptions: {},
+          },
+          node: carried,
+          owner: "thm:main",
+        },
+      },
+    });
+    const proposed = "the substantively narrowed agent claim";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsMain ? [{ id: carried.id, proof_tex: "Proof against an inapplicable replacement.", argues_proposed: true }] : []),
+          ],
+          proposed_statement_changes: ownsMain ? [{
+            id: carried.id,
+            current: carried.statement,
+            proposed,
+            reason: "substantive narrowing",
+            direction: "narrow",
+          }] : [],
+          proposed_core_edits: ownsMain ? [{
+            kind: "statement-replace",
+            id: carried.id,
+            proposed: { ...carried, statement: proposed, status: "to-prove", proof_tex: undefined, free_symbols: [] },
+            reason: "stale replacement revision",
+            direction: "correct",
+            based_on_revision: `rev:${"0".repeat(64)}`,
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeState(), deps });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[carried.id]).toMatchObject({ partial: true, shelved: true });
+    expect(working.solved[carried.id].proof_tex).toBe("Previously complete proof.");
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.some((statement: any) => statement.id === carried.id)).toBe(false);
+  });
+
+  it("lets the durable owner refresh an undispatched published agent proof", async () => {
+    const ctx = makeCtx(repoRoot);
+    const carried = {
+      id: "lem:published-agent",
+      kind: "lemma",
+      statement: "the published agent claim",
+      depends_on: [],
+      status: "proved",
+      proof_tex: "Old serialized proof.",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 5,
+      solved: {
+        [carried.id]: {
+          proof_tex: carried.proof_tex,
+          snapshot: { stmt: carried.statement, depends_on: [], defs: {}, assumptions: {} },
+          node: carried,
+          owner: "thm:main",
+        },
+      },
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some((target) => target.id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: [
+            ...targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+            ...(ownsMain ? [{ id: carried.id, proof_tex: "Corrected serialized proof." }] : []),
+          ],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).not.toHaveProperty("status");
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[carried.id].proof_tex).toBe("Corrected serialized proof.");
+  });
+
   it("records a skipped reason when an already-present assumption is selected for apply", async () => {
     // The silent `continue` on an existing assumption id recorded nothing, so the
     // partial-apply refusal fired with "No per-edit reason was recorded" — an
@@ -2675,7 +5840,7 @@ describe("incremental reuse across escalation rounds", () => {
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
         const hasMain = targets.some((t) => t.id === "thm:main");
-        await writeFile(outPath, JSON.stringify({
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs({
           proofs: targets.filter((t) => t.id !== "thm:main").map((t) => ({ id: t.id, proof_tex: "QED." })),
           proposed_statement_changes: hasMain
             ? [{ id: "thm:main", current: "tau is identified", proposed: "tau is identified on the overlap region", reason: "needs overlap", direction: "narrow" }]
@@ -2683,7 +5848,7 @@ describe("incremental reuse across escalation rounds", () => {
           open_obligations: hasMain
             ? [{ node_id: "thm:main", what_is_open: "the full-support case", obstruction: "no bound without overlap", attempted: "direct decomposition" }]
             : [],
-        }), "utf8");
+        })), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -2744,7 +5909,8 @@ describe("incremental reuse across escalation rounds", () => {
     };
 
     const result = await runStage0Solve({ ctx, state: makeState(), deps });
-    expect(String((result as { message?: string }).message ?? "")).toMatch(/PLUMBING FAULT.*lem:cross-helper/);
+    expect(String((result as { message?: string }).message ?? "")).toMatch(/OWNERSHIP.*lem:cross-helper.*owner/);
+    expect(String((result as { message?: string }).message ?? "")).not.toMatch(/named no core statement/);
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     const rec = working.solved["lem:cross-helper"];
     expect(rec?.node, "the agent-added lemma must keep its catalog node definition").toBeDefined();
@@ -2911,11 +6077,9 @@ describe("incremental reuse across escalation rounds", () => {
       require_core_changes: true,
       required_core_targets: ["def:replicated-frontier"],
     });
-    let calls = 0;
     let agentReproofCalls = 0;
     const deps: StageDeps = {
       runCodex: async ({ prompt }: { prompt: string }) => {
-        calls += 1;
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const targetBlock = (prompt.split("=== TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
           .split("SOLVE_OUTPUT_PATH")[0];
@@ -2980,23 +6144,21 @@ describe("incremental reuse across escalation rounds", () => {
       inputs: ["ass:overlap"],
     });
     const pending = JSON.parse(await readFile(workingPath(ctx), "utf8"));
-    expect(pending.solved["thm:replicated-boundary"]).toMatchObject({ partial: true });
+    expect(pending.solved["thm:replicated-boundary"].partial).toBeUndefined();
+    expect(pending.solved["lem:replicated-separator"].partial).toBeUndefined();
 
     await runStage0Solve({ ctx, state: makeState(), deps });
-    expect(agentReproofCalls).toBe(1);
+    expect(agentReproofCalls).toBe(0);
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.statements.find((s: any) => s.id === "thm:replicated-boundary")).toMatchObject({
       status: "proved",
-      proof_tex: "Apply the corrected separator.",
+      proof_tex: "Apply the separator.",
     });
     expect(core.statements.find((s: any) => s.id === "lem:replicated-separator")).toMatchObject({
       status: "proved",
-      proof_tex: "The corrected frontier admits the separator.",
+      proof_tex: "Separate the sets.",
     });
 
-    const callsAfterReproof = calls;
-    await runStage0Solve({ ctx, state: makeState(), deps });
-    expect(calls).toBe(callsAfterReproof);
   });
 
   it("accepts statement-delete at the structured solver-output boundary", async () => {
@@ -3122,6 +6284,91 @@ describe("incremental reuse across escalation rounds", () => {
     expect(workingAfterApply.required_core_edit_mandates).toEqual([]);
   });
 
+  it("quarantines open against a mandated delete while committing an unrelated proof", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.push({
+      id: "lem:mandate-unrelated", kind: "lemma", statement: "an unrelated result survives",
+      depends_on: ["ass:overlap"], status: "to-prove",
+      justification: "regression witness", gap: "none", consumer: "test",
+    });
+    // This fixture represents a deletion already adjudicated as safe.  The base
+    // PROTO's auxiliary node names thm:main in authored prose, which would make
+    // deleting thm:main a claim/prose edit rather than a dependency remap.
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "downstream";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const requiredEdit = {
+      kind: "statement-delete" as const,
+      id: "thm:main",
+      replacement_id: "prop:aux",
+      reason: "independently adjudicated obsolete duplicate",
+      direction: "delete-obsolete" as const,
+    };
+    await appendEscalationLog(ctx, {
+      round: 1,
+      changed: [],
+      directive: "delete the obsolete headline and preserve unrelated progress",
+      require_core_changes: true,
+      required_core_targets: ["lem:mandate-unrelated"],
+      required_core_edit_mandates: [makeRequiredCoreEditMandate({
+        core: proto,
+        working: null,
+        edit: requiredEdit,
+        proposalRevision: "angle:0/version:1",
+      })],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          open_obligations: ownsMain ? [{
+            node_id: "thm:main",
+            what_is_open: "the obsolete headline remains unresolved",
+            obstruction: "a worker-side objection to the deletion",
+            attempted: "the old proof route",
+            partial_result: "Partial obsolete proof.",
+          }] : [],
+          proposed_core_edits: ownsMain ? [requiredEdit] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeVersionedState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "lem:mandate-unrelated")?.status)
+      .toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toContainEqual(expect.objectContaining({
+      category: "open-obligation",
+      target: "thm:main",
+      reason: "mandate-shadowed",
+      payload: expect.objectContaining({ partial_result: "Partial obsolete proof." }),
+    }));
+    const checkpointWorking = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(checkpointWorking.escalation_entries_consumed).toBe(1);
+
+    await applyProposedChanges({ ctx });
+    expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).statements
+      .some((statement: any) => statement.id === "thm:main")).toBe(false);
+    const appliedWorking = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(appliedWorking.required_core_edit_mandates).toEqual([]);
+    expect(appliedWorking.escalation_entries_consumed).toBe(1);
+
+    // Restart must not replay the already-applied mandate against its changed
+    // target snapshot merely because worker noise on that target was archived.
+    await expect(runStage0Solve({ ctx, state: makeVersionedState(), deps })).resolves.toBeDefined();
+  });
+
   it("preserves and applies a metadata-only mandated statement replacement", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
@@ -3151,10 +6398,6 @@ describe("incremental reuse across escalation rounds", () => {
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         await writeFile(outPath, JSON.stringify({
           proofs: [{ id: "thm:main", proof_tex: "Worker proof against the old metadata." }],
-          proposed_statement_changes: [{
-            id: "thm:main", current: proto.statements[0].statement,
-            proposed: "an adversarial claim rewrite", reason: "ignore mandate", direction: "narrow",
-          }],
           proposed_core_edits: [{ ...edit, reason: "worker rationale" }],
         }), "utf8");
         return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
@@ -3176,6 +6419,96 @@ describe("incremental reuse across escalation rounds", () => {
     const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
     expect(applied.statements.find((statement: any) => statement.id === "thm:main").consumer)
       .toBe("revised canonical consumer");
+  });
+
+  it("round-trips and applies a metadata-only mandated definition replacement", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "definition-replace" as const,
+      id: "def:env",
+      proposed: { ...proto.definitions[0], name: "revised envelope" },
+      reason: "independently adjudicated definition metadata repair",
+      direction: "correct" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+    });
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "repair the definition metadata", require_core_changes: true,
+      required_core_edit_mandates: [mandate],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "thm:main", proof_tex: "Worker proof against unchanged construction." }],
+          proposed_core_edits: [{ ...edit, reason: "worker rationale" }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeVersionedState(), deps });
+    const surfaced = await readSurfacedProposals(ctx) as any;
+    expect(surfaced.coreEdits).toEqual([expect.objectContaining({
+      kind: "definition-replace", id: "def:env", reason: edit.reason,
+    })]);
+    expect(surfaced.definitions).toEqual([]);
+    expect(surfaced.basis_revision).toMatch(/^rev:[a-f0-9]{64}$/);
+    await applyProposedChanges({ ctx });
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.definitions.find((definition: any) => definition.id === "def:env"))
+      .toMatchObject({ name: "revised envelope", construction: "U = a" });
+  });
+
+  it("round-trips and applies a construction-changing mandated definition replacement without a worker substitute", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const edit = {
+      kind: "definition-replace" as const,
+      id: "def:env",
+      proposed: { ...proto.definitions[0], construction: "U = a + b" },
+      reason: "independently adjudicated construction correction",
+      direction: "correct" as const,
+    };
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto, working: null, edit, proposalRevision: "angle:0/version:1",
+    });
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "correct the definition construction", require_core_changes: true,
+      required_core_edit_mandates: [mandate],
+    });
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const segment = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(
+          segment.slice(segment.indexOf("["), segment.lastIndexOf("]") + 1),
+        ) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `Proved ${target.id}.` })),
+          proposed_core_edits: [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    await runStage0Solve({ ctx, state: makeVersionedState(), deps });
+    const surfaced = await readSurfacedProposals(ctx) as any;
+    expect(surfaced.coreEdits).toEqual([expect.objectContaining({
+      kind: "definition-replace", id: "def:env", reason: edit.reason,
+    })]);
+    expect(surfaced.definitions).toEqual([]);
+    expect(surfaced.basis_revision).toMatch(/^rev:[a-f0-9]{64}$/);
+    await applyProposedChanges({ ctx });
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.definitions.find((definition: any) => definition.id === "def:env").construction)
+      .toBe("U = a + b");
   });
 
   it("applies a claim change with its paired structural statement replacement", async () => {
@@ -3229,9 +6562,9 @@ describe("incremental reuse across escalation rounds", () => {
         definitions: [], assumptions: [],
         coreEdits: [{
           kind: "statement-replace", id: "thm:main",
-          // The solver saw the ASSEMBLED pre-bundle view: frozen statement with the
-          // settled overlay's proved status. Echoing that view must be accepted.
-          proposed: { ...frozen, status: "proved", consumer: "revised consumer" },
+          // The paired metadata is authored against the post-change claim while its
+          // revision still pins the assembled settled view the solver saw.
+          proposed: { ...frozen, statement: proposedStatement, status: "to-prove", consumer: "revised consumer" },
           reason: "synchronize structural metadata", direction: "correct",
         }],
         proofs: [],
@@ -3818,7 +7151,6 @@ describe("incremental reuse across escalation rounds", () => {
     proto.symbols.push({ name: "unused_handle", type: "scalar", role: "obsolete notation" });
     proto.definitions.push({ id: "def:obsolete-handle", name: "old", construction: "future program", inputs: [] });
     proto.target_estimand = "H_F: equality holds " + "\f" + "orall units";
-    proto.statements[0].depends_on.push("def:obsolete-handle");
     proto.bibliography[0].citation = "Wrong pages";
     await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
     await seedWorkingProposals(ctx, { coreEdits: [
@@ -3877,7 +7209,6 @@ describe("incremental reuse across escalation rounds", () => {
     expect(updated.assumptions[0].used_by).toEqual(["def:class", "def:new-derived-object", "prop:aux", "thm:main"]);
     expect(updated.definitions.some((d: any) => d.id === "def:obsolete-handle")).toBe(false);
     expect(updated.definitions.some((d: any) => d.id === "def:new-derived-object")).toBe(true);
-    expect(updated.statements[0].depends_on).not.toContain("def:obsolete-handle");
     expect(updated.symbols[0].role).toBe("resolved causal estimand");
     expect(updated.symbols).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "t_pi", role: "propensity smoothness" }),
@@ -3888,6 +7219,107 @@ describe("incremental reuse across escalation rounds", () => {
     expect(updated.target_estimand).toContain("\\forall units");
     expect(updated.target_estimand).not.toContain("\f");
     expect(updated.assumptions[0].used_by).toContain("def:new-derived-object");
+  });
+
+  it("refuses an accepted symbol-add that closes a dependency cycle with an older symbol", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.symbols[0].refs = ["new_domain"];
+    const before = JSON.stringify(proto);
+    await writeFile(protoCoreJsonPath(ctx), before, "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [{
+      kind: "symbol-add",
+      name: "new_domain",
+      proposed: {
+        name: "new_domain",
+        type: "derived domain",
+        role: "same-bundle prerequisite",
+        refs: [proto.symbols[0].name],
+      },
+      reason: "declare the new domain used by the older symbol",
+      direction: "correct",
+    }] });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /fails the structural gate.*references symbol.*before it is defined/i,
+    );
+    expect(await readFile(protoCoreJsonPath(ctx), "utf8")).toBe(before);
+  });
+
+  it("applies an atomic definition deletion closure independently of emitter order", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push(
+      { id: "def:obsolete-domain", name: "old domain", construction: "the retired domain", inputs: [] },
+      {
+        id: "def:obsolete-loss",
+        name: "old loss",
+        construction: "loss on def:obsolete-domain",
+        inputs: ["def:obsolete-domain"],
+      },
+    );
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [
+      // Deliberately emit the dependency before its only dependent. The reviewed
+      // transaction deletes both, so this order must not create a false live edge.
+      {
+        kind: "definition-delete", id: "def:obsolete-domain",
+        reason: "renamed atomically", direction: "delete-obsolete",
+      },
+      {
+        kind: "definition-delete", id: "def:obsolete-loss",
+        reason: "renamed atomically", direction: "delete-obsolete",
+      },
+    ] });
+
+    await applyProposedChanges({ ctx });
+
+    const updated = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(updated.definitions.some((d: any) => d.id === "def:obsolete-domain")).toBe(false);
+    expect(updated.definitions.some((d: any) => d.id === "def:obsolete-loss")).toBe(false);
+  });
+
+  it("refuses a definition deletion while a surviving statement keeps a structured dependency", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push({
+      id: "def:still-used", name: "used definition", construction: "a structured premise", inputs: [],
+    });
+    proto.statements[0].depends_on.push("def:still-used");
+    const before = JSON.stringify(proto);
+    await writeFile(protoCoreJsonPath(ctx), before, "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [{
+      kind: "definition-delete", id: "def:still-used",
+      reason: "incorrectly thought obsolete", direction: "delete-obsolete",
+    }] });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /structured references remain.*statement:thm:main/i,
+    );
+    expect(await readFile(protoCoreJsonPath(ctx), "utf8")).toBe(before);
+  });
+
+  it("does not validate a selected definition delete against an unselected peer delete", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push(
+      { id: "def:subset-a", name: "subset A", construction: "base object", inputs: [] },
+      {
+        id: "def:subset-b", name: "subset B",
+        construction: "built from def:subset-a", inputs: ["def:subset-a"],
+      },
+    );
+    const before = JSON.stringify(proto);
+    await writeFile(protoCoreJsonPath(ctx), before, "utf8");
+    await seedWorkingProposals(ctx, { coreEdits: [
+      { kind: "definition-delete", id: "def:subset-a", reason: "delete A", direction: "delete-obsolete" },
+      { kind: "definition-delete", id: "def:subset-b", reason: "delete B", direction: "delete-obsolete" },
+    ] });
+
+    await expect(applyProposedChanges({
+      ctx, ids: new Set(["core-edit:def:subset-a"]),
+    })).rejects.toThrow(/definition|coherence|references remain/i);
+    expect(await readFile(protoCoreJsonPath(ctx), "utf8")).toBe(before);
   });
 
   it("orders an accepted definition-add before existing definition consumers", async () => {
@@ -3980,9 +7412,875 @@ describe("incremental reuse across escalation rounds", () => {
         proof_tex: String.raw`By \(\operatorname{broken\).`,
         argues_proposed: true,
       }],
+      coreEdits: [withCorrectionPairs({
+        proposed_statement_changes: [{
+          id: "thm:main",
+          current: PROTO.statements[0].statement,
+          proposed: "tau is identified on the overlap region",
+        }],
+      }).proposed_core_edits[0]],
     });
 
     await expect(applyProposedChanges({ ctx })).rejects.toThrow(/unbalanced TeX grouping braces/);
+  });
+
+  it("seals a standalone reviewed helper proof even without a same-id claim edit", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:sealed-helper", kind: "lemma", statement: "the helper claim",
+      depends_on: [], status: "to-prove", free_symbols: [], consumer: "old route",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        [helper.id]: {
+          node: helper, owner: "thm:main", partial: true,
+          proof_tex: String.raw`By \(\operatorname{broken\).`,
+          snapshot: snapshotMember(PROTO as any, helper),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: helper.id, proof_tex: String.raw`By \(\operatorname{broken\).` }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: helper.id,
+        proposed: { ...helper, consumer: "reviewed route" },
+        reason: "publish reviewed helper metadata",
+        direction: "correct",
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/unbalanced TeX grouping braces/);
+  });
+
+  it("promotes every reviewed proof to a dependency fixpoint before clearing proposals", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const helper = {
+      id: "lem:promotion-helper", kind: "lemma", statement: "the helper claim",
+      depends_on: [], status: "to-prove", free_symbols: [],
+    } as any;
+    const consumer = {
+      id: "thm:promotion-consumer", kind: "theorem", statement: "the consumer claim",
+      depends_on: [helper.id], status: "to-prove", free_symbols: [], consumer: "old route",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        [helper.id]: {
+          node: helper, owner: consumer.id, partial: true,
+          proof_tex: "Complete helper proof.", snapshot: snapshotMember(proto, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, partial: true,
+          proof_tex: "Use lem:promotion-helper.", snapshot: snapshotMember(proto, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [
+        { id: consumer.id, proof_tex: "Use lem:promotion-helper." },
+        { id: helper.id, proof_tex: "Complete helper proof." },
+      ],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: consumer.id,
+        proposed: { ...consumer, consumer: "reviewed route" },
+        reason: "publish reviewed consumer metadata",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[helper.id].partial).toBeUndefined();
+    expect(working.solved[consumer.id].partial).toBeUndefined();
+    expect(working.solved[helper.id].proof_tex).toBe("Complete helper proof.");
+    expect(working.solved[consumer.id].proof_tex).toBe("Use lem:promotion-helper.");
+    expect(working.proposals.proofs).toEqual([]);
+  });
+
+  it("keeps a frozen theorem's proof and proved status exclusively in working state", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proof = "Complete reviewed proof.";
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          partial: true,
+          proof_tex: proof,
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: proof }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: "thm:main",
+        proposed: { ...PROTO.statements[0], consumer: "reviewed route" },
+        reason: "publish reviewed theorem metadata",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const frozen = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const theorem = frozen.statements.find((node: any) => node.id === "thm:main");
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(theorem.status).toBe("to-prove");
+    expect(theorem.proof_tex).toBeUndefined();
+    expect(working.solved["thm:main"].node).toBeUndefined();
+    expect(working.solved["thm:main"].partial).toBeUndefined();
+    expect(working.solved["thm:main"].proof_tex).toBe(proof);
+  });
+
+  it("does not let an early metadata pairing bypass an unapplied global invalidator", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proof = "Complete reviewed proof.";
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          partial: true,
+          proof_tex: proof,
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: proof }],
+      coreEdits: [
+        {
+          kind: "statement-replace",
+          id: "thm:main",
+          proposed: { ...PROTO.statements[0], consumer: "reviewed route" },
+          reason: "publish reviewed theorem metadata",
+          direction: "correct",
+        },
+        {
+          kind: "symbol-replace",
+          name: "tau",
+          proposed: { ...PROTO.symbols[0], role: "reviewed target" },
+          reason: "change the global proof basis",
+          direction: "correct",
+        },
+      ],
+    });
+
+    await expect(applyProposedChanges({
+      ctx,
+      ids: new Set(["statement-replace:thm:main"]),
+    })).rejects.toThrow(/reviewed provisional proof.*did not reach a complete exact postimage/i);
+  });
+
+  it("applies accepted semantics while an explicitly rejected proof stays partial", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proof = "Reviewed proof rejected because one dependency is stale.";
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          proof_tex: proof,
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: proof }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: "thm:main",
+        proposed: {
+          ...PROTO.statements[0], status: "proved", proof_tex: proof, consumer: "reviewed route",
+        },
+        reason: "publish reviewed theorem metadata",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({
+      ctx,
+      rejectedProofIds: new Set(["thm:main"]),
+      note: "Proof rejected pending scoped dependency revalidation.",
+    });
+
+    const frozen = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(frozen.statements.find((node: any) => node.id === "thm:main").consumer).toBe("reviewed route");
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    const journal = await readEscalationLog(ctx);
+    expect(journal.at(-1)?.rejected_proof_ids).toEqual(["thm:main"]);
+  });
+
+  it("demotes a frozen inline proof when its reviewed replacement proof is rejected", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.statements[0].status = "proved";
+    proto.statements[0].proof_tex = "Old frozen proof.";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: "Rejected reviewed proof." }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: "thm:main",
+        proposed: { ...proto.statements[0], consumer: "reviewed route" },
+        reason: "publish reviewed theorem metadata",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({
+      ctx,
+      rejectedProofIds: new Set(["thm:main"]),
+      note: "Proof rejected pending scoped dependency revalidation.",
+    });
+
+    const frozen = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const theorem = frozen.statements.find((node: any) => node.id === "thm:main");
+    expect(theorem.status).toBe("to-prove");
+    expect(theorem.proof_tex).toBeUndefined();
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(working.solved["thm:main"].proof_tex).toBe("Rejected reviewed proof.");
+  });
+
+  it("validates an already-settled exact reviewed proof against unapplied global edits", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proof = "Already settled exact reviewed proof.";
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          proof_tex: proof,
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: proof }],
+      coreEdits: [
+        {
+          kind: "statement-replace",
+          id: "thm:main",
+          proposed: { ...PROTO.statements[0], status: "proved", proof_tex: proof, consumer: "reviewed route" },
+          reason: "publish reviewed theorem metadata",
+          direction: "correct",
+        },
+        {
+          kind: "symbol-replace",
+          name: "tau",
+          proposed: { ...PROTO.symbols[0], role: "reviewed target" },
+          reason: "change the global proof basis",
+          direction: "correct",
+        },
+      ],
+    });
+
+    await expect(applyProposedChanges({
+      ctx,
+      ids: new Set(["statement-replace:thm:main"]),
+    })).rejects.toThrow(/reviewed provisional proof.*did not reach a complete exact postimage/i);
+  });
+
+  it("rejects a sealed non-definition proof bundle after its frozen basis drifts", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proof = "Proof under the reviewed symbol meaning.";
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          partial: true,
+          proof_tex: proof,
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: proof }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: "thm:main",
+        proposed: { ...PROTO.statements[0], consumer: "reviewed route" },
+        reason: "publish reviewed theorem metadata",
+        direction: "correct",
+      }],
+    });
+    const drifted = structuredClone(PROTO) as any;
+    drifted.symbols[0].def = "a different unreviewed target meaning";
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(drifted), "utf8");
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/persisted assembled-core basis/);
+  });
+
+  it("orders promotion through proof-text-wired dependencies", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:wired-helper", kind: "lemma", statement: "the helper claim",
+      depends_on: [], status: "to-prove", free_symbols: [],
+    } as any;
+    const consumer = {
+      id: "thm:wired-consumer", kind: "theorem", statement: "the consumer claim",
+      depends_on: [], status: "to-prove", free_symbols: [], consumer: "old route",
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        [helper.id]: {
+          node: helper, owner: consumer.id, partial: true,
+          proof_tex: "Incomplete helper.", snapshot: snapshotMember(PROTO as any, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, partial: true,
+          proof_tex: "Use lem:wired-helper.", snapshot: snapshotMember(PROTO as any, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: consumer.id, proof_tex: "Use lem:wired-helper." }],
+      coreEdits: [{
+        kind: "statement-replace",
+        id: consumer.id,
+        proposed: { ...consumer, consumer: "reviewed route" },
+        reason: "publish reviewed consumer metadata",
+        direction: "correct",
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /reviewed provisional proof.*did not reach a complete exact postimage/i,
+    );
+  });
+
+  it("rebases an applied symbol edit only after reopening unreviewed affected proofs", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proof = "Reviewed proof under the corrected symbol meaning.";
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(PROTO as any),
+      solved: {
+        "thm:main": {
+          partial: true,
+          proof_tex: proof,
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+        "prop:aux": {
+          proof_tex: "Old unreviewed proof.",
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[1] as any),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: "thm:main", proof_tex: proof }],
+      coreEdits: [{
+        kind: "symbol-replace",
+        name: "tau",
+        proposed: { ...PROTO.symbols[0], def: "the corrected target meaning" },
+        reason: "correct the global target meaning",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.symbol_basis).toEqual(symbolBasis(proto));
+    expect(working.solved["thm:main"].partial).toBeUndefined();
+    expect(working.solved["prop:aux"].partial).toBe(true);
+    expect(computeValidNodes(working, proto).has("thm:main")).toBe(true);
+    expect(computeValidNodes(working, proto).has("prop:aux")).toBe(false);
+  });
+
+  it("lands a reviewed symbol correction while deferring its sibling-invalidated proof closure", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:symbol-helper", kind: "lemma", statement: "the helper proves tau",
+      depends_on: [], status: "to-prove", free_symbols: ["tau"],
+    } as any;
+    const consumer = {
+      id: "thm:symbol-consumer", kind: "theorem", statement: "the consumer proves tau",
+      depends_on: [helper.id], status: "to-prove", free_symbols: ["tau"],
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        [helper.id]: {
+          node: helper, owner: consumer.id, proof_tex: "Settled helper proof.",
+          snapshot: snapshotMember(PROTO as any, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, proof_tex: "Use lem:symbol-helper.",
+          snapshot: snapshotMember(PROTO as any, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: consumer.id, proof_tex: "Use lem:symbol-helper." }],
+      coreEdits: [{
+        kind: "symbol-replace",
+        name: "tau",
+        proposed: { ...PROTO.symbols[0], def: "the corrected target meaning" },
+        reason: "correct the global target meaning",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.symbol_basis).toEqual(symbolBasis(proto));
+    expect(working.solved[helper.id].partial).toBe(true);
+    expect(working.solved[consumer.id].partial).toBe(true);
+    expect(computeValidNodes(working, proto).has(helper.id)).toBe(false);
+    expect(computeValidNodes(working, proto).has(consumer.id)).toBe(false);
+    expect(working.proposals.proofs).toEqual([]);
+  });
+
+  it("does not let a genuine symbol edit adopt a pre-existing partial helper", async () => {
+    const ctx = makeCtx(repoRoot);
+    const helper = {
+      id: "lem:preexisting-partial", kind: "lemma", statement: "the unresolved tau helper",
+      depends_on: [], status: "to-prove", free_symbols: ["tau"],
+    } as any;
+    const consumer = {
+      id: "thm:partial-consumer", kind: "theorem", statement: "the reviewed tau consumer",
+      depends_on: [helper.id], status: "to-prove", free_symbols: ["tau"],
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(PROTO as any, [helper, consumer]),
+      solved: {
+        [helper.id]: {
+          node: helper, owner: consumer.id, partial: true,
+          proof_tex: "Still incomplete.", snapshot: snapshotMember(PROTO as any, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, partial: true,
+          proof_tex: "Use lem:preexisting-partial.", snapshot: snapshotMember(PROTO as any, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: consumer.id, proof_tex: "Use lem:preexisting-partial." }],
+      coreEdits: [{
+        kind: "symbol-replace", name: "tau",
+        proposed: { ...PROTO.symbols[0], def: "the corrected target meaning" },
+        reason: "correct the global target meaning", direction: "correct",
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /reviewed provisional proof.*did not reach a complete exact postimage/i,
+    );
+    expect((JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as any).symbols[0].def)
+      .toBe(PROTO.symbols[0].def);
+  });
+
+  it("does not let a definition label edit authorize semantic-symbol deferral", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push({
+      id: "def:model", name: "old prose label", construction: "the formal model",
+      inputs: [], free_symbols: [],
+    });
+    proto.symbols.push({ name: "M", type: "model_class", def: "the model", ref: "def:model" });
+    const helper = {
+      id: "lem:label-helper", kind: "lemma", statement: "the unresolved helper",
+      depends_on: [], status: "to-prove", free_symbols: ["M"],
+    } as any;
+    const consumer = {
+      id: "thm:label-consumer", kind: "theorem", statement: "the reviewed consumer",
+      depends_on: [helper.id], status: "to-prove", free_symbols: ["M"],
+    } as any;
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto, [helper, consumer]),
+      solved: {
+        [helper.id]: {
+          node: helper, owner: consumer.id, partial: true,
+          proof_tex: "Incomplete helper.", snapshot: snapshotMember(proto, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, partial: true,
+          proof_tex: "Use lem:label-helper.", snapshot: snapshotMember(proto, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: consumer.id, proof_tex: "Use lem:label-helper." }],
+      coreEdits: [{
+        kind: "definition-replace", id: "def:model",
+        based_on_revision: definitionRevision(
+          proto.definitions.find((definition: any) => definition.id === "def:model"),
+          proto,
+        ),
+        proposed: {
+          ...proto.definitions.find((definition: any) => definition.id === "def:model"),
+          name: "new prose label",
+        },
+        reason: "clarify only the display label", direction: "correct",
+      }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /reviewed provisional proof.*did not reach a complete exact postimage/i,
+    );
+    expect((JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")) as any).definitions
+      .find((definition: any) => definition.id === "def:model").name)
+      .toBe("old prose label");
+  });
+
+  it("uses the pre-edit assumption scope when the same bundle hides a changed symbol", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.assumptions[0].free_symbols = ["tau"];
+    proto.statements[0].free_symbols = [];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto),
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof through ass:overlap.",
+          snapshot: snapshotMember(proto, proto.statements[0]),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      coreEdits: [
+        {
+          kind: "assumption-replace",
+          id: "ass:overlap",
+          proposed: { ...proto.assumptions[0], free_symbols: [] },
+          reason: "remove stale declaration metadata",
+          direction: "correct",
+        },
+        {
+          kind: "symbol-replace",
+          name: "tau",
+          proposed: { ...proto.symbols[0], def: "the corrected target meaning" },
+          reason: "correct the global target meaning",
+          direction: "correct",
+        },
+      ],
+    });
+
+    await applyProposedChanges({ ctx });
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.symbol_basis).toEqual(symbolBasis(updatedProto));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(computeValidNodes(working, updatedProto).has("thm:main")).toBe(false);
+  });
+
+  it("invalidates a legacy proof when statement replacement implicitly repoints a symbol ref", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.symbols.push({ name: "M", type: "named_result", def: "the referenced result", ref: "lem:old" });
+    proto.statements.push(
+      { id: "lem:old", kind: "lemma", statement: "the old result", depends_on: [], status: "to-prove", free_symbols: [] },
+      { id: "lem:new", kind: "lemma", statement: "the replacement result", depends_on: [], status: "to-prove", free_symbols: [] },
+    );
+    proto.statements[0].free_symbols = ["M"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof under M.",
+          snapshot: snapshotMember(proto, proto.statements[0]),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      coreEdits: [{
+        kind: "statement-delete",
+        id: "lem:old",
+        replacement_id: "lem:new",
+        reason: "replace the canonical referenced result",
+        direction: "delete-obsolete",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(updatedProto.symbols.find((symbol: any) => symbol.name === "M").ref).toBe("lem:new");
+    expect(working.symbol_basis).toEqual(symbolBasis(updatedProto));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(computeValidNodes(working, updatedProto).has("thm:main")).toBe(false);
+  });
+
+  it("rejects a dependency-rewired helper as independent debt under a symbol change", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.assumptions[0].free_symbols = ["tau"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const helper = {
+      id: "lem:agent-symbol-helper", kind: "lemma", statement: "the agent helper",
+      depends_on: ["ass:overlap"], status: "to-prove", free_symbols: [],
+    } as any;
+    const consumer = {
+      id: "thm:agent-symbol-consumer", kind: "theorem", statement: "the agent consumer",
+      depends_on: [helper.id], status: "to-prove", free_symbols: [],
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto),
+      solved: {
+        [helper.id]: {
+          node: helper, owner: consumer.id, proof_tex: "Proof using ass:overlap.",
+          snapshot: snapshotMember(proto, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, proof_tex: "Use lem:agent-symbol-helper.",
+          snapshot: snapshotMember(proto, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: consumer.id, proof_tex: "Use lem:agent-symbol-helper." }],
+      coreEdits: [
+        {
+          kind: "statement-replace",
+          id: helper.id,
+          proposed: { ...helper, depends_on: [] },
+          reason: "remove the carried assumption edge",
+          direction: "correct",
+        },
+        {
+          kind: "symbol-replace",
+          name: "tau",
+          proposed: { ...proto.symbols[0], def: "the corrected target meaning" },
+          reason: "correct the global target meaning",
+          direction: "correct",
+        },
+      ],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /reviewed provisional proof.*did not reach a complete exact postimage/i,
+    );
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(updatedProto.symbols[0].def).toBe(proto.symbols[0].def);
+    expect(working.solved[helper.id].node.depends_on).toEqual(["ass:overlap"]);
+    expect(working.solved[helper.id].partial).toBeUndefined();
+    expect(working.solved[consumer.id].partial).toBeUndefined();
+  });
+
+  it("invalidates consumers through a transitive symbol refs chain", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.symbols.push(
+      { name: "b", type: "derived", def: "b = tau", refs: ["tau"] },
+      { name: "a", type: "derived", def: "a = T(b)", refs: ["b"] },
+    );
+    proto.statements[0].free_symbols = ["a"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto),
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof about a.",
+          snapshot: snapshotMember(proto, proto.statements[0]),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      coreEdits: [{
+        kind: "symbol-replace",
+        name: "tau",
+        proposed: { ...proto.symbols[0], def: "the corrected target meaning" },
+        reason: "correct the root symbol",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(computeValidNodes(working, updatedProto).has("thm:main")).toBe(false);
+  });
+
+  it("invalidates a symbol consumer when its stable ref target definition changes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push({
+      id: "def:model", name: "model", construction: "the old model class",
+      inputs: [], free_symbols: [],
+    });
+    proto.symbols.push({ name: "M", type: "model_class", def: "the model", ref: "def:model" });
+    proto.statements[0].free_symbols = ["M"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto),
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof over M.",
+          snapshot: snapshotMember(proto, proto.statements[0]),
+        },
+      },
+    });
+    const change = {
+      id: "def:model",
+      current: "the old model class",
+      proposed: "the corrected model class",
+      reason: "correct the referenced model",
+      direction: "correct",
+      based_on_revision: definitionRevision(
+        proto.definitions.find((definition: any) => definition.id === "def:model"),
+        proto,
+      ),
+    };
+    await seedWorkingProposals(ctx, {
+      definitions: [change],
+      coreEdits: [{
+        kind: "definition-replace",
+        id: "def:model",
+        proposed: { ...proto.definitions.find((definition: any) => definition.id === "def:model"), construction: change.proposed },
+        reason: "synchronize the corrected referenced model",
+        direction: "correct",
+        based_on_revision: change.based_on_revision,
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(computeValidNodes(working, updatedProto).has("thm:main")).toBe(false);
+  });
+
+  it("invalidates a symbol consumer when a nested referenced definition changes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push(
+      { id: "def:inner", name: "inner", construction: "the old inner object", inputs: [], free_symbols: [] },
+      // The nested edge is intentionally authored only in construction prose. Real
+      // cores use this shape, so snapshots must not rely solely on `inputs`.
+      { id: "def:outer", name: "outer", construction: "the outer object built from def:inner", inputs: [], free_symbols: [] },
+    );
+    proto.symbols.push({ name: "M", type: "model_class", def: "the outer model", ref: "def:outer" });
+    proto.statements[0].free_symbols = ["M"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto),
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof over nested M.",
+          snapshot: snapshotMember(proto, proto.statements[0]),
+        },
+      },
+    });
+    const definition = proto.definitions.find((node: any) => node.id === "def:inner");
+    const revision = definitionRevision(definition, proto);
+    await seedWorkingProposals(ctx, {
+      definitions: [{
+        id: "def:inner", current: definition.construction, proposed: "the corrected inner object",
+        reason: "correct the nested object", direction: "correct", based_on_revision: revision,
+      }],
+      coreEdits: [{
+        kind: "definition-replace", id: "def:inner",
+        proposed: { ...definition, construction: "the corrected inner object" },
+        reason: "synchronize the nested correction", direction: "correct", based_on_revision: revision,
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(computeValidNodes(working, updatedProto).has("thm:main")).toBe(false);
+  });
+
+  it("invalidates a class-symbol consumer when a nested member assumption changes", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    proto.definitions.push({
+      id: "def:referenced-class", name: "referenced class", construction: "{ P : P satisfies overlap }",
+      by_member_properties: ["ass:overlap"], free_symbols: [],
+    });
+    proto.symbols.push({ name: "M", type: "model_class", def: "the referenced class", ref: "def:referenced-class" });
+    proto.statements[0].free_symbols = ["M"];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto),
+      solved: {
+        "thm:main": {
+          proof_tex: "Settled proof over the referenced class.",
+          snapshot: snapshotMember(proto, proto.statements[0]),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      coreEdits: [{
+        kind: "assumption-replace",
+        id: "ass:overlap",
+        proposed: { ...proto.assumptions[0], condition: "the corrected overlap condition" },
+        reason: "correct the class member condition",
+        direction: "correct",
+      }],
+    });
+
+    await applyProposedChanges({ ctx });
+    const updatedProto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved["thm:main"].partial).toBe(true);
+    expect(computeValidNodes(working, updatedProto).has("thm:main")).toBe(false);
+  });
+
+  it("refuses to consume a claim-changing proof that lacks argues_proposed", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proposed = "tau is identified on the reviewed overlap region";
+    await saveWorkingState(ctx, {
+      round: 4,
+      solved: {
+        "thm:main": {
+          partial: true,
+          proof_tex: "Proof of the changed claim.",
+          snapshot: snapshotMember(PROTO as any, PROTO.statements[0] as any),
+        },
+      },
+    });
+    const change = {
+      id: "thm:main", current: PROTO.statements[0].statement, proposed,
+      reason: "narrow to the reviewed region", direction: "narrow",
+    };
+    await seedWorkingProposals(ctx, {
+      statements: [change],
+      coreEdits: withCorrectionPairs({ proposed_statement_changes: [change] }).proposed_core_edits,
+      proofs: [{ id: "thm:main", proof_tex: "Proof of the changed claim." }],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/argues_proposed:true/i);
+  });
+
+  it("rejects a selector that splits a claim correction from its metadata pair", async () => {
+    const ctx = makeCtx(repoRoot);
+    const change = {
+      id: "thm:main",
+      current: PROTO.statements[0].statement,
+      proposed: "tau is identified on the overlap region",
+      reason: "narrow to the supported region",
+      direction: "narrow",
+    };
+    await seedWorkingProposals(ctx, {
+      statements: [change],
+      coreEdits: withCorrectionPairs({ proposed_statement_changes: [change] }).proposed_core_edits,
+    });
+
+    await expect(applyProposedChanges({
+      ctx,
+      ids: new Set(["statement:thm:main"]),
+    })).rejects.toThrow(/must be selected atomically/i);
   });
 
   it("validates the full assumption node that a selected proposal would persist", async () => {
@@ -4172,6 +8470,64 @@ describe("incremental reuse across escalation rounds", () => {
     expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).estimand_functional).toBe(proto.estimand_functional);
   });
 
+  it("deletes a statement together with its sole symbol reference through preview, commit, and restart", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "downstream";
+    proto.symbols.push({
+      name: "main_witness", type: "derived_quantity", def: "the obsolete witness", ref: "thm:main",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const edits = [
+      {
+        kind: "statement-delete" as const, id: "thm:main",
+        reason: "retire the obsolete theorem", direction: "delete-obsolete" as const,
+      },
+      {
+        kind: "symbol-delete" as const, name: "main_witness",
+        reason: "retire its sole symbol reference", direction: "delete-obsolete" as const,
+      },
+    ];
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        const ownsMain = targets.some(({ id }) => id === "thm:main");
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.filter(({ id }) => id !== "thm:main")
+            .map(({ id }) => ({ id, proof_tex: `QED ${id}.` })),
+          proposed_core_edits: ownsMain ? edits : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const solve = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(solve).toMatchObject({ status: "checkpoint", advance: false });
+    expect((await readSurfacedProposals(ctx)).coreEdits).toEqual(expect.arrayContaining(edits));
+
+    const preview = await applyProposedChanges({ ctx, checkOnly: true });
+    expect(preview).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "thm:main" }),
+      expect.objectContaining({ id: "sym:main_witness" }),
+    ]));
+    expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).statements)
+      .toContainEqual(expect.objectContaining({ id: "thm:main" }));
+
+    await applyProposedChanges({ ctx });
+    const applied = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(applied.statements.some((statement: any) => statement.id === "thm:main")).toBe(false);
+    expect(applied.symbols.some((symbol: any) => symbol.name === "main_witness")).toBe(false);
+
+    await runStage0Solve({ ctx, state: makeState(), deps: solverDeps("prove") });
+    const restarted = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(restarted.statements.some((statement: any) => statement.id === "thm:main")).toBe(false);
+    expect(restarted.symbols.some((symbol: any) => symbol.name === "main_witness")).toBe(false);
+  });
+
   it("deletes an obsolete statement, remaps inbound edges, and prevents carried-state resurrection", async () => {
     const ctx = makeCtx(repoRoot);
     const proto = structuredClone(PROTO) as any;
@@ -4256,6 +8612,67 @@ describe("incremental reuse across escalation rounds", () => {
     const rebuilt = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(rebuilt.statements.some((s: any) => s.id === "conj:obsolete-result")).toBe(false);
     expect(rebuilt.statements.some((s: any) => s.id === "thm:canonical-result")).toBe(true);
+  });
+
+  it("does not classify a delete-and-replace dependency substitution as symbol-only debt", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto = structuredClone(PROTO) as any;
+    const obsolete = {
+      ...proto.statements[0], id: "lem:old-basis", kind: "lemma",
+      statement: "the old basis lemma", depends_on: [], status: "to-prove", free_symbols: ["tau"],
+    };
+    proto.statements = [obsolete];
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    const replacement = {
+      ...obsolete, id: "lem:new-basis", statement: "the replacement basis lemma",
+    };
+    const helper = {
+      id: "thm:rewired-helper", kind: "theorem", statement: "the helper conclusion",
+      depends_on: [obsolete.id], status: "to-prove", free_symbols: ["tau"],
+    } as any;
+    const consumer = {
+      id: "prop:rewired-consumer", kind: "proposition", statement: "the consumer conclusion",
+      depends_on: [helper.id], status: "to-prove", free_symbols: ["tau"],
+    } as any;
+    await saveWorkingState(ctx, {
+      round: 4,
+      symbol_basis: symbolBasis(proto, [replacement, helper, consumer]),
+      solved: {
+        [obsolete.id]: {
+          node: obsolete, owner: helper.id, proof_tex: "Old proof.", snapshot: snapshotMember(proto, obsolete),
+        },
+        [replacement.id]: {
+          node: replacement, owner: helper.id, proof_tex: "Replacement proof.", snapshot: snapshotMember(proto, replacement),
+        },
+        [helper.id]: {
+          node: helper, owner: consumer.id, proof_tex: "Helper proof.", snapshot: snapshotMember(proto, helper),
+        },
+        [consumer.id]: {
+          node: consumer, owner: consumer.id, proof_tex: "Consumer proof.", snapshot: snapshotMember(proto, consumer),
+        },
+      },
+    });
+    await seedWorkingProposals(ctx, {
+      proofs: [{ id: consumer.id, proof_tex: "Consumer proof." }],
+      coreEdits: [
+        {
+          kind: "statement-delete", id: obsolete.id, replacement_id: replacement.id,
+          reason: "replace the proof basis", direction: "delete-obsolete",
+        },
+        {
+          kind: "symbol-replace", name: "tau",
+          proposed: { ...proto.symbols[0], def: "the corrected target meaning" },
+          reason: "correct the global target meaning", direction: "correct",
+        },
+      ],
+    });
+
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(
+      /reviewed provisional proof.*did not reach a complete exact postimage/i,
+    );
+    const unchanged = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(unchanged.statements.some((node: any) => node.id === obsolete.id)).toBe(true);
+    expect(unchanged.symbols[0].def).toBe(proto.symbols[0].def);
   });
 
   it("deletes a helper and its sole consumer as one atomic bundle", async () => {
@@ -4346,7 +8763,12 @@ describe("incremental reuse across escalation rounds", () => {
     await seedWorkingProposals(ctx, { coreEdits: [{
       kind: "statement-replace",
       id: node.id,
-      proposed: { ...node, depends_on: ["ass:overlap", "def:env"] },
+      proposed: {
+        ...node,
+        statement: "The narrowed transport-only claim holds.",
+        status: "to-prove",
+        depends_on: ["ass:overlap", "def:env"],
+      },
       reason: "declare the corrected dependency spine",
       direction: "correct",
     }] });
@@ -4395,6 +8817,9 @@ describe("incremental reuse across escalation rounds", () => {
       reason: "align the source claim",
       direction: "narrow",
     }] });
+    await seedWorkingProposals(ctx, { coreEdits: [withCorrectionPairs({
+      proposed_statement_changes: [{ id: node.id, proposed: "The corrected comparator claim." }],
+    }, { ...PROTO, statements: [...PROTO.statements, node] }).proposed_core_edits[0]] });
 
     await applyProposedChanges({ ctx });
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
@@ -4462,7 +8887,24 @@ describe("incremental reuse across escalation rounds", () => {
       reason: "approve the proved solver-added correction",
       direction: "correct",
     }] });
-    await seedWorkingProposals(ctx, { coreEdits: [{
+    await seedWorkingProposals(ctx, { coreEdits: [withCorrectionPairs({
+      proposed_statement_changes: [{
+        id: "lem:solver-added",
+        proposed: "A concise rendering of the corrected lemma.",
+      }],
+    }, {
+      ...PROTO,
+      statements: [{
+        id: "lem:solver-added",
+        kind: "lemma",
+        statement: carriedStatement,
+        depends_on: ["ass:overlap"],
+        status: "proved",
+        proof_tex: "The claimed inequality follows.",
+      }],
+    }).proposed_core_edits[0]] });
+    const pair = (await readSurfacedProposals(ctx)).coreEdits[0];
+    await seedWorkingProposals(ctx, { coreEdits: [pair, {
       kind: "rebuild-reverse-dependencies",
       id: "metadata:reverse-dependencies",
       reason: "must not mask the stale selected statement variant",
@@ -4604,7 +9046,7 @@ describe("incremental reuse across escalation rounds", () => {
       .toMatchObject({ kind: "openendedquestion", statement: oeqStatement });
   });
 
-  it("discharges a recovered agent-authored cited target emitted again through added_lemmas", async () => {
+  it("refuses a recovered cited-source substitution through added_lemmas", async () => {
     const ctx = makeCtx(repoRoot);
     await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
       ...PROTO,
@@ -4671,13 +9113,22 @@ describe("incremental reuse across escalation rounds", () => {
       require_core_changes: true,
       required_core_targets: [citedNode.id],
     });
-    await runStage0Solve({ ctx, state: makeState(), deps });
+    const collision = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(collision).toMatchObject({ status: "checkpoint", advance: false });
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toContainEqual(expect.objectContaining({
+      category: "statement", target: citedNode.id,
+      reason: "conflicted-dependency-consumer",
+      payload: expect.objectContaining({ source: expect.objectContaining({ locator: "Section 2" }) }),
+    }));
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
 
     const rebuilt = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
-    expect(rebuilt.statements.find((s: any) => s.id === citedNode.id)).toMatchObject({
-      status: "cited",
-      source: { locator: "Section 2" },
-    });
+    const rebuiltTarget = rebuilt.statements.find((s: any) => s.id === citedNode.id);
+    expect(rebuiltTarget).toMatchObject({ status: "to-prove" });
+    expect(rebuiltTarget.source?.locator).not.toBe("Section 2");
     expect(calls).toBe(2);
   });
 
@@ -4757,6 +9208,11 @@ describe("incremental reuse across escalation rounds", () => {
 
   it("assigns directive-authorized paper prose to exactly one deterministic solve unit", async () => {
     const ctx = makeCtx(repoRoot);
+    const routedProto = structuredClone(PROTO) as any;
+    routedProto.statements.forEach((statement: any, index: number) => {
+      statement.route = `Use the frozen proof route for target ${index + 1}.`;
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(routedProto), "utf8");
     await appendEscalationLog(ctx, {
       round: 1,
       changed: [],
@@ -4794,12 +9250,18 @@ describe("incremental reuse across escalation rounds", () => {
     expect(prompts).toHaveLength(2);
     expect(prompts.filter((p) => p.includes("You are the ONLY solve unit allowed"))).toHaveLength(1);
     expect(prompts.filter((p) => p.includes("OMIT `prose_updates` entirely"))).toHaveLength(1);
+    expect(prompts.every((p) => !p.includes("validate_output.ts"))).toBe(true);
     const ownerPrompt = prompts.find((p) => p.includes("You are the ONLY solve unit allowed"))!;
     const localPrompt = prompts.find((p) => p.includes("OMIT `prose_updates` entirely"))!;
-    expect(ownerPrompt).toContain('"mode": "full"');
+    expect(ownerPrompt).toContain('"mode": "projected"');
     expect(localPrompt).toContain('"mode": "projected"');
     expect(localPrompt).toContain("CORE_SNAPSHOT_PATH:");
     expect(localPrompt).toContain("inspect that id selectively");
+    const localTargetBlock = (localPrompt.split("=== TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
+      .split("SOLVE_OUTPUT_PATH")[0];
+    expect(localTargetBlock).not.toContain('"statement":');
+    expect(localTargetBlock).toContain('"route": "Use the frozen proof route for target');
+    expect(localPrompt.split("=== FROZEN CORE SNAPSHOT")[0]).toContain('"statement":');
     const snapshotPath = /CORE_SNAPSHOT_PATH:\s*(\S+)/.exec(localPrompt)![1];
     expect(/CORE_SNAPSHOT_PATH:\s*(\S+)/.exec(ownerPrompt)![1]).toBe(snapshotPath);
     const snapshot = JSON.parse(await readFile(snapshotPath, "utf8"));
@@ -4808,6 +9270,7 @@ describe("incremental reuse across escalation rounds", () => {
     expect(ownerPrompt).toContain(
       "sibling-only ids",
     );
+    expect(ownerPrompt).toContain("inspect only the necessary prose or result records");
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.tldr).toBe("One canonical summary for the solved paper.");
     expect(core.statements.some((s: any) => s.id === "thm:prior-round-answer")).toBe(false);
@@ -5128,6 +9591,46 @@ describe("Stage 0-SOLVE (per thm/conj + props; proofs + lemmas + statement-chang
       .toEqual(["def:class", "thm:consumer", "thm:sharp-rate-answer"]);
   });
 
+  it("an answer theorem that cites the question it settles inherits the question's edges (no self-cycle, no dangling id)", async () => {
+    const ctx = makeCtx(repoRoot);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
+      ...PROTO,
+      statements: [
+        { id: "oeq:sharp-rate", kind: "openendedquestion", statement: "What is the sharp rate?", depends_on: ["ass:overlap"], status: "to-prove", justification: "j", gap: "g", consumer: "thm:consumer" },
+        { id: "thm:consumer", kind: "theorem", statement: "The procedure uses the sharp rate", depends_on: ["oeq:sharp-rate"], status: "to-prove", justification: "j", gap: "g", consumer: "c" },
+      ],
+    }), "utf8");
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        await writeFile(outPath, JSON.stringify({
+          proofs: [{ id: "thm:consumer", proof_tex: "By thm:sharp-rate-answer." }],
+          resolved_oeqs: [{ source_id: "oeq:sharp-rate", theorem: {
+            id: "thm:sharp-rate-answer", kind: "theorem", statement: "The sharp rate is n^{-1/2}",
+            // The answer names the question it settles — the realistic worker shape.
+            depends_on: ["oeq:sharp-rate"], status: "proved", proof_tex: "Directly from ass:overlap.",
+          } }],
+          added_lemmas: [], proposed_statement_changes: [], proposed_definition_changes: [],
+          proposed_assumptions: [], open_obligations: [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const check = async () => {
+      const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+      const answer = core.statements.find((s: any) => s.id === "thm:sharp-rate-answer");
+      expect(answer.depends_on).toEqual(["ass:overlap"]);
+      expect(core.statements.find((s: any) => s.id === "thm:consumer").depends_on).toEqual(["thm:sharp-rate-answer"]);
+      expect(core.statements.some((s: any) => s.id === "oeq:sharp-rate")).toBe(false);
+    };
+    await expect(runStage0Solve({ ctx, state: makeState(), deps })).resolves.toBeDefined();
+    await check();
+    await runStage0Solve({ ctx, state: makeState(), deps }); // resume is idempotent
+    await check();
+  });
+
   it("replaces a proved OEQ, rewires consumers, and preserves the replacement on retry", async () => {
     const ctx = makeCtx(repoRoot);
     await writeFile(protoCoreJsonPath(ctx), JSON.stringify({
@@ -5367,6 +9870,51 @@ describe("Stage 0-SOLVE (per thm/conj + props; proofs + lemmas + statement-chang
     );
   });
 
+  it("pipeline-pins one complete-definition revision onto both members of a correction pair", async () => {
+    const ctx = makeCtx(repoRoot);
+    const deps = solverDeps("propose-def");
+    const runCodex = deps.runCodex;
+    let displayedRevision: string | undefined;
+    deps.runCodex = async (args: any) => {
+      const snapshotPath = /CORE_SNAPSHOT_PATH:\s*(\S+)/.exec(args.prompt)?.[1];
+      if (snapshotPath !== undefined) {
+        const snapshot = JSON.parse(await readFile(snapshotPath, "utf8"));
+        displayedRevision = snapshot.definitions.find((definition: any) => definition.id === "def:env")?.revision;
+      }
+      return runCodex(args);
+    };
+    const res = await runStage0Solve({ ctx, state: makeState(), deps }) as any;
+    expect(res.status).toBe("checkpoint");
+    const proposals = await readSurfacedProposals(ctx);
+    const change = proposals.definitions.find((candidate: any) => candidate.id === "def:env");
+    const replacement = proposals.coreEdits.find(
+      (candidate: any) => candidate.kind === "definition-replace" && candidate.id === "def:env",
+    );
+    expect(displayedRevision).toMatch(/^rev:[a-f0-9]{64}$/);
+    expect(change.based_on_revision).toBe(displayedRevision);
+    expect(change.based_on_revision).toMatch(/^rev:[a-f0-9]{64}$/);
+    expect(replacement.based_on_revision).toBe(change.based_on_revision);
+    const surfacedCore = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(proposals.basis_revision).toBe(coreRevision(surfacedCore));
+    await applyProposedChanges({ ctx });
+    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(proto.definitions.find((definition: any) => definition.id === "def:env").construction)
+      .toBe("U = a + b");
+  });
+
+  it("rejects a definition correction after the persisted assembled round basis drifts", async () => {
+    const ctx = makeCtx(repoRoot);
+    const res = await runStage0Solve({ ctx, state: makeState(), deps: solverDeps("propose-def") }) as any;
+    expect(res.status).toBe("checkpoint");
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    working.solved["prop:aux"].proof_tex = "A different durable proof.";
+    await writeFile(workingPath(ctx), JSON.stringify(working), "utf8");
+    await expect(applyProposedChanges({ ctx })).rejects.toThrow(/persisted assembled-core basis/);
+    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(proto.definitions.find((definition: any) => definition.id === "def:env").construction)
+      .toBe("U = a");
+  });
+
   it("escalates a GENUINE OPEN GAP as an orchestrator-guidance checkpoint (not auto-looped)", async () => {
     const ctx = makeCtx(repoRoot);
     // proto with one theorem that the solver will declare genuinely open.
@@ -5422,13 +9970,12 @@ describe("Stage 0-SOLVE (per thm/conj + props; proofs + lemmas + statement-chang
     // clear any carrier payload left by a prior test in the shared repoRoot.
     await rm(workingPath(ctx), { force: true });
     const res = (await runStage0Solve({ ctx, state: makeState(), deps: solverDeps("propose-def-class") })) as any;
-    // a class-targeted def change is rejected; with no other proposed change and all
-    // targets proved, the run discharges cleanly (no checkpoint) and SAYS it ignored it.
     expect("status" in res ? res.status : "clean").not.toBe("checkpoint");
     expect(res.message).toMatch(/discharged/i);
     expect(res.message).toMatch(/ignored .*illegal class\/unknown def/i);
-    // and this run surfaced NO definition change (the illegal change was dropped).
     expect(((await readSurfacedProposals(ctx)).definitions ?? []).length).toBe(0);
+    expect(((await readSurfacedProposals(ctx)).coreEdits ?? []).length).toBe(0);
+    expect(JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8")).definitions).toEqual(PROTO.definitions);
   });
 });
 
@@ -5615,6 +10162,79 @@ describe("groupToProveByComponent (dependency-aware unit grouping)", () => {
     expect(units).toHaveLength(1);
     expect(units[0].label).toBe("prop:aux");
   });
+
+  it("does not stage three groups merely because they read one immutable dependency", () => {
+    const roots = [
+      mk("thm:a", "theorem", ["lem:shared"]),
+      mk("thm:b", "theorem", ["lem:shared"]),
+      mk("thm:c", "theorem", ["lem:shared"]),
+    ];
+    const dispatch = groupToProveByComponent(roots)
+      .map((unit) => ({ ...unit, priorContext: "" }));
+    const plan = planStagedSolveDispatch({
+      dispatch,
+      hasPendingDirective: false,
+      requiredCoreTargets: new Set(),
+    });
+    expect(plan.upstream).toBeNull();
+    expect(plan.downstream).toHaveLength(3);
+    expect(plan.ordered).toEqual(dispatch);
+    expect(plan.sharedTargetIds).toEqual([]);
+  });
+
+  it("does not stage an explicit target that has one local component owner", () => {
+    const roots = [
+      mk("thm:large", "theorem", []),
+      mk("prop:required", "proposition", []),
+      mk("lem:other", "lemma", []),
+    ];
+    const dispatch = [
+      { targets: [roots[0], mk("lem:large-child", "lemma", [])], label: "thm:large", priorContext: "" },
+      { targets: [roots[1]], label: "prop:required", priorContext: "" },
+      { targets: [roots[2]], label: "lem:other", priorContext: "" },
+    ];
+    const plan = planStagedSolveDispatch({
+      dispatch,
+      hasPendingDirective: true,
+      requiredCoreTargets: new Set(["prop:required"]),
+    });
+    expect(plan.upstream).toBeNull();
+    expect(plan.sharedTargetIds).toEqual([]);
+    expect(plan.ordered).toEqual(dispatch);
+  });
+
+  it("keeps two exact statement targets local to their two component owners", () => {
+    const roots = [
+      mk("thm:first", "theorem", []),
+      mk("prop:second", "proposition", []),
+    ];
+    const dispatch = roots.map((target) => ({ targets: [target], label: target.id, priorContext: "" }));
+    const plan = planStagedSolveDispatch({
+      dispatch,
+      hasPendingDirective: true,
+      requiredCoreTargets: new Set(roots.map((target) => target.id)),
+    });
+    expect(plan.upstream).toBeNull();
+    expect(plan.sharedTargetIds).toEqual([]);
+    expect(plan.ordered).toEqual(dispatch);
+  });
+
+  it("leaves genuinely disjoint groups parallel", () => {
+    const roots = [
+      mk("thm:a", "theorem", ["ass:a"]),
+      mk("thm:b", "theorem", ["ass:b"]),
+    ];
+    const dispatch = groupToProveByComponent(roots)
+      .map((unit) => ({ ...unit, priorContext: "" }));
+    const plan = planStagedSolveDispatch({
+      dispatch,
+      hasPendingDirective: false,
+      requiredCoreTargets: new Set(),
+    });
+    expect(plan.upstream).toBeNull();
+    expect(plan.downstream).toEqual(dispatch);
+    expect(plan.sharedTargetIds).toEqual([]);
+  });
 });
 
 describe("pruneOrphanLemmas (maximality-checkpoint dead-lemma cleanup)", () => {
@@ -5718,7 +10338,7 @@ describe("runStage0Typed proposed-change checkpoint", () => {
         const body = corrected
           ? { proofs: targets.map((t) => ({ id: t.id, proof_tex: "By `def:env`, QED." })), added_lemmas: [], proposed_statement_changes: [], proposed_definition_changes: [] }
           : { proofs: [], added_lemmas: [], proposed_statement_changes: [], proposed_definition_changes: [{ id: "def:env", current: "U = a", proposed: "U = a + b", reason: "omits b", direction: "correct" }] };
-        await writeFile(outPath, JSON.stringify(body), "utf8");
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs(body, LOOP_PROTO)), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -5776,7 +10396,7 @@ describe("add-prove-approve-later: assumptions, theorem narrowings, OEQ residual
         const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
         const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
         const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
-        await writeFile(outPath, JSON.stringify(makeBody(targets, prompt)), "utf8");
+        await writeFile(outPath, JSON.stringify(withCorrectionPairs(makeBody(targets, prompt))), "utf8");
         return { stdout: JSON.stringify({ status: "completed", message: "ok", artifacts: [outPath] }), stderr: "" };
       },
       runClaude: async () => { throw new Error("unused"); },
@@ -5852,6 +10472,60 @@ describe("add-prove-approve-later: assumptions, theorem narrowings, OEQ residual
     expect(state.design_decisions.d0_open_oeq_residuals).toBeUndefined();
   });
 
+  it("seals a residual OEQ against its authored source rather than proof-wired dependencies", async () => {
+    const ctx = makeCtx(repoRoot);
+    const question = {
+      id: "oeq:tight", kind: "openendedquestion", statement: "is it tight?",
+      depends_on: ["thm:main"], status: "to-prove", justification: "j", gap: "g", consumer: "c",
+    } as any;
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify({ ...PROTO, statements: [
+      { id: "thm:main", kind: "theorem", statement: "main", depends_on: ["ass:overlap"], status: "to-prove", justification: "j", gap: "g", consumer: "c" },
+      { id: "prop:extra", kind: "proposition", statement: "extra", depends_on: [], status: "to-prove", justification: "j", gap: "g", consumer: "c" },
+      question,
+    ] }), "utf8");
+    await saveWorkingState(ctx, {
+      round: 1,
+      solved: {
+        [question.id]: {
+          proof_tex: "Partial progress also uses Proposition~\\ref{prop:extra}.",
+          snapshot: { stmt: question.statement, depends_on: ["thm:main", "prop:extra"], defs: {}, assumptions: {} },
+          node: question,
+          partial: true,
+        },
+      },
+    });
+    const calls: string[][] = [];
+    const deps = depsReturning((targets) => {
+      calls.push(targets.map((target) => target.id));
+      const hasQuestion = targets.some((target) => target.id === question.id);
+      return {
+        proofs: targets.filter((target) => target.id !== question.id)
+          .map((target) => ({ id: target.id, proof_tex: "QED." })),
+        added_lemmas: [], proposed_statement_changes: [], proposed_definition_changes: [],
+        open_obligations: hasQuestion ? [{
+          node_id: question.id,
+          what_is_open: "tightness",
+          obstruction: "the extra proposition does not close the converse",
+          attempted: "combined the known upper and lower arguments",
+        }] : [],
+      };
+    });
+    const state = makeState();
+    await runStage0Solve({ ctx, state, deps });
+    const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
+    expect(working.solved[question.id].snapshot.depends_on).toContain("prop:extra");
+    expect(working.sealed_open_oeqs[question.id]).toBe(oeqSourceFingerprint(question));
+
+    await appendEscalationLog(ctx, {
+      round: 3,
+      changed: [],
+      directive: "revalidate only the separate theorem root",
+    });
+    calls.length = 0;
+    await runStage0Solve({ ctx, state, deps });
+    expect(calls.flat()).not.toContain(question.id);
+  });
+
   it("fails cheaply instead of erasing a dangling depends_on edge", async () => {
     const ctx = makeCtx(repoRoot);
     await writeFile(protoCoreJsonPath(ctx), JSON.stringify({ ...PROTO, statements: [
@@ -5866,5 +10540,115 @@ describe("add-prove-approve-later: assumptions, theorem narrowings, OEQ residual
       /unresolved dependency target.*lem:x->ass:phantom.*refusing to erase/i,
     );
     expect(existsSync(coreJsonPath(ctx))).toBe(false);
+  });
+});
+
+describe("D0 merge — quarantine scope and structured-directive fulfillment", () => {
+  /** Two-unit dispatch (thm:main owner ranks as directive owner; prop:aux is the sibling). */
+  function twoUnitDeps(
+    emit: (targets: Array<{ id: string }>) => Record<string, unknown>,
+  ): StageDeps {
+    return {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify(emit(targets)), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+  }
+
+  it("an incompatible sibling version of an existing node withholds that node, not an unrelated unit's consumer", async () => {
+    const ctx = makeCtx(repoRoot);
+    const proto: any = structuredClone(PROTO);
+    proto.statements.find((statement: any) => statement.id === "prop:aux").consumer = "independent downstream use";
+    // A third, independent unit whose node the sibling will contest.
+    proto.statements.push({
+      id: "lem:side", kind: "lemma", statement: "a side fact", depends_on: [], status: "to-prove",
+      justification: "side", gap: "vs prior", consumer: "thm:main",
+    });
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [], directive: "settle every exact target",
+      required_core_targets: ["thm:main", "prop:aux", "lem:side"],
+    });
+    const deps = twoUnitDeps((targets) => {
+      const ownsAux = targets.some(({ id }) => id === "prop:aux");
+      return {
+        proofs: targets.map(({ id }) => ({
+          id, proof_tex: id === "thm:main" ? "Combine ass:overlap with lem:side." : `Owner proof for ${id}.`,
+        })),
+        // The sibling emits an INCOMPATIBLE settled version of the existing lem:side.
+        // Its canonical (unproved) version survives; only lem:side itself is in dispute.
+        added_lemmas: ownsAux ? [{
+          ...proto.statements[2], statement: "INCOMPATIBLE SIDE CLAIM", status: "proved",
+          proof_tex: "Sibling incompatible side proof.",
+        }] : [],
+      };
+    });
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: any) => statement.id === "lem:side")).toMatchObject({
+      statement: "a side fact", status: "to-prove",
+    });
+    expect(core.statements.find((statement: any) => statement.id === "prop:aux")?.status).toBe("proved");
+    // The unrelated unit's proof merely cites the canonical lem:side; it is not a
+    // consumer of the withheld variant and must land.
+    expect(core.statements.find((statement: any) => statement.id === "thm:main")?.status).toBe("proved");
+    const withheld = JSON.parse(await readFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_content.json"), "utf8",
+    ));
+    expect(withheld.withheld_payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({ target: "lem:side", payload: expect.objectContaining({ statement: "INCOMPATIBLE SIDE CLAIM" }) }),
+    ]));
+    expect(withheld.withheld_payloads).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ target: "thm:main", reason: "conflicted-dependency-consumer" }),
+    ]));
+  });
+
+  it("keeps a target-less structured directive pending when only noise was withheld", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [],
+      directive: "replace the stale formal assumption node",
+      require_core_changes: true,
+    });
+    const deps = twoUnitDeps((targets) => ({
+      proofs: targets.map(({ id }) => ({ id, proof_tex: `Proof for ${id}.` })),
+      // No structural change anywhere; a stray paper-wide prose write from every unit
+      // is the only withheld content.
+      prose_updates: { tldr: "stray narrative" },
+    }));
+
+    // The stray prose is a capability quarantine, so the round checkpoints instead
+    // of aborting; the directive must remain pending (cursor not advanced).
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toMatchObject({ status: "checkpoint", advance: false });
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
+  });
+  it("a prose-only statement note on a non-target cannot satisfy a structured directive", async () => {
+    const ctx = makeCtx(repoRoot);
+    await appendEscalationLog(ctx, {
+      round: 1, changed: [],
+      directive: "replace the stale formal assumption node",
+      require_core_changes: true,
+    });
+    const deps = twoUnitDeps((targets) => ({
+      proofs: targets.map(({ id }) => ({ id, proof_tex: `Proof for ${id}.` })),
+      // Substantive note metadata, but no structural change and no exact target.
+      prose_updates: { statement_notes: [{ id: targets[0].id, consumer: "freshly edited consumer text" }] },
+    }));
+    let outcome: unknown;
+    try { outcome = await runStage0Solve({ ctx, state: makeState(), deps }); } catch (err) { outcome = err; }
+    const blocked = outcome instanceof Error
+      ? /STRUCTURED CORE CHANGES REQUIRED/.test(outcome.message)
+      : (outcome as { advance?: boolean }).advance === false;
+    expect(blocked, `round must not advance past the directive: ${JSON.stringify(outcome)}`).toBe(true);
+    expect(JSON.parse(await readFile(workingPath(ctx), "utf8")).escalation_entries_consumed ?? 0).toBe(0);
   });
 });

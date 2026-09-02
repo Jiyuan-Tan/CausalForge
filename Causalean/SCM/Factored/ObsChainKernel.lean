@@ -215,6 +215,7 @@ noncomputable def singletonValues {ι : Type*} {α : ι → Type*}
     exact h ▸ x
 
 /-- Reading a singleton value is measurable. -/
+@[fun_prop]
 lemma measurable_singletonValue {ι : Type*} {α : ι → Type*}
     [∀ i, MeasurableSpace (α i)] {v : ι} :
     Measurable (singletonValue (α := α) (v := v)) := by
@@ -223,6 +224,7 @@ lemma measurable_singletonValue {ι : Type*} {α : ι → Type*}
     {w // w ∈ ({v} : Finset ι)})
 
 /-- Building a singleton tuple is measurable. -/
+@[fun_prop]
 lemma measurable_singletonValues {ι : Type*} {α : ι → Type*}
     [∀ i, MeasurableSpace (α i)] {v : ι} :
     Measurable (singletonValues (α := α) (v := v)) := by
@@ -416,6 +418,7 @@ noncomputable def extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
         (singletonValues (α := swigΩ Ω) (v := (M.observedAt ⟨n, hn⟩).val) p.2))
 
 /-- Prefix extension is measurable. -/
+@[fun_prop]
 lemma measurable_extendObsPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n < M.observed.card) :
     Measurable (M.extendObsPrefix hn) := by

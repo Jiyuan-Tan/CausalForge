@@ -147,7 +147,8 @@ describe("scoped symbol invalidation stays sound across the mixed real-run corpu
     for (const { label, proto, cursor } of runs) {
       // The cursors predate `symbol_basis`; stamp the run's own proto as the basis these
       // proofs were solved against, which is what the first post-upgrade round does.
-      const prev = { ...cursor, symbol_basis: symbolBasis(proto) } as WorkingState;
+      const carried = Object.values(cursor.solved ?? {}).flatMap((record) => record.node ? [record.node] : []);
+      const prev = { ...cursor, symbol_basis: symbolBasis(proto, carried) } as WorkingState;
       const before = computeValidNodes(prev, proto);
       if (before.size === 0) continue; // nothing carried — no reuse decision to make
       const moved = JSON.parse(JSON.stringify(proto)) as Core;
@@ -172,7 +173,11 @@ describe("scoped symbol invalidation stays sound across the mixed real-run corpu
     // must reuse everything the pre-scoping pipeline reused.
     const regressions: string[] = [];
     for (const { label, proto, cursor } of runs) {
-      const prev = { ...cursor, symbol_basis: symbolBasis(proto) } as WorkingState;
+      // A symbol may refer to an agent-added statement that exists only in the working
+      // cursor.  The production writer fingerprints that complete graph, so the corpus
+      // fixture must stamp the same basis rather than a proto-only approximation.
+      const carried = Object.values(cursor.solved ?? {}).flatMap((record) => record.node ? [record.node] : []);
+      const prev = { ...cursor, symbol_basis: symbolBasis(proto, carried) } as WorkingState;
       const withBasis = computeValidNodes(prev, proto);
       const withoutBasis = computeValidNodes({ ...cursor, symbol_basis: undefined } as WorkingState, proto);
       if (withBasis.size !== withoutBasis.size) {

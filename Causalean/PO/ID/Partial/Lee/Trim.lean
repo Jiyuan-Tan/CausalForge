@@ -20,6 +20,7 @@ This file contains *only definitions* -- no theorems are proved here.
 -/
 
 import Causalean.PO.ID.Partial.Lee.Setup
+import Causalean.Tactic.Attr
 
 /-! # Lee Finite-Support Trim Functionals
 
@@ -47,6 +48,13 @@ expressed via the event-conditional expectation of the selection
 indicator. -/
 noncomputable def pSelGivenA (a : Bool) : ℝ :=
   eventCondExp P.μ (S.aEvent a) (S.selVar.indicator true)
+
+/-- [The conditional selection probability given a treatment arm](hyp:a) [is the event-conditional
+expectation of the selection indicator on that arm's event](goal). -/
+@[causal_defs_simps]
+lemma pSelGivenA_eq (a : Bool) :
+    S.pSelGivenA a = eventCondExp P.μ (S.aEvent a) (S.selVar.indicator true) :=
+  rfl
 
 /-- `p₀ = P(Sel = true | A = false)`. -/
 noncomputable def p0 : ℝ := S.pSelGivenA false

@@ -965,7 +965,7 @@ export async function runReviewer(args: {
   const graded = gradeReviewerOutput(out, allExpectedObjIds, idAliases);
   let graph: FormalizationGraph;
   try {
-    graph = applyVerdictsToGraph(args.graph, graded.rows, args.hashes, new Set(), verdictTargetOwners);
+    graph = applyVerdictsToGraph(args.graph, graded.rows, args.hashes, verdictTargetOwners);
   } catch (err) {
     return failReview(
       "review-target-resolution-error",

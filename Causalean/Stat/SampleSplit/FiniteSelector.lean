@@ -71,6 +71,7 @@ lemma measurable_finiteSelector_apply [Fintype Iota] [MeasurableSingletonClass I
 measurable](hyp:htail), [the finite selection rule is measurable](hyp:hselect),
 and [every branch error is measurable](hyp:herr), [the selected squared error is
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_finiteSelector_sq [Fintype Iota] [MeasurableSingletonClass Iota]
     {pilot : Omega -> Alpha} {tail : Omega -> Beta}
     {select : Alpha -> Iota} {err : Iota -> Beta -> Real}

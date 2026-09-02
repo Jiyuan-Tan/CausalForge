@@ -110,8 +110,7 @@ theorem steinSol_taylor_right (h : ℝ → ℝ) {C L : ℝ}
       simpa using ((hasDerivAt_id s).mul_const t).const_add a
     exact hfderiv.comp s hinner
   -- FTC over `[0,1]`: `f (a + t) − f a = ∫₀¹ f' (a + s t) * t ds`.
-  have hcont : Continuous (fun s : ℝ => f' (a + s * t) * t) :=
-    (hf'cont.comp (by fun_prop)).mul continuous_const
+  have hcont : Continuous (fun s : ℝ => f' (a + s * t) * t) := by fun_prop
   have hFTC : (∫ s in (0:ℝ)..1, f' (a + s * t) * t) = f (a + t) - f a := by
     have := intervalIntegral.integral_eq_sub_of_hasDerivAt
       (f := fun s => f (a + s * t)) (f' := fun s => f' (a + s * t) * t)
@@ -199,7 +198,7 @@ theorem stein_local_dependence_bound
   have hSmeas : ∀ i, Measurable (S i) := by
     intro i; rw [hS]; exact Finset.measurable_sum _ (fun j _ => hmeas j)
   have hYmeas : Measurable Y := by
-    rw [hY]; exact Finset.measurable_sum _ (fun i _ => (hmeas i).mul (hTmeas i))
+    fun_prop
   -- Boundedness of the sums (by `card · B`).
   have hWbd : ∀ ω, |W ω| ≤ (Fintype.card ι : ℝ) * B := by
     intro ω; simp only [hW, depSum]
@@ -235,8 +234,8 @@ theorem stein_local_dependence_bound
     exact hmemlp.integrable le_rfl
   -- Integrability facts used throughout.
   have hXint : ∀ i, Integrable (X i) μ := fun i => hInt_of_bd _ (hmeas i) B (fun ω => hbound i ω)
-  have hfWmeas : Measurable (fun ω => f (W ω)) := hfcont.measurable.comp hWmeas
-  have hf'Wmeas : Measurable (fun ω => f' (W ω)) := hf'cont.measurable.comp hWmeas
+  have hfWmeas : Measurable (fun ω => f (W ω)) := by fun_prop
+  have hf'Wmeas : Measurable (fun ω => f' (W ω)) := by fun_prop
   have hf'Wint : Integrable (fun ω => f' (W ω)) μ :=
     hInt_of_bd _ hf'Wmeas (2 * L) (fun ω => hf'bd (W ω))
   have hWfWint : Integrable (fun ω => W ω * f (W ω)) μ :=

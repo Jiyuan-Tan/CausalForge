@@ -36,6 +36,13 @@ const PROTO = {
 };
 
 const validChange = { id: "thm:main", current: "LIVE CLAIM", proposed: "NEW CLAIM", reason: "r", direction: "narrow" };
+const validStatementReplace = {
+  kind: "statement-replace",
+  id: "thm:main",
+  proposed: { ...PROTO.statements[0], statement: "NEW CLAIM" },
+  reason: "complete statement post-image",
+  direction: "correct",
+};
 
 function researchRootOf(h: DStageHarness): string {
   return path.join(h.repoRoot, "doc", "research");
@@ -59,11 +66,15 @@ describe("replay harness (Phase 0 audit findings)", () => {
     const h = await createDStageHarness({ qid: "stat_replay", specialization: "v1", proto: PROTO });
     try {
       // Two byte-identical proposals: the apply dedupes by JSON content and validates
-      // ONE change; the harness's expected count must agree, not report a mismatch.
-      await seedWorking(h, { statements: [validChange, { ...validChange }] });
+      // ONE claim change plus its required complete post-image; the harness's expected
+      // count must agree, not report a mismatch.
+      await seedWorking(h, {
+        statements: [validChange, { ...validChange }],
+        coreEdits: [validStatementReplace],
+      });
       const res = await replayRun(discoveryDirOf(h), researchRootOf(h));
       expect(res.failures, "duplicate proposals are valid; no failure expected").toEqual([]);
-      expect(res.notes.join("\n")).toContain("validated 1 pending change(s)");
+      expect(res.notes.join("\n")).toContain("validated 2 pending change(s)");
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -128,7 +139,7 @@ describe("replay harness (Phase 0 audit findings)", () => {
         proposed_statement_changes: [{ ...validChange, current: "STALE ECHO — NOT THE LIVE CLAIM" }],
         proposed_definition_changes: [],
         proposed_assumptions: [],
-        proposed_core_edits: [],
+        proposed_core_edits: [validStatementReplace],
         provisional_proofs: [],
       };
       const pktPath = path.join(discoveryDirOf(h), "proposal_review_packet.json");
@@ -144,7 +155,7 @@ describe("replay harness (Phase 0 audit findings)", () => {
   it("F1 control: a contract-valid packet replays green through the validator", async () => {
     const h = await createDStageHarness({ qid: "stat_replay", specialization: "v1", proto: PROTO });
     try {
-      await seedWorking(h, { statements: [validChange] });
+      await seedWorking(h, { statements: [validChange], coreEdits: [validStatementReplace] });
       const core = await h.readProto();
       const packet = {
         contract: "test contract",
@@ -152,12 +163,15 @@ describe("replay harness (Phase 0 audit findings)", () => {
         current_typed_core: core,
         durable_working_state: {
           round: 1, solved: {}, resolved_oeqs: {},
-          proposals: { statements: [validChange], definitions: [], assumptions: [], coreEdits: [], proofs: [] },
+          proposals: {
+            statements: [validChange], definitions: [], assumptions: [],
+            coreEdits: [validStatementReplace], proofs: [],
+          },
         },
         proposed_statement_changes: [validChange],
         proposed_definition_changes: [],
         proposed_assumptions: [],
-        proposed_core_edits: [],
+        proposed_core_edits: [validStatementReplace],
         provisional_proofs: [],
       };
       const pktPath = path.join(discoveryDirOf(h), "proposal_review_packet.json");
@@ -165,7 +179,7 @@ describe("replay harness (Phase 0 audit findings)", () => {
       const res = await replayPacketFile(pktPath, researchRootOf(h));
       expect(res.failures).toEqual([]);
       expect(res.warnings).toEqual([]);
-      expect(res.notes.join("\n")).toContain("validated 1 pending change(s)");
+      expect(res.notes.join("\n")).toContain("validated 2 pending change(s)");
     } finally { await h.dispose(); }
   }, 30000);
 

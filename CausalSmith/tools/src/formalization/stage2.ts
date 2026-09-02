@@ -23,8 +23,14 @@ import { coreJsonPath } from "../discovery/stages/d0_core.js";
 import { formalizationKind } from "../paths.js";
 import { readFormalizationCoreContext } from "./core_context.js";
 import { readTypedCore } from "../discovery/core/core_io.js";
+import type { Core } from "../discovery/core/schema.js";
 import { runPlanGate, type PlanGateViolation } from "./plan/plan_gate.js";
-import { PlanSchema } from "./plan/schema.js";
+import { PlanSchema, type Plan } from "./plan/schema.js";
+import {
+  buildF2RevisionContext,
+  hasCompleteScaffoldCoverage,
+  revisionTargetsFromRedirect,
+} from "./f2_revision_context.js";
 import { PROOF_SCAFFOLD_MAX, STAGE2_REDIRECT_MAX } from "./loop_limits.js";
 import { interventionBlock } from "../shared/intervention_routing.js";
 import { writeLeanLspMcpConfig } from "../workers/claude.js";
@@ -85,6 +91,60 @@ export function pendingSourceRewindDirtyNodeIds(state: StateJson): string[] {
   const rewind = state.flags.source_rewind;
   if (rewind?.status !== "applied") return [];
   return [...new Set(rewind.dirty_nodes)].sort();
+}
+
+/** Canonicalize citation provenance after an F2 producer syncs implementation
+ * details back into plan.json. A cited statement remains source-reviewed until
+ * gate.ts stamps a lemma/theorem discharge. Its carrier may be either the
+ * traditional Prop assumption or a non-Prop metadata def; F2 may change that
+ * implementation detail, but may not erase/reclassify discovery provenance.
+ *
+ * Agent JSON commonly spells absent optional keys as null. Delete those keys
+ * before schema validation, then restore the authoritative cited classification
+ * on an undischargeable carrier. Proved lemma/theorem shapes are deliberately
+ * untouched so P9 still rejects an unstamped self-discharge. */
+export function canonicalizeCitedPlanAfterF2(
+  planInput: unknown,
+  core: Core,
+): { plan: unknown; changed: boolean } {
+  if (!planInput || typeof planInput !== "object" || Array.isArray(planInput)) {
+    return { plan: planInput, changed: false };
+  }
+  const plan = planInput as Record<string, unknown>;
+  if (!plan.nodes || typeof plan.nodes !== "object" || Array.isArray(plan.nodes)) {
+    return { plan: planInput, changed: false };
+  }
+  const nodes = plan.nodes as Record<string, unknown>;
+  let changed = false;
+  for (const rawNode of Object.values(nodes)) {
+    if (!rawNode || typeof rawNode !== "object" || Array.isArray(rawNode)) continue;
+    const node = rawNode as Record<string, unknown>;
+    if (node.gate === null) {
+      delete node.gate;
+      changed = true;
+    }
+    if (node.gate_class === null) {
+      delete node.gate_class;
+      changed = true;
+    }
+  }
+  for (const statement of core.statements) {
+    if (statement.status !== "cited") continue;
+    const rawNode = nodes[statement.id];
+    if (!rawNode || typeof rawNode !== "object" || Array.isArray(rawNode)) continue;
+    const node = rawNode as Record<string, unknown>;
+    if (node.citation_discharged === true) continue;
+    if (node.lean_kind !== "assumption" && node.lean_kind !== "def") continue;
+    if (node.gate !== true) {
+      node.gate = true;
+      changed = true;
+    }
+    if (node.gate_class !== "cited") {
+      node.gate_class = "cited";
+      changed = true;
+    }
+  }
+  return { plan, changed };
 }
 
 /** Restore pre-existing Lean files that a revise producer deleted. F2 revise is
@@ -317,6 +377,8 @@ export async function runStage2(args: {
   priorReview?: ReviewResult | null;
   intervention?: Intervention | null;
   attempt?: number;
+  /** Exact proof-review targets. Absent/unknown targets deliberately retain full context. */
+  revisionTargets?: string[];
 }): Promise<StageResult> {
   const paths = artifactPaths(args.ctx, args.state);
   const sourceRewindDirtyTargets = pendingSourceRewindDirtyNodeIds(args.state);
@@ -329,14 +391,12 @@ export async function runStage2(args: {
   }
   const planText = await readIfExists(paths.plan);
   const nonEmittedLocalIds = nonEmittedLocalIdsFromPlan(planText);
-  const gatedHypsBlock = gatedHypsBlockFromPlan(planText);
-  const undeliveredBlock = undeliveredBlockFromPlan(planText);
   const redirectBlock =
     args.state.flags.scaffold_redirect
       ? [
           "=== SCAFFOLD REDIRECT DIRECTIVE (from prior Stage 3 intervention) ===",
           "",
-          "Apply this directive verbatim as a top-priority constraint on top of the .md spec.",
+          "Apply this directive verbatim as a top-priority constraint on top of the typed core + plan contract.",
           "Do NOT interpret it loosely; do NOT negotiate it.",
           "When the directive says the Lean OMITS / drops / weakens a hypothesis, condition, or clause",
           "that the note (spec) STATES, the faithful fix is to ADD that condition to the STATEMENT",
@@ -359,7 +419,7 @@ export async function runStage2(args: {
   // REVISE / PATCH-IN-PLACE MODE (token-saver, drift-guard, proof-preserver). When
   // a prior scaffold is ALREADY on disk — an in-loop F2.5 revise OR a Stage-3
   // scaffold_redirect rewind — only the flagged/directed declarations (plus their
-  // consistency ripples) need to change. Regenerating every file from the .md is
+  // consistency ripples) need to change. Regenerating every file from the full contract is
   // slow, burns tokens, drifts on declarations that already passed, AND DISCARDS any
   // real proof bodies Stage 3 already filled (and the carry-over comments that
   // preserve them). So we hand the producer the on-disk files and tell it to Edit in
@@ -383,9 +443,10 @@ export async function runStage2(args: {
     (args.priorReview?.status === "revise" ||
       !!args.state.flags.scaffold_redirect ||
       hasLaterStageHistory);
+  let existingScaffoldFiles: string[] = [];
   if (patchInPlace && existsSync(paths.leanDir)) {
-    const existing = (await listLeanFiles(paths.leanDir)).sort();
-    if (existing.length > 0) {
+    existingScaffoldFiles = (await listLeanFiles(paths.leanDir)).sort();
+    if (existingScaffoldFiles.length > 0) {
       reviseBlock = [
         await readPrompt(args.ctx, "stage2_head_revise.txt"),
         "",
@@ -393,7 +454,7 @@ export async function runStage2(args: {
           ? "Apply the SCAFFOLD REDIRECT DIRECTIVE above. You MAY re-render the named target(s) however is needed for a faithful fix — a faithful equivalent formulation, new auxiliary defs, or restructuring — you are NOT limited to a byte-for-byte in-place edit (F2.5 re-reviews only the dirty/not-cleared frontier). Preserve existing proof bodies and `/-! PRIOR PROOF (carry-over…) -/` comments wherever the statement is unchanged, and leave UNRELATED declarations intact — don't churn them. When editing a named target is a SHARED env/structure declaration (e.g. retyping/constraining a structure field like `Observation.A` to match a core symbol's space) and the change FORCES dependent declarations to change in order to recompile (signatures, call sites), you MUST re-sync exactly those forced dependents — but still leave every UNRELATED declaration byte-for-byte. (Ripple that the edit makes mandatory is allowed; gratuitous edits are not.) A redirect target of the form `sym:<symbol>` denotes a SETUP/ENVIRONMENT symbol whose space (e.g. `propensity ∈ (0,1)`) is realized by a CLUSTER of decls — the carrier-type structure field PLUS the predicate(s) that pin its range. The cluster IS the affected region: grep the files for `@realizes <symbol>` to find every member, then make the symbol's space hold across their CONJUNCTION (constrain the field, add/repair an a.s. invariant or well-formedness clause, or retype only if a finite/discrete space like `{0,1}` warrants it — prefer carrier-type-`ℝ` + a predicate clause when witness measures need `ℝ`). Keep each member's `@realizes <symbol>(<clause hint>)` tag accurate, and add the tag to any decl you newly make load-bearing for that symbol."
           : "",
         "On-disk files to patch (Read first, then Edit):",
-        ...existing.map((f) => `  - ${f}`),
+        ...existingScaffoldFiles.map((f) => `  - ${f}`),
         "",
       ].filter(Boolean).join("\n");
     }
@@ -407,7 +468,7 @@ export async function runStage2(args: {
           "=== PERSISTENT ORCHESTRATOR SCAFFOLD DIRECTIVE (applies to EVERY scaffold pass) ===",
           "",
           "A top-priority, PERSISTENT faithfulness constraint from the orchestrator. Apply it verbatim,",
-          "on top of the .md spec, on THIS and every subsequent scaffold/revise pass (it is NOT one-shot",
+          "on top of the typed core + plan contract, on THIS and every subsequent scaffold/revise pass (it is NOT one-shot",
           "and NOT capped). It steers statement SHAPE / faithfulness only: NEVER invent a hypothesis the",
           "spec does not state and NEVER weaken a statement; the F2.5 review + anti-laundering gates still",
           "apply. When it says the Lean over-assumes a fact the note DERIVES (e.g. a continuity/boundedness",
@@ -421,18 +482,72 @@ export async function runStage2(args: {
         ].join("\n")
       : "";
   const scaffoldCorePath = coreJsonPath(args.ctx);
+  const revisionTargets = args.revisionTargets?.length
+    ? args.revisionTargets
+    : revisionTargetsFromRedirect(args.state.flags.scaffold_redirect);
+  let revisionContext = null;
+  if (patchInPlace && revisionTargets.length > 0 && existsSync(scaffoldCorePath)) {
+    try {
+      const parsedPlan = PlanSchema.safeParse(parseJsonWithEscapeRepair(planText));
+      const completePriorScaffold = parsedPlan.success
+        && existingScaffoldFiles.length > 0
+        && hasCompleteScaffoldCoverage(parsedPlan.data as Plan, await parseLeanNodeTags(paths.leanDir));
+      if (parsedPlan.success && completePriorScaffold) {
+        revisionContext = buildF2RevisionContext(
+          await readTypedCore(scaffoldCorePath),
+          parsedPlan.data as Plan,
+          revisionTargets,
+        );
+      } else if (parsedPlan.success) {
+        console.warn(
+          "[causalsmith] F2 prior scaffold is missing or lacks complete delivered @node/@env coverage; retaining full context.",
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[causalsmith] F2 local revision context unavailable; retaining full context: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (!revisionContext) {
+      console.warn(
+        `[causalsmith] F2 local context is unsafe or unavailable for revision target(s) (${revisionTargets.join(", ")}) ` +
+          "(prior scaffold missing or without complete delivered @node/@env coverage, or projection failed); retaining full plan/core context.",
+      );
+    }
+  }
+  const promptPlanText = revisionContext ? JSON.stringify(revisionContext.plan) : planText;
+  const gatedHypsBlock = gatedHypsBlockFromPlan(promptPlanText);
+  const undeliveredBlock = undeliveredBlockFromPlan(promptPlanText);
   // Legacy study-pipeline scaffolds can predate typed discovery cores. Preserve
   // that supported empty-context path; modern research runs validate/project.
-  const scaffoldCoreContext = existsSync(scaffoldCorePath)
-    ? await readFormalizationCoreContext(scaffoldCorePath, "F2 scaffold")
+  const scaffoldCoreContext = revisionContext
+    ? JSON.stringify(revisionContext.core)
+    : existsSync(scaffoldCorePath)
+      ? await readFormalizationCoreContext(scaffoldCorePath, "F2 scaffold")
     : formalizationKind(args.ctx.qid) === "study"
       ? ""
       : await readFormalizationCoreContext(scaffoldCorePath, "F2 scaffold");
+  const revisionScopeBlock = revisionContext
+    ? [
+        "=== LOCAL F2 REVISION CONTEXT ===",
+        "This is a deterministic closure around the requested edit targets: their prerequisites and",
+        "the declarations whose signatures are forced downstream. Unrelated records are omitted on purpose.",
+        `Requested/resolved targets: ${revisionContext.resolved_targets.join(", ")}`,
+        `Omitted record counts: ${JSON.stringify(revisionContext.omitted_counts)}`,
+        `Full authoritative plan (read exact extra records only if a forced ripple leaves this packet): ${paths.plan}`,
+        `Full authoritative typed core (READ-ONLY; same selective escape hatch): ${scaffoldCorePath}`,
+        "Do not scan either full artifact by default. Do not infer that an omitted object is absent from the project.",
+        "If the implementation must deviate, sync back only the affected plan entries under the existing F2 contract.",
+        "=== END LOCAL F2 REVISION CONTEXT ===",
+        "",
+      ].join("\n")
+    : "";
   const prompt = [
     persistentDirectiveBlock,
     undeliveredBlock,
     gatedHypsBlock,
     redirectBlock,
+    revisionScopeBlock,
     correctionBlock(args.priorReview ?? null, args.attempt ?? 1, {
       manifestContract: (args.state.theorems?.length ?? 0) > 0,
     }),
@@ -448,9 +563,9 @@ export async function runStage2(args: {
     // decisions, the env world, the node→Lean mapping. The reuse SEARCH happened at
     // F1; F2 does not re-run retrieval. The typed core is the ground truth for the
     // node statements/conditions the plan maps.
-    `Formalization plan (plan.json — the contract you implement; for every DELIVERED node, tag EXACTLY ONE canonical primary declaration with "-- @node: <id>"; leave companion/auxiliary declarations untagged; an UNDELIVERED node emits no declaration and no tag; tag the S-block with "-- @env: <id>"). Additionally, for the SETUP/ENVIRONMENT symbols: tag EVERY Lean location that helps realize a core symbol's space with "@realizes <core-symbol-name>(<short clause hint>)" — using the EXACT core symbol name (e.g. mu_0, tau_P, e_P, pi, Pi; case-sensitive, NOT the Lean field name mu0/contrast). Put the tag at the most SPECIFIC location: for a structure FIELD, an INLINE trailing comment on that field line (e.g. 'propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw)'), NOT lumped on the structure docstring; for a MULTI-clause predicate (a Prop def of the form A and B and …), an INLINE comment on the SPECIFIC conjunct line that pins each symbol (e.g. in WellFormedLaw, the 'contrast x = mu1 x - mu0 x' conjunct line gets '-- @realizes tau_P(contrast = mu1 - mu0)' and the 'propensity x ∈ Icc 0 1' conjunct line gets '-- @realizes e_P(propensity ∈ Icc 0 1)'); a SINGLE-clause predicate may use its docstring (e.g. Positivity gets '@realizes e_P(a.s. 0<e<1)'). A symbol's space is normally carried by the CONJUNCTION of its carrier-type field PLUS the predicate(s) that pin its range, so the SAME symbol gets tagged on several locations (the field line AND each constraining predicate); the reviewer grades that whole cluster together. Tag EVERY core symbol in the JSON — not only setup-world ones — so the symbol→Lean crosswalk is COMPLETE: a primitive on its carrier field + constraining predicate; a quantity the paper DEFINES by a formula on the \`def\` that computes it; a symbol introduced only inside a theorem statement (e.g. an existential multiplier) on the clause that pins its range. Never tag a decl that merely USES a symbol without introducing it:\n${planText}`,
+    `Formalization plan${revisionContext ? " (localized affected-region projection)" : ""} (plan.json — the contract you implement; for every DELIVERED node, tag EXACTLY ONE canonical primary declaration with "-- @node: <id>"; leave companion/auxiliary declarations untagged; an UNDELIVERED node emits no declaration and no tag; tag the S-block with "-- @env: <id>"). Additionally, for the SETUP/ENVIRONMENT symbols: tag EVERY Lean location that helps realize a core symbol's space with "@realizes <core-symbol-name>(<short clause hint>)" — using the EXACT core symbol name (e.g. mu_0, tau_P, e_P, pi, Pi; case-sensitive, NOT the Lean field name mu0/contrast). Put the tag at the most SPECIFIC location: for a structure FIELD, an INLINE trailing comment on that field line (e.g. 'propensity : 𝒳 → ℝ -- @realizes e_P(carrier 𝒳→ℝ; range via WellFormedLaw)'), NOT lumped on the structure docstring; for a MULTI-clause predicate (a Prop def of the form A and B and …), an INLINE comment on the SPECIFIC conjunct line that pins each symbol (e.g. in WellFormedLaw, the 'contrast x = mu1 x - mu0 x' conjunct line gets '-- @realizes tau_P(contrast = mu1 - mu0)' and the 'propensity x ∈ Icc 0 1' conjunct line gets '-- @realizes e_P(propensity ∈ Icc 0 1)'); a SINGLE-clause predicate may use its docstring (e.g. Positivity gets '@realizes e_P(a.s. 0<e<1)'). A symbol's space is normally carried by the CONJUNCTION of its carrier-type field PLUS the predicate(s) that pin its range, so the SAME symbol gets tagged on several locations (the field line AND each constraining predicate); the reviewer grades that whole cluster together. Tag EVERY core symbol in the JSON — not only setup-world ones — so the symbol→Lean crosswalk is COMPLETE: a primitive on its carrier field + constraining predicate; a quantity the paper DEFINES by a formula on the \`def\` that computes it; a symbol introduced only inside a theorem statement (e.g. an existential multiplier) on the clause that pins its range. Never tag a decl that merely USES a symbol without introducing it:\n${promptPlanText}`,
     "",
-    `Typed core JSON (structural ground truth for each node's statement / condition; proof/publication prose omitted):\n${scaffoldCoreContext}`,
+    `Typed core JSON${revisionContext ? " (localized affected-region projection)" : ""} (structural ground truth for each node's statement / condition; proof/publication prose omitted):\n${scaffoldCoreContext}`,
     "",
     "Return JSON. If blocked-missing-architecture, include missing_items exactly.",
   ].join("\n");
@@ -724,7 +839,15 @@ export async function runStage2(args: {
       }
       if (gateInputsPresent) {
         const core = await readTypedCore(corePath);
-        const planObj = parseJsonWithEscapeRepair(await readFile(paths.plan, "utf8"));
+        const rawPlanObj = parseJsonWithEscapeRepair(await readFile(paths.plan, "utf8"));
+        const canonicalPlan = canonicalizeCitedPlanAfterF2(rawPlanObj, core);
+        const planObj = canonicalPlan.plan;
+        if (canonicalPlan.changed) {
+          await writeFile(paths.plan, JSON.stringify(planObj, null, 2) + "\n", "utf8");
+          console.warn(
+            "[causalsmith] F2 post-sync canonicalized optional gate keys and restored cited provenance from the typed core.",
+          );
+        }
         const leanTags = await parseLeanNodeTags(paths.leanDir);
         const leanDeclNames = new Set((await parseLeanDecls(paths.leanDir, { includeLemmas: true })).map((decl) => decl.name));
         const annotatedDecls = await parseAnnotatedDecls(paths.leanDir);

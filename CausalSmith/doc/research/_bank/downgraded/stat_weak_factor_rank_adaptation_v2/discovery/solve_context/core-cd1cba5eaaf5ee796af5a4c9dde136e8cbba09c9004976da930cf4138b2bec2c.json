@@ -1,0 +1,1297 @@
+{
+  "qid": "stat_weak_factor_rank_adaptation",
+  "specialization": "v2",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "n",
+      "type": "positive integer",
+      "space": "\\(n\\in\\mathbb N\\)",
+      "def": "Effective number of independent Gaussian panel replications.",
+      "role": "sample size"
+    },
+    {
+      "name": "alpha",
+      "type": "fixed probability",
+      "space": "\\(\\alpha\\in(0,1/2)\\)",
+      "def": "Noncoverage probability.",
+      "role": "confidence level"
+    },
+    {
+      "name": "sigma",
+      "type": "fixed positive scalar",
+      "space": "\\(\\sigma>0\\)",
+      "def": "Known standard deviation of one panel replication.",
+      "role": "noise scale"
+    },
+    {
+      "name": "Bmax",
+      "type": "fixed positive scalar",
+      "space": "\\(B_{\\max}>0\\)",
+      "def": "Known bound on every untreated potential-outcome mean.",
+      "role": "signal bound"
+    },
+    {
+      "name": "I0",
+      "type": "fixed row-index set",
+      "space": "\\(I_0=\\{1,2\\}\\)",
+      "def": "Control-row block.",
+      "role": "public mask block"
+    },
+    {
+      "name": "I1",
+      "type": "fixed row-index set",
+      "space": "\\(I_1=\\{3,4\\}\\)",
+      "def": "Treated-row block.",
+      "role": "public mask block"
+    },
+    {
+      "name": "J0",
+      "type": "fixed column-index set",
+      "space": "\\(J_0=\\{1,2\\}\\)",
+      "def": "Pretreatment column block.",
+      "role": "public mask block"
+    },
+    {
+      "name": "J1",
+      "type": "fixed column-index set",
+      "space": "\\(J_1=\\{3,4\\}\\)",
+      "def": "Posttreatment column block.",
+      "role": "public mask block"
+    },
+    {
+      "name": "M",
+      "type": "real matrix parameter",
+      "space": "\\(M\\in\\mathbb R^{4\\times4}\\)",
+      "def": "Untreated potential-outcome mean surface for the four row-period cells.",
+      "role": "latent causal panel"
+    },
+    {
+      "name": "A",
+      "type": "real matrix",
+      "space": "\\(A=M_{I_0,J_0}\\in\\mathbb R^{2\\times2}\\)",
+      "def": "Observed control-pretreatment block.",
+      "role": "anchor block",
+      "refs": [
+        "M",
+        "I0",
+        "J0"
+      ]
+    },
+    {
+      "name": "F",
+      "type": "real matrix",
+      "space": "\\(F=M_{I_0,J_1}\\in\\mathbb R^{2\\times2}\\)",
+      "def": "Observed control-posttreatment block.",
+      "role": "observed bridge block",
+      "refs": [
+        "M",
+        "I0",
+        "J1"
+      ]
+    },
+    {
+      "name": "G",
+      "type": "real matrix",
+      "space": "\\(G=M_{I_1,J_0}\\in\\mathbb R^{2\\times2}\\)",
+      "def": "Observed treated-pretreatment block.",
+      "role": "observed bridge block",
+      "refs": [
+        "M",
+        "I1",
+        "J0"
+      ]
+    },
+    {
+      "name": "D",
+      "type": "real matrix",
+      "space": "\\(D=M_{I_1,J_1}\\in\\mathbb R^{2\\times2}\\)",
+      "def": "Missing treated-posttreatment untreated potential-outcome block.",
+      "role": "missing causal block",
+      "refs": [
+        "M",
+        "I1",
+        "J1"
+      ]
+    },
+    {
+      "name": "Omega",
+      "type": "fixed index set",
+      "space": "\\(\\Omega=(I_0\\times J_0)\\cup(I_0\\times J_1)\\cup(I_1\\times J_0)\\)",
+      "def": "Public deterministic mask containing the three observed blocks and excluding the treated-posttreatment block.",
+      "role": "observation mask",
+      "refs": [
+        "I0",
+        "I1",
+        "J0",
+        "J1"
+      ]
+    },
+    {
+      "name": "Pomega",
+      "type": "linear map",
+      "sig": "\\(P_{\\Omega}:\\mathbb R^{4\\times4}\\to\\mathbb R^{12}\\)",
+      "def": "Vectorization of the entries indexed by \\(\\Omega\\), ordered blockwise as \\(A,F,G\\).",
+      "role": "observation operator",
+      "refs": [
+        "Omega",
+        "M",
+        "A",
+        "F",
+        "G"
+      ]
+    },
+    {
+      "name": "Y",
+      "type": "observed Gaussian vector",
+      "space": "\\(Y\\in\\mathbb R^{12}\\)",
+      "def": "Average noisy observation of the three public blocks.",
+      "role": "data",
+      "refs": [
+        "Pomega",
+        "n"
+      ]
+    },
+    {
+      "name": "PM",
+      "type": "probability law",
+      "def": "\\(P_M\\) denotes the law of \\(Y\\) when the latent mean surface is \\(M\\).",
+      "role": "sampling law",
+      "refs": [
+        "Y",
+        "M"
+      ]
+    },
+    {
+      "name": "one2",
+      "type": "fixed vector",
+      "space": "\\(\\mathbf 1_2=(1,1)^{\\mathsf T}\\)",
+      "def": "Two-dimensional all-ones vector.",
+      "role": "block-average loading"
+    },
+    {
+      "name": "Jtwo",
+      "type": "fixed matrix",
+      "space": "\\(\\mathbf J=\\mathbf 1_2\\mathbf 1_2^{\\mathsf T}\\)",
+      "def": "Two-by-two all-ones matrix.",
+      "role": "orbit target direction",
+      "refs": [
+        "one2"
+      ]
+    },
+    {
+      "name": "tau",
+      "type": "real-valued causal functional",
+      "space": "\\(\\tau(M)=\\tfrac14\\mathbf 1_2^{\\mathsf T}D\\mathbf 1_2\\in[-B_{\\max},B_{\\max}]\\)",
+      "def": "Average untreated counterfactual mean for treated rows in posttreatment periods.",
+      "role": "causal estimand",
+      "refs": [
+        "M",
+        "D",
+        "one2",
+        "Bmax"
+      ]
+    },
+    {
+      "name": "r",
+      "type": "rank index",
+      "space": "\\(r\\in\\{1,2\\}\\)",
+      "def": "Exact positive rank of the latent matrix and its anchor block.",
+      "role": "stratum index"
+    },
+    {
+      "name": "s",
+      "type": "positive scalar",
+      "space": "\\(s\\in(0,B_{\\max}]\\)",
+      "def": "Smallest positive singular value of the observed anchor block.",
+      "role": "factor-strength index",
+      "refs": [
+        "Bmax"
+      ]
+    },
+    {
+      "name": "Mzero",
+      "type": "rank-zero matrix class",
+      "space": "\\(\\mathcal M_0\\subset\\mathbb R^{4\\times4}\\)",
+      "def": "Class defined in \\(\\mathrm{def:rank-zero-stratum}\\).",
+      "role": "singular stratum",
+      "refs": [
+        "M"
+      ]
+    },
+    {
+      "name": "Mrs",
+      "type": "exact-rank strength class",
+      "space": "\\(\\mathcal M_r(s)\\subset\\mathbb R^{4\\times4}\\)",
+      "def": "Class defined in \\(\\mathrm{def:positive-rank-stratum}\\).",
+      "role": "positive-strength stratum",
+      "refs": [
+        "M",
+        "r",
+        "s"
+      ]
+    },
+    {
+      "name": "Uclass",
+      "type": "matrix class",
+      "space": "\\(\\mathcal U\\subset\\mathbb R^{4\\times4}\\)",
+      "def": "Union of rank zero and every exact-positive-rank strength stratum.",
+      "role": "honesty class",
+      "refs": [
+        "Mzero",
+        "Mrs",
+        "r",
+        "s",
+        "Bmax"
+      ]
+    },
+    {
+      "name": "C",
+      "type": "measurable interval-valued rule",
+      "sig": "\\(C:\\mathbb R^{12}\\to\\{[\\ell,u]: -\\infty<\\ell\\le u<\\infty\\}\\)",
+      "def": "Connected data-only confidence interval computed from \\(Y\\).",
+      "role": "inference procedure",
+      "refs": [
+        "Y"
+      ]
+    },
+    {
+      "name": "Cclass",
+      "type": "class of interval rules",
+      "space": "\\(\\mathfrak C_{\\alpha}(\\mathcal U)\\)",
+      "def": "Union-honest connected intervals defined in \\(\\mathrm{def:honest-interval-class}\\).",
+      "role": "procedure class",
+      "refs": [
+        "C",
+        "alpha",
+        "Uclass"
+      ]
+    },
+    {
+      "name": "len",
+      "type": "nonnegative functional",
+      "space": "\\(\\operatorname{len}([\\ell,u])=u-\\ell\\)",
+      "def": "Length of a connected interval.",
+      "role": "loss"
+    },
+    {
+      "name": "H2",
+      "type": "finite matrix group",
+      "space": "\\(\\mathcal H_2=\\{S\\in\\mathbb R^{2\\times2}:S\\text{ has one entry in }\\{-1,1\\}\\text{ in each row and column}\\}\\)",
+      "def": "The order-eight signed-permutation group.",
+      "role": "orientation group"
+    },
+    {
+      "name": "S",
+      "type": "signed-permutation matrix",
+      "space": "\\(S\\in\\mathcal H_2\\)",
+      "def": "Anchor orientation in the rank-two orbit.",
+      "role": "orbit index",
+      "refs": [
+        "H2"
+      ]
+    },
+    {
+      "name": "R",
+      "type": "signed-permutation matrix",
+      "space": "\\(R\\in\\mathcal H_2\\)",
+      "def": "Posttreatment orientation in the rank-two orbit.",
+      "role": "orbit index",
+      "refs": [
+        "H2"
+      ]
+    },
+    {
+      "name": "h",
+      "type": "positive scalar",
+      "space": "\\(h>0\\)",
+      "def": "Anchor strength in the explicit rank-two orbit.",
+      "role": "orbit strength"
+    },
+    {
+      "name": "q",
+      "type": "positive scalar",
+      "space": "\\(q>0\\)",
+      "def": "Bridge-block amplitude in the explicit rank-two orbit.",
+      "role": "orbit amplitude"
+    },
+    {
+      "name": "AB",
+      "type": "admissible amplitude set",
+      "space": "\\(\\mathcal A_B\\subset(0,\\infty)^2\\)",
+      "def": "Bound-compatible orbit amplitudes defined in \\(\\mathrm{def:admissible-orbit-amplitudes}\\).",
+      "role": "orbit parameter set",
+      "refs": [
+        "h",
+        "q",
+        "Bmax"
+      ]
+    },
+    {
+      "name": "g",
+      "type": "finite orbit index",
+      "space": "\\(g=(S,R)\\in\\mathcal G:=\\mathcal H_2\\times\\mathcal H_2\\)",
+      "def": "One of the sixty-four signed-permutation orientations.",
+      "role": "mixture component",
+      "refs": [
+        "S",
+        "R",
+        "H2"
+      ]
+    },
+    {
+      "name": "Morb",
+      "type": "rank-two matrix",
+      "space": "\\(M_g(h,q)\\in\\mathbb R^{4\\times4}\\)",
+      "def": "Explicit orbit alternative indexed by \\(g\\).",
+      "role": "least-favorable witness family",
+      "refs": [
+        "g",
+        "h",
+        "q",
+        "M"
+      ]
+    },
+    {
+      "name": "mug",
+      "type": "observed mean vector",
+      "space": "\\(\\mu_g(h,q)=P_{\\Omega}M_g(h,q)\\in\\mathbb R^{12}\\)",
+      "def": "Observed Gaussian mean of orbit component \\(g\\).",
+      "role": "likelihood mean",
+      "refs": [
+        "Pomega",
+        "Morb",
+        "g",
+        "h",
+        "q"
+      ]
+    },
+    {
+      "name": "Pzero",
+      "type": "Gaussian probability law",
+      "space": "\\(P_0=N(0,\\sigma^2 n^{-1}I_{12})\\)",
+      "def": "Observed law on the rank-zero stratum.",
+      "role": "simple null",
+      "refs": [
+        "sigma",
+        "n",
+        "Y"
+      ]
+    },
+    {
+      "name": "Pg",
+      "type": "Gaussian probability law",
+      "space": "\\(P_g^{h,q}=N(\\mu_g(h,q),\\sigma^2 n^{-1}I_{12})\\)",
+      "def": "Observed law of orbit component \\(g\\).",
+      "role": "composite alternative",
+      "refs": [
+        "mug",
+        "sigma",
+        "n",
+        "g",
+        "h",
+        "q",
+        "Y"
+      ]
+    },
+    {
+      "name": "Pbar",
+      "type": "finite Gaussian mixture law",
+      "space": "\\(\\overline P_{h,q}=64^{-1}\\sum_{g\\in\\mathcal G}P_g^{h,q}\\)",
+      "def": "Uniform mixture over the sixty-four orbit components.",
+      "role": "diagnostic mixture",
+      "refs": [
+        "Pg",
+        "g",
+        "h",
+        "q"
+      ]
+    },
+    {
+      "name": "Lg",
+      "type": "positive likelihood ratio",
+      "space": "\\(L_g^{h,q}=dP_g^{h,q}/dP_0\\)",
+      "def": "Component likelihood ratio relative to rank zero.",
+      "role": "dual sufficient statistic",
+      "refs": [
+        "Pg",
+        "Pzero",
+        "g",
+        "h",
+        "q"
+      ]
+    },
+    {
+      "name": "b",
+      "type": "nonnegative weight vector",
+      "space": "\\(b=(b_g:g\\in\\mathcal G)\\in\\mathbb R_+^{64}\\)",
+      "def": "Dual weights on the simultaneous alternative-coverage constraints.",
+      "role": "least-favorable mixture weights",
+      "refs": [
+        "g"
+      ]
+    },
+    {
+      "name": "Dmix",
+      "type": "scalar functional",
+      "space": "\\(\\mathfrak D_{\\alpha}^{\\mathrm{mix}}(h,q)\\in[0,1]\\)",
+      "def": "Full simultaneous-coverage dual value for the zero-plus-orbit experiment.",
+      "role": "mixture expected-length modulus",
+      "refs": [
+        "alpha",
+        "h",
+        "q"
+      ]
+    },
+    {
+      "name": "Dpair",
+      "type": "scalar functional",
+      "space": "\\(\\mathfrak D_{\\alpha}^{\\mathrm{pair}}(h,q)\\in[0,1]\\)",
+      "def": "Largest dual value obtained by retaining only one orbit component.",
+      "role": "pairwise benchmark",
+      "refs": [
+        "alpha",
+        "h",
+        "q"
+      ]
+    },
+    {
+      "name": "Lorb0",
+      "type": "nonnegative scalar",
+      "space": "\\(\\mathfrak L_{0,n}^{\\mathrm{orb}}(h,q)\\in[0,\\infty)\\)",
+      "def": "Minimum expected interval length at rank zero under simultaneous coverage over rank zero and all sixty-four orbit alternatives.",
+      "role": "early-kill minimax criterion",
+      "refs": [
+        "n",
+        "h",
+        "q"
+      ]
+    },
+    {
+      "name": "Lzero",
+      "type": "nonnegative scalar",
+      "space": "\\(\\mathfrak L_{0}^{\\mathcal U}(n)\\in[0,\\infty)\\)",
+      "def": "Minimum expected length at rank zero under honesty over the full union.",
+      "role": "rank-zero adaptation frontier",
+      "refs": [
+        "n"
+      ]
+    },
+    {
+      "name": "Lrs",
+      "type": "nonnegative scalar",
+      "space": "\\(\\mathfrak L_{r,s}^{\\mathcal U}(n)\\in[0,\\infty)\\)",
+      "def": "Minimax expected length on exact-rank strength stratum \\(\\mathcal M_r(s)\\) under honesty over the full rank-and-strength union.",
+      "role": "adaptation frontier",
+      "refs": [
+        "r",
+        "s",
+        "n"
+      ]
+    },
+    {
+      "name": "InvHandle",
+      "type": "construction handle",
+      "def": "Simultaneous mixture-test inversion over rank, strength, and orientation fibers.",
+      "role": "open-question handle",
+      "refs": [
+        "r",
+        "s"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:gaussian-sequence",
+      "kind": "sampling",
+      "condition": "\\(Y\\mid M\\sim N(P_{\\Omega}M,\\sigma^2 n^{-1}I_{12})\\).",
+      "free_symbols": [
+        "Y",
+        "M",
+        "Pomega",
+        "sigma",
+        "n"
+      ],
+      "standard": {
+        "name": "Gaussian sequence experiment with known variance",
+        "cite": "CaiLow2004AdaptiveCI"
+      },
+      "used_by": [
+        "def:honest-interval-class",
+        "def:orbit-confidence-problem",
+        "def:orbit-duals",
+        "def:simultaneous-inversion-handle",
+        "lem:orbit-chi-square",
+        "thm:finite-grid-simultaneous-dual",
+        "thm:orbit-exact-dual",
+        "thm:profile-union-honesty"
+      ]
+    },
+    {
+      "id": "ass:bounded-signal",
+      "kind": "support",
+      "condition": "\\(\\lVert M\\rVert_{\\infty}\\le B_{\\max}\\).",
+      "free_symbols": [
+        "M",
+        "Bmax"
+      ],
+      "standard": {
+        "name": "Uniform entry bound for low-rank matrix completion",
+        "cite": "CarpentierKloppLofflerNickl2018"
+      },
+      "used_by": [
+        "def:positive-rank-stratum"
+      ]
+    },
+    {
+      "id": "ass:rank-zero",
+      "kind": "rank",
+      "condition": "\\(\\operatorname{rank}(M)=0\\).",
+      "free_symbols": [
+        "Mzero",
+        "M"
+      ],
+      "standard": {
+        "name": "Rank-zero low-rank stratum",
+        "cite": "CarpentierKloppLofflerNickl2018"
+      },
+      "used_by": [
+        "def:rank-zero-stratum"
+      ]
+    },
+    {
+      "id": "ass:exact-total-rank",
+      "kind": "rank",
+      "condition": "\\(\\operatorname{rank}(M)=r\\).",
+      "free_symbols": [
+        "Mrs",
+        "M",
+        "r"
+      ],
+      "standard": {
+        "name": "Exact low-rank matrix model",
+        "cite": "AtheyBayatiDoudchenkoImbensKhosravi2021"
+      },
+      "used_by": [
+        "def:positive-rank-stratum",
+        "lem:block-completion-identification"
+      ]
+    },
+    {
+      "id": "ass:exact-anchor-rank",
+      "kind": "rank",
+      "condition": "\\(\\operatorname{rank}(A)=r\\).",
+      "free_symbols": [
+        "A",
+        "r"
+      ],
+      "standard": {
+        "name": "Full observed-anchor rank condition",
+        "cite": "YanWainwright2024MissingPanel"
+      },
+      "used_by": [
+        "def:positive-rank-stratum",
+        "lem:block-completion-identification"
+      ]
+    },
+    {
+      "id": "ass:anchor-strength",
+      "kind": "rank-strength",
+      "condition": "\\(\\sigma_r(A)=s\\).",
+      "free_symbols": [
+        "A",
+        "r",
+        "s"
+      ],
+      "standard": {
+        "name": "Exact smallest-positive-singular-value stratum",
+        "cite": "Onatski2012WeakFactors"
+      },
+      "used_by": [
+        "def:positive-rank-stratum",
+        "def:union-minimax-length"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:public-four-block-mask",
+      "name": "Public four-block observation map",
+      "construction": "\\[M=\\begin{pmatrix}A&F\\\\G&D\\end{pmatrix},\\qquad P_{\\Omega}M=\\operatorname{vec}(A,F,G),\\qquad D\\text{ is unobserved}.\\]",
+      "free_symbols": [
+        "M",
+        "A",
+        "F",
+        "G",
+        "D",
+        "Pomega",
+        "Omega"
+      ],
+      "inputs": [
+        "Omega",
+        "Pomega"
+      ],
+      "revision": "rev:667821a651964d14cbac05a36bc3155eeb223d19fd017b9758ef14a1f55a7e04"
+    },
+    {
+      "id": "def:rank-zero-stratum",
+      "name": "Rank-zero stratum \\(\\mathcal M_0\\)",
+      "construction": "\\(\\mathcal M_0=\\{M\\in\\mathbb R^{4\\times4}:\\operatorname{rank}(M)=0\\}\\).",
+      "free_symbols": [
+        "M"
+      ],
+      "by_member_properties": [
+        "ass:rank-zero"
+      ],
+      "revision": "rev:c53ecb83234e90003ef975f07d625bd7ad6f232bbee32a051e27ecf9cbd65d58"
+    },
+    {
+      "id": "def:positive-rank-stratum",
+      "name": "Exact-rank positive-strength stratum \\(\\mathcal M_r(s)\\)",
+      "construction": "\\(\\mathcal M_r(s)=\\{M\\in\\mathbb R^{4\\times4}:\\lVert M\\rVert_{\\infty}\\le B_{\\max},\\ \\operatorname{rank}(M)=r,\\ \\operatorname{rank}(A)=r,\\ \\sigma_r(A)=s\\}\\) for every \\(r\\in\\{1,2\\}\\) and \\(s\\in(0,B_{\\max}]\\).",
+      "free_symbols": [
+        "M",
+        "Bmax",
+        "r",
+        "A",
+        "s"
+      ],
+      "by_member_properties": [
+        "ass:bounded-signal",
+        "ass:exact-total-rank",
+        "ass:exact-anchor-rank",
+        "ass:anchor-strength"
+      ],
+      "revision": "rev:fb7b1b75dc3f1099a78a715b882590e8d6d6d3887bcd85981e6edb4a4d5e88bd"
+    },
+    {
+      "id": "def:rank-strength-union",
+      "name": "Rank-and-strength union \\(\\mathcal U\\)",
+      "construction": "\\(\\mathcal U=\\mathcal M_0\\cup\\bigcup_{r\\in\\{1,2\\}}\\bigcup_{s\\in(0,B_{\\max}]}\\mathcal M_r(s)\\).",
+      "free_symbols": [
+        "Uclass",
+        "Mzero",
+        "Mrs",
+        "r",
+        "s",
+        "Bmax"
+      ],
+      "inputs": [
+        "def:rank-zero-stratum",
+        "def:positive-rank-stratum"
+      ],
+      "revision": "rev:219e8a0235cce117b023754fdd2b9959ece8a71ada3346f26edb5e931eb6dfc5"
+    },
+    {
+      "id": "def:honest-interval-class",
+      "name": "Union-honest interval class \\(\\mathfrak C_{\\alpha}(\\mathcal U)\\)",
+      "construction": "\\(\\mathfrak C_{\\alpha}(\\mathcal U)=\\{C:C\\text{ is a measurable nonempty connected closed interval rule and }\\inf_{M\\in\\mathcal U}P_M\\{\\tau(M)\\in C(Y)\\}\\ge1-\\alpha\\}\\).",
+      "free_symbols": [
+        "Cclass",
+        "Uclass",
+        "C",
+        "alpha",
+        "M",
+        "PM",
+        "tau",
+        "Y"
+      ],
+      "inputs": [
+        "def:rank-strength-union",
+        "ass:gaussian-sequence"
+      ],
+      "revision": "rev:095ca4b2932734513166b629999b7d1446025e8635c116d01063ea5e80a7a6d4"
+    },
+    {
+      "id": "def:union-minimax-length",
+      "name": "Stratum-wise union-honest expected length",
+      "construction": "\\(\\mathfrak L_{0}^{\\mathcal U}(n)=\\inf_{C\\in\\mathfrak C_{\\alpha}(\\mathcal U)}E_{P_0}[\\operatorname{len}C(Y)]\\) and, for \\(r\\in\\{1,2\\}\\) and \\(s\\in(0,B_{\\max}]\\), \\(\\mathfrak L_{r,s}^{\\mathcal U}(n)=\\inf_{C\\in\\mathfrak C_{\\alpha}(\\mathcal U)}\\sup_{M\\in\\mathcal M_r(s)}E_{P_M}[\\operatorname{len}C(Y)]\\).",
+      "free_symbols": [
+        "Lzero",
+        "Lrs",
+        "Cclass",
+        "Mrs",
+        "n",
+        "C",
+        "alpha",
+        "Pzero",
+        "len",
+        "Y",
+        "r",
+        "s",
+        "M",
+        "PM"
+      ],
+      "inputs": [
+        "def:honest-interval-class",
+        "def:positive-rank-stratum",
+        "ass:anchor-strength"
+      ],
+      "revision": "rev:3f710fe35eaff482ff3949eefba31865718ed799f04e5acdc4beb3db7c9f3606"
+    },
+    {
+      "id": "def:admissible-orbit-amplitudes",
+      "name": "Admissible orbit-amplitude set \\(\\mathcal A_B\\)",
+      "construction": "\\(\\mathcal A_B=\\{(h,q)\\in(0,\\infty)^2:h\\le B_{\\max},\\ q\\le B_{\\max},\\ q^2/h\\le B_{\\max}\\}\\).",
+      "free_symbols": [
+        "AB",
+        "h",
+        "q",
+        "Bmax"
+      ],
+      "inputs": [
+        "Bmax"
+      ],
+      "revision": "rev:82bf985c6b89ea6243af0628485aa7634be32872199b00a5d03f2a039ceae5be"
+    },
+    {
+      "id": "def:rank-two-orbit",
+      "name": "Sixty-four-point rank-two orbit",
+      "construction": "\\[M_g(h,q)=\\begin{pmatrix}hS&qR\\\\q\\mathbf J R^{\\mathsf T}S&(q^2/h)\\mathbf J\\end{pmatrix},\\qquad g=(S,R)\\in\\mathcal H_2\\times\\mathcal H_2.\\]",
+      "free_symbols": [
+        "Morb",
+        "g",
+        "h",
+        "q",
+        "S",
+        "R",
+        "Jtwo",
+        "H2"
+      ],
+      "inputs": [
+        "def:admissible-orbit-amplitudes"
+      ],
+      "revision": "rev:e8b765ae8fd0c746d977f589e62df73269496e18a2ed80fc9411b9f185a2ecd5"
+    },
+    {
+      "id": "def:orbit-confidence-problem",
+      "name": "Rank-zero-plus-orbit expected-length problem",
+      "construction": "\\(\\mathfrak L_{0,n}^{\\mathrm{orb}}(h,q)=\\inf_C E_{P_0}[\\operatorname{len}C(Y)]\\), where the infimum is over data-only connected intervals satisfying \\(P_0\\{0\\in C(Y)\\}\\ge1-\\alpha\\) and \\(P_g^{h,q}\\{q^2/h\\in C(Y)\\}\\ge1-\\alpha\\) for every \\(g\\in\\mathcal G\\).",
+      "free_symbols": [
+        "Lorb0",
+        "h",
+        "q",
+        "C",
+        "Pzero",
+        "len",
+        "Y",
+        "alpha",
+        "Pg",
+        "g"
+      ],
+      "inputs": [
+        "def:rank-two-orbit",
+        "ass:gaussian-sequence"
+      ],
+      "revision": "rev:d8562693fac02bf4b889725b3f80ec6413e3fecb76ff723adb076c47728ebaa4"
+    },
+    {
+      "id": "def:orbit-duals",
+      "name": "Mixture and pairwise expected-length duals",
+      "construction": "\\[\\mathfrak D_{\\alpha}^{\\mathrm{mix}}(h,q)=\\sup_{a\\ge0,\\,b\\in\\mathbb R_+^{64}}\\left(E_{P_0}\\!\\left[\\min\\left\\{\\sum_{g\\in\\mathcal G}b_gL_g^{h,q}(Y),a,1\\right\\}\\right]-\\alpha\\left(a+\\sum_{g\\in\\mathcal G}b_g\\right)\\right),\\] \\[\\mathfrak D_{\\alpha}^{\\mathrm{pair}}(h,q)=\\max_{g\\in\\mathcal G}\\sup_{a,c\\ge0}\\left(E_{P_0}[\\min\\{cL_g^{h,q}(Y),a,1\\}]-\\alpha(a+c)\\right).\\]",
+      "free_symbols": [
+        "Dmix",
+        "alpha",
+        "h",
+        "q",
+        "b",
+        "g",
+        "Lg",
+        "Y",
+        "Pzero",
+        "Dpair"
+      ],
+      "inputs": [
+        "def:orbit-confidence-problem",
+        "ass:gaussian-sequence"
+      ],
+      "revision": "rev:d2bdd5517b3addc62adf2f3e6eee0529bbe04550792e6e1b59a83d9cde29351d"
+    },
+    {
+      "id": "def:simultaneous-inversion-handle",
+      "name": "Simultaneous mixture-test inversion handle",
+      "construction": "For a finite grid, let\n\\[\n \\Theta_N=\\{(\\mu_i,t_i,k(i)):1\\leq i\\leq N\\}\n\\]\nmean that there is an \\(M_i\\in\\mathcal U\\) with \\(\\mu_i=P_\\Omega M_i\\) and \\(t_i=\\tau(M_i)\\), and that \\(k(i)=0\\) for \\(M_i\\in\\mathcal M_0\\), while \\(k(i)=(r,s)\\) for \\(M_i\\in\\mathcal M_r(s)\\).  Put \\(\\mathcal T_N=\\{t_i:1\\leq i\\leq N\\}\\) and\n\\[\n \\mathcal A_N=\\{[a,b]:a,b\\in\\mathcal T_N,\\ a\\leq b\\}.\n\\]\nThe density of \\(N(\\mu_i,\\sigma^2n^{-1}I_{12})\\) is\n\\[\n f_i(y)=\\left(\\frac{n}{2\\pi\\sigma^2}\\right)^6\n \\exp\\!\\left\\{-\\frac{n}{2\\sigma^2}\\lVert y-\\mu_i\\rVert_2^2\\right\\}.\n\\]\nLet \\(\\mathcal P_N\\) be the set of Borel kernels \\(p=(p_A:A\\in\\mathcal A_N)\\) satisfying \\(p_A(y)\\geq0\\) and \\(\\sum_Ap_A(y)=1\\).  Define\n\\[\n Q_i(p)=\\int_{\\mathbb R^{12}}\\sum_{A\\in\\mathcal A_N}\n \\mathbf 1\\{t_i\\in A\\}p_A(y)f_i(y)\\,dy,\n \\qquad\n R_i(p)=\\int_{\\mathbb R^{12}}\\sum_{A\\in\\mathcal A_N}\n \\operatorname{len}(A)p_A(y)f_i(y)\\,dy,\n\\]\nand, for each represented stratum label \\(k\\),\n\\[\n L_{k,N}=\\inf_{p\\in\\mathcal P_N:\\,Q_j(p)\\geq1-\\alpha\\ \\forall j}\n \\max_{i:k(i)=k}R_i(p).\n\\]\nCall the grid normalization-legal when \\(L_{k,N}>0\\) for every represented \\(k\\).  On such a grid the simultaneous finite-grid oracle factor is\n\\[\n \\kappa_N^*=\\inf_{\\substack{\\kappa\\geq0,\\ p\\in\\mathcal P_N}}\n \\left\\{\\kappa:Q_i(p)\\geq1-\\alpha,\\quad\n R_i(p)\\leq\\kappa L_{k(i),N}\\quad(1\\leq i\\leq N)\\right\\}.\n\\]\nFor the continuum construction put\n\\[\n \\overline{\\mathcal K}=\\operatorname{cl}\\{(P_\\Omega M,\\tau(M)):M\\in\\mathcal U\\}\n \\subset\\mathbb R^{12}\\times\\mathbb R,\n \\qquad\n \\rho_\\alpha=\\frac{\\sigma}{\\sqrt n}\\sqrt{q_{12,1-\\alpha}},\n\\]\nwhere \\(q_{12,1-\\alpha}\\) is the \\((1-\\alpha)\\)-quantile of a chi-square random variable with twelve degrees of freedom.  Define\n\\[\n T(y)=\\{t:\\text{there is }(\\mu,t)\\in\\overline{\\mathcal K}\n \\text{ with }\\lVert y-\\mu\\rVert_2\\leq\\rho_\\alpha\\},\n \\qquad\n C_{\\mathrm{prof}}(y)=\n \\begin{cases}\n [\\inf T(y),\\sup T(y)],&T(y)\\neq\\varnothing,\\\\\n \\{0\\},&T(y)=\\varnothing.\n \\end{cases}\n\\]\nThe simultaneous-inversion handle consists of the finite-grid program \\(\\kappa_N^*\\), its likelihood dual, and the continuum profile interval \\(C_{\\mathrm{prof}}\\).",
+      "free_symbols": [
+        "InvHandle",
+        "M",
+        "Uclass",
+        "Pomega",
+        "tau",
+        "Mzero",
+        "Mrs",
+        "r",
+        "s",
+        "n",
+        "sigma",
+        "alpha",
+        "Y",
+        "C",
+        "len",
+        "Bmax"
+      ],
+      "inputs": [
+        "def:orbit-duals",
+        "def:rank-strength-union",
+        "def:union-minimax-length",
+        "ass:gaussian-sequence"
+      ],
+      "revision": "rev:cb67b9a196377263d7a5757604d118b2bc2f96ed4520cc51400ad2ca0786b890"
+    }
+  ],
+  "statements": [
+    {
+      "id": "lem:block-completion-identification",
+      "kind": "lemma",
+      "statement": "For every \\(M\\in\\mathcal M_r(s)\\), the missing block satisfies \\(D=GA^{+}F\\), where \\(A^{+}\\) is the Moore--Penrose inverse. Hence \\(\\tau(M)=\\tfrac14\\mathbf 1_2^{\\mathsf T}GA^{+}F\\mathbf 1_2\\) is identified from \\(P_{\\Omega}M\\) on each positive-strength stratum.",
+      "free_symbols": [
+        "M",
+        "r",
+        "s",
+        "D",
+        "G",
+        "A",
+        "F",
+        "tau",
+        "one2",
+        "Pomega"
+      ],
+      "depends_on": [
+        "def:public-four-block-mask",
+        "def:positive-rank-stratum",
+        "ass:exact-total-rank",
+        "ass:exact-anchor-rank"
+      ],
+      "status": "proved",
+      "justification": "The statistical frontier is meaningful only after target-specific completion is fixed on every positive-strength stratum.",
+      "gap": "YanWainwright2024MissingPanel assumes signal and block conditions for entrywise inference; it does not isolate this finite four-block algebraic recovery map across exact ranks.",
+      "consumer": "A treated-posttreatment block average can be interpreted without requiring unique recovery of any matrix outside the stated exact-rank stratum.",
+      "proof_tex": "\\textit{Proof.}\nFix \\(M\\in\\mathcal M_r(s)\\).  By the exact-rank assumptions,\n\\(\\operatorname{rank}(M)=\\operatorname{rank}(A)=r\\).  Since \\(A\\) is a\nsubmatrix of both \\([A\\ F]\\) and \\([A^{\\mathsf T}\\ G^{\\mathsf T}]^{\\mathsf T}\\),\n\\[\nr\\leq \\operatorname{rank}[A\\ F]\\leq \\operatorname{rank}(M)=r,\n\\qquad\nr\\leq \\operatorname{rank}\\!\\begin{bmatrix}A\\\\G\\end{bmatrix}\n\\leq \\operatorname{rank}(M)=r.\n\\]\nConsequently \\(\\operatorname{col}(F)\\subseteq\\operatorname{col}(A)\\) and\n\\(\\operatorname{row}(G)\\subseteq\\operatorname{row}(A)\\).  Thus there are\nmatrices \\(X,Y_0\\in\\mathbb R^{2\\times2}\\) with \\(F=AX\\) and \\(G=Y_0A\\).\nThe Moore--Penrose identities give the particular choices\n\\(X=A^+F\\) and \\(Y_0=GA^+\\).  Invertible block row and column operations now give\n\\[\n\\begin{pmatrix}I&0\\\\-Y_0&I\\end{pmatrix}\n\\begin{pmatrix}A&F\\\\G&D\\end{pmatrix}\n\\begin{pmatrix}I&-X\\\\0&I\\end{pmatrix}\n=\n\\begin{pmatrix}A&0\\\\0&D-Y_0AX\\end{pmatrix}.\n\\]\nThe left side has rank \\(r\\), whereas the right side has rank\n\\(r+\\operatorname{rank}(D-Y_0AX)\\).  Hence \\(D=Y_0AX=GA^+F\\).\nSubstitution into the definition of the causal target yields\n\\[\n\\tau(M)=\\frac14\\mathbf 1_2^{\\mathsf T}GA^+F\\mathbf 1_2.\n\\]\nAll matrices on the right are contained in the observed vector\n\\(P_{\\Omega}M=\\operatorname{vec}(A,F,G)\\); the positive-strength condition\n\\(s>0\\) fixes the rank and ensures that the Moore--Penrose inverse is evaluated\non the asserted exact-rank stratum.  This proves the stated identifying\nfunctional. \\(\\square\\)",
+      "revision": "rev:f5f67a4b52cbdaaa3584e214049701e177d243b95aaacac2f9d0e98d79d0ac01"
+    },
+    {
+      "id": "lem:orbit-membership",
+      "kind": "lemma",
+      "statement": "For every \\((h,q)\\in\\mathcal A_B\\) and \\(g=(S,R)\\in\\mathcal G\\), the construction \\(M_g(h,q)\\) belongs to \\(\\mathcal M_2(h)\\), obeys \\(D=GA^{-1}F=(q^2/h)\\mathbf J\\), and has \\(\\tau(M_g(h,q))=q^2/h\\). Moreover, \\(64^{-1}\\sum_{g\\in\\mathcal G}\\mu_g(h,q)=0\\).",
+      "free_symbols": [
+        "h",
+        "q",
+        "g",
+        "S",
+        "R",
+        "Morb",
+        "D",
+        "G",
+        "A",
+        "F",
+        "Jtwo",
+        "tau",
+        "mug"
+      ],
+      "depends_on": [
+        "def:admissible-orbit-amplitudes",
+        "def:rank-two-orbit",
+        "def:positive-rank-stratum",
+        "lem:block-completion-identification"
+      ],
+      "status": "proved",
+      "justification": "This certifies that the fuzzy alternative is legal under the public mask and that every component carries the same causal target.",
+      "gap": "CaiGuo2017HDLinearCI uses sparse signed alternatives, while CarpentierKloppLofflerNickl2018 uses low-rank testing priors; neither supplies a fixed-mask completion orbit with a common missing-block target.",
+      "consumer": "The lemma supplies the auditable sixty-four-component benchmark required before any general rank-adaptation claim is trusted.",
+      "proof_tex": "\\textit{Proof.}\nFix \\((h,q)\\in\\mathcal A_B\\) and \\(g=(S,R)\\in\\mathcal G\\).  Signed-permutation\nmatrices are orthogonal, so \\(S^{-1}=S^{\\mathsf T}\\), and the anchor\n\\(A=hS\\) has rank two with both singular values equal to \\(h\\).  Direct\nmultiplication gives\n\\[\nGA^{-1}F\n=q\\mathbf J R^{\\mathsf T}S\\,(hS)^{-1}qR\n=\\frac{q^2}{h}\\mathbf J R^{\\mathsf T}SS^{\\mathsf T}R\n=\\frac{q^2}{h}\\mathbf J=D.\n\\]\nApplying the same invertible block elimination used in the block-completion\nlemma shows\n\\[\n\\operatorname{rank}M_g(h,q)\n=\\operatorname{rank}(hS)+\n \\operatorname{rank}\\{D-GA^{-1}F\\}=2.\n\\]\nEvery nonzero entry of \\(A\\) has absolute value \\(h\\), every nonzero entry of\n\\(F\\) has absolute value \\(q\\), every entry of\n\\(G=q\\mathbf J R^{\\mathsf T}S\\) has absolute value \\(q\\), and every entry of\n\\(D\\) equals \\(q^2/h\\).  The three inequalities in the definition of\n\\(\\mathcal A_B\\) therefore imply \\(\\lVert M_g(h,q)\\rVert_\\infty\\leq B_{\\max}\\).\nThis proves \\(M_g(h,q)\\in\\mathcal M_2(h)\\).  Moreover,\n\\[\n\\tau(M_g(h,q))\n=\\frac14\\mathbf 1_2^{\\mathsf T}\\frac{q^2}{h}\\mathbf J\\mathbf 1_2\n=\\frac{q^2}{h}.\n\\]\nFinally, under the uniform law on\n\\(\\mathcal H_2\\times\\mathcal H_2\\), the matrices \\(S\\) and \\(R\\) are\nindependent and each has mean zero.  Hence\n\\[\nE[S]=0,\\qquad E[R]=0,\\qquad\nE[\\mathbf J R^{\\mathsf T}S]=\\mathbf J E[R]^{\\mathsf T}E[S]=0.\n\\]\nThe observation map retains precisely these three blocks, so averaging their\nvectorizations proves \\(64^{-1}\\sum_g\\mu_g(h,q)=0\\). \\(\\square\\)",
+      "revision": "rev:e1f55ba380097e15c6636acb469c0062a4ed4ec5465a7c9ba85e3a8c8ee0e3f2"
+    },
+    {
+      "id": "lem:orbit-chi-square",
+      "kind": "lemma",
+      "statement": "Let \\(\\overline P_{h,q}=64^{-1}\\sum_{g\\in\\mathcal G}P_g^{h,q}\\). Then \\[1+\\chi^2(\\overline P_{h,q},P_0)=64^{-2}\\sum_{g,g'\\in\\mathcal G}\\exp\\!\\left(\\frac{n}{\\sigma^2}\\langle\\mu_g(h,q),\\mu_{g'}(h,q)\\rangle\\right).\\] Under the scaling \\((h,q)=(ta,ta)\\), the coefficient of \\(t^2\\) in the expansion of the chi-square divergence is zero, but \\[1+\\chi^2(\\overline P_{ta,ta},P_0)\\ge64^{-1}\\exp(8na^2t^2/\\sigma^2).\\] Thus a fixed sixty-four-point orbit cannot by first-moment cancellation alone support \\(ta\\asymp n^{-1/4}\\) at bounded chi-square affinity.",
+      "free_symbols": [
+        "h",
+        "q",
+        "Pbar",
+        "Pg",
+        "g",
+        "Pzero",
+        "n",
+        "sigma",
+        "mug"
+      ],
+      "depends_on": [
+        "ass:gaussian-sequence",
+        "def:rank-two-orbit",
+        "lem:orbit-membership"
+      ],
+      "status": "proved",
+      "justification": "The exact Gram sum separates a genuine mixture effect from a misleading low-order Taylor cancellation.",
+      "gap": "CaiGuo2017HDLinearCI controls sparse-mixture cross-moments in a growing-dimensional orbit; the diagonal obstruction for this fixed causal-panel orbit is absent from that result.",
+      "consumer": "Researchers do not infer an \\(n^{1/4}\\) adaptation penalty from a cancellation that is overwhelmed by diagonal likelihood-ratio terms.",
+      "proof_tex": "\\textit{Proof.}\nPut \\(v=\\sigma^2/n\\).  For a Gaussian shift with mean \\(\\mu_g\\) and covariance\n\\(vI_{12}\\), its likelihood ratio relative to \\(P_0\\) is\n\\[\nL_g(y)=\\exp\\!\\left\\{v^{-1}\\mu_g^{\\mathsf T}y\n-\\frac{1}{2v}\\lVert\\mu_g\\rVert_2^2\\right\\}.\n\\]\nCompleting the square under \\(Y\\sim P_0\\) gives, for every \\(g,g'\\),\n\\[\nE_{P_0}[L_g(Y)L_{g'}(Y)]\n=\\exp\\!\\left(v^{-1}\\langle\\mu_g,\\mu_{g'}\\rangle\\right).\n\\]\nSince \\(d\\overline P_{h,q}/dP_0=64^{-1}\\sum_gL_g\\), expansion of the square\nproves\n\\[\n1+\\chi^2(\\overline P_{h,q},P_0)\n=64^{-2}\\sum_{g,g'\\in\\mathcal G}\n\\exp\\!\\left(\\frac n{\\sigma^2}\n\\langle\\mu_g(h,q),\\mu_{g'}(h,q)\\rangle\\right).\n\\]\n\nFor \\(h=q=ta\\), write \\(\\mu_g(ta,ta)=ta\\nu_g\\).  The orbit-membership\ncalculation gives \\(64^{-1}\\sum_g\\nu_g=0\\).  Therefore the coefficient of\n\\(t^2\\) in the preceding exponential sum is\n\\[\n\\frac{na^2}{\\sigma^2},64^{-2}\n\\sum_{g,g'}\\langle\\nu_g,\\nu_{g'}\\rangle\n=\\frac{na^2}{\\sigma^2}\n\\left\\lVert64^{-1}\\sum_g\\nu_g\\right\\rVert_2^2=0.\n\\]\nFor each diagonal term, the three observed blocks have squared Frobenius norms\n\\(2t^2a^2\\), \\(2t^2a^2\\), and \\(4t^2a^2\\), respectively.  Thus\n\\(\\lVert\\mu_g(ta,ta)\\rVert_2^2=8t^2a^2\\).  Keeping only the sixty-four\ndiagonal, nonnegative terms in the exact Gram sum yields\n\\[\n1+\\chi^2(\\overline P_{ta,ta},P_0)\n\\geq64^{-1}\\exp(8na^2t^2/\\sigma^2).\n\\]\nIf \\(ta\\asymp n^{-1/4}\\), the exponent is of order \\(n^{1/2}\\), and the\nright side diverges.  Hence cancellation of the quadratic Taylor coefficient\ndoes not give bounded chi-square affinity at that scaling. \\(\\square\\)",
+      "revision": "rev:d6862f2806431776ed165a1f92f31981a31dafe7e0d56caa05911105a792c2ab"
+    },
+    {
+      "id": "thm:orbit-exact-dual",
+      "kind": "theorem",
+      "statement": "For every \\((h,q)\\in\\mathcal A_B\\), the exact finite-sample minimax expected length in the rank-zero-plus-orbit experiment is \\[\\mathfrak L_{0,n}^{\\mathrm{orb}}(h,q)=\\frac{q^2}{h}\\,\\mathfrak D_{\\alpha}^{\\mathrm{mix}}(h,q).\\] The supremum defining \\(\\mathfrak D_{\\alpha}^{\\mathrm{mix}}\\) is attained. A measurable interval using only \\(Y,n,\\sigma,h,q\\) attains the primal value without auxiliary randomization, by purification of the three pointwise actions \\(\\{0\\}\\), \\(\\{q^2/h\\}\\), and \\([0,q^2/h]\\).",
+      "free_symbols": [
+        "h",
+        "q",
+        "Lorb0",
+        "n",
+        "Dmix",
+        "alpha",
+        "Y",
+        "sigma"
+      ],
+      "depends_on": [
+        "def:orbit-confidence-problem",
+        "def:orbit-duals",
+        "lem:orbit-membership",
+        "ass:gaussian-sequence",
+        "lem:finite-action-purification"
+      ],
+      "status": "proved",
+      "justification": "This turns the early-kill experiment into a finite concave program rather than an informal testing analogy.",
+      "gap": "EvansHansenStark2005 gives Bayes--minimax duality for expected measure under restricted location parameters; it does not give this stratum-specific simultaneous-coverage dual for a nonlinear rank-completion fiber.",
+      "consumer": "A numerical analyst can compute the exact benchmark from twelve-dimensional Gaussian expectations and sixty-five nonnegative dual variables.",
+      "proof_tex": "\\textit{Proof.}\nLet \\(\\delta=q^2/h>0\\).  An arbitrary feasible connected interval can be\nshortened pointwise as follows: replace it by \\([0,\\delta]\\) if it contains\nboth target values, by the appropriate singleton if it contains exactly one,\nand by \\(\\{0\\}\\) if it contains neither.  This operation is measurable, cannot\nincrease length, cannot reduce coverage of either target, and leaves only the\nthree actions\n\\[\ne_0=\\{0\\},\\qquad e_\\delta=\\{\\delta\\},\\qquad\ne_B=[0,\\delta].\n\\]\nFor convex analysis, temporarily permit a randomized kernel\n\\((p_0,p_\\delta,p_B)\\) on these actions.  The normalized primal value\n\\(V=\\mathfrak L_{0,n}^{\\mathrm{orb}}(h,q)/\\delta\\) is\n\\[\n\\begin{split}\n\\inf_p\\quad &E_{P_0}p_B(Y),\\\\\n\\text{subject to}\\quad\n&E_{P_0}p_\\delta(Y)\\leq\\alpha,\\\\\n&E_{P_0}[L_g^{h,q}(Y)p_0(Y)]\\leq\\alpha\n\\quad(g\\in\\mathcal G),\\\\\n&p_0(y)+p_\\delta(y)+p_B(y)=1,\\qquad p_j(y)\\geq0.\n\\end{split}\n\\]\nThe first inequality is null noncoverage and the next sixty-four inequalities\nare alternative noncoverage.  All sixty-five Gaussian measures are atomless.\nThe finite-action purification lemma therefore replaces any randomized kernel\nby a measurable pure action while preserving its objective and all sixty-five\nconstraint integrals.  Consequently the randomized and original deterministic\nprimal values agree, and primal attainment for the compact finite-dimensional\nrisk image gives an attaining data-only interval.\n\nIntroduce nonnegative multipliers \\(a\\) and \\(b_g\\), and put\n\\(B_b(y)=\\sum_gb_gL_g^{h,q}(y)\\).  The Lagrangian, divided by \\(\\delta\\), is\n\\[\n-\\alpha\\!\\left(a+\\sum_gb_g\\right)\n+E_{P_0}\\!\\left[p_0B_b+p_\\delta a+p_B\\right].\n\\]\nMinimization over the pointwise probability simplex gives\n\\(\\min\\{B_b(y),a,1\\}\\).  Weak duality therefore gives exactly the functional\nin \\(\\mathrm{def:orbit-duals}\\).  For completeness, strong duality follows\ndirectly by separating the compact convex risk image of the three-action\nkernels from the open set consisting of vectors with all noncoverage\ncoordinates below \\(\\alpha\\) and objective below \\(V\\).  The separating\ncoefficients of the noncoverage coordinates are nonnegative; normalizing the\nobjective coefficient gives the displayed \\((a,b)\\)-dual.  The always-covering\naction \\(e_B\\) is strictly feasible because \\(\\alpha>0\\), so the objective\ncoefficient cannot vanish.  This proves equality of the primal and dual values.\n\nIt remains to verify dual attainment.  Its objective is continuous on the\nnonnegative orthant: the integrand is Lipschitz in \\((a,b)\\), with integrable\nLipschitz envelope \\(1+\\sum_gL_g\\), and \\(E_{P_0}L_g=1\\).  Moreover,\n\\[\nE_{P_0}\\min\\{B_b,a,1\\}-\\alpha\\!\\left(a+\\sum_gb_g\\right)\n\\leq1-\\alpha\\!\\left(a+\\sum_gb_g\\right).\n\\]\nThe value at the origin is zero, so no maximizer with\n\\(a+\\sum_gb_g>1/\\alpha\\) is needed.  Continuity on the resulting compact\nsimplex proves that the supremum is attained.  Purifying an attaining primal\nkernel yields a measurable rule with no auxiliary randomization.  Its action\nis a function only of the likelihood ratios, hence of\n\\(Y,n,\\sigma,h,q\\) and the fixed public orbit and confidence level.  Multiplying\nthe normalized value by \\(\\delta=q^2/h\\) completes the proof. \\(\\square\\)",
+      "revision": "rev:dc5475783d7f17c0e36d144253ff2add82c565d57609b6e856d9d242ffe9ab7c"
+    },
+    {
+      "id": "thm:strict-mixture-gap",
+      "kind": "theorem",
+      "statement": "At \\(\\alpha=0.05\\), \\(h=q=\\sigma/\\sqrt n\\), and \\(\\sigma/\\sqrt n\\le B_{\\max}\\), certified Gaussian integration satisfies \\[\\mathfrak D_{0.05}^{\\mathrm{mix}}(\\sigma/\\sqrt n,\\sigma/\\sqrt n)\\ge0.40>0.20\\ge\\mathfrak D_{0.05}^{\\mathrm{pair}}(\\sigma/\\sqrt n,\\sigma/\\sqrt n).\\] Therefore no maximum of componentwise ordered-modulus bounds characterizes the zero-plus-sixty-four-orbit minimax expected length.",
+      "free_symbols": [
+        "alpha",
+        "h",
+        "q",
+        "sigma",
+        "n",
+        "Bmax",
+        "Dmix",
+        "Dpair"
+      ],
+      "depends_on": [
+        "def:orbit-duals",
+        "thm:orbit-exact-dual",
+        "lem:orbit-chi-square"
+      ],
+      "status": "proved",
+      "justification": "The strict numerical certificate decides the pairwise-versus-mixture question in the smallest legal public-mask experiment.",
+      "gap": "CaiLow2004AdaptiveCI characterizes convex Gaussian classes through pairwise ordered moduli, whereas CaiGuo2017HDLinearCI shows mixture lower bounds in sparse regression; neither proves a strict gap for a scalar deterministic-mask rank functional.",
+      "consumer": "Any later interval algorithm for the full union must retain composite orientation constraints rather than calibrating only the hardest single orientation.",
+      "proof_tex": "\\textit{Proof.}\nStandardize \\(X=\\sqrt nY/\\sigma\\).  At the asserted amplitudes, under \\(P_0\\)\nwe have \\(X\\sim N(0,I_{12})\\), and every component likelihood ratio is\n\\(L_g(X)=\\exp(\\nu_g^{\\mathsf T}X-4)\\), because\n\\(\\lVert\\nu_g\\rVert_2^2=8\\).\n\nWe first give a finite lower certificate for the mixture dual.  Retain the\nsixteen components for which\n\\(S=\\operatorname{diag}(s_1,s_2)\\) and\n\\(R=\\operatorname{diag}(r_1,r_2)\\), with each sign in \\(\\{-1,1\\}\\).  Give\neach retained component weight \\(b_g=5/16\\), give the other components weight\nzero, and set \\(a=1\\).  If\n\\[\nZ_i=X_{A,ii},\\qquad W_i=X_{F,ii},\\qquad\nV_i=2^{-1/2}(X_{G,1i}+X_{G,2i}),\n\\]\nthen the two triples \\((Z_i,W_i,V_i)\\) are independent standard Gaussian\nvectors.  Averaging the retained likelihood ratios over their signs gives\n\\[\n\\Lambda=e^{-4}K(Z_1,W_1,V_1)K(Z_2,W_2,V_2),\n\\]\nwhere\n\\[\nK(z,w,v)=\\frac12\\left\\{e^{\\sqrt2v}\\cosh(z+w)\n+e^{-\\sqrt2v}\\cosh(z-w)\\right\\}.\n\\]\nHere is an explicit directed-rounding certificate for the only numerical\nstep.  Partition \\([-4,4]^3\\) into the \\(512000\\) boxes of side \\(1/10\\).\nFor a box\n\\(B=[z_-,z_+]\\times[w_-,w_+]\\times[v_-,v_+]\\), let\n\\[\n\\begin{split}\np_B&=\\{\\Phi(z_+)-\\Phi(z_-)\\}\n     \\{\\Phi(w_+)-\\Phi(w_-)\\}\n     \\{\\Phi(v_+)-\\Phi(v_-)\\},\\\\\nk_B&=\\frac12\\left[e^{\\sqrt2v_-}c([z_-+w_-,z_++w_+])\n+e^{-\\sqrt2v_+}c([z_--w_+,z_+-w_-])\\right],\n\\end{split}\n\\]\nwhere \\(c(I)=1\\) if \\(0\\in I\\), and otherwise\n\\(c(I)=\\min_{x\\in I}\\cosh x\\).  Monotonicity of the exponential and the exact\nminimum of \\(\\cosh\\) on an interval give \\(K\\geq k_B\\) throughout \\(B\\).\nDiscarding the nonnegative contribution outside the two copies of\n\\([-4,4]^3\\) therefore gives the rigorous finite sum\n\\[\nE_{P_0}\\min\\{5\\Lambda,1\\}\n\\geq \\sum_{B,B'}p_Bp_{B'}\n\\min\\{5e^{-4}k_Bk_{B'},1\\}.\n\\]\nSorting the \\(k_B\\)'s reduces this sum to \\(O(512000\\log 512000)\\) operations:\nprefix sums of \\(p_B\\) and \\(p_Bk_B\\) evaluate the inner sum on either side of\nthe cutoff \\(k_{B'}=(5e^{-4}k_B)^{-1}\\).  Rational Taylor enclosures for\n\\(e^x\\), \\(\\cosh x\\), and the Gaussian integral, with every lower endpoint\nrounded downward, give\n\\[\n0.99980<\\sum_Bp_B<0.99982,\n\\qquad\n\\sum_{B,B'}p_Bp_{B'}\\min\\{5e^{-4}k_Bk_{B'},1\\}>0.70380.\n\\]\nThus the displayed feasible dual point proves\n\\[\n\\mathfrak D_{0.05}^{\\mathrm{mix}}\n\\geq0.70380-0.05(1+5)=0.40380>0.40.\n\\]\n\nFor the pairwise upper bound, fix one component and write\n\\(d=\\sqrt8\\).  Under \\(P_0\\),\n\\(\\log L=dZ-d^2/2\\) with \\(Z\\sim N(0,1)\\).  If \\(a\\leq1\\), putting\n\\(\\lambda=c/a\\) shows that the pairwise objective equals\n\\[\na\\{E\\min(\\lambda L,1)-0.05(1+\\lambda)\\};\n\\]\nif \\(a\\geq1\\), lowering \\(a\\) to one can only improve the objective.  Hence a\npositive optimum has \\(a=1\\).  Differentiation away from the null event\n\\(\\lambda L=1\\) gives the unique optimizer\n\\[\n\\lambda_*=\n\\exp\\{-d^2/2-d\\Phi^{-1}(0.05)\\},\n\\]\nand a change of measure gives the exact value\n\\[\n\\mathfrak D_{0.05}^{\\mathrm{pair}}\n=1-\\Phi\\{d+\\Phi^{-1}(0.05)\\}-0.05.\n\\]\nAll components have the same norm, so the maximum over \\(g\\) does not change\nthis expression.  Directed normal-CDF evaluation gives\n\\[\n-1.644854<\\Phi^{-1}(0.05)<-1.644853,\n\\qquad\n0.06828<\\mathfrak D_{0.05}^{\\mathrm{pair}}<0.06830<0.20.\n\\]\nThe amplitude condition makes \\((h,q)\\) admissible.  The exact-dual theorem\nthen turns the strict dual inequality into a strict expected-length gap, so a\nmaximum of one-component moduli cannot equal the simultaneous-orbit minimax\nvalue. \\(\\square\\)",
+      "revision": "rev:ed5983174e5c40c0e265cb1bcfa86b8d7759b30bd2a1477d6175e189f6dab98b"
+    },
+    {
+      "id": "thm:union-zero-lower",
+      "kind": "theorem",
+      "statement": "The rank-zero frontier under honesty over the full rank-and-strength union obeys \\[\\mathfrak L_{0}^{\\mathcal U}(n)\\ge\\sup_{(h,q)\\in\\mathcal A_B}\\frac{q^2}{h}\\mathfrak D_{\\alpha}^{\\mathrm{mix}}(h,q)\\ge B_{\\max}(1-2\\alpha).\\] The second inequality is the limit along \\(h\\downarrow0\\), \\(q=\\sqrt{B_{\\max}h}\\), for which every observed orbit mean converges to zero while every missing-block target equals \\(B_{\\max}\\).",
+      "free_symbols": [
+        "n",
+        "Lzero",
+        "AB",
+        "h",
+        "q",
+        "Dmix",
+        "alpha",
+        "Bmax"
+      ],
+      "depends_on": [
+        "def:union-minimax-length",
+        "def:admissible-orbit-amplitudes",
+        "thm:orbit-exact-dual",
+        "lem:orbit-membership"
+      ],
+      "status": "proved",
+      "justification": "Rank zero is a singular stratum with a constant finite-sample honesty price once arbitrarily weak positive-rank laws remain in the union.",
+      "gap": "ArmstrongWeidnerZeleneev2026 gives strength-uniform bias-aware panel intervals, but not an exact finite-sample expected-length obstruction at the rank-zero boundary of a deterministic missing block.",
+      "consumer": "An analyst learns that a short rank-zero interval is incompatible with full-union coverage even though the observed mean surface is exactly zero.",
+      "proof_tex": "\\textit{Proof.}\nEvery interval honest over \\(\\mathcal U\\) covers the null and, by orbit\nmembership, all sixty-four alternatives for every\n\\((h,q)\\in\\mathcal A_B\\).  It is therefore feasible for every orbit confidence\nproblem.  The exact-dual theorem implies, simultaneously for all admissible\n\\((h,q)\\),\n\\[\nE_{P_0}\\operatorname{len}C(Y)\n\\geq\\frac{q^2}{h}\\mathfrak D_\\alpha^{\\mathrm{mix}}(h,q).\n\\]\nTaking first the infimum over union-honest \\(C\\), then the supremum over\n\\((h,q)\\), proves the first inequality.\n\nFor the second inequality, take \\(q=\\sqrt{B_{\\max}h}\\) and let\n\\(h\\downarrow0\\) through \\(0<h\\leq B_{\\max}\\).  Then\n\\((h,q)\\in\\mathcal A_B\\) and \\(q^2/h=B_{\\max}\\).  The three observed blocks\nhave amplitudes \\(h,q,q\\), so each \\(\\mu_g(h,q)\\to0\\).  The Gaussian\nlikelihood formula consequently gives \\(L_g^{h,q}(Y)\\to1\\) in\n\\(P_0\\)-probability, and bounded convergence applies after the outer minimum.\nIn the mixture dual choose \\(a=1\\) and \\(b_g=1/64\\).  Then\n\\[\n\\begin{split}\n\\liminf_{h\\downarrow0}\n\\mathfrak D_\\alpha^{\\mathrm{mix}}(h,\\sqrt{B_{\\max}h})\n&\\geq\n\\lim_{h\\downarrow0}E_{P_0}\\min\\left\\{64^{-1}\\sum_gL_g^{h,q},1\\right\\}\n-2\\alpha\\\\\n&=1-2\\alpha.\n\\end{split}\n\\]\nMultiplication by the constant target separation \\(B_{\\max}\\) and the first\ninequality complete the proof.  The boundary is legitimate because\n\\(\\alpha<1/2\\) and the limiting argument uses only positive \\(h,q\\), never an\ninadmissible zero-strength member. \\(\\square\\)",
+      "revision": "rev:7cd53f9f5c0a599770ceb789539cb42b556e84e024fe59554953c832a84aefbf"
+    },
+    {
+      "id": "prop:singleton-reduction",
+      "kind": "proposition",
+      "statement": "If the alternative orientation set \\(\\mathcal G\\) is replaced by a singleton, then \\(\\mathfrak D_{\\alpha}^{\\mathrm{mix}}(h,q)=\\mathfrak D_{\\alpha}^{\\mathrm{pair}}(h,q)\\), and \\(\\mathrm{thm:orbit-exact-dual}\\) reduces to inversion of one Gaussian likelihood-ratio test. Thus mixture enlargement disappears in the standard simple-alternative special case.",
+      "free_symbols": [
+        "g",
+        "Dmix",
+        "alpha",
+        "h",
+        "q",
+        "Dpair"
+      ],
+      "depends_on": [
+        "def:orbit-duals",
+        "thm:orbit-exact-dual"
+      ],
+      "status": "proved",
+      "justification": "The reduction checks that the new functional agrees with ordinary Gaussian test inversion when composite orientation is absent.",
+      "gap": "CaiLow2004AdaptiveCI supplies the pairwise Gaussian benchmark; this proposition records the exact reduction rather than claiming a different answer in that benchmark.",
+      "consumer": "Implementations can validate the dual solver against a one-component likelihood-ratio calculation before using all sixty-four constraints.",
+      "proof_tex": "\\textit{Proof.}\nIf \\(\\mathcal G=\\{g_0\\}\\), the vector \\(b\\) in the mixture dual has the single\ncoordinate \\(b_{g_0}=c\\).  Its objective is then\n\\[\nE_{P_0}\\min\\{cL_{g_0}^{h,q}(Y),a,1\\}-\\alpha(a+c),\n\\]\nwhich is exactly the sole term in the maximum defining\n\\(\\mathfrak D_\\alpha^{\\mathrm{pair}}(h,q)\\).  Hence the two duals coincide.\nThe three-action primal in the exact-dual proof then has one alternative\nnoncoverage constraint, and its dual threshold is a function of the single\nGaussian likelihood ratio.  This is precisely inversion of the corresponding\nsimple-null versus simple-alternative likelihood-ratio test. \\(\\square\\)",
+      "revision": "rev:e1fff0af3362c154bb3555b7a2554437fbe483ae07cf7a1ed395fdd8a84273e6"
+    },
+    {
+      "id": "thm:simultaneous-profile-oracle",
+      "kind": "theorem",
+      "statement": "Let \\(q_{12,1-\\alpha}\\) be the chi-square quantile in Definition~\\ref{def:simultaneous-inversion-handle}, and define the confidence-level constants\n\\[\n c_\\alpha=\\sqrt{q_{12,1-\\alpha}}+\\sqrt{12},\\qquad\n d_\\alpha=\\frac{1-2\\alpha}{2}\\min\\left\\{1-2\\alpha,\\frac12\\right\\},\n \\qquad\n K_\\alpha=\\max\\left\\{\\frac{2}{1-2\\alpha},\\frac{16c_\\alpha}{d_\\alpha}\\right\\}.\n\\]\nThe positive answer to the simultaneous-union inversion question is the single interval\n\\[\n C^\\star(Y;n,\\sigma,B_{\\max},\\alpha)=C_{\\mathrm{prof}}(Y).\n\\]\nIt is a data-only member of \\(\\mathfrak C_\\alpha(\\mathcal U)\\), uses none of \\(r,s,h,q\\), has endpoints evaluable to arbitrary prescribed accuracy by the fixed-dimensional quantifier-elimination and bisection algorithm in Definition~\\ref{def:simultaneous-inversion-handle}, and satisfies\n\\[\n B_{\\max}(1-2\\alpha)\\leq\\mathfrak L_0^{\\mathcal U}(n)\n \\leq E_{P_0}[\\operatorname{len}C^\\star(Y)]\\leq2B_{\\max},\n\\]\n\\[\n B_{\\max}(1-2\\alpha)\\leq\\mathfrak L_{1,s}^{\\mathcal U}(n)\n \\leq\\sup_{M\\in\\mathcal M_1(s)}E_{P_M}[\\operatorname{len}C^\\star(Y)]\n \\leq2B_{\\max},\n\\]\nand\n\\[\n d_\\alpha B_{\\max}\\min\\left\\{1,\\frac{B_{\\max}\\sigma}{\\sqrt n\\,s^2}\\right\\}\n \\leq\\mathfrak L_{2,s}^{\\mathcal U}(n)\n \\leq\\sup_{M\\in\\mathcal M_2(s)}E_{P_M}[\\operatorname{len}C^\\star(Y)]\n \\leq16c_\\alpha B_{\\max}\\min\\left\\{1,\\frac{B_{\\max}\\sigma}{\\sqrt n\\,s^2}\\right\\}.\n\\]\nIn particular,\n\\[\n \\frac{E_{P_0}[\\operatorname{len}C^\\star(Y)]}{\\mathfrak L_0^{\\mathcal U}(n)}\\leq K_\\alpha\n\\]\nand, simultaneously for \\(r\\in\\{1,2\\}\\) and \\(s\\in(0,B_{\\max}]\\),\n\\[\n \\frac{\\sup_{M\\in\\mathcal M_r(s)}E_{P_M}[\\operatorname{len}C^\\star(Y)]}\n {\\mathfrak L_{r,s}^{\\mathcal U}(n)}\\leq K_\\alpha.\n\\]\nAll denominators in these displays are strictly positive.  Consequently the sharp smallest multiplicative excess displayed in the open question belongs to \\([1,K_\\alpha]\\), and its upper bound is witnessed by the explicit interval \\(C^\\star\\).  The constant depends only on the fixed confidence level \\(\\alpha\\), and is uniform in \\(n,\\sigma,B_{\\max},r,s\\) and in every matrix in the corresponding stratum.",
+      "free_symbols": [
+        "C",
+        "Y",
+        "n",
+        "sigma",
+        "Bmax",
+        "alpha",
+        "Uclass",
+        "Cclass",
+        "Pzero",
+        "Lzero",
+        "Lrs",
+        "r",
+        "s",
+        "h",
+        "q",
+        "M",
+        "Mrs",
+        "PM",
+        "len"
+      ],
+      "depends_on": [
+        "def:public-four-block-mask",
+        "def:positive-rank-stratum",
+        "def:rank-strength-union",
+        "def:union-minimax-length",
+        "def:simultaneous-inversion-handle",
+        "ass:gaussian-sequence",
+        "lem:block-completion-identification",
+        "thm:profile-union-honesty",
+        "thm:union-zero-lower"
+      ],
+      "proof_tex": "\\textit{Proof.}\nWrite\n\\[\n \\varepsilon=\\frac{\\sigma}{\\sqrt n},\\qquad\n z_\\alpha=\\sqrt{q_{12,1-\\alpha}},\\qquad\n \\lambda_s=\\frac{B_{\\max}\\varepsilon}{s^2}.\n\\tag{1}\n\\]\nThe boundary conditions \\(n\\in\\mathbb N\\), \\(\\sigma>0\\), \\(B_{\\max}>0\\), \\(\\alpha\\in(0,1/2)\\), and \\(s\\in(0,B_{\\max}]\\) imply that every quantity in (1), as well as \\(d_\\alpha\\), is well defined and strictly positive.  Theorem~\\ref{thm:profile-union-honesty} already proves that \\(C_{\\mathrm{prof}}\\) is measurable, data-only, union-honest, independent of \\(r,s,h,q\\), has length at most \\(2B_{\\max}\\), and has evaluable endpoints.  It remains to compare its positive-stratum risks with the corresponding union-honest frontiers.\n\nWe first establish the lower bound on the rank-one frontier.  Let \\(e_1=(1,0)^{\\mathsf T}\\), \\(e_2=(0,1)^{\\mathsf T}\\), and fix \\(s\\in(0,B_{\\max}]\\).  Consider the rank-one matrix with blocks\n\\[\n A_0=se_1e_1^{\\mathsf T},\\qquad F_0=G_0=D_0=0.\n\\tag{2}\n\\]\nIt has total and anchor rank one, its only positive anchor singular value is \\(s\\), and all its entries are bounded by \\(B_{\\max}\\); hence it belongs to \\(\\mathcal M_1(s)\\).  For \\(0<\\delta\\leq B_{\\max}\\), put \\(x_\\delta=\\sqrt{B_{\\max}\\delta}\\) and define\n\\[\n A_\\delta=\\begin{pmatrix}s&0\\\\0&\\delta\\end{pmatrix},\\qquad\n F_\\delta=x_\\delta e_2\\mathbf1_2^{\\mathsf T},\\qquad\n G_\\delta=x_\\delta\\mathbf1_2e_2^{\\mathsf T},\\qquad\n D_\\delta=B_{\\max}\\mathbf J.\n\\tag{3}\n\\]\nEvery entry in (3) is bounded by \\(B_{\\max}\\), and direct multiplication gives\n\\[\n G_\\delta A_\\delta^{-1}F_\\delta\n =\\frac{x_\\delta^2}{\\delta}\\mathbf J\n =B_{\\max}\\mathbf J=D_\\delta.\n\\tag{4}\n\\]\nBlock Gaussian elimination in (4) shows that the full matrix has rank two.  Its anchor is invertible and its smaller singular value belongs to \\((0,B_{\\max}]\\), so this alternative belongs to \\(\\mathcal U\\).  Its target is \\(B_{\\max}\\), whereas the target in (2) is zero.  Moreover, the squared Euclidean distance between the two observed means is\n\\[\n \\lVert P_\\Omega M_\\delta-P_\\Omega M_0\\rVert_2^2\n =\\delta^2+4B_{\\max}\\delta\\longrightarrow0.\n\\tag{5}\n\\]\n\nWe record an elementary Gaussian comparison that will also be used below.  If two observed Gaussian means differ by a vector \\(v\\), interpolate their densities by \\(p_t=N(\\mu+tv,\\varepsilon^2I_{12})\\).  Differentiation under the Gaussian density and the fundamental theorem of calculus give\n\\[\n \\begin{split}\n \\lVert P_{\\mu+v}-P_\\mu\\rVert_{\\mathrm{TV}}\n &\\leq\\frac12\\int_0^1\\int_{\\mathbb R^{12}}|\\partial_tp_t(y)|\\,dy\\,dt\\\\\n &=\\frac12\\int_0^1E_{p_t}\\left[\n \\frac{|v^{\\mathsf T}(Y-\\mu-tv)|}{\\varepsilon^2}\\right]dt\n \\leq\\frac{\\lVert v\\rVert_2}{2\\varepsilon}.\n \\end{split}\n\\tag{6}\n\\]\nThe last inequality uses \\(E|Z_1|\\leq1\\) for \\(Z_1\\sim N(0,1)\\).  Thus the total variation distance in (5) tends to zero.\n\nLet \\(C\\in\\mathfrak C_\\alpha(\\mathcal U)\\).  Honesty at (2) and (3), followed by the definition of total variation, yields under the law at (2)\n\\[\n P_{M_0}\\{0\\in C(Y),\\ B_{\\max}\\in C(Y)\\}\n \\geq1-2\\alpha-lVert P_{M_\\delta}-P_{M_0}\\rVert_{\\mathrm{TV}}.\n\\tag{7}\n\\]\nConnectedness forces the length to be at least \\(B_{\\max}\\) on this event.  Letting \\(\\delta\\downarrow0\\) in (7), then taking the infimum over honest intervals, proves\n\\[\n \\mathfrak L_{1,s}^{\\mathcal U}(n)\\geq B_{\\max}(1-2\\alpha).\n\\tag{8}\n\\]\nThis argument uses positive \\(\\delta\\) throughout; the rank-two boundary point at \\(\\delta=0\\) is used only as a limit and is not asserted to lie in a positive-strength stratum.\n\nWe next establish the rank-two lower bound.  Fix \\(s\\in(0,B_{\\max}]\\) and define a base point by\n\\[\n A_0=sI_2,\\qquad\n F_0=B_{\\max}e_2\\mathbf1_2^{\\mathsf T},\\qquad\n G_0=B_{\\max}\\mathbf1_2e_1^{\\mathsf T},\\qquad\n D_0=0.\n\\tag{9}\n\\]\nSince \\(G_0A_0^{-1}F_0=0\\), block elimination proves that this bounded matrix has total rank two.  Its anchor has both singular values equal to \\(s\\), so (9) belongs to \\(\\mathcal M_2(s)\\) and has target zero.  Put\n\\[\n \\delta_s=\\min\\left\\{(1-2\\alpha)\\varepsilon,\n \\frac{s^2}{2B_{\\max}}\\right\\},\n \\qquad\n A_1=sI_2+\\delta_s e_1e_2^{\\mathsf T},\n\\tag{10}\n\\]\nleave \\(F_1=F_0\\) and \\(G_1=G_0\\), and set \\(D_1=G_1A_1^{-1}F_1\\).  Because \\((e_1e_2^{\\mathsf T})^2=0\\),\n\\[\n A_1^{-1}=s^{-1}I_2-\\delta_ss^{-2}e_1e_2^{\\mathsf T},\n \\qquad\n D_1=-\\frac{B_{\\max}^2\\delta_s}{s^2}\\mathbf J.\n\\tag{11}\n\\]\nThe restriction in (10) gives \\(\\delta_s\\leq s/2\\), bounds every entry of \\(A_1\\) by \\(B_{\\max}\\), and bounds every entry of \\(D_1\\) by \\(B_{\\max}/2\\).  The anchor is invertible; its smaller singular value is positive and at most \\(\\lVert A_1e_1\\rVert_2=s\\leq B_{\\max}\\).  Equation (11) and block elimination therefore show that this alternative lies in some rank-two positive-strength stratum and hence in \\(\\mathcal U\\).  Its observed mean differs from that of (9) in exactly one anchor coordinate, by \\(\\delta_s\\).  Equation (6) consequently gives\n\\[\n \\lVert P_{M_1}-P_{M_0}\\rVert_{\\mathrm{TV}}\n \\leq\\frac{\\delta_s}{2\\varepsilon}\n \\leq\\frac{1-2\\alpha}{2}.\n\\tag{12}\n\\]\nThe two targets in (9) and (11) are separated by \\(B_{\\max}^2\\delta_s/s^2\\).  Repeating the intersection argument in (7), now without a limit, gives every union-honest interval the risk bound\n\\[\n \\begin{split}\n \\sup_{M\\in\\mathcal M_2(s)}E_{P_M}[\\operatorname{len}C(Y)]\n &\\geq\\frac{1-2\\alpha}{2}\\frac{B_{\\max}^2\\delta_s}{s^2}\\\\\n &=\\frac{1-2\\alpha}{2}B_{\\max}\n \\min\\left\\{(1-2\\alpha)\\lambda_s,\\frac12\\right\\}\\\\\n &\\geq d_\\alpha B_{\\max}\\min\\{1,\\lambda_s\\}.\n \\end{split}\n\\tag{13}\n\\]\nThe last line uses the elementary inequality\n\\(\\min\\{ax,b\\}\\geq\\min\\{a,b\\}\\min\\{x,1\\}\\) for positive \\(a,b,x\\).  Taking the infimum over \\(C\\) proves the same lower bound for \\(\\mathfrak L_{2,s}^{\\mathcal U}(n)\\).  In particular, (8) and (13), together with Theorem~\\ref{thm:union-zero-lower}, verify explicitly that every denominator in the theorem statement is positive.\n\nIt remains to upper-bound the rank-two risk of the profile interval.  Fix an arbitrary \\(M_0\\in\\mathcal M_2(s)\\), write its observed blocks as \\((A_0,F_0,G_0)\\), and write \\(t_0=\\tau(M_0)\\).  For an observed value \\(y\\), set\n\\[\n R(y)=\\lVert y-P_\\Omega M_0\\rVert_2+z_\\alpha\\varepsilon.\n\\tag{14}\n\\]\nIf \\(t\\in T(y)\\), there is an \\((\\mu,t)\\in\\overline{\\mathcal K}\\) whose observed blocks, denoted \\((A,F,G)\\), satisfy\n\\[\n \\lVert\\mu-P_\\Omega M_0\\rVert_2\\leq R(y).\n\\tag{15}\n\\]\nSuppose first that \\(B_{\\max}R(y)/s^2<1/4\\).  Then\n\\(\\lVert A-A_0\\rVert_{\\mathrm{op}}\\leq R(y)<s/4\\), so \\(A\\) is invertible and \\(\\lVert A^{-1}\\rVert_{\\mathrm{op}}\\leq2/s\\).  Approximate \\((\\mu,t)\\) by points generated by \\(\\mathcal U\\).  Their anchor blocks are eventually invertible, so Lemma~\\ref{lem:block-completion-identification} and continuity of matrix inversion give\n\\[\n t=\\frac14\\mathbf1_2^{\\mathsf T}GA^{-1}F\\mathbf1_2.\n\\tag{16}\n\\]\nThis is the only inverse used in the profile comparison, and (15) together with the displayed strict inequality supplies its rank and positivity condition.\n\nAll entries of the limiting blocks are bounded by \\(B_{\\max}\\).  Hence their operator norms are at most \\(2B_{\\max}\\).  The resolvent identity and (15) give\n\\[\n\\begin{split}\n \\lVert GA^{-1}F-G_0A_0^{-1}F_0\\rVert_{\\mathrm{op}}\n \\leq{}&\\lVert G-G_0\\rVert_{\\mathrm{op}}\\lVert A_0^{-1}\\rVert_{\\mathrm{op}}\\lVert F_0\\rVert_{\\mathrm{op}}\\\\\n &+\\lVert G\\rVert_{\\mathrm{op}}\\lVert A^{-1}\\rVert_{\\mathrm{op}}\\lVert F-F_0\\rVert_{\\mathrm{op}}\\\\\n &+\\lVert G\\rVert_{\\mathrm{op}}\\lVert A^{-1}\\rVert_{\\mathrm{op}}\n \\lVert A-A_0\\rVert_{\\mathrm{op}}\\lVert A_0^{-1}\\rVert_{\\mathrm{op}}\n \\lVert F_0\\rVert_{\\mathrm{op}}\\\\\n \\leq{}&\\frac{2B_{\\max}R(y)}s+\\frac{4B_{\\max}R(y)}s\n +\\frac{8B_{\\max}^2R(y)}{s^2}\\\\\n \\leq{}&\\frac{14B_{\\max}^2R(y)}{s^2}.\n\\end{split}\n\\tag{17}\n\\]\nThe final inequality uses the boundary condition \\(s\\leq B_{\\max}\\).  Since\n\\(\\tfrac14|\\mathbf1_2^{\\mathsf T}H\\mathbf1_2|\\leq\\tfrac12\\lVert H\\rVert_{\\mathrm{op}}\\), equations (16)--(17) imply\n\\[\n |t-t_0|\\leq7B_{\\max}^2R(y)/s^2.\n\\tag{18}\n\\]\nIf \\(B_{\\max}R(y)/s^2\\geq1/4\\), the support bound\n\\(|t-t_0|\\leq2B_{\\max}\\) applies.  Combining the two cases yields the uniform bound\n\\[\n |t-t_0|\\leq8B_{\\max}\n \\min\\left\\{1,\\frac{B_{\\max}R(y)}{s^2}\\right\\}.\n\\tag{19}\n\\]\nWhen \\(T(y)\\) is nonempty, applying (19) to both endpoints of its hull gives\n\\[\n \\operatorname{len}C_{\\mathrm{prof}}(y)\n \\leq16B_{\\max}\n \\min\\left\\{1,\\frac{B_{\\max}R(y)}{s^2}\\right\\};\n\\tag{20}\n\\]\nwhen \\(T(y)\\) is empty, the left side is zero and (20) remains valid.\n\nUnder \\(P_{M_0}\\), the Gaussian sequence assumption gives\n\\(R(Y)=\\varepsilon(\\lVert Z\\rVert_2+z_\\alpha)\\) with \\(Z\\sim N(0,I_{12})\\).  The map \\(x\\mapsto\\min\\{1,x\\}\\) is concave on the nonnegative half-line, and Jensen's and Cauchy--Schwarz inequalities give \\(E\\lVert Z\\rVert_2\\leq\\sqrt{12}\\).  Taking expectations in (20) therefore gives, uniformly over \\(M_0\\in\\mathcal M_2(s)\\),\n\\[\n \\begin{split}\n E_{P_{M_0}}[\\operatorname{len}C_{\\mathrm{prof}}(Y)]\n &\\leq16B_{\\max}\\min\\{1,c_\\alpha\\lambda_s\\}\\\\\n &\\leq16c_\\alpha B_{\\max}\\min\\{1,\\lambda_s\\}.\n \\end{split}\n\\tag{21}\n\\]\nDividing (21) by (13) proves the rank-two oracle ratio at most\n\\(16c_\\alpha/d_\\alpha\\).  For rank one, the pointwise profile-length bound and (8) give the ratio at most \\(2/(1-2\\alpha)\\).  The same bound at rank zero follows from Theorems~\\ref{thm:profile-union-honesty} and~\\ref{thm:union-zero-lower}.  Their maximum is exactly \\(K_\\alpha\\).\n\nFinally, the sharp simultaneous excess is at least one because each denominator is the infimum of its numerator over the same union-honest interval class.  The explicit rule \\(C^\\star=C_{\\mathrm{prof}}\\) gives the upper bound \\(K_\\alpha\\), simultaneously for every stratum.  This proves the asserted positive answer and the claimed evaluability. \\(\\square\\)",
+      "status": "proved",
+      "revision": "rev:4cf15a52eeb138cc74561605d02030beefc1ba6457dcf72535670cdba35423fc"
+    },
+    {
+      "id": "lem:finite-action-purification",
+      "kind": "lemma",
+      "statement": "Let \\(\\nu_1,\\ldots,\\nu_m\\) be finitely many atomless probability measures on a common measurable space, and let the action space be finite.  Every measurable randomized decision rule admits a measurable nonrandomized decision rule having the same vector of expected losses under \\(\\nu_1,\\ldots,\\nu_m\\) for any prescribed finite collection of integrable action losses.",
+      "free_symbols": [],
+      "depends_on": [],
+      "proof_tex": "",
+      "status": "cited",
+      "source": {
+        "cite": "DvoretzkyWaldWolfowitz1950",
+        "locator": "Main purification theorem, pp. 256--260",
+        "doi": "10.1073/pnas.36.4.256",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC1063176/",
+        "attestation": {
+          "by": "d0-agent",
+          "note": "The source handle and finite-action atomless-measure purification scope were checked against the open PMC source record and the published theorem description."
+        }
+      },
+      "revision": "rev:a676eb576d15dc96c7a3aa9672b106d91c6ea8ff9ce4404ee3c5e0a860fd9919"
+    },
+    {
+      "id": "thm:finite-grid-simultaneous-dual",
+      "kind": "theorem",
+      "statement": "For every normalization-legal finite grid \\(\\Theta_N\\) in Definition~\\ref{def:simultaneous-inversion-handle}, the finite-grid simultaneous oracle factor satisfies the exact dual identity\n\\[\n\\begin{split}\n \\kappa_N^*=\\sup_{\\substack{\\lambda_i,w_i\\geq0\\ (1\\leq i\\leq N)\\\\\n                 \\sum_{i=1}^Nw_iL_{k(i),N}=1}}\n \\bigg[&(1-\\alpha)\\sum_{i=1}^N\\lambda_i\\\\\n &+\\int_{\\mathbb R^{12}}\\min_{A\\in\\mathcal A_N}\n \\sum_{i=1}^Nf_i(y)\n \\{w_i\\operatorname{len}(A)-\\lambda_i\\mathbf 1(t_i\\in A)\\}\\,dy\\bigg].\n\\end{split}\n\\]\nThe finite-grid stratum frontiers, the primal minimum, and the displayed dual supremum are attained.  An attaining primal kernel can be replaced by a measurable nonrandomized connected interval \\(C_N(Y)\\) preserving every coverage probability and every component risk.  The underlying finite-grid confidence program strictly generalizes Theorem~\\ref{thm:orbit-exact-dual}: on the zero-plus-sixty-four-point orbit, optimizing only the null expected length reduces the action set to \\(\\{\\{0\\},\\{q^2/h\\},[0,q^2/h]\\}\\) and recovers its exact mixture dual.",
+      "free_symbols": [
+        "alpha",
+        "Y",
+        "C",
+        "len",
+        "h",
+        "q"
+      ],
+      "depends_on": [
+        "def:simultaneous-inversion-handle",
+        "def:orbit-duals",
+        "ass:gaussian-sequence",
+        "lem:finite-action-purification",
+        "thm:orbit-exact-dual"
+      ],
+      "status": "proved",
+      "justification": "This is the exact computable finite-grid simultaneous adaptation functional, including attainment and a nonrandomized interval.",
+      "gap": "Finite-union Gaussian constructions do not by themselves expose the normalized all-stratum dual or its purification for this mask.",
+      "consumer": "It is the certified discretized kernel for any later continuum compactification argument.",
+      "proof_tex": "\\textit{Proof.}\nFix a normalization-legal grid.  All target values are finite and \\(\\mathcal A_N\\) is finite.  Write\n\\[\n \\Delta_N=\\max_i t_i-\\min_i t_i.\n\\]\nThen every action loss lies in \\([0,\\Delta_N]\\), while all Gaussian measures with densities \\(f_i\\) are atomless and mutually absolutely continuous.\n\nFirst consider the risk vector consisting of the \\(N\\) coordinates \\(Q_i(p)\\) and the \\(N\\) coordinates \\(R_i(p)\\).  The set of such vectors is convex.  It is also compact: the kernel simplex is a weak-star closed subset of the finite product of the unit balls of \\(L^\\infty(\\sum_iP_i)\\), and integration against the finitely many bounded \\(L^1(\\sum_iP_i)\\) action losses is continuous for that topology.  Thus each \\(L_{k,N}\\) is achieved, and the continuous function\n\\[\n (Q,R)\\longmapsto\\max_{1\\leq i\\leq N}\\frac{R_i}{L_{k(i),N}}\n\\]\nachieves its minimum on the closed subset \\(Q_i\\geq1-\\alpha\\).  This proves primal attainment.  The positivity in the definition of normalization-legality is exactly the boundary condition needed for these divisions.\n\nIntroduce multipliers \\(\\lambda_i\\geq0\\) for\n\\((1-\\alpha)-Q_i(p)\\leq0\\) and \\(w_i\\geq0\\) for\n\\(R_i(p)-\\kappa L_{k(i),N}\\leq0\\).  The Lagrangian is\n\\[\n\\begin{split}\n \\mathcal L(p,\\kappa;\\lambda,w)\n ={}&\\kappa\\left\\{1-\\sum_iw_iL_{k(i),N}\\right\\}\n +(1-\\alpha)\\sum_i\\lambda_i\\\\\n &+\\int\\sum_{A\\in\\mathcal A_N}p_A(y)\n \\sum_i f_i(y)\\{w_i\\operatorname{len}(A)-\\lambda_i\\mathbf1(t_i\\in A)\\}\\,dy.\n\\end{split}\n\\tag{1}\n\\]\nFor fixed multipliers, minimization over the pointwise probability simplex replaces the last line by\n\\[\n \\int\\min_{A\\in\\mathcal A_N}\\sum_i f_i(y)\n \\{w_i\\operatorname{len}(A)-\\lambda_i\\mathbf1(t_i\\in A)\\}\\,dy.\n\\tag{2}\n\\]\nMinimization over \\(\\kappa\\geq0\\) gives the preliminary dual constraint\n\\(\\sum_iw_iL_{k(i),N}\\leq1\\).  The objective in (2), together with the first term in \\(\\lambda\\), is positively homogeneous in \\((\\lambda,w)\\).  If a feasible point with strict inequality has positive objective, scaling it until equality only increases that objective.  If its objective is nonpositive, choose any \\(w\\geq0\\) with \\(\\sum_iw_iL_{k(i),N}=1\\) and put \\(\\lambda=0\\); because \\(\\mathcal A_N\\) contains a singleton of length zero, this choice has objective zero.  Finally, if \\(w=0\\), comparison in (2) with the interval containing all target values shows that the objective is at most \\(-\\alpha\\sum_i\\lambda_i\\).  Hence replacing the preliminary inequality by\n\\[\n \\sum_iw_iL_{k(i),N}=1\n\\tag{3}\n\\]\ndoes not change the dual value.  Equations (1)--(3) give exactly the displayed dual.\n\nStrong duality follows in finite-dimensional risk space.  Indeed, the always-covering action\n\\(A_{\\mathrm{all}}=[\\min_i t_i,\\max_i t_i]\\) has \\(Q_i=1>1-\\alpha\\), and choosing\n\\[\n \\kappa>\\max_i\\frac{\\Delta_N}{L_{k(i),N}}\n\\]\nmakes every risk constraint strict.  Separation of the compact convex risk image from a strictly lower objective half-space therefore gives no duality gap, with (1) as its separating functional.\n\nIt remains to prove dual attainment.  From (3), positivity of the finitely many \\(L_{k,N}\\) bounds every \\(w_i\\).  Evaluating the pointwise minimum at \\(A_{\\mathrm{all}}\\), integrating \\(f_i\\), and using (3) gives the upper bound\n\\[\n (1-\\alpha)\\sum_i\\lambda_i+\\int\\min_A(\\cdots)\n \\leq \\Delta_N\\sum_iw_i-\\alpha\\sum_i\\lambda_i.\n\\tag{4}\n\\]\nThus no maximizing sequence with \\(\\sum_i\\lambda_i\\to\\infty\\) is needed.  On the resulting compact multiplier set the objective is continuous, because the pointwise minimum is Lipschitz in the finitely many multipliers with integrable envelope proportional to \\(\\sum_i f_i\\).  The supremum is attained.\n\nAn attaining randomized kernel has only the finite action set \\(\\mathcal A_N\\).  Apply Lemma~\\ref{lem:finite-action-purification} to the atomless measures \\(P_1,\\ldots,P_N\\) and to the two action losses \\(\\mathbf1\\{t_i\\in A\\}\\) and \\(\\operatorname{len}(A)\\) for every \\(i\\).  The resulting measurable pure action preserves all \\(2N\\) integrals, so it is an attaining nonrandomized data-only connected interval.\n\nFor the orbit specialization, the distinct targets are \\(0\\) and \\(\\delta=q^2/h\\).  Therefore \\(\\mathcal A_N\\) consists exactly of \\(\\{0\\}\\), \\(\\{\\delta\\}\\), and \\([0,\\delta]\\).  If the linear objective is the null risk alone, pointwise shortening gives precisely these three actions; assigning a multiplier to null noncoverage and one to each of the sixty-four alternative noncoverage constraints turns (1)--(2), after division by \\(\\delta\\), into\n\\[\n \\sup_{a\\geq0,\\,b_g\\geq0}\n \\left(E_{P_0}\\min\\left\\{\\sum_gb_gL_g^{h,q},a,1\\right\\}\n -\\alpha\\left(a+\\sum_gb_g\\right)\\right).\n\\]\nThis is the dual in Definition~\\ref{def:orbit-duals} and Theorem~\\ref{thm:orbit-exact-dual}.  The general grid permits more than two target values and simultaneously constrains normalized risk at every component, so the extension is strict. \\(\\square\\)",
+      "revision": "rev:5fef4d77a76871e761f2e374212ab7d2b302a37a5f044e85ddccdf9f5d16806f"
+    },
+    {
+      "id": "thm:profile-union-honesty",
+      "kind": "theorem",
+      "statement": "Let \\(\\overline{\\mathcal K}\\), \\(\\rho_\\alpha\\), \\(T\\), and \\(C_{\\mathrm{prof}}\\) be as in Definition~\\ref{def:simultaneous-inversion-handle}.  Then \\(C_{\\mathrm{prof}}\\) is a measurable data-only nonempty connected interval depending only on \\(Y,n,\\sigma,B_{\\max},\\alpha\\) and the public mask, and\n\\[\n C_{\\mathrm{prof}}\\in\\mathfrak C_\\alpha(\\mathcal U),\n \\qquad\n \\operatorname{len}C_{\\mathrm{prof}}(y)\\leq2B_{\\max}\\quad\\text{for every }y.\n\\]\nIts rank-zero risk obeys the certified oracle comparison\n\\[\n 1\\leq\n \\frac{E_{P_0}[\\operatorname{len}C_{\\mathrm{prof}}(Y)]}\n {\\mathfrak L_0^{\\mathcal U}(n)}\n \\leq\\frac{2}{1-2\\alpha}.\n\\]\nFor fixed numerical inputs, each endpoint is evaluable as a fixed-dimensional constrained optimization over \\((\\mu,t)\\in\\overline{\\mathcal K}\\); membership in \\(\\overline{\\mathcal K}\\) has an explicit first-order real formula, so real quantifier elimination followed by bisection computes the endpoints to any prescribed accuracy.",
+      "free_symbols": [
+        "C",
+        "Y",
+        "n",
+        "sigma",
+        "Bmax",
+        "alpha",
+        "Uclass",
+        "Cclass",
+        "len",
+        "Pzero",
+        "Lzero"
+      ],
+      "depends_on": [
+        "def:simultaneous-inversion-handle",
+        "def:rank-strength-union",
+        "def:honest-interval-class",
+        "ass:gaussian-sequence",
+        "thm:union-zero-lower"
+      ],
+      "status": "proved",
+      "justification": "This supplies one explicit rank-, strength-, and amplitude-free interval with exact continuum-union coverage.",
+      "gap": "The construction certifies honesty and rank-zero adaptation but does not assume the unresolved positive-stratum oracle comparison.",
+      "consumer": "It is the implementable continuum baseline against which the residual simultaneous excess must be measured.",
+      "proof_tex": "\\textit{Proof.}\nEvery positive-rank member of \\(\\mathcal U\\) satisfies \\(\\lVert M\\rVert_\\infty\\leq B_{\\max}\\), and the only rank-zero matrix is zero.  Consequently every observed coordinate and every target value in the generating set for \\(\\overline{\\mathcal K}\\) lies in \\([-B_{\\max},B_{\\max}]\\).  Its closure is therefore compact and satisfies\n\\[\n \\overline{\\mathcal K}\\subset[-B_{\\max},B_{\\max}]^{12}\\times[-B_{\\max},B_{\\max}].\n\\tag{1}\n\\]\nIt follows that, whenever \\(T(y)\\neq\\varnothing\\), the infimum and supremum defining \\(C_{\\mathrm{prof}}(y)\\) are finite and attained.  Equation (1) also gives\n\\(\\operatorname{len}C_{\\mathrm{prof}}(y)\\leq2B_{\\max}\\).\n\nWe next verify measurability without imposing any unproved regularity on the union.  Let \\(K_\\mu\\) be the projection of \\(\\overline{\\mathcal K}\\) onto its first twelve coordinates.  It is compact, and\n\\[\n \\{y:T(y)\\neq\\varnothing\\}=\\{y:\\operatorname{dist}(y,K_\\mu)\\leq\\rho_\\alpha\\}\n\\tag{2}\n\\]\nis closed.  For each real \\(c\\), the projections onto \\(\\mu\\)-space of\n\\[\n \\overline{\\mathcal K}\\cap\\{(\\mu,t):t\\geq c\\},\n \\qquad\n \\overline{\\mathcal K}\\cap\\{(\\mu,t):t\\leq c\\}\n\\]\nare compact.  The events \\(\\{\\sup T(y)\\geq c\\}\\) and \\(\\{\\inf T(y)\\leq c\\}\\) are their respective closed \\(\\rho_\\alpha\\)-neighborhoods.  Together with (2) and the fixed value zero off (2), this proves that both endpoints are Borel measurable.  Thus \\(C_{\\mathrm{prof}}\\) is a measurable nonempty connected closed interval rule.\n\nFix any \\(M\\in\\mathcal U\\), and put \\(\\mu=P_\\Omega M\\) and \\(t=\\tau(M)\\).  The pair \\((\\mu,t)\\) belongs to the generating set and hence to \\(\\overline{\\mathcal K}\\).  By the Gaussian sequence assumption,\n\\[\n \\frac{n}{\\sigma^2}\\lVert Y-\\mu\\rVert_2^2\\sim\\chi^2_{12}.\n\\tag{3}\n\\]\nThe definition of \\(q_{12,1-\\alpha}\\) and continuity of the chi-square distribution give\n\\[\n P_M\\{\\lVert Y-\\mu\\rVert_2\\leq\\rho_\\alpha\\}=1-\\alpha.\n\\tag{4}\n\\]\nOn the event in (4), \\(t\\in T(Y)\\), so \\(t\\in C_{\\mathrm{prof}}(Y)\\).  Therefore\n\\[\n \\inf_{M\\in\\mathcal U}P_M\\{\\tau(M)\\in C_{\\mathrm{prof}}(Y)\\}\\geq1-\\alpha,\n\\]\nwhich proves \\(C_{\\mathrm{prof}}\\in\\mathfrak C_\\alpha(\\mathcal U)\\).  Notice that no rank, strength, or orbit amplitude is supplied to the rule.\n\nThe pointwise length bound gives\n\\[\n E_{P_0}\\operatorname{len}C_{\\mathrm{prof}}(Y)\\leq2B_{\\max}.\n\\tag{5}\n\\]\nBecause \\(C_{\\mathrm{prof}}\\) is union-honest, the definition of the rank-zero frontier gives the left inequality in the claimed ratio.  Theorem~\\ref{thm:union-zero-lower} gives\n\\(\\mathfrak L_0^{\\mathcal U}(n)\\geq B_{\\max}(1-2\\alpha)>0\\); combining this with (5) proves the upper inequality.\n\nFinally, the membership relation used by the endpoint programs is explicitly\n\\[\n (\\mu,t)\\in\\overline{\\mathcal K}\n \\quad\\Longleftrightarrow\\quad\n \\forall\\varepsilon>0\\ \\exists M\\in\\mathcal U:\\\n \\lVert P_\\Omega M-\\mu\\rVert_2^2+|\\tau(M)-t|^2<\\varepsilon^2.\n\\tag{6}\n\\]\nFor the fixed four-by-four mask, membership in \\(\\mathcal U\\) is a finite Boolean combination of entry bounds, vanishing and nonvanishing minors for ranks zero, one, or two, and the condition that the smallest positive singular value of the two-by-two anchor does not exceed \\(B_{\\max}\\).  The last condition can itself be written with an auxiliary two-dimensional unit vector and polynomial inequalities.  Hence (6), together with\n\\(\\lVert y-\\mu\\rVert_2^2\\leq\\rho_\\alpha^2\\), is a first-order formula over the reals in a fixed finite number of variables.  Quantifier elimination decides each endpoint sublevel query; bisection on the compact interval \\([-B_{\\max},B_{\\max}]\\) evaluates the two extrema to any prescribed accuracy. \\(\\square\\)",
+      "revision": "rev:8464421de34b47bce15ee8d0a90b2eeca7218a40c4dc6c94b59ae1ebae923505"
+    },
+    {
+      "id": "oeq:simultaneous-union-inversion",
+      "kind": "openendedquestion",
+      "statement": "Using \\(\\mathrm{def:simultaneous-inversion-handle}\\), can one construct a single interval \\(C^{\\star}(Y;n,\\sigma,B_{\\max},\\alpha)\\) that uses neither \\(r,s,h\\) nor \\(q\\), is honest over \\(\\mathcal U\\), and attains the rank-zero frontier \\(\\mathfrak L_{0}^{\\mathcal U}(n)\\) and every positive-rank frontier \\(\\mathfrak L_{r,s}^{\\mathcal U}(n)\\), \\(r\\in\\{1,2\\}\\), \\(s\\in(0,B_{\\max}]\\), up to one universal constant? If not, determine the sharp smallest multiplicative excess \\[\\inf_{C\\in\\mathfrak C_{\\alpha}(\\mathcal U)}\\max\\left\\{\\frac{E_{P_0}[\\operatorname{len}C(Y)]}{\\mathfrak L_{0}^{\\mathcal U}(n)},\\ \\sup_{r\\in\\{1,2\\},\\,s\\in(0,B_{\\max}]}\\frac{\\sup_{M\\in\\mathcal M_r(s)}E_{P_M}[\\operatorname{len}C(Y)]}{\\mathfrak L_{r,s}^{\\mathcal U}(n)}\\right\\},\\] and exhibit a data-only interval attaining that excess.",
+      "free_symbols": [
+        "Cclass",
+        "Uclass",
+        "Mrs",
+        "C",
+        "Y",
+        "n",
+        "sigma",
+        "Bmax",
+        "alpha",
+        "r",
+        "s",
+        "h",
+        "q",
+        "Lzero",
+        "Lrs",
+        "M",
+        "PM",
+        "len"
+      ],
+      "depends_on": [
+        "def:simultaneous-inversion-handle",
+        "def:union-minimax-length",
+        "thm:orbit-exact-dual",
+        "thm:strict-mixture-gap",
+        "thm:union-zero-lower"
+      ],
+      "status": "to-prove",
+      "justification": "The open object is the coherent inversion across all ranks and strengths, not another collection of oracle intervals indexed by unknown inputs.",
+      "gap": "ChoiKwonLiao2026UnknownRank retains a prespecified working-rank upper bound and asymptotic strength conditions; CarpentierKloppLofflerNickl2018 treats full-matrix confidence sets rather than scalar expected length under this mask.",
+      "consumer": "The answer yields either an implementable rank-and-strength-free counterfactual interval or the exact price that any such interval must pay.",
+      "revision": "rev:21ce5918964a84935ed5027cb0375e274125b6e8e108649a73d8edaf6a1f906e"
+    }
+  ],
+  "sampling_model": {
+    "design": "Fixed four-by-four causal-panel mask with \\(A,F,G\\) observed and \\(D\\) missing.",
+    "units": "The sufficient statistic is the average of \\(n\\) independent Gaussian replications of the twelve observed entries.",
+    "treatment": "Rows \\(I_1\\) are treated after columns \\(J_0\\); \\(D\\) is their missing untreated potential-outcome mean block.",
+    "overlap": "Not applicable; the mask is public and deterministic.",
+    "nuisance_estimation": "None; \\(n\\), \\(\\sigma\\), \\(B_{\\max}\\), and the mask are known, while rank and strength are unknown."
+  },
+  "estimand_functional": "\\(\\mathfrak L_{0,n}^{\\mathrm{orb}}(h,q)=(q^2/h)\\,\\mathfrak D_{\\alpha}^{\\mathrm{mix}}(h,q)\\)",
+  "target_estimand": "\\(\\tau(M)=\\tfrac14\\mathbf 1_2^{\\mathsf T}D\\mathbf 1_2\\)",
+  "bibliography": [
+    {
+      "key": "CaiLow2004AdaptiveCI",
+      "citation": "T. T. Cai and M. G. Low (2004). An adaptation theory for nonparametric confidence intervals. \\textit{Annals of Statistics} 32, 1805--1840. doi:10.1214/009053604000000049."
+    },
+    {
+      "key": "CaiGuo2017HDLinearCI",
+      "citation": "T. T. Cai and Z. Guo (2017). Confidence intervals for high-dimensional linear regression: Minimax rates and adaptivity. \\textit{Annals of Statistics} 45, 615--646. doi:10.1214/16-AOS1461."
+    },
+    {
+      "key": "CarpentierKloppLofflerNickl2018",
+      "citation": "A. Carpentier, O. Klopp, M. Löffler, and R. Nickl (2018). Adaptive confidence sets for matrix completion. \\textit{Bernoulli} 24, 2429--2460. doi:10.3150/17-BEJ933."
+    },
+    {
+      "key": "EvansHansenStark2005",
+      "citation": "S. N. Evans, B. B. Hansen, and P. B. Stark (2005). Minimax expected measure confidence sets for restricted location parameters. \\textit{Bernoulli} 11, 571--590. doi:10.3150/bj/1126126761."
+    },
+    {
+      "key": "YanWainwright2024MissingPanel",
+      "citation": "Y. Yan and M. J. Wainwright (2024). Entrywise inference for missing panel data: A simple and instance-optimal approach. arXiv:2401.13665."
+    },
+    {
+      "key": "ChoiKwonLiao2026UnknownRank",
+      "citation": "J. Choi, H. Kwon, and Y. Liao (2026). Inference for low-rank models without estimating the rank. \\textit{Journal of the American Statistical Association}; arXiv:2311.16440."
+    },
+    {
+      "key": "ArmstrongWeidnerZeleneev2026",
+      "citation": "T. B. Armstrong, M. Weidner, and A. Zeleneev (2026). Robust estimation and inference in panels with interactive fixed effects. \\textit{Journal of Political Economy}; arXiv:2210.06639."
+    },
+    {
+      "key": "XiaYuan2021LinearForms",
+      "citation": "D. Xia and M. Yuan (2021). Statistical inferences of linear forms for noisy matrix completion. \\textit{Journal of the Royal Statistical Society: Series B}. doi:10.1111/rssb.12400."
+    },
+    {
+      "key": "Onatski2012WeakFactors",
+      "citation": "A. Onatski (2012). Asymptotics of the principal components estimator of large factor models with weakly influential factors. \\textit{Journal of Econometrics} 168, 244--258. doi:10.1016/j.jeconom.2012.01.034."
+    },
+    {
+      "key": "NicklVandeGeer2013",
+      "citation": "R. Nickl and S. van de Geer (2013). Confidence sets in sparse regression. \\textit{Annals of Statistics} 41, 2852--2876. arXiv:1209.1508."
+    },
+    {
+      "key": "AtheyBayatiDoudchenkoImbensKhosravi2021",
+      "citation": "S. Athey, M. Bayati, N. Doudchenko, G. Imbens, and K. Khosravi (2021). Matrix completion methods for causal panel data models. \\textit{Journal of the American Statistical Association} 116, 1716--1730. doi:10.1080/01621459.2021.1891924."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "CaiLow2004AdaptiveCI",
+      "comparator_claim": "Between-class and ordered moduli give sharp lower bounds and constant-factor adaptive intervals for linear functionals over convex Gaussian classes.",
+      "matched_by": "Proposition 1",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "CaiGuo2017HDLinearCI",
+      "comparator_claim": "Composite sparse alternatives and chi-square affinity yield strong expected-length nonadaptivity bounds in high-dimensional linear regression.",
+      "matched_by": "Lemma 3",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "EvansHansenStark2005",
+      "comparator_claim": "Bayes--minimax duality characterizes minimum expected-measure confidence sets for restricted location parameters.",
+      "matched_by": "Theorem 1",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "CarpentierKloppLofflerNickl2018",
+      "comparator_claim": "Existence of honest rank-adaptive matrix confidence sets is governed by composite low-rank testing difficulty.",
+      "matched_by": "Open-ended Question 1",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "YanWainwright2024MissingPanel",
+      "comparator_claim": "A data-driven missing-entry interval matches a genie-aided instance-wise lower bound under staggered-panel signal conditions.",
+      "matched_by": "Lemma 1",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ArmstrongWeidnerZeleneev2026",
+      "comparator_claim": "Bias-aware panel intervals remain uniformly valid when factors are weak, strong, or absent.",
+      "matched_by": "Theorem 3",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ChoiKwonLiao2026UnknownRank",
+      "comparator_claim": "A bias-corrected low-rank procedure has a feasible central limit theorem when a prespecified working rank exceeds the true rank.",
+      "matched_by": "Open-ended Question 1",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "Union-wide honesty over unknown rank and factor strength is a composite testing problem, not a collection of pairwise Gaussian comparisons. For the public four-block causal-panel mask, the paper first solves the rank-zero-plus-sixty-four-orbit benchmark exactly through a finite-dimensional expected-length dual. The orbit is a legal exact-rank-two completion family with a common missing-block counterfactual mean. Its centered mixture cancels the first chi-square coefficient, but diagonal likelihood terms rule out the conjectured \\(n^{1/4}\\) rate gap for a fixed orbit. A certified local experiment nevertheless gives a strict constant gap between the full mixture dual and every pairwise dual. The remaining open object is a single rank-and-strength-free inversion over the continuum union, together with the sharp simultaneous excess if all stratum frontiers cannot be attained at once.",
+  "project_justification": {
+    "gap": "Cai--Low ordered moduli price pairwise departures over convex Gaussian classes, mixture methods establish nonadaptivity in sparse and low-rank models, and current panel procedures either impose signal conditions or deliver strength-robust but non-sharp intervals. None characterizes scalar expected length under the deterministic four-block mask when exact rank and anchor strength are both unknown.",
+    "niche": "The smallest unresolved experiment has one rank-zero law and sixty-four legal rank-two laws sharing one missing-block target. It is finite enough for an auditable dual certificate but already rich enough for orientation mixtures to differ from every componentwise comparison.",
+    "fill": "The exact primal--dual identity, the strict mixture certificate, and the zero-strength lower envelope determine what the early benchmark actually says. The simultaneous-inversion question then asks for one data-only interval over the full union or the sharp excess that makes such oracle adaptation impossible."
+  },
+  "related_work": "CaiLow2004AdaptiveCI defines between-class and ordered moduli in its Gaussian-sequence setup and uses them in Theorems 1--3 to lower-bound expected length and construct constant-factor intervals; that pairwise geometry is the reduction benchmark here. CaiGuo2017HDLinearCI, especially the fuzzy-hypothesis lemma and the chi-square calculation in the proof of its strong nonadaptivity theorem, supplies the likelihood cross-moment technique adapted to masked rank orientations. EvansHansenStark2005 proves a weak-star Bayes--minimax duality theorem for expected-measure confidence procedures; its decision-theoretic architecture informs the three-action orbit dual. CarpentierKloppLofflerNickl2018 links honest rank adaptation to composite testing in Theorems 2.1 and 2.2 and constructs low-rank testing priors in the proof of Theorem 5.2, but its loss is full-matrix diameter under random observation models. YanWainwright2024MissingPanel derives a Gaussian approximation, a plug-in entry interval, and a genie-aided Bayesian Cram\\'er--Rao bound under staggered missingness; rank and signal conditions are fixed rather than union-adapted. ArmstrongWeidnerZeleneev2026 motivates factor-strength-uniform validity and proves a bias-aware coverage theorem, while explicitly noting an adaptation cost relative to strong-factor intervals. ChoiKwonLiao2026UnknownRank corrects the ridge-type bias from an overestimated working rank and proves a feasible block-average central limit theorem, but retains a working-rank upper bound and asymptotic signal requirements. Onatski2012WeakFactors supplies the drifting weak-factor motivation and nonstandard principal-component behavior. XiaYuan2021LinearForms supplies the debias-and-project comparator under random noisy completion, whose first step is unavailable under the deterministic null space used here. NicklVandeGeer2013 identifies an \\(n^{-1/4}\\) composite-testing boundary in growing-dimensional sparse confidence sets; the fixed-orbit diagonal calculation explains why that exponent does not transfer merely from first-moment cancellation.",
+  "technical_internal_limitation": "The strict mixture theorem concerns the certified zero-plus-sixty-four-orbit subexperiment at the root-\\(n\\) local scale. It does not establish an \\(n^{1/4}\\) rate gap. The exact chi-square identity shows why: for a fixed orbit, the diagonal cross-moments retain an exponentially large contribution even when the first averaged coefficient vanishes. The all-strength union also has a separate constant-length obstruction at rank zero, so the orbit certificate is a diagnostic for the correct testing functional rather than a complete global phase diagram.",
+  "honest_scope": "The data are a twelve-dimensional Gaussian sufficient statistic under a known variance and a public deterministic four-block mask. The untreated potential-outcome mean is exactly low rank, entrywise bounded, and target-identified on positive strata because the observed anchor has the same rank as the full matrix. Rank zero is defined separately. The exact dual and strict-gap claims concern connected finite intervals and the explicit rank-two orbit. The continuum rank-and-strength interval, every positive-stratum frontier, and the sharp simultaneous excess remain the stated open-ended question. If the orientation set is a singleton, the dual reduces to ordinary pairwise Gaussian inversion."
+}

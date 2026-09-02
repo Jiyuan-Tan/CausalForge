@@ -67,7 +67,8 @@ def propPairCross (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) 
 mapping](hyp:f), [unit traits](hyp:θ), [a unit `i`](hyp:i), and [an exposure level
 `d`](hyp:d), [the design expectation of the exposure indicator equals the generalized
 probability of exposure `π_i(d)`](goal). -/
-@[simp] lemma E_expoInd (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) :
+@[simp, indicator_simps]
+lemma E_expoInd (D : FiniteDesign Ω) (f : Ω → Θ → Δ) (θ : ι → Θ) (i : ι) (d : Δ) :
     D.E (expoInd f θ i d) = prop D f θ i d := rfl
 
 /-- **Covariance of same-exposure indicators.** For [a design](hyp:D), [an exposure

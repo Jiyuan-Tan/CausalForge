@@ -32,11 +32,13 @@ namespace Causalean
 namespace SteinMethod
 
 /-- Abbreviation for the Gaussian weight `φ(x) = e^{-x²/2}`. -/
-private noncomputable def phi (x : ℝ) : ℝ := Real.exp (-x ^ 2 / 2)
+noncomputable def phi (x : ℝ) : ℝ := Real.exp (-x ^ 2 / 2)
 
 private theorem phi_pos (x : ℝ) : 0 < phi x := Real.exp_pos _
 
-private theorem phi_continuous : Continuous phi := by
+/-- The Gaussian weight `φ(x) = e^{-x²/2}` is continuous on the real line. -/
+@[fun_prop]
+theorem phi_continuous : Continuous phi := by
   unfold phi; fun_prop
 
 /-- `∫ φ = √(2π)`. -/
@@ -69,8 +71,9 @@ private theorem gExpect_eq (h : ℝ → ℝ) :
   rw [gaussianPDFReal_eq, smul_eq_mul]
   ring
 
-/-- `φ` is integrable. -/
-private theorem phi_integrable : Integrable phi := by
+/-- The Gaussian weight `φ` is integrable over the real line. -/
+@[fun_prop]
+theorem phi_integrable : Integrable phi := by
   have : phi = fun x : ℝ => Real.exp (-(1 / 2 : ℝ) * x ^ 2) := by
     funext x; unfold phi; ring_nf
   rw [this]
@@ -94,7 +97,7 @@ private theorem integral_centered_phi {h : ℝ → ℝ} (hh : Continuous h) {C :
     ∫ x, (h x - gExpect h) * phi x = 0 := by
   have hsqrt_pos : 0 < Real.sqrt (2 * π) := Real.sqrt_pos.mpr (by positivity)
   have hint : Integrable (fun x => h x * phi x) := mul_phi_integrable hh hb
-  have hcphi : Integrable (fun x => gExpect h * phi x) := phi_integrable.const_mul _
+  have hcphi : Integrable (fun x => gExpect h * phi x) := by fun_prop
   have : (fun x => (h x - gExpect h) * phi x) = (fun x => h x * phi x - gExpect h * phi x) := by
     funext x; ring
   rw [this, integral_sub hint hcphi]
@@ -126,8 +129,9 @@ theorem abs_le_exp_sq_div_four (x : ℝ) : |x| ≤ Real.exp (x ^ 2 / 4) := by
     nlinarith [sq_nonneg (|x| / 2 - 1), sq_abs x, abs_nonneg x]
   exact h1.trans (by have := Real.add_one_le_exp (x ^ 2 / 4); linarith)
 
-/-- `x·φ x` is integrable on the real line. -/
-private theorem x_mul_phi_integrable : Integrable (fun x : ℝ => x * phi x) := by
+/-- The map `x ↦ x·φ(x)` is integrable over the real line. -/
+@[fun_prop]
+theorem x_mul_phi_integrable : Integrable (fun x : ℝ => x * phi x) := by
   have hdom : Integrable (fun x : ℝ => Real.exp (-(1/4 : ℝ) * x ^ 2)) :=
     integrable_exp_neg_mul_sq (by norm_num)
   refine hdom.mono' ((continuous_id.mul phi_continuous).aestronglyMeasurable) ?_
@@ -202,8 +206,8 @@ private theorem centered_phi_integrable {h : ℝ → ℝ} (hh : Continuous h) {C
     (hb : ∀ x, |h x| ≤ C) :
     Integrable (fun x => (h x - gExpect h) * phi x) := by
   have hhφ : Integrable (fun x => h x * phi x) := mul_phi_integrable hh hb
-  have hcφ : Integrable (fun x => gExpect h * phi x) := phi_integrable.const_mul _
-  have hsub : Integrable (fun x => h x * phi x - gExpect h * phi x) := hhφ.sub hcφ
+  have hcφ : Integrable (fun x => gExpect h * phi x) := by fun_prop
+  have hsub : Integrable (fun x => h x * phi x - gExpect h * phi x) := by fun_prop
   convert hsub using 1
   ext x
   ring
@@ -289,8 +293,8 @@ private theorem diff_phi_integrableOn_Ioi {h : ℝ → ℝ} (hh : Continuous h) 
     (hb : ∀ x, |h x| ≤ C) (w : ℝ) :
     IntegrableOn (fun x => (h x - h w) * phi x) (Set.Ioi w) := by
   have hhφ : Integrable (fun x => h x * phi x) := mul_phi_integrable hh hb
-  have hwφ : Integrable (fun x => h w * phi x) := phi_integrable.const_mul _
-  have hsub : Integrable (fun x => h x * phi x - h w * phi x) := hhφ.sub hwφ
+  have hwφ : Integrable (fun x => h w * phi x) := by fun_prop
+  have hsub : Integrable (fun x => h x * phi x - h w * phi x) := by fun_prop
   have hdiff : Integrable (fun x => (h x - h w) * phi x) := by
     convert hsub using 1
     ext x
@@ -301,8 +305,8 @@ private theorem diff_phi_integrableOn_Iic {h : ℝ → ℝ} (hh : Continuous h) 
     (hb : ∀ x, |h x| ≤ C) (w : ℝ) :
     IntegrableOn (fun x => (h x - h w) * phi x) (Set.Iic w) := by
   have hhφ : Integrable (fun x => h x * phi x) := mul_phi_integrable hh hb
-  have hwφ : Integrable (fun x => h w * phi x) := phi_integrable.const_mul _
-  have hsub : Integrable (fun x => h x * phi x - h w * phi x) := hhφ.sub hwφ
+  have hwφ : Integrable (fun x => h w * phi x) := by fun_prop
+  have hsub : Integrable (fun x => h x * phi x - h w * phi x) := by fun_prop
   have hdiff : Integrable (fun x => (h x - h w) * phi x) := by
     convert hsub using 1
     ext x

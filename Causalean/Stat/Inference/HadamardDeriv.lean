@@ -163,6 +163,7 @@ noncomputable def minDirDeriv (a b : ℝ) : ℝ × ℝ → ℝ :=
   fun z => if a < b then z.1 else if b < a then z.2 else min z.1 z.2
 
 /-- The directional derivative of the maximum functional is continuous. -/
+@[fun_prop]
 theorem continuous_maxDirDeriv (a b : ℝ) : Continuous (maxDirDeriv a b) := by
   unfold maxDirDeriv
   split_ifs
@@ -171,6 +172,7 @@ theorem continuous_maxDirDeriv (a b : ℝ) : Continuous (maxDirDeriv a b) := by
   · exact continuous_fst.max continuous_snd
 
 /-- The directional derivative of the minimum functional is continuous. -/
+@[fun_prop]
 theorem continuous_minDirDeriv (a b : ℝ) : Continuous (minDirDeriv a b) := by
   unfold minDirDeriv
   split_ifs

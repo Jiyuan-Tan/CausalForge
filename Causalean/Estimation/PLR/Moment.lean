@@ -68,30 +68,34 @@ lemma plrMoment_decomp (η : PLRNuisance γ) (z : γ × ℝ × ℝ) (θ : ℝ) :
   ring
 
 /-- The treatment residual is measurable as a function of the observed data. -/
+@[fun_prop]
 lemma measurable_plrResidual (η : PLRNuisance γ) :
     Measurable (fun z : γ × ℝ × ℝ => plrResidual η z) :=
   (measurable_fst.comp measurable_snd).sub (η.mMeas.comp measurable_fst)
 
 /-- The Robinson partialling-out score is measurable in the observed data. -/
+@[fun_prop]
 lemma measurable_plrMomentFunctional (η : PLRNuisance γ) (θ : ℝ) :
     Measurable (fun z : γ × ℝ × ℝ => plrMomentFunctional η z θ) := by
   have hv := measurable_plrResidual η
-  have hy : Measurable (fun z : γ × ℝ × ℝ => z.2.2) :=
-    measurable_snd.comp measurable_snd
+  have hy : Measurable (fun z : γ × ℝ × ℝ => z.2.2) := by
+    fun_prop
   exact (((hy.sub (η.lMeas.comp measurable_fst)).sub (hv.const_mul θ)).mul hv)
 
 /-- The linear-score coefficient is measurable in the observed data. -/
+@[fun_prop]
 lemma measurable_plrMomentA (η : PLRNuisance γ) :
     Measurable (fun z : γ × ℝ × ℝ => plrMomentA η z) := by
   have hv := measurable_plrResidual η
   exact (hv.pow_const 2).neg
 
 /-- The linear-score constant term is measurable in the observed data. -/
+@[fun_prop]
 lemma measurable_plrMomentB (η : PLRNuisance γ) :
     Measurable (fun z : γ × ℝ × ℝ => plrMomentB η z) := by
   have hv := measurable_plrResidual η
-  have hy : Measurable (fun z : γ × ℝ × ℝ => z.2.2) :=
-    measurable_snd.comp measurable_snd
+  have hy : Measurable (fun z : γ × ℝ × ℝ => z.2.2) := by
+    fun_prop
   exact (hy.sub (η.lMeas.comp measurable_fst)).mul hv
 
 end PLR

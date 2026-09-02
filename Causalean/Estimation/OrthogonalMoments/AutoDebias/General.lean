@@ -106,6 +106,9 @@ attribute [instance] RegNuisanceMomentSys.Z_meas RegNuisanceMomentSys.P_Z_prob
   RegNuisanceMomentSys.X_meas RegNuisanceMomentSys.H_addCommGroup
   RegNuisanceMomentSys.H_module
 
+attribute [fun_prop] RegNuisanceMomentSys.proj_X_meas RegNuisanceMomentSys.Y_obs_meas
+  RegNuisanceMomentSys.m_meas
+
 /-- **Automatic debiasing representer.** For a regression-nuisance moment system, a
 function [α₀](hyp:α₀) on the covariate space that is [measurable](hyp:α₀_meas) and
 [integrable against the covariate measure](hyp:α₀_integrable), and that

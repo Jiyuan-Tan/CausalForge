@@ -201,7 +201,7 @@ theorem lintegral_completion_eq_outerLIntegral [PolishSpace Ω] [BorelSpace Ω]
     obtain ⟨N, hDN, hNm, hNnull⟩ :=
       exists_measurable_superset_of_null hDnull
     let G : Ω → ℝ≥0∞ := N.piecewise (fun _ ↦ ⊤) g
-    have hGm : Measurable G := measurable_const.piecewise hNm hgm
+    have hGm : Measurable G := by fun_prop
     have hfG : f ≤ G := by
       intro ω
       by_cases hω : ω ∈ N

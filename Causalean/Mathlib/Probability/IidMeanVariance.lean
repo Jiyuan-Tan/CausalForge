@@ -45,12 +45,12 @@ lemma sqrt_sum_sq_le_sum_abs {ι : Type*} [Fintype ι] (v : ι → ℝ) :
 
 This is the explicit `√(Σ vᵢ²)` counterpart of Mathlib's `integrable_pi_iff`, which instead
 governs the supremum norm on a finite product of normed spaces. -/
+@[fun_prop]
 theorem integrable_euclidean_of_integrable
     {Ω ι : Type*} [MeasurableSpace Ω] [Fintype ι] {μ : Measure Ω}
     (v : Ω → ι → ℝ) (hv : ∀ i, Integrable (fun ω => v ω i) μ) :
     Integrable (fun ω => Real.sqrt (∑ i, (v ω i) ^ 2)) μ := by
-  have hsum : Integrable (fun ω => ∑ i, |v ω i|) μ :=
-    integrable_finset_sum _ fun i _ => (hv i).abs
+  have hsum : Integrable (fun ω => ∑ i, |v ω i|) μ := by fun_prop
   have hmeas : AEStronglyMeasurable (fun ω => Real.sqrt (∑ i, (v ω i) ^ 2)) μ := by
     fun_prop
   refine hsum.mono' hmeas (ae_of_all _ fun ω => ?_)

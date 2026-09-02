@@ -14,6 +14,7 @@ import { buildBundle, buildProseEntries, buildFormalLayer, buildSymbolRealizatio
 import { discoverRealizedSymbols, buildSymbolClusters } from "../../formalization/crosswalk.js";
 import { auxiliaryNodes, isCitedNode } from "../graph_view.js";
 import { ensureComponentsForEnvs } from "../components.js";
+import { ensureNlLinks } from "../nl_links.js";
 import { extractLeanrefIds } from "../tex2html.js";
 import { paperReferenceLabels, resolveObjCrefsPlain, tex2html } from "../tex2html.js";
 import { PresentationCrosswalk, LeanSnippets, FormalLayer, PaperMeta } from "../types.js";
@@ -689,11 +690,27 @@ export async function stageP4(io: StageIO): Promise<void> {
       .filter((e) => e.lean !== null || bundle.snippets.snippets[e.obj_id] !== undefined)
       .map((e) => e.obj_id),
   );
-  await writeFile(
-    join(io.outDir, "paper_body.html"),
-    await tex2html(paperTex, bib, drawerObjIds) + "\n",
-    "utf8",
-  );
+  const paperBodyHtml = await tex2html(paperTex, bib, drawerObjIds) + "\n";
+  await writeFile(join(io.outDir, "paper_body.html"), paperBodyHtml, "utf8");
+
+  // NL↔Lean crosslinks: per formal block, one cached codex call pairs each Lean
+  // hypothesis/conclusion with the phrase of the (now frozen) published prose that
+  // translates it, so the site can highlight both sides on hover. Both sides of a
+  // kept pair are verbatim substrings — a deterministic gate drops the rest, and a
+  // transport/codex failure fails the stage rather than shipping a silent no-op.
+  const nlLinks = await ensureNlLinks({
+    outDir: io.outDir,
+    repoRoot: io.ctx.repoRoot,
+    commit,
+    qid: io.ctx.qid,
+    spec: io.ctx.spec,
+    entries: bundle.crosswalk.entries,
+    snippets: bundle.snippets.snippets,
+    paperBodyHtml,
+    deps: io.ctx.deps,
+    log: (message) => io.state.notes.push(message),
+  });
+  io.state.notes.push(nlLinks.summary);
 
   // meta
   const outline = parseOutline(await readFile(join(io.outDir, "outline.md"), "utf8"));

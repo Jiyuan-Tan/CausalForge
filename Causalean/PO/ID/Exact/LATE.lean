@@ -14,6 +14,7 @@ import Causalean.PO.Assumptions.IndepCF
 import Causalean.PO.Conditioning.EventCondExp
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Probability.Independence.Basic
+import Causalean.Tactic.Attr
 
 /-! # Instrumental Variables LATE
 
@@ -100,19 +101,24 @@ def complierEvent : Set P.Ω :=
 def zEvent (z : Bool) : Set P.Ω := S.zVar.event z
 
 /-- The potential treatment under a fixed instrument value is measurable. -/
+@[fun_prop]
 lemma measurable_DofZ (z : Bool) : Measurable (S.DofZ z) :=
   S.dVar.measurable_cfUnder S.zVar z
 
 /-- The factual instrument is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.zVar.measurable_factual
 
 /-- The factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 
 /-- The factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- The potential outcome under a fixed treatment value is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 
@@ -128,6 +134,14 @@ lemma measurableSet_zEvent (z : Bool) : MeasurableSet (S.zEvent z) :=
 /-- `Y` composed with `D(z)`: `1_{D(z)=1} Y(1) + 1_{D(z)=0} Y(0)`. -/
 noncomputable def YofDofZ (z : Bool) : P.Ω → ℝ :=
   fun ω => if S.DofZ z ω then S.YofD true ω else S.YofD false ω
+
+/-- The potential outcome under the treatment that an instrument value induces sends a unit to
+that unit's treated potential outcome when the induced treatment is one, and to its untreated
+potential outcome otherwise. -/
+@[causal_defs_simps]
+lemma YofDofZ_def (z : Bool) :
+    S.YofDofZ z = fun ω => if S.DofZ z ω then S.YofD true ω else S.YofD false ω :=
+  rfl
 
 /-- `E[D | Z = z]`, the event-level conditional expectation of the (0/1-coded)
 factual treatment on `{Z = z}`. Uses the shared PO conditioning tool

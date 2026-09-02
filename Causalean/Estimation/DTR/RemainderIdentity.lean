@@ -187,14 +187,8 @@ lemma seqDR_remainder_identity
       (1 / (η.e₀_fn h.2.2 * η.e₁_fn h)) *
       (η.μ₁_fn h - S.μ₁_val h)
   let remΩ : P.Ω → ℝ := fun ω => rem0 (S0 ω) + rem1 (H1 ω)
-  have hS0_meas : Measurable S0 := by
-    dsimp [S0]
-    exact S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩
-  have hH1_meas : Measurable H1 := by
-    dsimp [H1]
-    exact (S.toPODTRSystem.measurable_factualS ⟨1, by decide⟩).prod
-      ((S.toPODTRSystem.measurable_factualD ⟨0, by decide⟩).prod
-        (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩))
+  have hS0_meas : Measurable S0 := by fun_prop
+  have hH1_meas : Measurable H1 := by fun_prop
   have hM0_int : Integrable M0 P.μ := by
     let B0 := S.toPODTRSystem.historyBundle 0 (by decide)
     exact (B0.integrable_condExpGiven (S.toPODTRSystem.Y_of S.dbar)).congr
@@ -205,34 +199,16 @@ lemma seqDR_remainder_identity
       simpa [M1, H1] using (S.stageOneReg_memLp h_overlap h_y2).ae_eq
         (S.μ₁_val_comp_eq_stageOneReg).symm
     exact hM1_L2.integrable (by norm_num)
-  have hM0_meas : Measurable M0 := by
-    dsimp [M0]
-    exact S.μ₀_meas.comp hS0_meas
-  have hM1_meas : Measurable M1 := by
-    dsimp [M1]
-    exact S.μ₁_meas.comp hH1_meas
-  have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM0_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M0, mul_comm]))
-  have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hM1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I0, M1, mul_comm]))
-  have hR0_int : Integrable R0 P.μ := by
-    have hsub := hI0M1_int.sub hI0M0_int
-    refine hsub.congr ?_
-    exact Filter.Eventually.of_forall (fun ω => by
-      simp [R0]
-      ring)
+  have hM0_meas : Measurable M0 := by fun_prop
+  have hM1_meas : Measurable M1 := by fun_prop
+  have hI0M0_int : Integrable (fun ω => I0 ω * M0 ω) P.μ := by fun_prop
+  have hI0M1_int : Integrable (fun ω => I0 ω * M1 ω) P.μ := by fun_prop
+  have hR0_int : Integrable R0 P.μ := by fun_prop
   have hI1Y_int : Integrable (fun ω => I1 ω * Y ω) P.μ := by
     have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
       (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hA.integrable_factualY
     exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, Y, mul_comm]))
-  have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨1, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _) hM1_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by simp [I1, M1, mul_comm]))
+  have hI1M1_int : Integrable (fun ω => I1 ω * M1 ω) P.μ := by fun_prop
   have hI1_res_int :
       Integrable (fun ω => I1 ω * (Y ω - M1 ω)) P.μ := by
     have hsub := hI1Y_int.sub hI1M1_int
@@ -240,30 +216,16 @@ lemma seqDR_remainder_identity
     exact Filter.Eventually.of_forall (fun ω => by
       rw [Pi.sub_apply]
       ring)
-  have hI1_res_meas : Measurable (fun ω => I1 ω * (Y ω - M1 ω)) := by
-    exact ((S.toPODTRSystem.dVar ⟨1, by decide⟩).measurable_indicator
-      (S.dbar ⟨1, by decide⟩) (MeasurableSet.singleton _)).mul
-      (S.toPODTRSystem.measurable_factualY.sub hM1_meas)
-  have hR1_int : Integrable R1 P.μ := by
-    have h := (S.toPODTRSystem.dVar ⟨0, by decide⟩).integrable_mul_indicator
-      (S.dbar ⟨0, by decide⟩) (MeasurableSet.singleton _) hI1_res_int
-    exact h.congr (Filter.Eventually.of_forall (fun ω => by
-      change (I1 ω * (Y ω - M1 ω)) * I0 ω = R1 ω
-      simp [R1]
-      ring))
+  have hI1_res_meas : Measurable (fun ω => I1 ω * (Y ω - M1 ω)) := by fun_prop
+  have hR1_int : Integrable R1 P.μ := by fun_prop
   have hη0_lower : ∀ s₀, ε ≤ η.e₀_fn s₀ := fun s₀ => (hη.1 s₀).1
   have hη1_lower : ∀ h, ε ≤ η.e₁_fn h := fun h => (hη.2 h).1
   have hη0_pos : ∀ s₀, 0 < η.e₀_fn s₀ :=
     fun s₀ => lt_of_lt_of_le h_overlap.1 (hη0_lower s₀)
   have hη1_pos : ∀ h, 0 < η.e₁_fn h :=
     fun h => lt_of_lt_of_le h_overlap.1 (hη1_lower h)
-  have hG0_meas : Measurable G0 := by
-    dsimp [G0]
-    exact measurable_const.div (η.e₀_meas.comp hS0_meas)
-  have hG1_meas : Measurable G1 := by
-    dsimp [G1]
-    exact measurable_const.div ((η.e₀_meas.comp hS0_meas).mul
-      (η.e₁_meas.comp hH1_meas))
+  have hG0_meas : Measurable G0 := by fun_prop
+  have hG1_meas : Measurable G1 := by fun_prop
   have hG0_bound : ∀ᵐ ω ∂P.μ, ‖G0 ω‖ ≤ ε⁻¹ := by
     refine Filter.Eventually.of_forall ?_
     intro ω
@@ -307,13 +269,8 @@ lemma seqDR_remainder_identity
     simpa [dμ1, H1, DTREstimationSystem.P_H₁, Function.comp_def] using hd
   have hdμ0_int : Integrable dμ0 P.μ := hdμ0_L2.integrable (by norm_num)
   have hdμ1_int : Integrable dμ1 P.μ := hdμ1_L2.integrable (by norm_num)
-  have hbase_int : Integrable base P.μ := by
-    have h : Integrable (fun ω => M0 ω - S.θ₀) P.μ := hM0_int.sub (integrable_const S.θ₀)
-    simpa [base] using h
-  have hcrossInd_int : Integrable crossInd P.μ := by
-    have h : Integrable (fun ω => dμ0 ω + i10 ω - i0 ω - i11 ω) P.μ :=
-      ((hdμ0_int.add hi10_int).sub hi0_int).sub hi11_int
-    simpa [crossInd, sub_eq_add_neg, add_assoc] using h
+  have hbase_int : Integrable base P.μ := by fun_prop
+  have hcrossInd_int : Integrable crossInd P.μ := by fun_prop
   have hbase_zero : ∫ ω, base ω ∂P.μ = 0 := by
     have hθ : S.θ₀ = ∫ ω, M0 ω ∂P.μ := by
       simpa [M0, S0] using theta_zero_factualS₀_integral S hA
@@ -328,8 +285,7 @@ lemma seqDR_remainder_identity
       _ = S.θ₀ - S.θ₀ := by rw [← hθ, hconst]
       _ = 0 := by ring
   have hr0_zero : ∫ ω, r0 ω ∂P.μ = 0 := by
-    have hg_meas : Measurable (fun s₀ => 1 / η.e₀_fn s₀) :=
-      measurable_const.div η.e₀_meas
+    have hg_meas : Measurable (fun s₀ => 1 / η.e₀_fn s₀) := by fun_prop
     have h_int : Integrable
         (fun ω => (1 / η.e₀_fn (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω)) *
           ((S.toPODTRSystem.dVar ⟨0, by decide⟩).indicator
@@ -359,8 +315,7 @@ lemma seqDR_remainder_identity
                 (fun s₀ => 1 / η.e₀_fn s₀) hg_meas h_int
   have hr1_zero : ∫ ω, r1 ω ∂P.μ = 0 := by
     have hg_meas : Measurable (fun h : γ 1 × δ × γ 0 =>
-        1 / (η.e₀_fn h.2.2 * η.e₁_fn h)) :=
-      measurable_const.div ((η.e₀_meas.comp measurable_snd.snd).mul η.e₁_meas)
+        1 / (η.e₀_fn h.2.2 * η.e₁_fn h)) := by fun_prop
     have h_int : Integrable
         (fun ω => (1 / (η.e₀_fn (S.toPODTRSystem.factualS ⟨0, by decide⟩ ω) *
             η.e₁_fn
@@ -469,9 +424,7 @@ lemma seqDR_remainder_identity
             ring
   have hp0_int : Integrable p0 P.μ := by
     let V0 : P.Ω → ℝ := fun ω => S.e₀_val (S0 ω) / η.e₀_fn (S0 ω)
-    have hV0_meas : Measurable V0 := by
-      dsimp [V0]
-      exact (S.e₀_meas.comp hS0_meas).div (η.e₀_meas.comp hS0_meas)
+    have hV0_meas : Measurable V0 := by fun_prop
     have hV0_bound : ∀ᵐ ω ∂P.μ, ‖V0 ω‖ ≤ ε⁻¹ := by
       refine Filter.Eventually.of_forall ?_
       intro ω
@@ -502,36 +455,8 @@ lemma seqDR_remainder_identity
         (S.e₁_val (H1 ω) / (η.e₀_fn (S0 ω) * η.e₁_fn (H1 ω)))
     have hInd_meas : Measurable
         (fun ω => indEq (S.toPODTRSystem.factualD ⟨0, by decide⟩ ω)
-          (S.dbar ⟨0, by decide⟩)) := by
-      have hindEq_pos : ∀ d d' : δ, d = d' → indEq d d' = 1 := by
-        intro d d' hd
-        simp [indEq, hd]
-      have hindEq_neg : ∀ d d' : δ, d ≠ d' → indEq d d' = 0 := by
-        intro d d' hd
-        simp [indEq, hd]
-      have hm := (S.toPODTRSystem.dVar ⟨0, by decide⟩).measurable_indicator
-        (S.dbar ⟨0, by decide⟩) (measurableSet_singleton _)
-      have hfun : (S.toPODTRSystem.dVar ⟨0, by decide⟩).indicator
-            (S.dbar ⟨0, by decide⟩)
-          = fun ω => indEq (S.toPODTRSystem.factualD ⟨0, by decide⟩ ω)
-              (S.dbar ⟨0, by decide⟩) := by
-        funext ω
-        by_cases h : S.toPODTRSystem.factualD ⟨0, by decide⟩ ω
-            = S.dbar ⟨0, by decide⟩
-        · have h' : (S.toPODTRSystem.dVar ⟨0, by decide⟩).factual ω
-              = S.dbar ⟨0, by decide⟩ := h
-          rw [POVar.indicator_apply_eq_one _ h']
-          exact (hindEq_pos _ _ h).symm
-        · have h' : (S.toPODTRSystem.dVar ⟨0, by decide⟩).factual ω
-              ≠ S.dbar ⟨0, by decide⟩ := h
-          rw [POVar.indicator_apply_eq_zero _ h']
-          exact (hindEq_neg _ _ h).symm
-      exact hfun ▸ hm
-    have hV1_meas : Measurable V1 := by
-      dsimp [V1]
-      exact hInd_meas.mul
-        ((S.e₁_meas.comp hH1_meas).div
-          ((η.e₀_meas.comp hS0_meas).mul (η.e₁_meas.comp hH1_meas)))
+          (S.dbar ⟨0, by decide⟩)) := by fun_prop
+    have hV1_meas : Measurable V1 := by fun_prop
     have hV1_bound : ∀ᵐ ω ∂P.μ, ‖V1 ω‖ ≤ (ε * ε)⁻¹ := by
       refine Filter.Eventually.of_forall ?_
       intro ω
@@ -582,16 +507,12 @@ lemma seqDR_remainder_identity
     exact hp.congr (Filter.Eventually.of_forall (fun ω => by
       simp [p1, V1, dμ1, S0, H1]
       ring))
-  have hcrossProp_int : Integrable crossProp P.μ := by
-    have h : Integrable (fun ω => dμ0 ω + i10 ω - p0 ω - p1 ω) P.μ :=
-      ((hdμ0_int.add hi10_int).sub hp0_int).sub hp1_int
-    simpa [crossProp, sub_eq_add_neg, add_assoc] using h
+  have hcrossProp_int : Integrable crossProp P.μ := by fun_prop
   have hcross_to_prop :
       ∫ ω, crossInd ω ∂P.μ = ∫ ω, crossProp ω ∂P.μ := by
     have hi0_prop : ∫ ω, i0 ω ∂P.μ = ∫ ω, p0 ω ∂P.μ := by
       have hf_meas : Measurable
-          (fun s₀ => (η.μ₀_fn s₀ - S.μ₀_val s₀) / η.e₀_fn s₀) :=
-        (η.μ₀_meas.sub S.μ₀_meas).div η.e₀_meas
+          (fun s₀ => (η.μ₀_fn s₀ - S.μ₀_val s₀) / η.e₀_fn s₀) := by fun_prop
       have hf_ind_int : Integrable
           (fun ω => ((η.μ₀_fn (S0 ω) - S.μ₀_val (S0 ω)) /
             η.e₀_fn (S0 ω)) * I0 ω) P.μ := by
@@ -620,19 +541,7 @@ lemma seqDR_remainder_identity
       have hf_meas : Measurable
           (fun h : γ 1 × δ × γ 0 =>
             indEq h.2.1 (S.dbar 0) *
-              ((η.μ₁_fn h - S.μ₁_val h) / (η.e₀_fn h.2.2 * η.e₁_fn h))) := by
-        have hind : Measurable (fun h : γ 1 × δ × γ 0 => indEq h.2.1 (S.dbar 0)) := by
-          have hset : MeasurableSet {x : δ | x = S.dbar 0} := MeasurableSet.singleton _
-          have hbase : Measurable (Set.indicator {x : δ | x = S.dbar 0}
-              (fun _ => (1 : ℝ))) := measurable_const.indicator hset
-          have heq : (fun x : δ => indEq x (S.dbar 0)) =
-              Set.indicator {x : δ | x = S.dbar 0} (fun _ => (1 : ℝ)) := by
-            funext x
-            unfold indEq
-            by_cases hx : x = S.dbar 0 <;> simp [hx]
-          exact (heq ▸ hbase).comp measurable_snd.fst
-        exact hind.mul ((η.μ₁_meas.sub S.μ₁_meas).div
-          ((η.e₀_meas.comp measurable_snd.snd).mul η.e₁_meas))
+              ((η.μ₁_fn h - S.μ₁_val h) / (η.e₀_fn h.2.2 * η.e₁_fn h))) := by fun_prop
       have hf_ind_int : Integrable
           (fun ω => (indEq (H1 ω).2.1 (S.dbar 0) *
               ((η.μ₁_fn (H1 ω) - S.μ₁_val (H1 ω)) /
@@ -770,25 +679,8 @@ lemma seqDR_remainder_identity
       hI0eqn, div_eq_mul_inv]
     field_simp [hden0, hden1, hden01, hden0n, hden1n, hden01n]
     ring
-  have hrem0_meas : Measurable rem0 := by
-    dsimp [rem0]
-    exact (((η.e₀_meas.sub S.e₀_meas).mul (measurable_const.div η.e₀_meas)).mul
-      (η.μ₀_meas.sub S.μ₀_meas))
-  have hrem1_meas : Measurable rem1 := by
-    have hind : Measurable (fun h : γ 1 × δ × γ 0 => indEq h.2.1 (S.dbar 0)) := by
-      have hset : MeasurableSet {x : δ | x = S.dbar 0} := MeasurableSet.singleton _
-      have hbase : Measurable (Set.indicator {x : δ | x = S.dbar 0}
-          (fun _ => (1 : ℝ))) := measurable_const.indicator hset
-      have heq : (fun x : δ => indEq x (S.dbar 0)) =
-          Set.indicator {x : δ | x = S.dbar 0} (fun _ => (1 : ℝ)) := by
-        funext x
-        unfold indEq
-        by_cases hx : x = S.dbar 0 <;> simp [hx]
-      exact (heq ▸ hbase).comp measurable_snd.fst
-    dsimp [rem1]
-    exact (((hind.mul (η.e₁_meas.sub S.e₁_meas)).mul
-      (measurable_const.div ((η.e₀_meas.comp measurable_snd.snd).mul η.e₁_meas))).mul
-        (η.μ₁_meas.sub S.μ₁_meas))
+  have hrem0_meas : Measurable rem0 := by fun_prop
+  have hrem1_meas : Measurable rem1 := by fun_prop
   haveI : ENNReal.HolderTriple (2 : ENNReal) (2 : ENNReal) (1 : ENNReal) := by
     constructor
     simpa using ENNReal.inv_two_add_inv_two
@@ -831,19 +723,7 @@ lemma seqDR_remainder_identity
   have hrem1_int : Integrable rem1 S.P_H₁ := by
     let W : γ 1 × δ × γ 0 → ℝ := fun h =>
       indEq h.2.1 (S.dbar 0) * (1 / (η.e₀_fn h.2.2 * η.e₁_fn h))
-    have hW_meas : Measurable W := by
-      have hind : Measurable (fun h : γ 1 × δ × γ 0 => indEq h.2.1 (S.dbar 0)) := by
-        have hset : MeasurableSet {x : δ | x = S.dbar 0} := MeasurableSet.singleton _
-        have hbase : Measurable (Set.indicator {x : δ | x = S.dbar 0}
-            (fun _ => (1 : ℝ))) := measurable_const.indicator hset
-        have heq : (fun x : δ => indEq x (S.dbar 0)) =
-            Set.indicator {x : δ | x = S.dbar 0} (fun _ => (1 : ℝ)) := by
-          funext x
-          unfold indEq
-          by_cases hx : x = S.dbar 0 <;> simp [hx]
-        exact (heq ▸ hbase).comp measurable_snd.fst
-      exact hind.mul (measurable_const.div
-        ((η.e₀_meas.comp measurable_snd.snd).mul η.e₁_meas))
+    have hW_meas : Measurable W := by fun_prop
     have hW_bound : ∀ᵐ h ∂S.P_H₁, ‖W h‖ ≤ (ε * ε)⁻¹ := by
       refine Filter.Eventually.of_forall ?_
       intro h
@@ -879,8 +759,7 @@ lemma seqDR_remainder_identity
       ∫ ω, remΩ ω ∂P.μ =
         ∫ z, rem0 (projS₀ z) + rem1 (histH₁ z) ∂(S.P_Z) := by
     have hZ_meas : Measurable
-        (fun z : γ 0 × δ × γ 1 × δ × ℝ => rem0 (projS₀ z) + rem1 (histH₁ z)) :=
-      (hrem0_meas.comp measurable_projS₀).add (hrem1_meas.comp measurable_histH₁)
+        (fun z : γ 0 × δ × γ 1 × δ × ℝ => rem0 (projS₀ z) + rem1 (histH₁ z)) := by fun_prop
     have hmap :
         ∫ z, rem0 (projS₀ z) + rem1 (histH₁ z) ∂(S.P_Z)
           = ∫ ω, rem0 (projS₀ (S.factualZ ω)) + rem1 (histH₁ (S.factualZ ω)) ∂P.μ := by

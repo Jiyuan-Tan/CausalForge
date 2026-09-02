@@ -29,6 +29,7 @@ def radialMonomialEnvelope (b : ℝ) (p : ℕ) : ℝ :=
 
 /-- A compactly supported Euclidean radial monomial is Borel measurable in
 the observation for every fixed center and degree. -/
+@[fun_prop]
 theorem radialAnnulusMonomial_measurable
     (d k : ℕ) (q a b : ℝ) (x : EuclideanPoint d) :
     Measurable (radialAnnulusMonomial d q a b k x) := by

@@ -88,6 +88,56 @@ describe("proof-review loop — Phase A statement/scaffold gate", () => {
     }
   });
 
+  it("an unadjudicable escalation WITH a rerouteable target still escalates — never auto-rescaffolds", async () => {
+    const scaffoldCalls: unknown[] = [];
+    const outcome = await runProofReviewLoop({
+      ctx: { repoRoot: "/tmp", qid: "q", specialization: "v1" },
+      deps: throwingDeps,
+      buildCheck: async () => ({ ok: true, errors: "" }),
+      refresh: async () => rs(),
+      scaffold: async (a) => { scaffoldCalls.push(a); },
+      fill: async (g): Promise<FillerResult> => ({ graph: g, escalate: null, summary: "" }),
+      review: async (s): Promise<ReviewerResult> => ({
+        graph: s.graph, ok: false,
+        escalate: { kind: "unadjudicable", obj_id: "t1", reason: "can't place fault between note and Lean" },
+        blocking: ["t1"], substrateGates: [],
+      }),
+    });
+    // Re-scaffolding an UNJUDGED target lets F2 re-emit it into a `matched` with the original
+    // question never answered — the same gerrymandering hazard as `statement-wrong`.
+    expect(scaffoldCalls).toHaveLength(0);
+    expect(outcome.status).toBe("escalate");
+    if (outcome.status === "escalate") {
+      expect(outcome.route).toBe("unclear");
+      expect(outcome.reason).toContain("unadjudicable");
+    }
+  });
+
+  it("a SYNTHESIZED unadjudicable (model emitted a reason with no kind) still reroutes to F2", async () => {
+    let reviewCalls = 0;
+    const scaffoldCalls: unknown[] = [];
+    const outcome = await runProofReviewLoop({
+      ctx: { repoRoot: "/tmp", qid: "q", specialization: "v1" },
+      deps: throwingDeps,
+      buildCheck: async () => ({ ok: true, errors: "" }),
+      refresh: async () => rs(),
+      scaffold: async (a) => { scaffoldCalls.push(a); },
+      fill: async (g): Promise<FillerResult> => ({ graph: g, escalate: null, summary: "" }),
+      review: async (s): Promise<ReviewerResult> => {
+        if (++reviewCalls > 1) return okReview(s.graph);
+        return {
+          graph: s.graph, ok: false,
+          // `kind_synthesized` marks routine schema drift, not a reviewer's judgment that it
+          // could not adjudicate — halting on it would stall runs that used to self-heal.
+          escalate: { kind: "unadjudicable", kind_synthesized: true, obj_id: "t1", reason: "hypothesis H7 is missing" },
+          blocking: ["t1"], substrateGates: [],
+        };
+      },
+    });
+    expect(scaffoldCalls).toHaveLength(1);
+    expect(outcome.status).toBe("completed");
+  });
+
   it.each([
     "missing-review-evidence",
     "missing-review-target",

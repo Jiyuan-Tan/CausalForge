@@ -7,6 +7,9 @@ import { describe, it, expect } from "vitest";
 import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
 import { saveWorkingState, loadWorkingState, snapshotMember } from "../../src/discovery/stages/d0_working.js";
 import { createDStageHarness } from "./d_stage_harness.js";
+import { coreRevision, definitionRevision } from "../../src/discovery/core/revision.js";
+import { assembleCore } from "../../src/discovery/core/assemble.js";
+import { CoreSchema, type Core } from "../../src/discovery/core/schema.js";
 
 const STMT = {
   id: "thm:main", kind: "theorem", statement: "OLD CLAIM", depends_on: ["ass:overlap"],
@@ -20,8 +23,17 @@ const PROTO = {
   statements: [STMT], target_estimand: "tau", bibliography: [{ key: "R1983" }],
 };
 
+async function sealDefinitionProposalBasis(
+  h: Awaited<ReturnType<typeof createDStageHarness>>,
+  proto: Core,
+): Promise<void> {
+  const working = await loadWorkingState(h.ctx());
+  working!.proposals!.basis_revision = coreRevision(CoreSchema.parse(assembleCore(proto, working!)));
+  await saveWorkingState(h.ctx(), working!);
+}
+
 describe("a proof is not paired onto a claim it did not argue", () => {
-  it("leaves the node OPEN when the same bundle rewrites its claim", async () => {
+  it("atomically rejects a claim rewrite whose reviewed proof does not argue it", async () => {
     const h = await createDStageHarness({ qid: "stat_pair", specialization: "v1", proto: PROTO });
     try {
       const proto = await h.readProto();
@@ -35,22 +47,16 @@ describe("a proof is not paired onto a claim it did not argue", () => {
           definitions: [], assumptions: [],
           coreEdits: [{
             kind: "statement-replace", id: "thm:main",
-            proposed: { ...STMT, depends_on: ["ass:overlap", "def:env"] },
+            proposed: { ...STMT, statement: "NEW CLAIM", depends_on: ["ass:overlap", "def:env"] },
             reason: "declare the envelope dependency", direction: "correct",
           }],
           proofs: [{ id: "thm:main", proof_tex: "A proof of the OLD claim." }],
         },
       } as never);
 
-      await applyProposedChanges({ ctx: h.ctx() });
-
-      const w = await loadWorkingState(h.ctx());
-      const rec = (w as never as { solved: Record<string, { proof_tex?: string; partial?: boolean }> }).solved["thm:main"];
-      expect(rec?.proof_tex ?? "", "the old-claim proof must NOT be attached").not.toContain("OLD claim");
-      expect(rec?.partial, "the node must stay open for re-derivation").toBe(true);
-
-      const after = await h.readProto();
-      expect(after.statements[0].statement, "the claim change itself still applies").toBe("NEW CLAIM");
+      await expect(applyProposedChanges({ ctx: h.ctx() }))
+        .rejects.toThrow(/argues_proposed:true/);
+      expect((await h.readProto()).statements[0].statement).toBe("OLD CLAIM");
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -60,7 +66,7 @@ describe("a proof is not paired onto a claim it did not argue", () => {
       const proto = await h.readProto();
       await saveWorkingState(h.ctx(), {
         round: 1,
-        solved: { "thm:main": { proof_tex: "", snapshot: snapshotMember(proto, proto.statements[0]), partial: true } },
+        solved: { "thm:main": { proof_tex: "A proof of the CURRENT claim.", snapshot: snapshotMember(proto, proto.statements[0]), partial: true } },
         resolved_oeqs: {},
         proposals: {
           statements: [], definitions: [], assumptions: [],
@@ -79,6 +85,9 @@ describe("a proof is not paired onto a claim it did not argue", () => {
       const rec = (w as never as { solved: Record<string, { proof_tex?: string; partial?: boolean }> }).solved["thm:main"];
       expect(rec?.proof_tex, "a proof of the unchanged claim must still pair").toContain("CURRENT claim");
       expect(rec?.partial, "and the node is no longer open").toBeUndefined();
+      const after = await h.readProto();
+      expect(after.statements[0].status).toBe("to-prove");
+      expect(after.statements[0].proof_tex).toBeUndefined();
     } finally { await h.dispose(); }
   }, 30000);
 });
@@ -135,13 +144,12 @@ describe("metadata-only carried-node replacements", () => {
 });
 
 describe("a CITED node is not settled by a citation for the old claim", () => {
-  // The cited shortcut runs BEFORE the paired-proof guard and cleared `partial` outright,
-  // so a cited node whose claim this bundle rewrote was certified by a source that
-  // documents the OLD statement. Three independent auditors caught this in one pass.
+  // The retained citation still documents the old claim, so `partial` — not
+  // destructive source loss — carries the revalidation obligation.
   it("reopens a cited node whose claim the same bundle changed", async () => {
     const CITED = {
       id: "lem:cited", kind: "lemma", statement: "OLD CITED CLAIM", depends_on: [],
-      status: "cited", source: { cite: "R1983", locator: "Thm 1" },
+      status: "cited", source: { cite: "R1983", locator: "Thm 1" }, free_symbols: [],
     };
     const h = await createDStageHarness({ qid: "stat_pair", specialization: "v1", proto: PROTO });
     try {
@@ -160,7 +168,7 @@ describe("a CITED node is not settled by a citation for the old claim", () => {
           definitions: [], assumptions: [],
           coreEdits: [{
             kind: "statement-replace", id: "lem:cited",
-            proposed: { ...CITED, depends_on: ["ass:overlap"] },
+            proposed: { ...CITED, statement: "NEW CITED CLAIM", depends_on: ["ass:overlap"] },
             reason: "rewire", direction: "correct",
           }],
           proofs: [],
@@ -172,8 +180,8 @@ describe("a CITED node is not settled by a citation for the old claim", () => {
       const w = await loadWorkingState(h.ctx());
       const rec = (w as never as { solved: Record<string, { partial?: boolean; node?: { status?: string; source?: unknown } }> }).solved["lem:cited"];
       expect(rec?.partial, "the rewritten claim must be reopened, not certified by the old source").toBe(true);
-      expect(rec?.node?.status).toBe("to-prove");
-      expect(rec?.node?.source, "a reopened cited node must shed `source` or it is schema-invalid").toBeUndefined();
+      expect(rec?.node?.status).toBe("cited");
+      expect(rec?.node?.source).toEqual({ cite: "R1983", locator: "Thm 1" });
     } finally { await h.dispose(); }
   }, 30000);
 });
@@ -211,11 +219,9 @@ describe("a proof is not settled against an undischarged dependency", () => {
         },
       } as never);
 
-      await applyProposedChanges({ ctx: h.ctx() });
-
-      const w = await loadWorkingState(h.ctx());
-      const rec = (w as never as { solved: Record<string, { partial?: boolean }> }).solved["thm:main"];
-      expect(rec?.partial, "a consumer of an undischarged dependency must stay open").toBe(true);
+      await expect(applyProposedChanges({ ctx: h.ctx() }))
+        .rejects.toThrow(/did not reach a complete exact postimage/);
+      expect((await h.readProto()).statements[0].depends_on).toEqual(["ass:overlap"]);
     } finally { await h.dispose(); }
   }, 30000);
 });
@@ -229,6 +235,7 @@ describe("a proof is not settled when its supporting correction was rejected", (
     const h = await createDStageHarness({ qid: "stat_reject", specialization: "v1", proto: { ...PROTO, qid: "stat_reject" } });
     try {
       const proto = await h.readProto();
+      const revision = definitionRevision(proto.definitions[0], proto);
       await saveWorkingState(h.ctx(), {
         round: 1,
         solved: { "thm:main": { proof_tex: "", snapshot: snapshotMember(proto, proto.statements[0]), partial: true } },
@@ -236,27 +243,29 @@ describe("a proof is not settled when its supporting correction was rejected", (
         proposals: {
           statements: [],
           // the correction the proof relies on ...
-          definitions: [{ id: "def:env", current: "U = a", proposed: "U = a + b", reason: "fix", direction: "correct" }],
+          definitions: [{ id: "def:env", current: "U = a", proposed: "U = a + b", based_on_revision: revision, reason: "fix", direction: "correct" }],
           assumptions: [],
-          coreEdits: [{
-            kind: "statement-replace", id: "thm:main",
-            proposed: { ...STMT, depends_on: ["ass:overlap", "def:env"] },
-            reason: "rewire onto the corrected definition", direction: "correct",
-          }],
+          coreEdits: [
+            {
+              kind: "statement-replace", id: "thm:main",
+              proposed: { ...STMT, depends_on: ["ass:overlap", "def:env"] },
+              reason: "rewire onto the corrected definition", direction: "correct",
+            },
+            {
+              kind: "definition-replace", id: "def:env", based_on_revision: revision,
+              proposed: { ...proto.definitions[0], construction: "U = a + b", free_symbols: [] },
+              reason: "complete post-image", direction: "correct",
+            },
+          ],
           proofs: [{ id: "thm:main", proof_tex: "A proof using the CORRECTED U = a + b." }],
         },
       } as never);
+      await sealDefinitionProposalBasis(h, proto);
 
       // ... accepted WITHOUT it
-      await applyProposedChanges({ ctx: h.ctx(), ids: new Set(["core-edit:thm:main", "proof:thm:main"]) });
-
-      const w = await loadWorkingState(h.ctx());
-      const rec = (w as never as { solved: Record<string, { partial?: boolean }> }).solved["thm:main"];
-      expect(rec?.partial, "a proof whose support was rejected must not be settled").toBe(true);
-
-      const after = await h.readProto();
-      const def = after.definitions.find((d: { id: string }) => d.id === "def:env")!;
-      expect(def.construction, "and the rejected correction must not have applied").toBe("U = a");
+      await expect(applyProposedChanges({ ctx: h.ctx(), ids: new Set(["core-edit:thm:main", "proof:thm:main"]) }))
+        .rejects.toThrow(/complete coherence closure/);
+      expect((await h.readProto()).definitions[0].construction).toBe("U = a");
     } finally { await h.dispose(); }
   }, 30000);
 });
@@ -276,27 +285,30 @@ describe("round-6: the rejected-support guard covers every channel", () => {
     const h = await createDStageHarness({ qid: "stat_chan", specialization: "v1", proto: { ...PROTO, qid: "stat_chan" } });
     try {
       const proto = await h.readProto();
+      const revision = definitionRevision(proto.definitions[0], proto);
       await saveWorkingState(h.ctx(), {
         ...mk({
+          definitions: [{
+            id: "def:env", current: "U = a", proposed: "U = a + b",
+            based_on_revision: revision, reason: "correct the formula", direction: "correct",
+          }],
           coreEdits: [
             { kind: "statement-replace", id: "thm:main",
               proposed: { ...STMT, depends_on: ["ass:overlap", "def:env"] },
               reason: "rewire", direction: "correct" },
-            { kind: "definition-replace", id: "def:env",
-              proposed: { id: "def:env", name: "U", construction: "U = a + b", inputs: ["a"] },
+            { kind: "definition-replace", id: "def:env", based_on_revision: revision,
+              proposed: { id: "def:env", name: "U", construction: "U = a + b", inputs: ["a"], free_symbols: [] },
               reason: "correct the formula", direction: "correct" },
           ],
           proofs: [{ id: "thm:main", proof_tex: "A proof using the CORRECTED U." }],
         }),
         solved: { "thm:main": { proof_tex: "", snapshot: snapshotMember(proto, proto.statements[0]), partial: true } },
       } as never);
+      await sealDefinitionProposalBasis(h, proto);
 
       // accept the statement rewiring, REJECT the definition correction
-      await applyProposedChanges({ ctx: h.ctx(), ids: new Set(["statement-replace:thm:main", "proof:thm:main"]) });
-
-      const w = await loadWorkingState(h.ctx());
-      const rec = (w as never as { solved: Record<string, { partial?: boolean }> }).solved["thm:main"];
-      expect(rec?.partial, "a proof whose core-edit support was rejected must not settle").toBe(true);
+      await expect(applyProposedChanges({ ctx: h.ctx(), ids: new Set(["statement-replace:thm:main", "proof:thm:main"]) }))
+        .rejects.toThrow(/complete coherence closure/);
     } finally { await h.dispose(); }
   }, 30000);
 });
@@ -335,11 +347,10 @@ describe("a rejected CITATION correction is support too", () => {
       } as never);
 
       // accept the consumer, REJECT the locator correction
-      await applyProposedChanges({ ctx: h.ctx(), ids: new Set(["statement-replace:thm:main", "proof:thm:main"]) });
-
-      const w = await loadWorkingState(h.ctx());
-      const rec = (w as never as { solved: Record<string, { partial?: boolean }> }).solved["thm:main"];
-      expect(rec?.partial, "a proof resting on a rejected citation must not settle").toBe(true);
+      await expect(applyProposedChanges({
+        ctx: h.ctx(), ids: new Set(["statement-replace:thm:main", "proof:thm:main"]),
+      })).rejects.toThrow(/did not reach a complete exact postimage/);
+      expect((await h.readProto()).statements[0].depends_on).toEqual(["ass:overlap"]);
     } finally { await h.dispose(); }
   }, 30000);
 });

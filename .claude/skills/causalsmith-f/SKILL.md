@@ -32,6 +32,11 @@ stop/SIGINT, or cross D/F. Return the lease with verbatim receipts only for `f5-
 resume as `judgment`. `{resume-from}` means resume that stage yourself, not message main. At a halt paths
 are writable; always diff EMITTED versus PERSISTED.
 
+**Citation rule (the paper rule): formalize every cited node needed for the main contribution.** A cited
+node may remain an explicit conditional premise only when it is secondary and no delivered headline or
+headline-support result depends on it. If formalizing a main-contribution citation becomes substantial,
+return `citation-instantiation-overflow` to main; never weaken the consumer or silently leave it conditional.
+
 ## 🚫 NEVER HAND-PROVE. STATEMENTS ARE YOURS; PROOFS GO TO CODEX. (applies to EVERY section below)
 
 The split is **statement vs proof**, not file. You hand-edit statements, `def`s, scaffolding, imports, and
@@ -39,16 +44,19 @@ namespaces at halts—including de-laundering a narrowed definition or weakened 
 proof, tactic, substrate lemma, or compile repair:** you own the decision, statement, and prompt; Codex
 writes proof bodies. Loop: **diagnose → author statement → Codex proves → verify**.
 
+**Proof-worker dispatch is runtime-specific.** Under Codex, every agent call F initiates uses the managed
+subagent channel (`spawn_agent` / warm follow-up) with `gpt-5.6-sol` medium; do not shell-launch `codex exec`
+there. Under Claude Code there is no managed channel: dispatch proof workers with the canonical `codex exec`
+invocation from CLAUDE.md (stdin prompt, lean-lsp injected, `run_in_background: true`), `gpt-5.6-sol` medium.
+Either way the TypeScript pipeline launches its own configured adapter; never duplicate a pipeline worker by hand.
+
 Prompts decompose leaves-first, name the statement/helpers, and require `lake build <module>` green with
-zero sorry. Unspecified model/effort may use managed `spawn_agent` for orchestrator children. F proof
-workers specify `gpt-5.6-sol` medium and remain pipeline-managed `codex exec` calls with lean-lsp rooted
-at the edited package and stdin prompts.
+zero sorry.
 **Paper-local scratch:** put every disposable Lean probe, `#check` file, generated test, and temporary
 script (including `Main.lean`) in `<paper lean directory>/tmp/`, never the CausalSmith package root.
 `tmp/` is excluded from the paper inventory/build barrel; write actual paper modules only to their explicit
 production paths.
-For long pipeline proof jobs, launch Codex detached with its own `TMPDIR` and logfile, then foreground-poll; never
-overlap edit scopes or dispatch a nested Claude worker that cannot report back. After every round,
+Never overlap worker edit scopes. After every round,
 rebuild, grep source for `sorry|axiom`, run `#print axioms`, and diff signatures. A green build does not
 prove zero sorry (sorries are warnings), stale oleans mislead, and an unapproved statement change is a defect.
   **⚠ `sorry` is a WARNING, not an error.** `lake build` still EXITS 0 and prints "Build completed
@@ -73,8 +81,9 @@ discharge by F2.5—not a re-plan.
   derive existing primitives, never reinvent/assume them.
 - Classify promised theorems independently as `headline`, `headline-support`, or `secondary` from contribution
   + consumers (`crux:true` is not headline); classify dependencies by provenance: source-owned,
-  source-matched facts are `cited`, uncited reusable external debt is `gated`. A critical cited fact remains
-  cited/conditional; an uncited paper-specific step is never relabeled cited.
+  source-matched facts are `cited`, uncited reusable external debt is `gated`. Formalize cited facts consumed
+  by `headline` or `headline-support` results; only secondary cited facts with no delivered main-contribution
+  consumer may remain conditional. An uncited paper-specific step is never relabeled cited.
 - Require every §11 primitive, full L-block decomposition, and construction hypotheses. Size and unbundle each
   gate now: bounded build → minimal `gated` debt; whole absent named theory → thread only its irreducible core
   as `lean_kind:"assumption"` on every consumer. Prove note-derived reductions; if unsure, thread.
@@ -169,7 +178,7 @@ recommended tier. **No F4 verdicts ⇒ no `f5-clean`** (above). Bank + promote a
 F5 also owns DOCSTRING COVERAGE: every declaration in the run's Lean modules (umbrella root included)
 gets a docstring (first paragraph = the NL translation, with `[phrase](hyp:name)`/`[phrase](goal)`
 crosslinks covering every theorem hypothesis and its conclusion — `crosslinkDefect` hard-fails
-defective ones) via one codex pass, build-validated with byte-for-byte rollback — run before the
+defective ones) via one managed proof-worker pass, build-validated with byte-for-byte rollback — run before the
 bank-soundness token scan (the scan must cover the pass's edits) and before the crosswalk emit
 (insertions shift line numbers). A residual undocumented or crosslink-defective decl blocks F5;
 the presentation pipeline's P4 only VERIFIES coverage and refuses an undocumented bundle.
@@ -198,20 +207,21 @@ through F2.5.
 Mathlib/Causalean-missing primitive. If proving it alone yields the headline/converse/achievability/
 identification claim, it is contribution laundering, not debt; attack the core and honestly halt if it fails.
 
-Build `gated`, never `cited`: `gated` is uncited reusable debt; `cited` is source-owned, source-matched
-`def … : Prop`, recorded in `CITED_DEPENDENCIES.md`, even when load-bearing/conditional. Move a citation
-boundary up to a stronger paper-agnostic source interface when possible; never cite a paper conclusion to
-avoid proving it. After one preflight, gate only a minimal generic headline/headline-support bridge;
-secondary-only residual → `citation-instantiation-overflow`; paper-specific residual → prove, undelivered,
-or source correction, never gate.
+`gated` is uncited reusable debt; `cited` is source-owned and source-matched. Formalize a cited node when a
+delivered headline or headline-support result needs it. Only a secondary cited node with no delivered
+main-contribution consumer may remain an explicit conditional `def … : Prop` recorded in
+`CITED_DEPENDENCIES.md`. Move a citation boundary up to a stronger paper-agnostic source interface when
+possible; never cite a paper conclusion to avoid proving it. If formalizing a main-contribution citation
+expands into substantial source implementation, return `citation-instantiation-overflow` to main. A
+paper-specific residual is proved, corrected at source, or honestly escalated—never relabeled as a gate.
 
 `undelivered` is fail-closed: only independently classified `secondary` or `cited`, no delivered consumer,
 never headline/headline-support. Persist reason in plan/graph, emit no Lean decl/`@node`, render only a
 remark. F2.5/F3/F4 still converge over delivered work, and both F4 reviewers must independently verify role
 and complete reverse closure.
 
-Assume small until proved otherwise. Default: use `gpt-5.6-sol`, `--sandbox workspace-write`, lean-lsp, and disjoint
-leaves-first Codex workers to build an in-place research/`Helpers`/`CausalSmith/Mathlib` lemma; prompts
+Assume small until proved otherwise. Default: use `gpt-5.6-sol` medium proof workers (managed subagents under
+Codex, `codex exec` under Claude Code) with lean-lsp and disjoint leaves-first scopes to build an in-place research/`Helpers`/`CausalSmith/Mathlib` lemma; prompts
 require `lake build <module>` green, zero sorry, and no new axioms. Rebuild, source-grep, and `lean_verify`
 yourself; green exit alone is not proof. Parallelize only disjoint import closures, serialize coupled ones,
 and never use a nested Claude worker unless main handles `dispatch-request`. A denied/cancelled Codex call
@@ -266,7 +276,7 @@ yourself and keep going. You return to main ONLY to **return the lease**: hand b
 | `rewind:fix-source` | the Lean↔note conflict, independently reproduced (`.md`/`.tex` line + Lean line + why they conflict) |
 | `cap-block` / `substrate-unbuildable` | the halt + what a real build attempt showed (the irreducible research-level residual) |
 | `citation-instantiation-overflow` | consumer node + role; cited interface/source; the focused attempt; minimal residual split into generic vs paper-specific; downstream consumer graph; evidence that further work would implement the citation or build substantial new theory |
-| `codex-blocked` | the verbatim denial text + the exact codex command + what it was for. NOT a math finding — the harness refused the dispatch; NEVER hand-prove around it (shared reference § "A DENIED / CANCELLED codex call is an ESCALATION") |
+| `codex-blocked` | the verbatim denial text + the exact worker request (managed request or `codex exec` command) + what it was for. NOT a math finding — the harness refused the dispatch; NEVER hand-prove around it (shared reference § "A DENIED / CANCELLED codex call is an ESCALATION") |
 | `reviewer-dispute` | the reviewer's verbatim demand + the specific conjunct/decl it would break + your reasoning. Use when you believe a review is WRONG and the loop won't converge — NEVER overrule it yourself, never advance the stage pointer past it |
 | `substrate-build:study` | the `requirement.md` content + slug |
 | `f5-clean` | the F4 both-reviewer convergence verdicts (MANDATORY — the loop must have COMPLETED, not escalated; see § "the proof-review loop can never be skipped") + recommended tier |

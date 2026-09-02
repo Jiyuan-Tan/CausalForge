@@ -120,6 +120,7 @@ noncomputable def parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     observed node from a fixed-value assignment, a latent assignment, and the
     already-generated length-`n` prefix of observed values is jointly
     measurable in these three arguments](goal). -/
+@[fun_prop]
 theorem measurable_parentValuesFromPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n + 1 ≤ M.observed.card) :
     Measurable (M.parentValuesFromPrefix hn) := by

@@ -1,4 +1,6 @@
-/* Paper page (chosen interaction visual C): full-width article + slide-over drawer. */
+/* Paper page: full-width article + a DOCKED, non-modal Lean panel.
+   The panel never dims or covers the paper on a wide screen — the reading
+   column yields the right margin instead (see "docked panel" below). */
 @import "./tokens.css";
 @import "./fonts.css";
 
@@ -8,6 +10,8 @@ article.paper {
   padding: 3rem 1.5rem 6rem;
   font-family: Charter, Georgia, "Times New Roman", serif;
   line-height: 1.6;
+  /* the shift that yields the right margin to the docked panel */
+  transition: margin-right 0.24s ease;
 }
 
 article.paper h1 { font-weight: normal; font-size: 1.9rem; }
@@ -92,22 +96,30 @@ article.paper .math.display { display: block; overflow-x: auto; }
 .references ul { list-style: none; padding-left: 0; }
 .references li { margin-bottom: 0.5rem; }
 
-/* ---- slide-over drawer (light parchment, matches the paper page) ---- */
-.drawer-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(62, 52, 30, 0.18);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-  z-index: 40;
-}
+/* ---- docked, non-modal Lean panel (light parchment, matches the page) ----
+
+   There is NO scrim. The paper is never dimmed and stays fully interactive
+   while the panel is open — the reader can scroll, select text, leave margin
+   comments, and click a different formal block to swap the panel's content.
+
+   WIDE (≥1150px) it DOCKS: `article.paper` gives up its right margin so the
+   column and the panel sit side by side. Two constraints shape the geometry:
+   the column must never be pushed off the left edge, and the panel must never
+   cover it. So the shift is a clamp — never less than the margin the centred
+   column already has (on a very wide screen nothing moves; the panel simply
+   fills the existing margin), never more than what leaves the 760px column
+   fully on screen — and, in the same band, the panel's width is capped to stay
+   inside that shift. The shifted column is allowed to slide over the fixed
+   `.paper-side` rail, which fades out for the duration.
+
+   NARROW (<1150px) there is no room to dock, so the panel overlays the column
+   — still with no scrim, and the paper does not move. */
 .drawer {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(560px, 92vw);
+  width: min(600px, 92vw);
   background: #FDFCFA;
   color: #36342F;
   border-left: 1px solid #E0DAD0;
@@ -122,7 +134,26 @@ article.paper .math.display { display: block; overflow-x: auto; }
   flex-direction: column;
 }
 body.drawer-visible .drawer { transform: translateX(0); visibility: visible; transition: transform 0.22s ease; }
-body.drawer-visible .drawer-scrim { opacity: 1; pointer-events: auto; }
+
+@media (min-width: 1150px) {
+  /* Cap the panel at the free space beside the 760px column (+10px gutter), so
+     a docked panel can never overlap the text it is explaining. */
+  .drawer { width: min(600px, calc(100vw - 770px)); }
+  body.drawer-visible article.paper {
+    margin-left: auto;
+    margin-right: clamp(calc(50vw - 380px), min(620px, 48vw), calc(100vw - 760px));
+  }
+}
+
+/* The side rail is `position: fixed` in the left margin (proofmap.css) — the
+   shifted column slides over it, so it fades out while the panel is open and
+   comes back on close. Only in the range where the rail is actually fixed;
+   below 1281px it is an ordinary in-flow block above the paper, and fading it
+   there would leave a hole in the page instead of freeing space. */
+.paper-side { transition: opacity 0.2s ease; }
+@media (min-width: 1281px) {
+  body.drawer-visible .paper-side { opacity: 0; pointer-events: none; }
+}
 
 .drawer-head {
   padding: 0.95rem 1.2rem;
@@ -176,7 +207,7 @@ body.drawer-visible .drawer-scrim { opacity: 1; pointer-events: auto; }
   color: #36342F;
 }
 /* Verified / sorry status as the site's standard pills, not bare colored text. */
-.drawer .badge-ok, .drawer .badge-warn {
+.drawer .badge-ok, .drawer .badge-warn, .drawer .badge-unknown {
   font-size: var(--fs-2xs);
   font-weight: 600;
   padding: 0.08rem 0.45rem;
@@ -185,10 +216,17 @@ body.drawer-visible .drawer-scrim { opacity: 1; pointer-events: auto; }
 }
 .drawer .badge-ok { background: var(--verified-wash); color: var(--verified); }
 .drawer .badge-warn { background: var(--sorry-wash); color: var(--sorry); }
+/* "we don't know" is neither a pass nor a failure: neutral, and deliberately
+   quieter than the red warning beside it. */
+.drawer .badge-unknown { background: var(--parchment-deep); color: var(--ink-faint); font-weight: 500; }
 .drawer .kw { color: #a12d22; }
 .drawer .sorry-kw { color: #b91c1c; font-weight: 700; background: #fde8e8; border-radius: 3px; padding: 0 0.15rem; }
-.drawer pre a.lib-link { color: var(--lean); text-decoration: none; border-bottom: 1px dotted var(--lean-line); }
-.drawer pre a.lib-link:hover { border-bottom-style: solid; }
+/* Library cross-links in Lean code — quiet by default (no underline; the lean
+   blue already marks them), dotted baseline only on hover. Scoped to the whole
+   drawer, not just <pre>: structured hypothesis/conclusion rows carry them too,
+   and unscoped they fell back to default browser blue-underline. */
+.drawer a.lib-link { color: var(--lean); text-decoration: none; border-bottom: 1px solid transparent; }
+.drawer a.lib-link:hover { border-bottom-color: var(--lean-line); }
 .drawer .ident { color: var(--lean); font-weight: 700; }
 .drawer .comment { color: #6B6661; font-style: italic; }
 .drawer-meta {
@@ -228,6 +266,333 @@ details.lean-fold > summary:hover { color: var(--ink, #2E2D29); }
 details.lean-fold[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 details.lean-fold > pre { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
 .fold-count { opacity: 0.65; font-size: 0.76rem; }
+
+/* ── structured Lean statement in the panel ──────────────────────────────
+   The same reading shape as a library decl card (library.css `.stmt-*`):
+   chipped binder rows stacked over a `⊢` conclusion, so a hypothesis's role
+   stays visible while its (possibly long) type scrolls on its own. Deliberately
+   a separate `.ds-*` namespace: the library's rows are built server-side from a
+   parsed statement, these are built client-side from the payload's rows. */
+.drawer .ds-structured { margin: 0.5rem 0 1rem; }
+.drawer .ds-sect + .ds-card,
+.drawer .ds-card + .ds-card,
+.drawer .ds-lift + .ds-card,
+.drawer .ds-sect + .ds-concl { margin-top: 0.55rem; }
+/* The `∃ …` frame of an existentially-headed statement. It is scaffolding, not
+   a claim, so it gets no number and no card frame — the numbered cards below it
+   are the theorem's actual conclusions. */
+.drawer .ds-lift { margin: 0.4rem 0 0; }
+.drawer .ds-lift .ds-intro { margin-top: 0.2rem; }
+/* Qualifiers on the variables the ∃ just introduced (`0 < a_epsilon`). They
+   assert nothing on their own, so they read as quiet rows rather than ⊢ claims. */
+.drawer .ds-sides { margin-top: 0.25rem; }
+.drawer .ds-row-side { border-left-color: var(--rule); }
+.drawer .ds-chip-side { color: var(--ink-faint); background: var(--parchment-deep); }
+.drawer .ds-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+  margin-bottom: 0.2rem;
+}
+.drawer .ds-card {
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-card);
+  background: var(--parchment);
+  padding: 0.5rem 0.65rem;
+}
+.drawer .ds-rows { display: flex; flex-direction: column; }
+.drawer .ds-row {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.55rem;
+  align-items: start;
+  padding: 0.18rem 0 0.18rem 0.55rem;
+  border-left: 2px solid var(--rule);
+  border-bottom: 1px solid var(--rule-soft);
+  line-height: 1.35;
+}
+.drawer .ds-rows .ds-row:last-child { border-bottom: none; }
+.drawer .ds-row-hyp { border-left-color: var(--lean); }
+/* Chips: the load-bearing hypotheses take the interactive-Lean blue the site
+   already reserves for Lean content; bookkeeping binders stay neutral. */
+.drawer .ds-chip {
+  font-family: var(--code-font);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.08rem 0.35rem;
+  border-radius: var(--r-badge);
+  white-space: nowrap;
+  margin-top: 0.12rem;
+}
+.drawer .ds-chip-hyp { color: var(--lean); background: var(--lean-wash); }
+.drawer .ds-chip-decl { color: var(--ink-faint); background: var(--parchment-deep); }
+/* An ASSUMED external result. Amber, the site's existing "needs attention, not
+   broken" family — deliberately not the red sorry tone, which means something
+   is wrong, and not the blue, which means verified-and-clickable. `--axiom`
+   carries the text because `--warning` (used for the card rule below) does not
+   contrast on its own wash. */
+.drawer .ds-chip-cited { color: var(--axiom); background: var(--axiom-wash); cursor: help; }
+.drawer .ds-row-cited { border-left-color: var(--warning); }
+/* "verified as having no counterpart in the paper" — a FACT about the pairing,
+   not a status of the maths, so it is the quietest thing on the row: plain grey
+   text on its own line, no chip ground, spanning both grid columns so it can
+   never widen the label column. Deliberately unlike the hyp/decl/cited chips,
+   which describe what the row IS. */
+.drawer .ds-unstated {
+  grid-column: 1 / -1;
+  font-family: Charter, Georgia, "Times New Roman", serif;
+  font-size: var(--fs-2xs);
+  font-style: italic;
+  color: var(--ink-ghost);
+  cursor: help;
+  margin-top: 0.05rem;
+}
+/* Code runs keep their line breaks and scroll INSIDE the row — never the page. */
+.drawer .ds-code {
+  min-width: 0;
+  font-family: var(--code-font);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+.drawer .ds-code::-webkit-scrollbar,
+.drawer .ds-intro::-webkit-scrollbar { height: 6px; }
+.drawer .ds-code::-webkit-scrollbar-track,
+.drawer .ds-intro::-webkit-scrollbar-track { background: transparent; }
+.drawer .ds-code::-webkit-scrollbar-thumb,
+.drawer .ds-intro::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+.drawer .ds-code:hover::-webkit-scrollbar-thumb,
+.drawer .ds-intro:hover::-webkit-scrollbar-thumb { background: var(--ink-ghost); }
+.drawer .ds-concl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.55rem;
+  align-items: start;
+  margin-top: 0.35rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--rule-soft);
+}
+.drawer .ds-sect + .ds-concl,
+.drawer .ds-concl:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.drawer .ds-turnstile {
+  font-family: var(--code-font);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--lean);
+  line-height: 1.35;
+}
+/* A conclusion's non-liftable binder prefix (`∃ C ρ : ℝ, ∃ N : ℕ,`). It
+   INTRODUCES binders rather than asserting anything, so it is deliberately
+   quiet and deliberately carries no ⊢; the indent lines it up with the code
+   column the turnstile leaves below it. */
+.drawer .ds-intro {
+  font-family: var(--code-font);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-faint);
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0.3rem 0 0.1rem;
+  padding-left: 1.1rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+/* A conclusion split one level further: inset behind a lean-tinted rule, so
+   the nesting is visible without a second card frame per level. */
+.drawer .ds-subs { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem; }
+.drawer .ds-sub {
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--lean-line);
+  border-radius: 0 3px 3px 0;
+}
+/* NL↔Lean crosslink highlight (inert until a payload carries `xl` tokens).
+   Only CONTENT LINES carry `data-xl` — rows, the ∃ intro, the ⊢ leaf, a
+   component head/summary — so these are the only elements that can ever take
+   `.xl-hot`. Container selectors (.ds-card / .ds-sub / .ds-lift / .cv-card)
+   were deleted with the container carriers: nothing can set them any more. */
+.drawer .ds-row.xl-hot { background: var(--lean-wash); border-left-color: var(--lean); }
+.drawer .ds-concl.xl-hot,
+.drawer .ds-intro.xl-hot { background: var(--lean-wash); border-radius: 3px; }
+.drawer .cv-head.xl-hot,
+.drawer .cv-lean-only > summary.xl-hot,
+.drawer .cv-paper-chip.xl-hot,
+.drawer .cv-paper-flat.xl-hot {
+  background: var(--lean-wash);
+  border-color: var(--lean);
+  box-shadow: inset 2px 0 0 var(--lean);
+}
+/* Where a jump just landed. Every token partner shares the `.xl-hot` wash, so
+   after the panel scrolls the reader still needs to see WHICH row was the
+   destination. An outline, not a box-shadow, so it stacks with the wash rules
+   above instead of losing to their higher specificity. */
+.drawer .xl-jump,
+article.paper .xl-jump {
+  outline: 2px solid var(--lean);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+/* PAPER side of the crosslink: the prose spans live in the article, OUTSIDE
+   .drawer — without these rules the class toggles but nothing visibly lights
+   (the "hover does nothing" bug). Affordance (dotted baseline + pointer) only
+   while the span's own block has its panel open. */
+.formal-block.drawer-open span[data-xl] {
+  border-bottom: 1px dotted var(--lean-line);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+.formal-block span[data-xl].xl-hot {
+  background: var(--lean-wash);
+  box-shadow: inset 0 -2px 0 var(--lean);
+  border-bottom-color: transparent;
+}
+/* A crosslink span often wraps a DISPLAY formula: the wrapper is inline but
+   KaTeX display math is a block child, so the inline background paints zero
+   visible area over it. Light the block children explicitly. */
+.formal-block span[data-xl].xl-hot .katex-display,
+.formal-block span[data-xl].xl-hot .math.display {
+  background: var(--lean-wash);
+  box-shadow: inset 3px 0 0 var(--lean);
+  border-radius: 3px;
+}
+
+/* ── component cards: what the statement is built from ───────────────────── */
+.drawer .cv-card {
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--r-card);
+  background: var(--paper);
+  padding: 0.55rem 0.7rem;
+  margin: 0.6rem 0;
+}
+.drawer .cv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+.drawer .cv-decl { font-family: var(--code-font); font-size: 0.78rem; color: var(--lean); font-weight: 700; }
+/* Long module paths must break inside the card, not overflow it. */
+.drawer .cv-file {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  color: var(--ink-faint);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.drawer .cv-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.08rem 0.4rem;
+  border-radius: var(--r-badge);
+  white-space: nowrap;
+}
+.drawer .cv-tag-anchor { color: var(--accent); background: var(--accent-wash); }
+.drawer .cv-tag-env { color: var(--lean); background: var(--lean-wash); }
+.drawer .cv-tag-cited { color: var(--axiom); background: var(--axiom-wash); }
+/* An upstream declaration this bundle does not contain. Quiet grey: it is a
+   pointer to somewhere else, not a claim about this statement, so it must not
+   borrow the earned blue of `.cv-tag-env`. */
+.drawer .cv-tag-external { color: var(--ink-faint); background: var(--parchment-deep); }
+.drawer .cv-card-external { background: var(--parchment); }
+/* The card is only a head, so its link is the one interactive thing on it. */
+.drawer .cv-ext-link {
+  font-size: var(--fs-2xs);
+  color: var(--lean);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--lean-line);
+  white-space: nowrap;
+}
+.drawer .cv-ext-link:hover { border-bottom-style: solid; }
+/* Cited assumptions carry the whole result they stand in for, so the card is
+   framed in the amber family rather than the neutral card tone — what the
+   development ASSUMES should not look like what it PROVES. */
+.drawer .cv-card-cited {
+  background: var(--axiom-wash);
+  border-color: var(--warning);
+  border-left: 3px solid var(--warning);
+}
+.drawer .cv-card-cited .ds-code, .drawer .cv-card-cited pre { background: var(--paper); }
+/* The header opens the cited entry's own panel (it has no block in the paper). */
+.drawer button.cv-head-open {
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.drawer button.cv-head-open:hover .cv-decl { text-decoration: underline; }
+.drawer .cv-cited-desc {
+  font-family: Charter, Georgia, "Times New Roman", serif;
+  font-size: var(--fs-2xs);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.drawer .cv-open-go { font-size: var(--fs-2xs); color: var(--axiom); opacity: 0.85; }
+/* A pulled-in helper whose own proof is incomplete. The entry badge scans the
+   anchor only, so this is the reader's only warning about the closure. */
+.drawer .cv-tag-sorry { color: var(--sorry); background: var(--sorry-wash); }
+/* Nothing is known about this helper's proof — distinct from the red warning,
+   and distinct from saying nothing at all (which would read as "clean"). */
+.drawer .cv-tag-unknown {
+  color: var(--ink-faint);
+  background: var(--parchment-deep);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* The closure list is depth-capped; say so quietly rather than let it read as
+   the complete set of what the statement rests on. */
+.drawer .cv-truncated {
+  font-family: var(--code-font);
+  font-size: var(--fs-2xs);
+  color: var(--ink-faint);
+  margin: 0.6rem 0 0;
+}
+.drawer .cv-truncated a { color: var(--accent); }
+.drawer .cv-sect { margin: 0.9rem 0 0.4rem; }
+.drawer .cv-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-faint);
+  margin-bottom: 0.3rem;
+}
+.drawer .cv-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+/* A paper component carries NO Lean code: the statement is right there in the
+   paper, so the chip is a jump back to it (the panel stays open). */
+.drawer .cv-paper-chip {
+  font-family: var(--code-font);
+  font-size: 0.72rem;
+  color: var(--verified);
+  background: var(--verified-wash);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  padding: 0.12rem 0.55rem;
+  cursor: pointer;
+}
+.drawer .cv-paper-chip:hover { border-color: var(--verified); }
+.drawer .cv-paper-go { opacity: 0.75; }
+.drawer .cv-paper-flat {
+  font-family: var(--code-font);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  padding: 0.12rem 0.2rem;
+}
 
 /* table-of-contents sidebar (wide viewports) */
 .paper-toc {
@@ -274,6 +639,15 @@ details.lean-fold > pre { margin-top: 0; border-top-left-radius: 0; border-top-r
 
 /* printed obj-id tag in statement labels (resolves in-body P-k/L-k references) */
 .env-label .obj-tag { font-family: var(--code-font); font-size: 0.78em; color: var(--ink-soft, #5C5853); font-weight: normal; }
+
+/* ── paper-side crosslink highlight ───────────────────────────────────────
+   The panel's rows and the paper's annotated spans light TOGETHER; every
+   `.xl-hot` rule above is scoped INSIDE `.drawer`, so without these the class
+   landed on the paper span and nothing changed on screen — the pairing read as
+   one-sided to every reader, whatever the DOM said. */
+/* (paper-side [data-xl] highlight rules live with the formal-block styles
+   above — one canonical set: affordance on the open block, wash + underline
+   bar on .xl-hot, and explicit block-child rules for display math.) */
 
 /* Inline \leanref links (P2-authored): a from-note object or a realized core symbol named inline in
    the prose, kept in place but made clickable — opens its verified Lean in the drawer
@@ -334,13 +708,17 @@ details.lean-fold > pre { margin-top: 0; border-top-left-radius: 0; border-top-r
 .fl-nl { color: var(--ink-soft); flex: 1 1 16rem; min-width: 0; overflow-x: auto; overflow-y: hidden; }
 .fl-nl .katex { font-size: 1em; }
 .fl-badge { font-size: var(--fs-2xs); padding: 0.05rem 0.45rem; border-radius: var(--r-pill); white-space: nowrap; }
-.fl-matched, .fl-derived { background: var(--verified-wash); color: var(--verified); }
-.fl-drift { background: var(--sorry-wash); color: var(--sorry); }
+.fl-matched { background: var(--verified-wash); color: var(--verified); }
+/* `.fl-derived` is the retired legacy status — a faithfulness FAIL, so it washes as drift. */
+.fl-drift, .fl-derived { background: var(--sorry-wash); color: var(--sorry); }
 .fl-unreviewed { background: var(--parchment-deep); color: var(--ink-faint); }
 .fl-gh { font-size: var(--fs-sm); white-space: nowrap; }
 
-/* Print: the paper text only — no fixed chrome repeating on every page. */
+/* Print: the paper text only — no fixed chrome repeating on every page. The
+   docked panel is hidden here too, and the column's shift is undone so a paper
+   printed with the panel open is the full-width paper. */
 @media print {
-  .paper-side, .drawer, .drawer-scrim, #cs-comments, .cs-rail { display: none !important; }
+  .paper-side, .drawer, #cs-comments, .cs-rail { display: none !important; }
   article { max-width: none; }
+  body.drawer-visible article.paper { margin-right: auto !important; }
 }

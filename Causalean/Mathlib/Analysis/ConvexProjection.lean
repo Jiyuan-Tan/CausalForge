@@ -108,12 +108,14 @@ theorem convexProj_lipschitz (K : Set E) (hne : K.Nonempty) (hc : IsClosed K)
 
 /-- Metric projection onto a nonempty closed convex set varies continuously with the point being
 projected. -/
+@[fun_prop]
 theorem continuous_convexProj (K : Set E) (hne : K.Nonempty) (hc : IsClosed K)
     (hconv : Convex ℝ K) : Continuous (convexProj K hne hc hconv) :=
   (convexProj_lipschitz K hne hc hconv).continuous
 
 /-- Metric projection onto a nonempty closed convex set is measurable under the Borel
 sigma-algebra of the Hilbert space. -/
+@[fun_prop]
 theorem measurable_convexProj [MeasurableSpace E] [BorelSpace E] (K : Set E)
     (hne : K.Nonempty) (hc : IsClosed K) (hconv : Convex ℝ K) :
     Measurable (convexProj K hne hc hconv) :=
@@ -295,6 +297,7 @@ theorem loewnerProj_frobDist_le (hcC : c ≤ C)
 
 /-- Loewner projection is measurable under the coordinatewise Borel sigma-algebra on finite real
 matrix spaces. -/
+@[fun_prop]
 theorem measurable_loewnerProj (p : ℕ) [MeasurableSpace (Matrix (Fin p) (Fin p) ℝ)]
     [BorelSpace (Matrix (Fin p) (Fin p) ℝ)] (c C : ℝ) :
     Measurable (loewnerProj p c C) := by

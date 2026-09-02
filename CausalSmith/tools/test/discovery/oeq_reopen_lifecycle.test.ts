@@ -1,19 +1,30 @@
 import { describe, it, expect } from "vitest";
 import { writeFile } from "node:fs/promises";
-import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
+import {
+  applyProposedChanges,
+  findUnsafeDeleteTextReferences,
+} from "../../src/discovery/stages/d0_apply.js";
 import { runStage0Solve } from "../../src/discovery/stages/d0_solve.js";
 import {
+  appendEscalationLog,
   loadWorkingState,
   saveWorkingState,
   snapshotMember,
+  symbolBasis,
 } from "../../src/discovery/stages/d0_working.js";
 import {
   assembleSolveContext,
   oeqSourceFingerprint,
 } from "../../src/discovery/solve/context.js";
-import { reusableOeqAnswerMatches } from "../../src/discovery/solve/merge.js";
+import {
+  pruneOrphanStatementNotes,
+  removeAtomicallyDeletedOeqResolutionEdges,
+  reusableOeqAnswerMatches,
+} from "../../src/discovery/solve/merge.js";
 import { createDStageHarness } from "./d_stage_harness.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
+import { runStructuralGate } from "../../src/discovery/core/gate.js";
+import type { CoreStatement } from "../../src/discovery/core/schema.js";
 
 const question = {
   id: "oeq:coverage-and-power",
@@ -66,6 +77,9 @@ function resolutionSolver(emittedAnswer: object, proposedStatementChanges: objec
       const targets = JSON.parse(segment.slice(segment.indexOf("["), segment.lastIndexOf("]") + 1)) as Array<{ id: string }>;
       const resolvesQuestion = !emittedResolution && targets.some((target) => target.id === question.id);
       if (resolvesQuestion) emittedResolution = true;
+      const targetIds = new Set(targets.map((target) => target.id));
+      const statementChanges = (proposedStatementChanges as Array<{ id: string; proposed: string }>)
+        .filter((change) => targetIds.has(change.id));
       await writeFile(outPath, JSON.stringify({
         proofs: targets
           .filter((target) => target.id !== question.id)
@@ -75,9 +89,71 @@ function resolutionSolver(emittedAnswer: object, proposedStatementChanges: objec
           })),
         resolved_oeqs: resolvesQuestion ? [{ source_id: question.id, theorem: emittedAnswer }] : [],
         added_lemmas: [],
-        proposed_statement_changes: resolvesQuestion ? proposedStatementChanges : [],
+        proposed_statement_changes: statementChanges,
         proposed_definition_changes: [],
-        proposed_assumptions: [], proposed_core_edits: [], open_obligations: [],
+        proposed_assumptions: [],
+        proposed_core_edits: statementChanges.map((change) => {
+          const prior = change.id === question.id ? question : emittedAnswer as Record<string, unknown>;
+          const { proof_tex: _proof, source: _source, ...metadata } = prior as Record<string, unknown>;
+          return {
+            kind: "statement-replace",
+            id: change.id,
+            proposed: {
+              ...metadata,
+              id: change.id,
+              statement: change.proposed,
+              status: "to-prove",
+              free_symbols: metadata.free_symbols ?? [],
+            },
+            reason: "synchronize the corrected claim metadata",
+            direction: "correct",
+          };
+        }),
+        open_obligations: [],
+      }), "utf8");
+      return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+    },
+    runClaude: async () => { throw new Error("unused"); },
+    lean: undefined as never,
+  };
+}
+
+function recoveredSourceDeleteSolver(coreEdits: object[], targetId: string = question.id): StageDeps {
+  let emitted = false;
+  return {
+    runCodex: async ({ prompt }: { prompt: string }) => {
+      const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+      const targetBlock = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
+        .split("SOLVE_OUTPUT_PATH")[0];
+      const mine = targetBlock.includes(`"id": "${targetId}"`) && !emitted;
+      if (mine) emitted = true;
+      await writeFile(outPath, JSON.stringify({
+        proofs: [], resolved_oeqs: [], added_lemmas: [],
+        proposed_statement_changes: [], proposed_definition_changes: [],
+        proposed_assumptions: [], proposed_core_edits: mine ? coreEdits : [],
+        open_obligations: [],
+      }), "utf8");
+      return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+    },
+    runClaude: async () => { throw new Error("unused"); },
+    lean: undefined as never,
+  };
+}
+
+function recoveredSourceMutationSolver(statementChanges: object[], coreEdits: object[]): StageDeps {
+  let emitted = false;
+  return {
+    runCodex: async ({ prompt }: { prompt: string }) => {
+      const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+      const targetBlock = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "")
+        .split("SOLVE_OUTPUT_PATH")[0];
+      const mine = targetBlock.includes(`"id": "${question.id}"`) && !emitted;
+      if (mine) emitted = true;
+      await writeFile(outPath, JSON.stringify({
+        proofs: [], resolved_oeqs: [], added_lemmas: [],
+        proposed_statement_changes: mine ? statementChanges : [],
+        proposed_definition_changes: [], proposed_assumptions: [],
+        proposed_core_edits: mine ? coreEdits : [], open_obligations: [],
       }), "utf8");
       return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
     },
@@ -102,6 +178,148 @@ async function seedReopenedQuestion(h: Awaited<ReturnType<typeof createDStageHar
 }
 
 describe("resolved OEQ reopen lifecycle", () => {
+  it("normalizes symbol refs through fresh resolution and restart", async () => {
+    const symbolProto = structuredClone(proto) as any;
+    symbolProto.symbols[0].ref = question.id;
+    const symbolConsumer: CoreStatement = {
+      id: "thm:symbol-only-consumer", kind: "theorem",
+      statement: "The symbol-only consumer is valid at the current referent.",
+      depends_on: [], free_symbols: ["tau"], status: "to-prove",
+    };
+    const directConsumer: CoreStatement = {
+      id: "thm:direct-oeq-consumer", kind: "theorem",
+      statement: "The direct consumer is valid at the resolved question answer.",
+      depends_on: [question.id], free_symbols: [], status: "to-prove",
+    };
+    const agentConsumer: CoreStatement = {
+      id: "lem:agent-direct-oeq-consumer", kind: "lemma",
+      statement: "The agent-authored consumer is valid at the resolved question answer.",
+      depends_on: [question.id], free_symbols: ["tau"], status: "proved",
+      proof_tex: "Use the durable answer theorem.",
+    };
+    symbolProto.statements.push(symbolConsumer, directConsumer);
+    const h = await createDStageHarness({
+      qid: `${proto.qid}_symbol_ref`, specialization: "v1", proto: symbolProto,
+    });
+    try {
+      await saveWorkingState(h.ctx(), {
+        round: 1,
+        symbol_basis: symbolBasis(symbolProto),
+        solved: {
+          [symbolConsumer.id]: {
+            proof_tex: "Proof at the question referent.",
+            snapshot: snapshotMember(symbolProto, symbolConsumer),
+          },
+          [directConsumer.id]: {
+            proof_tex: "Proof using the question answer.",
+            snapshot: snapshotMember(symbolProto, directConsumer),
+          },
+        },
+        resolved_oeqs: {},
+      });
+      await runStage0Solve({
+        ctx: h.ctx(), state: h.state(), deps: resolutionSolver(answer),
+      });
+      const rendered = await h.readCore();
+      expect(rendered.symbols[0].ref).toBe(answer.id);
+      expect(rendered.statements.find((statement: any) => statement.id === symbolConsumer.id)?.status)
+        .toBe("to-prove");
+      expect(runStructuralGate(rendered, { requireDischarged: false }).ok).toBe(true);
+
+      const afterResolution = await h.readWorking();
+      expect(afterResolution.solved[symbolConsumer.id]?.partial).toBe(true);
+      expect(afterResolution.symbol_basis).toEqual(symbolBasis(
+        symbolProto,
+        Object.values(afterResolution.solved).flatMap((record: any) => record.node ? [record.node] : []),
+        afterResolution.resolved_oeqs,
+      ));
+
+      const restarted = await assembleSolveContext({ ctx: h.ctx(), state: h.state() });
+      expect(restarted.core.symbols[0].ref).toBe(answer.id);
+      expect(runStructuralGate(restarted.core, { requireDischarged: false }).ok).toBe(true);
+
+      // Once re-proved at the effective Q→T symbol basis, an unchanged restart
+      // must not reopen the consumer one round late.
+      const settled = await h.readWorking();
+      settled.solved[symbolConsumer.id] = {
+        proof_tex: "Proof at the answer referent.",
+        snapshot: snapshotMember(symbolProto, symbolConsumer),
+      };
+      settled.solved[directConsumer.id] = {
+        proof_tex: "Re-proved using the durable answer theorem.",
+        snapshot: snapshotMember(symbolProto, directConsumer),
+      };
+      settled.solved[answer.id] = {
+        proof_tex: answer.proof_tex,
+        snapshot: snapshotMember(symbolProto, answer as never),
+        node: answer as never,
+        owner: question.id,
+      };
+      settled.solved[agentConsumer.id] = {
+        proof_tex: "Use the durable answer theorem.",
+        snapshot: snapshotMember(symbolProto, agentConsumer),
+        node: agentConsumer,
+        owner: agentConsumer.id,
+      };
+      settled.symbol_basis = symbolBasis(
+        symbolProto,
+        Object.values(settled.solved).flatMap((record: any) => record.node ? [record.node] : []),
+        settled.resolved_oeqs,
+      );
+      await saveWorkingState(h.ctx(), settled);
+      const stableRestart = await assembleSolveContext({ ctx: h.ctx(), state: h.state() });
+      expect(stableRestart.validIds.has(symbolConsumer.id)).toBe(true);
+      expect(stableRestart.validIds.has(directConsumer.id)).toBe(true);
+      expect(stableRestart.validIds.has(agentConsumer.id)).toBe(true);
+      expect(stableRestart.next.solved[agentConsumer.id]?.node?.depends_on).toEqual([answer.id]);
+      expect(stableRestart.next.solved[agentConsumer.id]?.snapshot.depends_on).toEqual([answer.id]);
+      expect(stableRestart.core.statements.find((statement) => statement.id === agentConsumer.id)?.depends_on)
+        .toEqual([answer.id]);
+      expect(runStructuralGate(stableRestart.core, { requireDischarged: false }).ok).toBe(true);
+      expect(stableRestart.next.symbol_basis).toEqual(settled.symbol_basis);
+
+      const dangling = structuredClone(rendered);
+      dangling.symbols[0].ref = question.id;
+      expect(runStructuralGate(dangling, { requireDischarged: false }).violations)
+        .toContainEqual(expect.objectContaining({ code: "G1", where: "symbol:tau" }));
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("removes stale resolution edges when an OEQ source and answer are atomically deleted", () => {
+    const resolved = {
+      [question.id]: {
+        theorem_id: answer.id,
+        source_fingerprint: oeqSourceFingerprint(question as never),
+      },
+      "oeq:unrelated": { theorem_id: "thm:unrelated", source_fingerprint: "{}" },
+    };
+
+    removeAtomicallyDeletedOeqResolutionEdges(
+      resolved,
+      new Set([question.id, answer.id]),
+    );
+
+    expect(resolved).toEqual({
+      "oeq:unrelated": { theorem_id: "thm:unrelated", source_fingerprint: "{}" },
+    });
+  });
+
+  it("does not treat a deleted statement's own prose-note key as an inbound reference", () => {
+    const working = {
+      round: 1,
+      solved: {},
+      prose_overlay: {
+        statement_notes: {
+          [answer.id]: { justification: "This node is obsolete." },
+        },
+      },
+    };
+
+    expect(findUnsafeDeleteTextReferences(proto as never, working as never, answer.id)).toEqual([]);
+  });
+
   it("restores an agent-authored source when its adjudicated answer theorem is deleted", async () => {
     const agentProto = {
       ...structuredClone(proto),
@@ -110,7 +328,7 @@ describe("resolved OEQ reopen lifecycle", () => {
     };
     const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto: agentProto as never });
     try {
-      await saveWorkingState(h.ctx(), {
+      const resolvedWorking = {
         round: 3,
         solved: {
           [answer.id]: {
@@ -126,6 +344,11 @@ describe("resolved OEQ reopen lifecycle", () => {
             source_fingerprint: oeqSourceFingerprint(question as never),
           },
         },
+        prose_overlay: {
+          statement_notes: {
+            [question.id]: { consumer: "Restore this note when the answer is deleted." },
+          },
+        },
         proposals: {
           statements: [], definitions: [], assumptions: [], proofs: [],
           coreEdits: [{
@@ -134,7 +357,11 @@ describe("resolved OEQ reopen lifecycle", () => {
             direction: "delete-obsolete",
           }],
         },
-      });
+      };
+      // Simulate final-merge cleanup on a restarted resolved state. The agent
+      // source is absent from proto and solved, but remains canonically recoverable.
+      expect(pruneOrphanStatementNotes(agentProto as never, resolvedWorking as never)).toEqual([]);
+      await saveWorkingState(h.ctx(), resolvedWorking as never);
 
       await applyProposedChanges({ ctx: h.ctx() });
 
@@ -155,6 +382,9 @@ describe("resolved OEQ reopen lifecycle", () => {
         },
       });
       expect(working.sealed_open_oeqs?.[question.id]).toBe(oeqSourceFingerprint(question as never));
+      expect(working.prose_overlay?.statement_notes?.[question.id]).toEqual({
+        consumer: "Restore this note when the answer is deleted.",
+      });
 
       await expect(runStage0Solve({
         ctx: h.ctx(), state: h.state(),
@@ -166,12 +396,422 @@ describe("resolved OEQ reopen lifecycle", () => {
       })).resolves.toBeDefined();
       expect((await h.readWorking()).sealed_open_oeqs?.[question.id])
         .toBe(oeqSourceFingerprint(question as never));
+      expect((await h.readWorking()).prose_overlay?.statement_notes?.[question.id]).toEqual({
+        consumer: "Restore this note when the answer is deleted.",
+      });
     } finally {
       await h.dispose();
     }
   });
 
-  it("detaches an accepted narrowing while preserving the old answer theorem and proof", async () => {
+  it("explicitly deletes a canonically recovered agent-OEQ source and its note", async () => {
+    const agentProto = {
+      ...structuredClone(proto), statements: [],
+      assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+    };
+    const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto: agentProto as never });
+    try {
+      await saveWorkingState(h.ctx(), {
+        round: 3,
+        solved: {
+          [answer.id]: {
+            proof_tex: answer.proof_tex,
+            snapshot: snapshotMember(agentProto as never, answer as never),
+            node: answer as never,
+            owner: question.id,
+          },
+        },
+        resolved_oeqs: {
+          [question.id]: {
+            theorem_id: answer.id,
+            source_fingerprint: oeqSourceFingerprint(question as never),
+          },
+        },
+        prose_overlay: {
+          statement_notes: { [question.id]: { consumer: "Retire with the source." } },
+        },
+        proposals: {
+          statements: [], definitions: [], assumptions: [], proofs: [],
+          coreEdits: [{
+            kind: "statement-delete", id: question.id,
+            reason: "the residual question is no longer in scope", direction: "delete-obsolete",
+          }],
+        },
+      });
+
+      await expect(applyProposedChanges({ ctx: h.ctx(), checkOnly: true })).resolves.toBeDefined();
+      await applyProposedChanges({ ctx: h.ctx() });
+
+      const working = await h.readWorking();
+      expect(working.resolved_oeqs?.[question.id]).toBeUndefined();
+      expect(working.prose_overlay?.statement_notes?.[question.id]).toBeUndefined();
+      expect(working.solved[answer.id]?.node?.id).toBe(answer.id);
+      expect(working.solved[question.id]).toBeUndefined();
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("atomically deletes a recovered agent-OEQ source before its answer", async () => {
+    const agentProto = {
+      ...structuredClone(proto), statements: [],
+      assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+    };
+    const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto: agentProto as never });
+    try {
+      await saveWorkingState(h.ctx(), {
+        round: 3,
+        solved: {
+          [answer.id]: {
+            proof_tex: answer.proof_tex,
+            snapshot: snapshotMember(agentProto as never, answer as never),
+            node: answer as never,
+            owner: question.id,
+          },
+        },
+        resolved_oeqs: {
+          [question.id]: {
+            theorem_id: answer.id,
+            source_fingerprint: oeqSourceFingerprint(question as never),
+          },
+        },
+        prose_overlay: {
+          statement_notes: {
+            [question.id]: { consumer: "Retire with the source." },
+            [answer.id]: { consumer: "Retire with the answer." },
+          },
+        },
+        proposals: {
+          statements: [], definitions: [], assumptions: [], proofs: [],
+          coreEdits: [
+            {
+              kind: "statement-delete", id: question.id,
+              reason: "retire the source first", direction: "delete-obsolete",
+            },
+            {
+              kind: "statement-delete", id: answer.id,
+              reason: "retire its answer second", direction: "delete-obsolete",
+            },
+          ],
+        },
+      });
+
+      await expect(applyProposedChanges({ ctx: h.ctx(), checkOnly: true })).resolves.toBeDefined();
+      await applyProposedChanges({ ctx: h.ctx() });
+
+      const working = await h.readWorking();
+      expect(working.resolved_oeqs?.[question.id]).toBeUndefined();
+      expect(working.solved[question.id]).toBeUndefined();
+      expect(working.solved[answer.id]).toBeUndefined();
+      expect(working.prose_overlay?.statement_notes?.[question.id]).toBeUndefined();
+      expect(working.prose_overlay?.statement_notes?.[answer.id]).toBeUndefined();
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("carries recovered-source deletions through solve checkpoint, preview, commit, and restart", async () => {
+    const sourceDelete = {
+      kind: "statement-delete", id: question.id,
+      reason: "retire the recovered question", direction: "delete-obsolete",
+    };
+    const answerDelete = {
+      kind: "statement-delete", id: answer.id,
+      reason: "retire its answer", direction: "delete-obsolete",
+    };
+    const cases = [
+      { name: "source-only", edits: [sourceDelete], deletesAnswer: false },
+      { name: "source-first", edits: [sourceDelete, answerDelete], deletesAnswer: true },
+      { name: "answer-first", edits: [answerDelete, sourceDelete], deletesAnswer: true },
+    ];
+    const terminalDeleteStates = new Map<string, unknown>();
+    for (const testCase of cases) {
+      const agentProto = {
+        ...structuredClone(proto), statements: [],
+        assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+      };
+      const h = await createDStageHarness({
+        qid: `${proto.qid}_${testCase.name}`, specialization: "v1", proto: agentProto as never,
+      });
+      try {
+        await saveWorkingState(h.ctx(), {
+          round: 3,
+          solved: {
+            [answer.id]: {
+              proof_tex: answer.proof_tex,
+              snapshot: snapshotMember(agentProto as never, answer as never),
+              node: answer as never,
+              owner: question.id,
+            },
+          },
+          resolved_oeqs: {
+            [question.id]: {
+              theorem_id: answer.id,
+              source_fingerprint: oeqSourceFingerprint(question as never),
+            },
+          },
+          prose_overlay: {
+            statement_notes: {
+              [question.id]: { consumer: "Retire with the source." },
+              [answer.id]: { consumer: "Retire with the answer if selected." },
+            },
+          },
+        });
+        await appendEscalationLog(h.ctx(), {
+          round: 3,
+          changed: [],
+          directive: `apply the ${testCase.name} recovered-source deletion transaction`,
+          required_core_targets: [question.id],
+          require_core_changes: true,
+        });
+
+        await expect(runStage0Solve({
+          ctx: h.ctx(), state: h.state(), deps: recoveredSourceDeleteSolver(testCase.edits),
+        })).resolves.toMatchObject({ status: "checkpoint", advance: false });
+        const checkpoint = await h.readWorking();
+        expect(checkpoint.proposals?.coreEdits).toEqual(expect.arrayContaining(testCase.edits));
+
+        await expect(applyProposedChanges({ ctx: h.ctx(), checkOnly: true })).resolves.toBeDefined();
+        await applyProposedChanges({ ctx: h.ctx() });
+        const restarted = await loadWorkingState(h.ctx());
+        expect(restarted?.resolved_oeqs?.[question.id]).toBeUndefined();
+        expect(restarted?.sealed_open_oeqs?.[question.id]).toBeUndefined();
+        expect(restarted?.prose_overlay?.statement_notes?.[question.id]).toBeUndefined();
+        if (testCase.deletesAnswer) {
+          expect(restarted?.solved[answer.id]).toBeUndefined();
+          expect(restarted?.prose_overlay?.statement_notes?.[answer.id]).toBeUndefined();
+        } else {
+          expect(restarted?.solved[answer.id]?.node?.id).toBe(answer.id);
+        }
+        if (testCase.deletesAnswer) {
+          terminalDeleteStates.set(testCase.name, {
+            solved: restarted?.solved,
+            resolved_oeqs: restarted?.resolved_oeqs,
+            sealed_open_oeqs: restarted?.sealed_open_oeqs,
+            statement_notes: restarted?.prose_overlay?.statement_notes,
+          });
+        }
+      } finally {
+        await h.dispose();
+      }
+    }
+    expect(terminalDeleteStates.get("answer-first")).toEqual(terminalDeleteStates.get("source-first"));
+  });
+
+  it("uses a recovered agent OEQ as a surviving replacement endpoint end-to-end", async () => {
+    const agentProto = {
+      ...structuredClone(proto), statements: [],
+      assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+    };
+    const retired = {
+      id: "lem:retired-agent-node", kind: "lemma",
+      statement: "A retired helper is superseded by the residual question.",
+      depends_on: [], status: "proved", proof_tex: "Old proof.",
+    } as const;
+    const consumer = {
+      id: "lem:carried-consumer", kind: "lemma",
+      statement: "The carried consumer uses the retired helper.",
+      depends_on: [retired.id], status: "proved", proof_tex: "Consumer proof.",
+    } as const;
+    const h = await createDStageHarness({ qid: `${proto.qid}_replacement`, specialization: "v1", proto: agentProto as never });
+    try {
+      await saveWorkingState(h.ctx(), {
+        round: 3,
+        solved: {
+          [answer.id]: {
+            proof_tex: answer.proof_tex,
+            snapshot: snapshotMember(agentProto as never, answer as never),
+            node: answer as never,
+            owner: question.id,
+          },
+          [retired.id]: {
+            proof_tex: retired.proof_tex,
+            snapshot: snapshotMember(agentProto as never, retired as never),
+            node: retired as never,
+            owner: retired.id,
+          },
+          [consumer.id]: {
+            proof_tex: consumer.proof_tex,
+            snapshot: snapshotMember(agentProto as never, consumer as never),
+            node: consumer as never,
+            owner: consumer.id,
+          },
+        },
+        resolved_oeqs: {
+          [question.id]: {
+            theorem_id: answer.id,
+            source_fingerprint: oeqSourceFingerprint(question as never),
+          },
+        },
+      });
+      await appendEscalationLog(h.ctx(), {
+        round: 3, changed: [], directive: "supersede the retired helper by the recovered question",
+        required_core_targets: [retired.id], require_core_changes: true,
+      });
+      const edit = {
+        kind: "statement-delete", id: retired.id, replacement_id: question.id,
+        reason: "the recovered question is the surviving endpoint", direction: "delete-obsolete",
+      };
+
+      await expect(runStage0Solve({
+        ctx: h.ctx(), state: h.state(), deps: recoveredSourceDeleteSolver([edit], retired.id),
+      })).resolves.toMatchObject({ status: "checkpoint", advance: false });
+      await expect(applyProposedChanges({ ctx: h.ctx(), checkOnly: true })).resolves.toBeDefined();
+      await applyProposedChanges({ ctx: h.ctx() });
+
+      const restarted = await loadWorkingState(h.ctx());
+      expect(restarted?.solved[retired.id]).toBeUndefined();
+      expect(restarted?.resolved_oeqs?.[question.id]).toMatchObject({ theorem_id: answer.id });
+      expect(restarted?.solved[consumer.id]?.node?.depends_on).toEqual([answer.id]);
+      const assembled = await assembleSolveContext({ ctx: h.ctx(), state: h.state() });
+      expect(assembled.core.statements.find((statement) => statement.id === consumer.id)?.depends_on)
+        .toEqual([answer.id]);
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("merge restores an answer-deleted agent OEQ before later definition applicability", async () => {
+    const agentProto = {
+      ...structuredClone(proto), statements: [],
+      assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+    };
+    const h = await createDStageHarness({ qid: `${proto.qid}_answer_def`, specialization: "v1", proto: agentProto as never });
+    try {
+      await saveWorkingState(h.ctx(), {
+        round: 3,
+        solved: {
+          [answer.id]: {
+            proof_tex: answer.proof_tex,
+            snapshot: snapshotMember(agentProto as never, answer as never),
+            node: answer as never,
+            owner: question.id,
+          },
+        },
+        resolved_oeqs: {
+          [question.id]: {
+            theorem_id: answer.id,
+            source_fingerprint: oeqSourceFingerprint(question as never),
+          },
+        },
+      });
+      await appendEscalationLog(h.ctx(), {
+        round: 3, changed: [], directive: "delete the rejected answer but retain its live source dependencies",
+        required_core_targets: [answer.id], require_core_changes: true,
+      });
+      const answerDelete = {
+        kind: "statement-delete", id: answer.id,
+        reason: "reject the answer", direction: "delete-obsolete",
+      };
+      const definitionDelete = {
+        kind: "definition-delete", id: "def:procedure",
+        reason: "incorrectly assumed unused", direction: "delete-obsolete",
+      };
+
+      await expect(runStage0Solve({
+        ctx: h.ctx(), state: h.state(),
+        deps: recoveredSourceDeleteSolver([answerDelete, definitionDelete], answer.id),
+      })).resolves.toMatchObject({ status: "checkpoint", advance: false });
+      const checkpoint = await h.readWorking();
+      expect(checkpoint.proposals?.coreEdits).toContainEqual(answerDelete);
+      expect(checkpoint.proposals?.coreEdits).not.toContainEqual(definitionDelete);
+
+      await expect(applyProposedChanges({ ctx: h.ctx(), checkOnly: true })).resolves.toBeDefined();
+      await applyProposedChanges({ ctx: h.ctx() });
+      const restarted = await loadWorkingState(h.ctx());
+      expect(restarted?.solved[question.id]?.node?.depends_on).toContain("def:procedure");
+      const frozen = await h.readProto();
+      expect(frozen.definitions.some((definition: any) => definition.id === "def:procedure")).toBe(true);
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it("materializes and detaches recovered agent OEQs before claim or dependency mutation", async () => {
+    const cases = [
+      {
+        name: "claim",
+        statement: "Can the procedure attain uniform coverage alone?",
+        dependsOn: [...question.depends_on],
+        changes: [{
+          id: question.id, current: question.statement,
+          proposed: "Can the procedure attain uniform coverage alone?",
+          reason: "narrow the recovered residual", direction: "narrow",
+        }],
+      },
+      {
+        name: "dependency",
+        statement: question.statement,
+        dependsOn: ["ass:overlap"],
+        changes: [],
+      },
+    ];
+    for (const testCase of cases) {
+      const agentProto = {
+        ...structuredClone(proto), statements: [],
+        assumptions: [{ ...structuredClone(proto.assumptions[0]), used_by: [] }],
+      };
+      const h = await createDStageHarness({
+        qid: `${proto.qid}_mutate_${testCase.name}`, specialization: "v1", proto: agentProto as never,
+      });
+      try {
+        await saveWorkingState(h.ctx(), {
+          round: 3,
+          solved: {
+            [answer.id]: {
+              proof_tex: answer.proof_tex,
+              snapshot: snapshotMember(agentProto as never, answer as never),
+              node: answer as never,
+              owner: question.id,
+            },
+          },
+          resolved_oeqs: {
+            [question.id]: {
+              theorem_id: answer.id,
+              source_fingerprint: oeqSourceFingerprint(question as never),
+            },
+          },
+        });
+        await appendEscalationLog(h.ctx(), {
+          round: 3, changed: [], directive: `apply recovered-source ${testCase.name} mutation`,
+          required_core_targets: [question.id], require_core_changes: true,
+        });
+        const replacement = {
+          kind: "statement-replace", id: question.id,
+          proposed: {
+            id: question.id, kind: "openendedquestion", statement: testCase.statement,
+            depends_on: testCase.dependsOn, status: "to-prove", free_symbols: [],
+          },
+          reason: `synchronize the recovered ${testCase.name} postimage`, direction: "correct",
+        };
+
+        await expect(runStage0Solve({
+          ctx: h.ctx(), state: h.state(),
+          deps: recoveredSourceMutationSolver(testCase.changes, [replacement]),
+        })).resolves.toMatchObject({ status: "checkpoint", advance: false });
+        await expect(applyProposedChanges({ ctx: h.ctx(), checkOnly: true })).resolves.toBeDefined();
+        await applyProposedChanges({ ctx: h.ctx() });
+
+        const restarted = await loadWorkingState(h.ctx());
+        expect(restarted?.resolved_oeqs?.[question.id]).toBeUndefined();
+        expect(restarted?.solved[answer.id]?.node?.id).toBe(answer.id);
+        expect(restarted?.solved[question.id]).toMatchObject({
+          partial: true,
+          node: { statement: testCase.statement, depends_on: testCase.dependsOn, status: "to-prove" },
+        });
+        const assembled = await assembleSolveContext({ ctx: h.ctx(), state: h.state() });
+        expect(assembled.core.statements.find((statement) => statement.id === question.id)).toMatchObject({
+          statement: testCase.statement, depends_on: testCase.dependsOn, status: "to-prove",
+        });
+        expect(assembled.core.statements.find((statement) => statement.id === answer.id)?.proof_tex)
+          .toBe(answer.proof_tex);
+      } finally {
+        await h.dispose();
+      }
+    }
+  });
+
+  it("detaches an accepted claim correction while preserving the old answer theorem and proof", async () => {
     const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto });
     try {
       await saveWorkingState(h.ctx(), {
@@ -196,9 +836,19 @@ describe("resolved OEQ reopen lifecycle", () => {
             current: question.statement,
             proposed: "Can the procedure attain uniform coverage?",
             reason: "The local-power clause is answered by the obstruction theorem.",
-            direction: "narrow",
+            direction: "correct",
           }],
-          definitions: [], assumptions: [], coreEdits: [], proofs: [],
+          definitions: [], assumptions: [], proofs: [],
+          coreEdits: [{
+            kind: "statement-replace",
+            id: question.id,
+            proposed: {
+              ...question,
+              statement: "Can the procedure attain uniform coverage?",
+            },
+            reason: "synchronize the narrowed question's complete post-image",
+            direction: "correct",
+          }],
         },
       });
 
@@ -451,7 +1101,7 @@ describe("resolved OEQ reopen lifecycle", () => {
       })).resolves.toBeDefined();
 
       const working = await h.readWorking();
-      expect(working.proposals?.statements).toEqual([change]);
+      expect(working.proposals?.statements).toEqual([expect.objectContaining(change)]);
       // The unadjudicated overlay is not installed merely because the resolution
       // theorem re-emitted it; apply owns that transition after review.
       expect(working.solved[answer.id].node?.statement).toBe(answer.statement);
@@ -460,7 +1110,7 @@ describe("resolved OEQ reopen lifecycle", () => {
     }
   });
 
-  it("still fails when a reused OEQ theorem id carries different mathematics", async () => {
+  it("withholds a reused OEQ theorem id carrying different mathematics", async () => {
     const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto });
     try {
       await seedReopenedQuestion(h);
@@ -468,7 +1118,7 @@ describe("resolved OEQ reopen lifecycle", () => {
 
       await expect(runStage0Solve({
         ctx: h.ctx(), state: h.state(), deps: resolutionSolver(changed),
-      })).rejects.toThrow(/collides with non-identical existing node/);
+      })).resolves.toMatchObject({ status: "checkpoint", advance: false });
       const working = await h.readWorking();
       expect(working.resolved_oeqs?.[question.id]).toBeUndefined();
       expect(working.solved[answer.id]).toMatchObject({ proof_tex: answer.proof_tex });
@@ -486,6 +1136,9 @@ describe("resolved OEQ reopen lifecycle", () => {
     )).toBe(false);
     expect(reusableOeqAnswerMatches(base, { ...answer, status: "to-prove" } as never)).toBe(false);
     expect(reusableOeqAnswerMatches(base, { ...answer, proof_tex: `${answer.proof_tex} ` } as never)).toBe(false);
+    expect(reusableOeqAnswerMatches(base, { ...answer, free_symbols: [] } as never)).toBe(false);
+    expect(reusableOeqAnswerMatches(base, { ...answer, route: "substituted route" } as never)).toBe(false);
+    expect(reusableOeqAnswerMatches(base, { ...answer, consumer: "ignored recovery wording" } as never)).toBe(true);
   });
 
   it("rejects an otherwise identical partial carried answer", async () => {
@@ -516,7 +1169,7 @@ describe("resolved OEQ reopen lifecycle", () => {
     }
   });
 
-  it("rejects two OEQs claiming the same theorem id before applying either resolution", async () => {
+  it("withholds two OEQs claiming the same theorem id without aborting the round", async () => {
     const secondQuestion = {
       ...question,
       id: "oeq:second-question",
@@ -525,6 +1178,13 @@ describe("resolved OEQ reopen lifecycle", () => {
     const twinProto = { ...proto, statements: [question, secondQuestion] };
     const h = await createDStageHarness({ qid: proto.qid, specialization: "v1", proto: twinProto });
     try {
+      await appendEscalationLog(h.ctx(), {
+        round: 1,
+        changed: [],
+        directive: "resolve both questions without choosing between contested answer transactions",
+        require_core_changes: true,
+        required_core_targets: [question.id, secondQuestion.id],
+      });
       const deps: StageDeps = {
         runCodex: async ({ prompt }: { prompt: string }) => {
           const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
@@ -544,8 +1204,16 @@ describe("resolved OEQ reopen lifecycle", () => {
         lean: undefined as never,
       };
 
-      await expect(runStage0Solve({ ctx: h.ctx(), state: h.state(), deps }))
-        .rejects.toThrow(/multiple OEQ resolutions claiming theorem id/);
+      const result = await runStage0Solve({ ctx: h.ctx(), state: h.state(), deps });
+      expect(result).toHaveProperty("status", "checkpoint");
+      const core = await h.readCore();
+      expect(core.statements.filter((statement) =>
+        statement.id === question.id || statement.id === secondQuestion.id
+      )).toHaveLength(2);
+      expect(core.statements.some((statement) => statement.id === answer.id)).toBe(false);
+      const working = await h.readWorking();
+      expect(working.resolved_oeqs ?? {}).toEqual({});
+      expect(working.escalation_entries_consumed ?? 0).toBe(0);
     } finally {
       await h.dispose();
     }

@@ -12,7 +12,7 @@
  * auditable path for applying the ids the orchestrator accepted.
  *
  * Usage:
- *   npx tsx tools/bin/d0_apply_change.ts <qid> <spec> [--ids id1,id2 | --id <id> ... | --all | --discard-all] [--note "..."] [--check]
+ *   npx tsx tools/bin/d0_apply_change.ts <qid> <spec> [--ids id1,id2 | --id <id> ... | --all | --discard-all] [--reject-proof <id> ...] [--note "..."] [--check]
  *   (--id is repeatable and comma-safe; required for LaTeX symbol ids containing commas)
  *
  * SELECTORS may be kind-qualified. A bare id selects that node in every proposal
@@ -73,6 +73,19 @@ export async function main(): Promise<void> {
     args.splice(i, 2);
   }
   const allIds = [...commaIds, ...repeatedIds];
+  const rejectedProofIds: string[] = [];
+  for (;;) {
+    const i = args.indexOf("--reject-proof");
+    if (i === -1) break;
+    const value = args[i + 1];
+    if (value === undefined || value.startsWith("--")) {
+      console.error("d0_apply_change: --reject-proof requires one proof target id (got a flag or nothing).");
+      process.exitCode = 1;
+      return;
+    }
+    rejectedProofIds.push(value.trim());
+    args.splice(i, 2);
+  }
   const doubleQualified = validateProposalSelectors(allIds);
   if (doubleQualified.length > 0) {
     console.error(
@@ -106,7 +119,8 @@ export async function main(): Promise<void> {
   if (unknown.length > 0) {
     console.error(
       `d0_apply_change: unrecognized flag(s) ${unknown.join(", ")} — nothing was mutated. ` +
-        "Valid flags: --ids id1,id2 | --id <id> (repeatable) | --all | --discard-all | --note \"...\" | --check " +
+        "Valid flags: --ids id1,id2 | --id <id> (repeatable) | --all | --discard-all | " +
+        "--reject-proof <id> (repeatable) | --note \"...\" | --check " +
         "(--check is the preview; there is no --dry-run).",
     );
     process.exitCode = 1;
@@ -170,7 +184,10 @@ export async function main(): Promise<void> {
   // "nothing was mutated", which was false, and the round's outputs were gone.
   // A `checkOnly` pass resolves the same selection in memory and touches no file, so
   // a mistyped id or an inapplicable bundle now costs nothing.
-  const preview = await applyProposedChanges({ ctx, ids, note, checkOnly: true });
+  const rejectedProofSet = new Set(rejectedProofIds);
+  const preview = await applyProposedChanges({
+    ctx, ids, note, rejectedProofIds: rejectedProofSet, checkOnly: true,
+  });
 
   // Name the selectors that matched nothing. A typo'd id contributes 0 to both the
   // selected count and the applied count, so the atomicity guard inside
@@ -199,7 +216,9 @@ export async function main(): Promise<void> {
   // The selection is valid; now perform it for real (or stop here under --check).
   const changed = checkOnly !== -1
     ? preview
-    : await applyProposedChanges({ ctx, ids, note, checkOnly: false });
+    : await applyProposedChanges({
+      ctx, ids, note, rejectedProofIds: rejectedProofSet, checkOnly: false,
+    });
   console.log(`${checkOnly !== -1 ? "Validated" : "Applied"} ${changed.length} change(s)${checkOnly !== -1 ? " with no mutation" : ` to ${qid} proto + logged escalation`}:`);
   for (const c of changed) console.log(`  - ${c.kind} ${c.id}`);
   if (checkOnly === -1) console.log("Re-run D0 (--stop-after D0) to continue; unchanged proofs will be reused.");

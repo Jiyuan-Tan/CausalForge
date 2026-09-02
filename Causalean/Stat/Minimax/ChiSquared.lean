@@ -26,6 +26,7 @@ Main results:
 -/
 
 import Causalean.Stat.Minimax.Scheffe
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.MeasureTheory.Measure.WithDensity
@@ -68,9 +69,8 @@ theorem tvDist_le_half_sqrt_chiSqDiv (μ ν : Measure Ω)
     tvDist μ ν ≤ (1/2) * Real.sqrt (chiSqDiv μ ν) := by
   -- Density deviation `f = p − 1`.
   set f : Ω → ℝ := fun x => (μ.rnDeriv ν x).toReal - 1 with hf_def
-  have hmeas : AEStronglyMeasurable f ν :=
-    (Measure.measurable_rnDeriv μ ν).ennreal_toReal.aestronglyMeasurable.sub
-      aestronglyMeasurable_const
+  have hmeas : AEStronglyMeasurable f ν := by
+    fun_prop
   -- `f ∈ L²(ν)` since `f²` is integrable.
   have hfL2 : MemLp f 2 ν := (memLp_two_iff_integrable_sq hmeas).2 hint
   -- `|f| ∈ L²(ν)` (same norm) and `1 ∈ L²(ν)` (`ν` probability).
@@ -116,8 +116,8 @@ theorem chiSqDiv_eq [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (hac : �
     (hint : Integrable (fun x => ((μ.rnDeriv ν x).toReal - 1) ^ 2) ν) :
     chiSqDiv μ ν = (∫ x, ((μ.rnDeriv ν x).toReal) ^ 2 ∂ν) - 1 := by
   set p : Ω → ℝ := fun x => (μ.rnDeriv ν x).toReal with hp_def
-  have hmeas : AEStronglyMeasurable p ν :=
-    (Measure.measurable_rnDeriv μ ν).ennreal_toReal.aestronglyMeasurable
+  have hmeas : AEStronglyMeasurable p ν := by
+    fun_prop
   have hp_int : Integrable p ν := Measure.integrable_toReal_rnDeriv
   -- `p²` integrable, since `(p − 1)²` is and `p² = (p−1)² + 2p − 1`.
   have hp_sq : Integrable (fun x => p x ^ 2) ν := by
@@ -130,10 +130,10 @@ theorem chiSqDiv_eq [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] (hac : �
   have h2p : Integrable (fun x => 2 * p x) ν := hp_int.const_mul 2
   have hsub : ∫ x, (p x ^ 2 - 2 * p x) ∂ν
       = (∫ x, p x ^ 2 ∂ν) - 2 * (∫ x, p x ∂ν) := by
-    rw [integral_sub hp_sq h2p, integral_const_mul]
+    integral_linearity
   have hadd : ∫ x, ((p x ^ 2 - 2 * p x) + 1) ∂ν
       = (∫ x, (p x ^ 2 - 2 * p x) ∂ν) + (∫ _ : Ω, (1:ℝ) ∂ν) :=
-    integral_add (hp_sq.sub h2p) (integrable_const 1)
+    by integral_linearity
   have hexp : chiSqDiv μ ν
       = (∫ x, p x ^ 2 ∂ν) - 2 * (∫ x, p x ∂ν) + (∫ _ : Ω, (1:ℝ) ∂ν) := by
     have hcongr : ∀ x, ((μ.rnDeriv ν x).toReal - 1) ^ 2

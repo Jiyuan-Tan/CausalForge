@@ -135,6 +135,25 @@ same-topic result remains:
    discard afterward. Only when every variant and mandate is rejected, cancel each outstanding mandate with
    `bin/d0_cancel_mandate.ts <qid> <spec> --mandate-id <d0m:id> --reason "<review rationale>"`, then use
    `--discard-all --note "<why>"`. Never leave proposals live.
+Ownership/conflict warnings in D0 output (`quarantined`, `sole-emitter fallback`, `withheld`,
+`cross-unit id collision`) are NON-FATAL adjudications: the round committed everything else. Act on the
+checkpoint's conflict list by naming one canonical owner in a `d0_directive` scoped to just the withheld
+ids; never treat these warnings as a crash or rewind the round.
+
+A non-semantic D0 fatal is cheap to resume: within one accepted proposal revision, `{resume}` replays
+each unchanged unit's persisted validated output with NO new model calls (`reusing the persisted validated
+output` in the log; receipts under `discovery/solve_receipts/`, cleared on commit/apply). Re-solve only
+units reopened by a new directive, an applied D0 change, or a moved core. A new D-1.2 proposal revision is
+the exception: it invalidates ALL carried D0 proofs and starts a cold solve against the new source. Diagnose
+the fatal first; to force a fresh sample of an otherwise unchanged unit, delete its `solve_*.json`.
+An exact-target directive dispatches ONLY the open components it names (unrelated open components are
+deferred, logged as `deferring unrelated open component`); name every component you want re-solved.
+An undirected `{resume}` re-pays EVERY open component, including stuck ones whose context has not
+changed — a blind re-attempt that rarely closes anything. Treat it as a deliberate full-frontier
+sweep, never the default way to continue: drive stuck components through directives that add
+direction (literature construction, reframing, simpler standard route), and sweep undirected only
+when you actually want every open component re-attempted with fresh sampling.
+
 2. **open_obligation** (`discovery/open_obligations.json`) — a load-bearing step that won't close from
    frozen primitives. Provide a **direction**, not a blind re-solve: **consult the literature FIRST**
    (bibliography → focused agent on ar5iv/LaTeX source, PDFs unreliable) to extract the concrete
@@ -181,7 +200,11 @@ same-topic result remains:
 
 **Pick the CLI by WHO AUTHORED the bytes.** `d0_apply_change` = vote yes/no on solver-emitted variants in
 `d0_working.json:proposals`. `d0_directive` = the change is YOURS; it mutates nothing and the solver authors it AND
-re-proves it. Never draft your own accepted claim through apply. Disposal also goes through
+re-proves it. `d0_author_edits` = your own PROOF-IRRELEVANT statement prose ONLY (justification/gap/consumer
+on a non-cited, non-partial node) lands directly through the same apply gate with no solver round, no stage
+rewind, and no reopened proof; everything else — claims, dependencies, declarations, status, source, symbols,
+bibliography, the comparator table, cited leaves — is refused there and goes through `d0_directive`. Never
+draft your own accepted claim through apply. Disposal also goes through
 `d0_apply_change`: a single apply selects accepted variants, records drops in `--note`, and consumes the
 bundle. If all are rejected, cancel every outstanding exact mandate with `d0_cancel_mandate`, then
 `--discard-all --note`. A directive alone does not clear `working.proposals`.
@@ -199,7 +222,11 @@ proof bytes are never lost: every overwrite/delete is copied to the cold append-
 manual act naming a hash).
 
 **A working-state record with no `node` key is proto-frozen, not unproved** — its definition lives in
-`proto_core.json`. Reading `rec.node.status` on those returns undefined and miscounts proved nodes.
+`proto_core.json`. Reading `rec.node.status` on those returns undefined and miscounts proved nodes. Likewise a
+carried record's `node.status` is the AUTHORED carrier status and stays `to-prove` after its proof lands; the
+effective status is what `core.json` renders (a record without `partial` is settled). Never direct a
+`[STRUCTURED CORE CHANGES REQUIRED]` round to "promote" a node `core.json` already shows `proved`: merge
+discharges the re-emitted proof as a duplicate and the round aborts fail-closed — cancel the mandate instead.
 
 **A third option besides "prove it" and "retract to an OEQ":**
 `bin/d0_maintain.ts <qid> <spec> --assumption ass:<id> --reason "..." --open-object "..." --separate-object "..."`
@@ -225,12 +252,18 @@ never change a claim/formula by inference. Do not add content-guessing normaliza
 pipeline code only for a reproducible, non-heuristic mechanical invariant, with a focused regression. Log exact
 before/after, run the relevant replay/schema/render/tests, and continue without re-solving. Return `pipeline-bug`
 only when the repair is ambiguous, semantic, architectural, or cannot be verified locally.
+At the live D0 boundary, a valid persisted artifact wins over a malformed stdout receipt and common JSON/TeX
+carrier defects are normalized deterministically; only a still-untrustworthy artifact counts as a failed model
+call and permits one retry of that same solve unit—never a separate clerical-model pass over accepted mathematics.
 
-**D0 context is hybrid and automatic.** Ordinary solve units receive their target/upstream closure inline plus
-an omitted-node revision manifest and a read-only content-addressed full-core snapshot for selective lookup;
-the prose/cross-cutting owner receives the full formal view inline. Do not manually paste the whole core into a
-directive. When diagnosing a suspected omission, inspect the exact snapshot path/hash recorded in that worker's
-prompt log before rerouting mathematics.
+**D0 context is local and automatic.** Every solve unit, including the prose/cross-cutting owner, receives only
+its target/upstream statement closure and the referenced assumption/definition/symbol closure inline. A compact
+omitted-id manifest and read-only content-addressed full-core snapshot are available for selective lookup when
+the local job genuinely needs more; do not paste the whole core into a directive. Established dependencies are
+receipts rather than repeated proof bodies, while prior target proofs and partial progress remain inline so a
+repair extends rather than restarts. D-orchestration—not the Sol worker—normalizes and validates JSON/TeX/ids;
+only a still-untrustworthy carrier permits one same-unit retry. When diagnosing an omission, inspect the exact
+snapshot path/hash recorded in that worker's prompt log before rerouting mathematics.
 
 **D renders source; it does not compile PDFs.** `D0-RENDER` publishes the deterministic `.tex` preview only.
 Never run or require `pdflatex` in D, and never reroute mathematics for layout/package/compile errors; defer those

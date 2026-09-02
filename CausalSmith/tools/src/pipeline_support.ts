@@ -48,7 +48,7 @@ import {
   type ModelTokenUsage,
 } from "./token_usage.js";
 import { runClaude } from "./workers/claude.js";
-import { runCodex } from "./shared/codex.js";
+import { resolveCodexReasoningEffort, runCodex } from "./shared/codex.js";
 import { updateLedgerFile } from "./shared/ledger_update.js";
 import { createLeanLspClient, type LeanLspClient } from "./workers/leanLsp.js";
 export { getLastClaudeDiagnostic } from "./workers/claude.js";
@@ -189,10 +189,14 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
     runCodex: async (input) => {
       const t0 = Date.now();
       let usage: ModelTokenUsage | null = null;
+      const effectiveInput = {
+        ...input,
+        reasoningEffort: resolveCodexReasoningEffort(input.reasoningEffort),
+      };
       try {
         const out = await runCodex({
-          ...input,
-          prompt: input.prompt + scratchInstruction,
+          ...effectiveInput,
+          prompt: effectiveInput.prompt + scratchInstruction,
           cwd: resolveCodexWorkingDirectory({
             requestedCwd: input.cwd,
             paperTmp,
@@ -206,16 +210,16 @@ export function defaultDeps(ctx: PipelineContext, currentStage?: Stage, state?: 
           },
         });
         const duration = Date.now() - t0;
-        await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", duration, out.stdout);
-        await logTokenCall(ctx, stageId, "codex", input.model ?? "?", duration, true, usage);
+        await logAgentCall(ctx, stageId, "codex", effectiveInput.prompt, effectiveInput.model ?? "?", effectiveInput.reasoningEffort, duration, out.stdout);
+        await logTokenCall(ctx, stageId, "codex", effectiveInput.model ?? "?", duration, true, usage);
         return out;
       } catch (err) {
         // "Not lost": a crashed/timed-out call still gets a log entry (with any
         // partial stdout the error carries) before the throw propagates.
         const partial = (err as { stdout?: string })?.stdout ?? "";
         const duration = Date.now() - t0;
-        await logAgentCall(ctx, stageId, "codex", input.prompt, input.model ?? "?", input.reasoningEffort ?? "?", duration, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
-        await logTokenCall(ctx, stageId, "codex", input.model ?? "?", duration, false, usage);
+        await logAgentCall(ctx, stageId, "codex", effectiveInput.prompt, effectiveInput.model ?? "?", effectiveInput.reasoningEffort, duration, `[CALL THREW: ${err instanceof Error ? err.message : String(err)}]\n${partial}`);
+        await logTokenCall(ctx, stageId, "codex", effectiveInput.model ?? "?", duration, false, usage);
         throw err;
       }
     },

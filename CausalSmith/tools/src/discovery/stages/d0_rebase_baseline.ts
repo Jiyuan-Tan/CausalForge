@@ -357,11 +357,12 @@ export function prepareD0BaselineRebase(args: {
     );
   }
   const actionableTail = pendingEscalations.filter((entry) =>
-    entry.changed.length > 0 || !!entry.directive || !!entry.require_core_changes ||
+    entry.provenance_only !== true &&
+    (entry.changed.length > 0 || !!entry.directive || !!entry.require_core_changes ||
     (entry.required_core_targets ?? []).length > 0 || (entry.required_core_edits ?? []).length > 0 ||
     (entry.required_core_edit_mandates ?? []).length > 0 ||
     (entry.cancelled_core_edit_mandates ?? []).length > 0 || !!entry.cancel_require_core_changes ||
-    (entry.cancelled_core_targets ?? []).length > 0);
+    (entry.cancelled_core_targets ?? []).length > 0));
   if (actionableTail.length > 0) {
     throw new Error(
       `current cursor has ${actionableTail.length} pending actionable escalation journal row(s); consume/adjudicate them first`,

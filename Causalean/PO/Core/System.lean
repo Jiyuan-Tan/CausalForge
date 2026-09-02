@@ -10,6 +10,7 @@ a graph-free tuple `(V, {X_v}, Ω, μ, {v(r)})` together with the derived
 world-eval map and the PO operator (pushforward).
 -/
 
+import Causalean.Tactic.Attr
 import Causalean.PO.Core.Regime
 
 /-! # Potential Outcome Systems
@@ -50,6 +51,11 @@ namespace POSystem
 attribute [instance] POSystem.decEqV POSystem.fintypeV
   POSystem.measX POSystem.measΩ POSystem.isProb
 
+-- The world-evaluation regularity field of a potential-outcome system is
+-- registered with `fun_prop`, so the joint measurability of the assignment
+-- carried by the system is reachable by the standard function-property tactics.
+attribute [fun_prop] POSystem.measurable_eval
+
 variable (P : POSystem)
 
 /-- A coordinate potential outcome maps each unit to the value a selected
@@ -59,9 +65,22 @@ Implements the per-coordinate part of def:po-operator. -/
 def component (r : Regime P.V P.X) (v : P.V) : P.Ω → P.X v :=
   fun ω => P.eval r ω v
 
+/-- At a given unit, the coordinate potential outcome of a variable under a
+regime is the system's world evaluation of that variable at that unit under
+that regime.
+
+This is the simp-shaped form of the definition of the coordinate potential
+outcome: rewriting with it replaces the project constant by the system's own
+evaluation map. -/
+@[causal_defs_simps]
+lemma component_apply (r : Regime P.V P.X) (v : P.V) (ω : P.Ω) :
+    P.component r v ω = P.eval r ω v :=
+  rfl
+
 /-- For [an intervention regime `r`](hyp:r) and [a variable `v`](hyp:v), [the
 coordinate potential outcome of `v` under `r` is a measurable function of the
 unit](goal). -/
+@[fun_prop]
 lemma measurable_component (r : Regime P.V P.X) (v : P.V) :
     Measurable (P.component r v) :=
   (measurable_pi_apply v).comp (P.measurable_eval r)
@@ -74,8 +93,22 @@ def poVariable (r : Regime P.V P.X) (Y : Finset P.V) :
     P.Ω → ValuesOn Y P.X :=
   fun ω v => P.eval r ω v.val
 
+/-- Reading off one coordinate of the joint potential outcome of a finite
+variable set under a regime gives the system's world evaluation of that
+coordinate's variable, at the same unit and under the same regime.
+
+This is the simp-shaped form of the definition of the joint potential outcome:
+rewriting with it replaces the project constant by the system's own evaluation
+map. -/
+@[causal_defs_simps]
+lemma poVariable_apply (r : Regime P.V P.X) (Y : Finset P.V) (ω : P.Ω)
+    (v : {w : P.V // w ∈ Y}) :
+    P.poVariable r Y ω v = P.eval r ω v.val :=
+  rfl
+
 /-- The joint potential outcome for any finite set of variables under any
 intervention regime is measurable. -/
+@[fun_prop]
 lemma measurable_poVariable (r : Regime P.V P.X) (Y : Finset P.V) :
     Measurable (P.poVariable r Y) := by
   refine measurable_pi_lambda _ ?_
@@ -90,11 +123,23 @@ noncomputable def poOperator (r : Regime P.V P.X) (Y : Finset P.V) :
     Measure (ValuesOn Y P.X) :=
   (P.μ).map (P.poVariable r Y)
 
+/-- The potential-outcome law of a finite variable set under a regime is the
+pushforward of the system's probability measure along the joint potential
+outcome for that set and regime.
+
+This is the simp-shaped form of the definition of the potential-outcome law:
+rewriting with it replaces the project constant by an explicit pushforward
+measure, after which the pushforward API applies. -/
+@[causal_defs_simps]
+lemma poOperator_eq (r : Regime P.V P.X) (Y : Finset P.V) :
+    P.poOperator r Y = (P.μ).map (P.poVariable r Y) :=
+  rfl
+
 /-- The potential-outcome law of a finite set of variables under a regime is a
 probability measure. -/
 instance (r : Regime P.V P.X) (Y : Finset P.V) :
     IsProbabilityMeasure (P.poOperator r Y) := by
-  unfold poOperator
+  simp only [causal_defs_simps]
   exact MeasureTheory.Measure.isProbabilityMeasure_map
     (P.measurable_poVariable r Y).aemeasurable
 

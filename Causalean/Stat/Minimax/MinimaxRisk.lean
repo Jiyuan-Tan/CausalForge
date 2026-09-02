@@ -189,6 +189,7 @@ noncomputable def affinePullbackEstimator (phi : X → Y) (a b : ℝ)
 /-- If [the observation rule is measurable](hyp:hphi) and [the target estimator is
 measurable](hyp:htarget), then [undoing an affine change after pulling the estimator back
 through the observation rule is measurable](goal). -/
+@[fun_prop]
 theorem measurable_affinePullbackEstimator {phi : X → Y} {a b : ℝ}
     {targetEst : Y → ℝ} (hphi : Measurable phi)
     (htarget : Measurable targetEst) :

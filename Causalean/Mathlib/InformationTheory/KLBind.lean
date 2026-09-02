@@ -157,7 +157,7 @@ lemma measurableEmbedding_base_recording
     (proj : Ω → B) (hproj : Measurable proj)
     (hgraph : MeasurableSet {p : B × Ω | p.1 = proj p.2}) :
     MeasurableEmbedding (fun ω : Ω => (proj ω, ω)) := by
-  have hg : Measurable (fun ω : Ω => (proj ω, ω)) := hproj.prod measurable_id
+  have hg : Measurable (fun ω : Ω => (proj ω, ω)) := by fun_prop
   have hRange :
       Set.range (fun ω : Ω => (proj ω, ω))
         = {p : B × Ω | p.1 = proj p.2} := by
@@ -180,7 +180,7 @@ lemma map_bind_eq_compProd_of_base_recording
     (hκ_fib : ∀ᵐ b ∂m, (κ b) {ω | proj ω = b}ᶜ = 0) :
     (m.bind κ).map (fun ω : Ω => (proj ω, ω)) = m ⊗ₘ κ := by
   let g : Ω → B × Ω := fun ω => (proj ω, ω)
-  have hg : Measurable g := hproj.prod measurable_id
+  have hg : Measurable g := by fun_prop
   calc
     (m.bind κ).map (fun ω : Ω => (proj ω, ω)) = m.bind (Kernel.map κ g) := by
       simpa [g] using Measure.map_comp (μ := m) (κ := κ) (f := g) hg

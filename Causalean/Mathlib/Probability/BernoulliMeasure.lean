@@ -133,6 +133,7 @@ lemma bernoulliLaw_ac_of_reference_interior {p q : ℝ}
 
 /-- The log-likelihood ratio between any two real-parameter Bernoulli laws is
 integrable under the first law. -/
+@[fun_prop]
 lemma bernoulliLaw_llr_integrable {p q : ℝ} :
     Integrable (llr (bernoulliLaw p) (bernoulliLaw q)) (bernoulliLaw p) := by
   unfold bernoulliLaw
@@ -280,6 +281,7 @@ noncomputable def bernoulliBool (p : ℝ) : Measure Bool :=
 
 /-- The Bool-valued Bernoulli distribution varies measurably with its success probability,
 so a measurable probability parameter can be used to construct a measurable kernel. -/
+@[fun_prop]
 lemma measurable_bernoulliBool : Measurable bernoulliBool := by
   unfold bernoulliBool
   fun_prop

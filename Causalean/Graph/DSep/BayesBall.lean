@@ -396,9 +396,9 @@ namespace BayesBallRegression
 
 private abbrev ChainNode := Fin 3
 
-private abbrev y : ChainNode := ⟨0, by decide⟩
-private abbrev w : ChainNode := ⟨1, by decide⟩
-private abbrev x : ChainNode := ⟨2, by decide⟩
+private abbrev y : ChainNode := 0
+private abbrev w : ChainNode := 1
+private abbrev x : ChainNode := 2
 
 private def chainDAG : DAG ChainNode where
   edge u v := (u = y ∧ v = w) ∨ (u = w ∧ v = x)

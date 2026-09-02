@@ -93,6 +93,7 @@ def finsetCoordProj
   fun x i => x i.val
 
 /-- `finsetCoordProj` is measurable. -/
+@[fun_prop]
 theorem measurable_finsetCoordProj
     {ι : Type*}
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] (S : Finset ι) :
@@ -116,6 +117,7 @@ def finsetCoordProjFromCondResidual
       x.2 ⟨i.val, Finset.mem_sdiff.mpr ⟨i.property, hiU⟩⟩
 
 /-- The residual reassembly map is measurable. -/
+@[fun_prop]
 theorem measurable_finsetCoordProjFromCondResidual
     {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] (S U : Finset ι) :
@@ -151,6 +153,7 @@ def finsetCoordProjPairFromUnion
      fun i => x ⟨i.val, Finset.mem_union.mpr (Or.inr i.property)⟩)
 
 /-- The union sub-block extraction map is measurable. -/
+@[fun_prop]
 theorem measurable_finsetCoordProjPairFromUnion
     {ι : Type*} [DecidableEq ι]
     {Ω : ι → Type*} [∀ i, MeasurableSpace (Ω i)] (A B : Finset ι) :
@@ -466,7 +469,7 @@ theorem condIndepFun_of_indepFun_indep
     CondIndepFun (MeasurableSpace.comap Z inferInstance) _hZ.comap_le X Y μ := by
   have hle₂ : MeasurableSpace.comap Z inferInstance ≤ (inferInstance : MeasurableSpace Ω) :=
     _hZ.comap_le
-  have hXYmeas : Measurable (fun ω => (X ω, Y ω)) := hX.prod hY
+  have hXYmeas : Measurable (fun ω => (X ω, Y ω)) := by fun_prop
   have hle₁ : MeasurableSpace.comap (fun ω => (X ω, Y ω)) inferInstance ≤
       (inferInstance : MeasurableSpace Ω) := hXYmeas.comap_le
   rw [condIndepFun_iff_condExp_inter_preimage_eq_mul hX hY]

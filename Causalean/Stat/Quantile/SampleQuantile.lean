@@ -72,6 +72,7 @@ noncomputable def quantileIF (τ q₀ f₀ : ℝ) : ℝ → ℝ :=
   fun z => (τ - cdfStat q₀ z) / f₀
 
 /-- The sample-quantile influence function is measurable. -/
+@[fun_prop]
 lemma measurable_quantileIF (τ q₀ f₀ : ℝ) : Measurable (quantileIF τ q₀ f₀) :=
   (measurable_const.sub (measurable_cdfStat q₀)).div_const f₀
 
@@ -86,6 +87,7 @@ lemma quantileIF_mean_zero [IsProbabilityMeasure P] {τ q₀ f₀ : ℝ}
     sub_self, zero_div]
 
 /-- The quantile influence function is square-integrable (it is bounded). -/
+@[fun_prop]
 lemma quantileIF_sq_integrable [IsProbabilityMeasure P] {τ q₀ f₀ : ℝ} :
     Integrable (fun z => (quantileIF τ q₀ f₀ z) ^ 2) P := by
   refine (integrable_const (((|τ| + 1) / |f₀|) ^ 2)).mono'

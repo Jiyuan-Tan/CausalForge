@@ -129,19 +129,19 @@ def wSWIGGraph : SWIGGraph WNode where
   unobserved_is_random := by
     intro u hu; simp at hu
     rcases hu with rfl | rfl | rfl <;> exact ⟨_, rfl⟩
-  obs_unobs_disjoint := by native_decide
-  dag_edges_classified := by native_decide
+  obs_unobs_disjoint := by decide
+  dag_edges_classified := by decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by
     intro u hu; simp at hu
     rcases hu with rfl | rfl | rfl <;>
       simpa [initialSWIG] using
-        (swig_random_root_of_root wDAG ∅ _ (by native_decide))
+        (swig_random_root_of_root wDAG ∅ _ (by decide))
   fixed_outside_fixed_isolated := by
     intro n _
-    cases n <;> exact ⟨by native_decide, by native_decide⟩
-  all_children_in_observed := by native_decide
+    cases n <;> exact ⟨by decide, by decide⟩
+  all_children_in_observed := by decide
 
 section DGP
 

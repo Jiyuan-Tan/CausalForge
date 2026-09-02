@@ -102,6 +102,7 @@ noncomputable def gaussianCutoff (m σ : γ → ℝ) (Λ : ℝ) (ω : P.Ω) : �
   m (S.factualX ω) + σ (S.factualX ω) * Causalean.Mathlib.probit (Λ / (Λ + 1))
 
 /-- The explicit Gaussian cutoff is `σ(X)`-measurable. -/
+@[fun_prop]
 theorem measurable_gaussianCutoff {m σ : γ → ℝ} (hm : Measurable m) (hσ : Measurable σ) (Λ : ℝ) :
     Measurable[S.sigmaX] (S.gaussianCutoff m σ Λ) := by
   unfold POBackdoorSystem.gaussianCutoff

@@ -109,6 +109,11 @@ attribute [instance] PanelPOSystem.fintypeI PanelPOSystem.fintypeT
   PanelPOSystem.decI PanelPOSystem.decT PanelPOSystem.measE
   PanelPOSystem.measΩ PanelPOSystem.measA PanelPOSystem.probμ
 
+-- The regularity fields are the leaf atoms every panel side condition bottoms out in;
+-- registering them lets `fun_prop` discharge those goals without naming the projection.
+attribute [fun_prop] PanelPOSystem.D_meas PanelPOSystem.Y_meas
+  PanelPOSystem.Y_integrable PanelPOSystem.Yobs_meas PanelPOSystem.Yobs_integrable
+
 namespace PanelPOSystem
 
 variable (P : PanelPOSystem)

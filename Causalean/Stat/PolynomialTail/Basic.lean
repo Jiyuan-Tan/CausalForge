@@ -103,6 +103,10 @@ structure TailSetup (P : Measure Ω) (U : Ω → ℝ) : Prop where
   /-- `U` is a.s. bounded by `1`. -/
   le_one : ∀ᵐ ω ∂P, U ω ≤ 1
 
+-- Measurability of the tail variable is exposed to the function-property tactics, so a proof
+-- holding a `TailSetup` hypothesis need not name the field.
+attribute [fun_prop] TailSetup.measurable
+
 /-! ## The three definitions -/
 
 /-- The truncated denominator `max U λ` shared by the inverse-moment integrands. -/
@@ -127,21 +131,25 @@ noncomputable def trimWeight (U : Ω → ℝ) (lam : ℝ) (ω : Ω) : ℝ :=
 variable {U : Ω → ℝ} {lam : ℝ}
 
 /-- The truncated denominator is measurable when `U` is measurable. -/
+@[fun_prop]
 theorem measurable_truncDen (hU : Measurable U) :
     Measurable (truncDen U lam) :=
   hU.max measurable_const
 
 /-- The inverse second-moment integrand is measurable when `U` is measurable. -/
+@[fun_prop]
 theorem measurable_invMomentI_integrand (hU : Measurable U) :
     Measurable (fun ω => U ω / (max (U ω) lam) ^ 2) :=
   hU.div ((hU.max measurable_const).pow_const 2)
 
 /-- The inverse first-moment integrand is measurable when `U` is measurable. -/
+@[fun_prop]
 theorem measurable_invMomentJ_integrand (hU : Measurable U) :
     Measurable (fun ω => (max (U ω) lam)⁻¹) :=
   (hU.max measurable_const).inv
 
 /-- The leftover trimming weight is measurable when `U` is measurable. -/
+@[fun_prop]
 theorem measurable_trimWeight (hU : Measurable U) :
     Measurable (trimWeight U lam) :=
   measurable_const.sub (hU.div (hU.max measurable_const))

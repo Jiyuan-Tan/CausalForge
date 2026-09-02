@@ -58,6 +58,7 @@ lemma signedTail_eq_indicator_sub (a : ℝ) :
     simp [signedTail, tailInd_apply, Set.indicator_apply, Set.mem_Ico, hsa, hs0]
 
 /-- `signedTail a` is measurable in the tail variable `s`. -/
+@[fun_prop]
 lemma measurable_signedTail (a : ℝ) : Measurable (signedTail a) := by
   rw [signedTail_eq_indicator_sub]
   exact (measurable_const.indicator measurableSet_Ico).sub
@@ -65,6 +66,7 @@ lemma measurable_signedTail (a : ℝ) : Measurable (signedTail a) := by
 
 /-- `signedTail` is jointly measurable in `(a, s)`, since `{z | z.2 < z.1}` is
 an open (hence measurable) subset of `ℝ × ℝ`. -/
+@[fun_prop]
 lemma measurable_signedTail_uncurry :
     Measurable (fun z : ℝ × ℝ => signedTail z.1 z.2) := by
   have hxa : MeasurableSet {z : ℝ × ℝ | z.2 < z.1} :=
@@ -86,6 +88,7 @@ lemma abs_signedTail_le_one (a s : ℝ) : |signedTail a s| ≤ 1 := by
 
 /-- `signedTail a` is Lebesgue integrable: it is a bounded function supported on
 a bounded interval. -/
+@[fun_prop]
 lemma integrable_signedTail (a : ℝ) : Integrable (signedTail a) volume := by
   rw [signedTail_eq_indicator_sub]
   refine Integrable.sub ?_ ?_
@@ -177,6 +180,7 @@ lemma integral_abs_signedTail (a : ℝ) : (∫ s : ℝ, |signedTail a s| ∂volu
 
 /-- The tensor product `(s, t) ↦ signedTail x s * signedTail y t` is integrable
 on `ℝ × ℝ` for Lebesgue×Lebesgue. -/
+@[fun_prop]
 lemma integrable_signedTail_prod (x y : ℝ) :
     Integrable (fun q : ℝ × ℝ => signedTail x q.1 * signedTail y q.2)
       (volume.prod volume) :=

@@ -210,7 +210,7 @@ function collapseWs(text: string): string {
 // Depth that also toggles +1 while inside a `‖ … ‖` norm span — otherwise a
 // bare `-` inside `‖x - y‖` reads as a top-level subtraction and gets treated
 // as a sum-split point.
-function normAwareDepths(text: string): number[] {
+export function normAwareDepths(text: string): number[] {
   const depths: number[] = new Array(text.length);
   let depth = 0;
   let inNorm = false;
@@ -231,7 +231,7 @@ function normAwareDepths(text: string): number[] {
 // sibling conjunct of whatever came before the quantifier. Scanning stops the
 // instant it sees a top-level ∀/∃, so only ∧'s that occur before any
 // quantifier are treated as splitting the current clause into conjuncts.
-function topLevelConjuncts(text: string): string[] {
+export function topLevelConjuncts(text: string): string[] {
   const depths = normAwareDepths(text);
   const parts: string[] = [];
   let start = 0;
@@ -317,7 +317,7 @@ function breakLines(raw: string, depth: number): StmtLine[] {
 // chain (`∀ …, P → Q → … → R`) detection
 // ---------------------------------------------------------------------------
 
-function stripLeadingQuantifier(text: string): { header: string; rest: string } | null {
+export function stripLeadingQuantifier(text: string): { header: string; rest: string } | null {
   const t = text.trim();
   if (!/^[∀∃]/.test(t)) return null;
   const commaIdx = topLevelIndexOf(t, ",");
@@ -356,10 +356,29 @@ function formatBody(text: string): StmtBody {
 // binder-telescope + conclusion scan
 // ---------------------------------------------------------------------------
 
-interface ScannedGroup {
+export interface ScannedGroup {
   raw: string;
   start: number;
   end: number;
+}
+
+/** What `scanTheoremSignature` recovers from a `theorem`/`lemma` source: the
+ *  binder groups and the conclusion, each located by ABSOLUTE offset into the
+ *  comment-blanked text (`cleaned`), whose character positions coincide with
+ *  the original source's. */
+export interface SignatureScan {
+  /** `rawSource` with comments blanked in place (same length, same offsets). */
+  cleaned: string;
+  groups: ScannedGroup[];
+  conclusionText: string;
+  /** Absolute offsets of the conclusion inside `cleaned`; `conclusionEnd < 0`
+   *  when the conclusion runs to the end of the text (no proof marker). */
+  conclusionStart: number;
+  conclusionEnd: number;
+  telescopeStart: number;
+  /** Syntax between the declaration's binder groups and proposition body:
+   * `:` for a theorem, `: Prop :=` for a Prop-valued definition. */
+  goalPrefix: string;
 }
 
 // Operates on the FULL (comment-stripped) text starting at `start`, reporting
@@ -369,7 +388,7 @@ interface ScannedGroup {
 function scanSignature(
   text: string,
   start: number,
-): { groups: ScannedGroup[]; conclusionText: string; telescopeStart: number } | null {
+): Omit<SignatureScan, "cleaned"> | null {
   const n = text.length;
   let i = start;
   const skipWs = () => {
@@ -397,7 +416,66 @@ function scanSignature(
     conclusionEnd >= 0 ? text.slice(conclusionStart, conclusionEnd) : text.slice(conclusionStart)
   ).trim();
   if (!conclusionText) return null;
-  return { groups, conclusionText, telescopeStart: start };
+  return { groups, conclusionText, conclusionStart, conclusionEnd, telescopeStart: start, goalPrefix: ":" };
+}
+
+/**
+ * Locates a `theorem`/`lemma` declaration's binder telescope and conclusion in
+ * its authored source. Shared by the library page's structured renderer
+ * (`structureTheoremSource`) and the paper drawer's hypothesis/conclusion view
+ * (`paperLean.ts`), so both read the SAME parse of a signature. Returns `null`
+ * for anything that doesn't confidently parse.
+ */
+export function scanTheoremSignature(rawSource: string): SignatureScan | null {
+  const cleaned = stripLeanComments(rawSource);
+  const m = cleaned.match(/\b(theorem|lemma)\s+([^\s({[⦃:]+)/);
+  if (!m || m.index === undefined) return null;
+  let telescopeStart = m.index + m[0].length;
+  // optional explicit universe params `.{u, v}` — advance past without
+  // slicing, so every downstream index stays absolute into `cleaned`/`rawSource`.
+  const uniMatch = cleaned.slice(telescopeStart).match(/^\s*\.\{[^}]*\}/);
+  if (uniMatch) telescopeStart += uniMatch[0].length;
+  const scan = scanSignature(cleaned, telescopeStart);
+  return scan ? { cleaned, ...scan } : null;
+}
+
+/**
+ * Locates the proposition BODY of `def name (...) : Prop := body`. Definitions
+ * with another codomain remain ordinary definitions: only the explicit `Prop`
+ * annotation makes it safe to present the body as hypotheses and conclusions.
+ */
+export function scanPropDefinitionSignature(rawSource: string): SignatureScan | null {
+  const cleaned = stripLeanComments(rawSource);
+  const m = cleaned.match(/\bdef\s+([^\s({[⦃:]+)/);
+  if (!m || m.index === undefined) return null;
+  let telescopeStart = m.index + m[0].length;
+  const uniMatch = cleaned.slice(telescopeStart).match(/^\s*\.\{[^}]*\}/);
+  if (uniMatch) telescopeStart += uniMatch[0].length;
+  const typeScan = scanSignature(cleaned, telescopeStart);
+  if (!typeScan || typeScan.conclusionEnd < 0) return null;
+  if (typeScan.conclusionText.replace(/\s+/g, "") !== "Prop") return null;
+
+  let markerStart = typeScan.conclusionEnd;
+  while (markerStart < cleaned.length && /\s/.test(cleaned[markerStart])) markerStart++;
+  if (cleaned.slice(markerStart, markerStart + 2) !== ":=") return null;
+  let conclusionStart = markerStart + 2;
+  while (conclusionStart < cleaned.length && /\s/.test(cleaned[conclusionStart])) conclusionStart++;
+  const conclusionText = cleaned.slice(conclusionStart).trim();
+  if (!conclusionText) return null;
+  return {
+    cleaned,
+    groups: typeScan.groups,
+    conclusionText,
+    conclusionStart,
+    conclusionEnd: -1,
+    telescopeStart,
+    goalPrefix: ": Prop :=",
+  };
+}
+
+/** A proposition-bearing declaration accepted by the structured renderer. */
+export function scanPropositionSignature(rawSource: string): SignatureScan | null {
+  return scanTheoremSignature(rawSource) ?? scanPropDefinitionSignature(rawSource);
 }
 
 // The gap between two consecutive groups (or between the telescope's start
@@ -426,14 +504,14 @@ function extractComment(gap: string): string | null {
 // that only meaningfully appear inside a proposition.
 const PROP_HINT = /[≤≥≠↔∈⊆∀∃]|(?:^|[^:<>])=(?:[^=]|$)|\s<\s/;
 
-function classifyChip(names: string, bracketKind: "explicit" | "implicit", typeText: string): "hyp" | "decl" {
+export function classifyChip(names: string, bracketKind: "explicit" | "implicit", typeText: string): "hyp" | "decl" {
   if (bracketKind === "implicit") return "decl";
   const toks = names.split(/\s+/).filter(Boolean);
   if (toks.length > 0 && toks.every((t) => /^h/i.test(t) && t.length > 1)) return "hyp";
   return PROP_HINT.test(typeText) ? "hyp" : "decl";
 }
 
-function parseBinderGroup(raw: string): Omit<BinderRow, "kind"> | null {
+export function parseBinderGroup(raw: string): Omit<BinderRow, "kind"> | null {
   const open = raw[0];
   const inner = raw.slice(1, -1).trim();
   if (!inner) return null;
@@ -468,7 +546,7 @@ function parseBinderGroup(raw: string): Omit<BinderRow, "kind"> | null {
  * codebase also interleaves `-- section comment` lines between binder groups
  * inside a long telescope.
  */
-function stripLeanComments(text: string): string {
+export function stripLeanComments(text: string): string {
   let out = "";
   let i = 0;
   const n = text.length;
@@ -510,6 +588,13 @@ function stripLeanComments(text: string): string {
 // a unicode-fragile `\bname\b` regex) to test whether a trailing typeclass
 // row's type mentions an earlier row's own name as a whole token.
 const IDENT_RE = /[A-Za-z_¡-￿][A-Za-z0-9_.'¡-￿]*/g;
+
+/** Every identifier-shaped token in `text`, using the same tokenizer
+ *  `linkifyStatement` uses (a unicode-aware `\bname\b` is not expressible), so
+ *  reference extraction and highlighting agree on what counts as a name. */
+export function identifierTokens(text: string): string[] {
+  return [...text.matchAll(IDENT_RE)].map((m) => m[0]);
+}
 
 function bodyPlainText(body: StmtBody): string {
   const lines = isChain(body)
@@ -574,15 +659,7 @@ function mergeAttachedInstances(rows: StatementItem[]): StatementItem[] {
  * scrollable rendering in that case.
  */
 export function structureTheoremSource(rawSource: string): StructuredStatement | null {
-  const cleaned = stripLeanComments(rawSource);
-  const m = cleaned.match(/\b(theorem|lemma)\s+([^\s({[⦃:]+)/);
-  if (!m || m.index === undefined) return null;
-  let telescopeStart = m.index + m[0].length;
-  // optional explicit universe params `.{u, v}` — advance past without
-  // slicing, so every downstream index stays absolute into `cleaned`/`rawSource`.
-  const uniMatch = cleaned.slice(telescopeStart).match(/^\s*\.\{[^}]*\}/);
-  if (uniMatch) telescopeStart += uniMatch[0].length;
-  const scan = scanSignature(cleaned, telescopeStart);
+  const scan = scanTheoremSignature(rawSource);
   if (!scan) return null;
 
   const rows: StatementItem[] = [];

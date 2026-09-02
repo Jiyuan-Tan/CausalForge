@@ -84,6 +84,13 @@ export function wiredSnapshot(proto: Core, member: CoreStatement, proofTex: stri
 /** Record a proof, computing its snapshot against the frozen `proto` over the
  *  wired closure (authored deps + claim/proof-cited ids). */
 export function recordProof(working: WorkingState, proto: Core, spec: ProofRecordSpec): void {
+  // `recordProof` replaces the entire record. A frozen overlay can carry a durable
+  // semantic owner even though its statement lives in proto_core.json. Preserve that
+  // owner when an ordinary proof refresh omits `owner`; an explicitly supplied owner
+  // still performs the intentional ownership transition. Without this inheritance, a
+  // reviewed claim-change/proof round silently stripped the owner and a later sibling
+  // revalidation was quarantined as ownerless.
+  const owner = spec.owner ?? working.solved[spec.id]?.owner;
   const common = {
     proof_tex: spec.proofTex,
     snapshot: wiredSnapshot(proto, spec.snapshotOf, spec.proofTex),
@@ -98,9 +105,9 @@ export function recordProof(working: WorkingState, proto: Core, spec: ProofRecor
           ...common,
           ...partial,
           node: spec.partial ? spec.node : { ...spec.node, proof_tex: spec.proofTex },
-          ...(spec.owner !== undefined ? { owner: spec.owner } : {}),
+          ...(owner !== undefined ? { owner } : {}),
         }
-      : { ...common, ...partial };
+      : { ...common, ...partial, ...(owner !== undefined ? { owner } : {}) };
 }
 
 // (Batch B: `refreshSnapshots` is gone. Snapshots are computed once, at the

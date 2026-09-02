@@ -23,6 +23,7 @@ degeneracy of `g`); the CLT and variance bounds live in sibling files.
 -/
 
 import Causalean.Stat.Sample
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 /-!
@@ -86,10 +87,12 @@ theorem uProj_integral_eq_zero [IsProbabilityMeasure P] {h : X → X → ℝ}
     (hint : Integrable (fun x => ∫ y, h x y ∂P) P) :
     ∫ x, uProj h P x ∂P = 0 := by
   unfold uProj
-  rw [integral_sub hint (integrable_const _), integral_const]
+  integral_linearity
+  rw [integral_const]
   simp [uMean]
 
 /-- The first projection is integrable whenever `x ↦ ∫ h(x, ·) dP` is. -/
+@[fun_prop]
 theorem uProj_integrable [IsFiniteMeasure P] {h : X → X → ℝ}
     (hint : Integrable (fun x => ∫ y, h x y ∂P) P) :
     Integrable (uProj h P) P := by
@@ -105,15 +108,13 @@ theorem uDegen_integral_right_eq_zero [IsProbabilityMeasure P] {h : X → X → 
     ∫ y, uDegen h P x y ∂P = 0 := by
   have hproj_int : Integrable (uProj h P) P := uProj_integrable hint
   have hproj_zero : ∫ y, uProj h P y ∂P = 0 := uProj_integral_eq_zero hint
-  have hconst : Integrable (fun _ : X => uMean h P + uProj h P x) P := integrable_const _
-  have hib : Integrable (fun y => h x y - uProj h P y) P := hx.sub hproj_int
   have key : ∫ y, uDegen h P x y ∂P
       = (∫ y, h x y ∂P) - (∫ y, uProj h P y ∂P) - (uMean h P + uProj h P x) := by
     rw [show (fun y => uDegen h P x y)
           = (fun y => (h x y - uProj h P y) - (uMean h P + uProj h P x))
         from funext fun y => by simp only [uDegen]; ring]
-    rw [integral_sub hib hconst, integral_sub hx hproj_int, integral_const,
-        probReal_univ, one_smul]
+    integral_linearity
+    simp only [integral_const, probReal_univ, one_smul]
   rw [key, hproj_zero]
   -- goal: (∫ h x y dP) - 0 - (θ + h₁ x) = 0, where h₁ x = (∫ h x y dP) - θ
   unfold uProj

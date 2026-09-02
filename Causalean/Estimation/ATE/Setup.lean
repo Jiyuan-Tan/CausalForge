@@ -22,6 +22,7 @@ file collects:
 import Causalean.PO.ID.Exact.ATE
 import Causalean.Stat.Orthogonality.Orthogonality
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Causalean.Tactic.Attr
 
 /-!
 Defines the estimation-layer structure used by back-door ATE estimators.
@@ -90,6 +91,8 @@ structure BackdoorEstimationSystem (P : POSystem) (γ : Type*)
     toPOBackdoorSystem.propScore true
       =ᵐ[P.μ] (fun ω => e_val (toPOBackdoorSystem.factualX ω))
 
+attribute [fun_prop] BackdoorEstimationSystem.μ_meas BackdoorEstimationSystem.e_meas
+
 namespace BackdoorEstimationSystem
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
@@ -122,6 +125,13 @@ def StrictOverlap (S : BackdoorEstimationSystem P γ) (ε : ℝ) : Prop :=
 noncomputable def P_X (S : BackdoorEstimationSystem P γ) : Measure γ :=
   P.μ.map S.toPOBackdoorSystem.factualX
 
+/-- The covariate marginal is the image of the population measure under the factual covariate
+map. -/
+@[causal_defs_simps]
+lemma P_X_eq (S : BackdoorEstimationSystem P γ) :
+    S.P_X = P.μ.map S.toPOBackdoorSystem.factualX :=
+  rfl
+
 /-- Data triple `(X, A, Y) : Ω → γ × Bool × ℝ`. -/
 noncomputable def factualZ (S : BackdoorEstimationSystem P γ) :
     P.Ω → γ × Bool × ℝ :=
@@ -130,6 +140,7 @@ noncomputable def factualZ (S : BackdoorEstimationSystem P γ) :
             S.toPOBackdoorSystem.factualY ω)
 
 /-- The observed covariate, treatment, and outcome triple is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ (S : BackdoorEstimationSystem P γ) :
     Measurable S.factualZ :=
   (S.toPOBackdoorSystem.measurable_factualX).prodMk
@@ -140,6 +151,13 @@ lemma measurable_factualZ (S : BackdoorEstimationSystem P γ) :
 noncomputable def P_Z (S : BackdoorEstimationSystem P γ) :
     Measure (γ × Bool × ℝ) :=
   P.μ.map S.factualZ
+
+/-- The joint data law is the image of the population measure under the map recording the
+observed covariate, treatment, and outcome. -/
+@[causal_defs_simps]
+lemma P_Z_eq (S : BackdoorEstimationSystem P γ) :
+    S.P_Z = P.μ.map S.factualZ :=
+  rfl
 
 /-- The covariate marginal `P_X` is the pushforward of `P_Z` along the
 projection `(x, a, y) ↦ x`.  Used to bridge integrals/`eLpNorm` between

@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 
 import Causalean.Stat.Sample
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 import Mathlib.Probability.Moments.Basic
@@ -45,6 +46,7 @@ noncomputable def bernoulliCount
     (S : Causalean.Stat.IIDSample Ω 𝒳 μ P) (f : 𝒳 → ℝ) (m : ℕ) : Ω → ℝ :=
   fun ω ↦ ∑ i ∈ Finset.range m, f (S.Z i ω)
 
+@[fun_prop]
 lemma bernoulliCount_measurable
     (S : Causalean.Stat.IIDSample Ω 𝒳 μ P) {f : 𝒳 → ℝ}
     (hf : Measurable f) (m : ℕ) : Measurable (bernoulliCount S f m) := by
@@ -111,8 +113,8 @@ lemma mgf_le_of_mem_Icc_zero_one [IsProbabilityMeasure P] {f : 𝒳 → ℝ}
       integral_mono_ae hexpint ((integrable_const 1).add (hfint.mul_const _))
         (h01.mono fun x hx ↦ exp_mul_le_secant hx)
     _ = 1 + (∫ x, f x ∂P) * (exp s - 1) := by
-      rw [integral_add (integrable_const 1) (hfint.mul_const _), integral_const,
-        integral_mul_const]
+      integral_linearity
+      rw [integral_const]
       simp
     _ ≤ exp ((∫ x, f x ∂P) * (exp s - 1)) := by
       simpa [add_comm] using Real.add_one_le_exp ((∫ x, f x ∂P) * (exp s - 1))
@@ -136,8 +138,8 @@ lemma mgf_eq_of_mem_zero_one
       · simp [hx]
       · simp [hx]
     _ = 1 + p * (exp s - 1) := by
-      rw [integral_add (integrable_const 1) (hf_int.mul_const _), integral_const,
-        integral_mul_const, hmean]
+      integral_linearity
+      rw [integral_const, hmean]
       simp
 
 /-- The moment generating function of the count of the first `m` observations of

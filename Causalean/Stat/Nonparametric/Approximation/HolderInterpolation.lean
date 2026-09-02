@@ -280,7 +280,8 @@ private lemma prodKernel_monomial_p_cube {d : ℕ} {k : ℝ → ℝ} {m j : ℕ}
   exact prodKernel_multiIndex_moment_cube hk_supp hk_mom ν (by omega) (by omega)
 
 /-- The tensor kernel is continuous when the 1-D kernel is. -/
-private lemma prodKernel_continuous {d : ℕ} {k : ℝ → ℝ} (hk : Continuous k) :
+@[fun_prop]
+lemma prodKernel_continuous {d : ℕ} {k : ℝ → ℝ} (hk : Continuous k) :
     Continuous (prodKernel k d) := by
   unfold prodKernel
   exact continuous_finset_prod _ (fun i _ => hk.comp (continuous_apply i))

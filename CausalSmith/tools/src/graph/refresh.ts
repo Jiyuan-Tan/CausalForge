@@ -94,14 +94,12 @@ function resolveVerdictNode(graph: FormalizationGraph, objId: string): GraphNode
 
 /**
  * Write a gate's reviewer crosswalk verdicts back onto the graph's node review
- * state (status + the statement hash it was reviewed at). `derivedObjIds` (F4's
- * PRIMITIVE-vs-DERIVED audit) override a `matched` to `derived`. Pure; caller persists.
+ * state (status + the statement hash it was reviewed at). Pure; caller persists.
  */
 export function applyVerdictsToGraph(
   graph: FormalizationGraph,
   crosswalk: CrosswalkEntry[],
   hashes: Record<string, string>,
-  derivedObjIds: Set<string> = new Set(),
   /** Reviewer-facing target → exact graph node id. `null` marks a synthetic symbol-cluster
    *  row, which is persisted separately in `symbolReview` by proof_reviewer. */
   targetOwners?: ReadonlyMap<string, string | null>,
@@ -110,8 +108,7 @@ export function applyVerdictsToGraph(
   // earlier row applied if callers catch the deterministic resolution error.
   const resolved: { entry: CrosswalkEntry; node: GraphNode; status: ReviewStatus }[] = [];
   for (const e of crosswalk) {
-    let status = verdictToStatus(e.verdict);
-    if (status === "matched" && derivedObjIds.has(e.obj_id)) status = "derived";
+    const status = verdictToStatus(e.verdict);
     if (!status) continue;
     let node: GraphNode;
     if (targetOwners?.has(e.obj_id)) {

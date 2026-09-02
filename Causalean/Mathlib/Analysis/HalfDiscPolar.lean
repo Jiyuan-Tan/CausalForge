@@ -23,6 +23,7 @@ noncomputable def planarRadius (z : ℝ × ℝ) : ℝ :=
 
 /-- The Euclidean radius on the coordinate plane is Borel measurable. -/
 -- @node: planarRadius_measurable
+@[fun_prop]
 lemma planarRadius_measurable : Measurable planarRadius := by
   exact ((measurable_fst.pow_const 2).add
     (measurable_snd.pow_const 2)).sqrt

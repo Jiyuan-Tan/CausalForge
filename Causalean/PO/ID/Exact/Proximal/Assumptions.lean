@@ -114,13 +114,30 @@ structure Assumptions
   /-- Integrability of h(1,W,X). -/
   integrable_h1WX : Integrable (fun ω => h (true, S.W ω, S.X ω)) μ
 
+/-! ### `fun_prop` accessors for the bundled side conditions
+
+A bare structure-field projection is invisible to `fun_prop`, so the bundled measurability
+and integrability facts are registered here; a consumer holding the bundle can then reach
+them with a bare `fun_prop`. Only fields whose bundle argument is
+recoverable from the conclusion are registered — `integrable_YofA0` and `integrable_YofA1`
+never mention the bundle, so unification cannot find it and they stay name-called. -/
+
+attribute [fun_prop]
+  Assumptions.measurable_h
+  Assumptions.integrable_hAWX
+  Assumptions.integrable_h0WX
+  Assumptions.integrable_h1WX
+
 namespace Assumptions
 
 variable {S : POProximalSystem P γ_X γ_Z γ_W γ_U}
   {μ : Measure P.Ω} [IsFiniteMeasure μ] [StandardBorelSpace P.Ω]
 
 omit [IsFiniteMeasure μ] [StandardBorelSpace P.Ω] in
-private lemma integrable_mul_indicator {α : Type*} [MeasurableSpace α]
+/-- The product of an integrable measurable function with a variable indicator is
+integrable, because the indicator only ever takes the values one and zero. -/
+@[fun_prop]
+lemma integrable_mul_indicator {α : Type*} [MeasurableSpace α]
     [MeasurableSingletonClass α] (a : POVar P α) (x : α)
     {f : P.Ω → ℝ} (hf : Integrable f μ) (hf_meas : Measurable f) :
     Integrable (fun ω => f ω * a.indicator x ω) μ := by
@@ -128,6 +145,26 @@ private lemma integrable_mul_indicator {α : Type*} [MeasurableSpace α]
     (hf_meas.mul (a.measurable_indicator x (measurableSet_singleton x))).aestronglyMeasurable ?_
   refine Filter.Eventually.of_forall (fun ω => ?_)
   rcases a.indicator_eq_one_or_zero x ω with h | h <;> simp [h]
+
+/-- **Arm-uniform bridge integrability.** The bundle records integrability of the outcome
+bridge evaluated at each of the two treatment arms separately; this states the same fact
+for a treatment arm left as a variable, which is the form every downstream side condition
+actually needs. -/
+@[fun_prop]
+lemma integrable_h_arm (HA : Assumptions S μ) (a : Bool) :
+    Integrable (fun ω => HA.h (a, S.W ω, S.X ω)) μ := by
+  cases a
+  · exact HA.integrable_h0WX
+  · exact HA.integrable_h1WX
+
+/-- **Arm-uniform potential-outcome integrability.** The bundle records integrability of
+the potential outcome under each of the two treatment arms separately; this states the
+same fact for a treatment arm left as a variable. -/
+lemma integrable_YofA (HA : Assumptions S μ) (a : Bool) :
+    Integrable (S.YofA a) μ := by
+  cases a
+  · exact HA.integrable_YofA0
+  · exact HA.integrable_YofA1
 
 /-- **Compatibility projection.** Under [the proximal identifying assumption
 bundle](hyp:HA), and given [the treatment and outcome are distinct

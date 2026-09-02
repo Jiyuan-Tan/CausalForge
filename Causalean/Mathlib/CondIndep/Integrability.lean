@@ -68,9 +68,7 @@ theorem ae_pos_condExp_indicator_of_le
     dsimp [p, f]
     exact MeasureTheory.condExp_nonneg (Filter.Eventually.of_forall fun ω =>
       Set.indicator_nonneg (fun _ _ => zero_le_one) _)
-  have hp_sm : StronglyMeasurable[m₁] p := by
-    dsimp [p, f]
-    exact MeasureTheory.stronglyMeasurable_condExp
+  have hp_sm : StronglyMeasurable[m₁] p := by fun_prop
   have hS_m1 : MeasurableSet[m₁] S := by
     dsimp [S]
     exact hp_sm.measurable (measurableSet_singleton (0 : ℝ))
@@ -158,9 +156,7 @@ theorem integrableOn_of_condExp_indicator_mul
   have hpC_int : MeasureTheory.Integrable (μ[IC | m]) μ :=
     MeasureTheory.integrable_condExp
   let gn : ℕ → Ω → ℝ := fun n ω => min (max (g ω) 0) (n : ℝ)
-  have hgn_meas (n : ℕ) : Measurable[m] (gn n) := by
-    dsimp [gn]
-    exact (_hg_meas.max measurable_const).min measurable_const
+  have hgn_meas (n : ℕ) : Measurable[m] (gn n) := by fun_prop
   have hgn_sm (n : ℕ) :
       @MeasureTheory.StronglyMeasurable Ω ℝ _ m (gn n) :=
     (hgn_meas n).stronglyMeasurable

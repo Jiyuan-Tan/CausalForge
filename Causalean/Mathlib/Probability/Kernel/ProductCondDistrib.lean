@@ -42,8 +42,7 @@ theorem condDistrib_fst_of_compProd_prod
         (X := fun z : α × (β × γ) => z.1)
         (μ := Measure.compProd ρ (ProbabilityTheory.Kernel.prod κ η))) =ᵐ[ρ] κ := by
   have hX : Measurable (fun z : α × (β × γ) => z.1) := measurable_fst
-  have hY : Measurable (fun z : α × (β × γ) => z.2.1) :=
-    measurable_fst.comp measurable_snd
+  have hY : Measurable (fun z : α × (β × γ) => z.2.1) := by fun_prop
   have hbase :
       (Measure.compProd ρ (ProbabilityTheory.Kernel.prod κ η)).map
         (fun z : α × (β × γ) => z.1) = ρ := by
@@ -85,8 +84,7 @@ theorem condDistrib_snd_of_compProd_prod
         (X := fun z : α × (β × γ) => z.1)
         (μ := Measure.compProd ρ (ProbabilityTheory.Kernel.prod κ η))) =ᵐ[ρ] η := by
   have hX : Measurable (fun z : α × (β × γ) => z.1) := measurable_fst
-  have hY : Measurable (fun z : α × (β × γ) => z.2.2) :=
-    measurable_snd.comp measurable_snd
+  have hY : Measurable (fun z : α × (β × γ) => z.2.2) := by fun_prop
   have hbase :
       (Measure.compProd ρ (ProbabilityTheory.Kernel.prod κ η)).map
         (fun z : α × (β × γ) => z.1) = ρ := by

@@ -80,8 +80,8 @@ theorem trimWeight_bias_bound [IsProbabilityMeasure P]
       exact mul_nonneg hmsβ (Set.indicator_nonneg (fun _ _ => zero_le_one) ω)
   -- integrability of `wλ · g` (bounded a.e. by the integrable RHS)
   have hRHS_int : Integrable
-      (fun ω => (Cβ * lam ^ β) * Set.indicator {ω | U ω < lam} (fun _ => (1 : ℝ)) ω) P :=
-    (integrable_const (1 : ℝ)).indicator hsmeas |>.const_mul _
+      (fun ω => (Cβ * lam ^ β) * Set.indicator {ω | U ω < lam} (fun _ => (1 : ℝ)) ω) P := by
+    fun_prop
   have hint : Integrable (fun ω => trimWeight U lam ω * g ω) P := by
     refine Integrable.mono' hRHS_int
       ((measurable_trimWeight hsetup.measurable).mul hg_meas).aestronglyMeasurable ?_

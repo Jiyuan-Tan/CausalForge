@@ -37,6 +37,7 @@ File is project-agnostic and a candidate for upstream contribution to Mathlib.
 import Causalean.Stat.CLT.AsymptoticLinearity
 import Causalean.Stat.Limit.WLLN
 import Mathlib.Probability.CDF
+import Causalean.Tactic.Attr
 
 /-! # Empirical Distribution Functions
 
@@ -55,26 +56,35 @@ variable {Ω : Type*} [MeasurableSpace Ω] {μ : Measure Ω} {P : Measure ℝ}
 noncomputable def cdfStat (y : ℝ) : ℝ → ℝ :=
   Set.indicator (Set.Iic y) (fun _ => (1 : ℝ))
 
+/-- The lower-ray indicator statistic at level `y` is the indicator function of the
+lower ray `(-∞, y]`, taking the value one on that ray and zero off it. -/
+@[causal_defs_simps]
+lemma cdfStat_eq (y : ℝ) :
+    cdfStat y = Set.indicator (Set.Iic y) (fun _ => (1 : ℝ)) :=
+  rfl
+
 /-- The lower-ray indicator is measurable. -/
+@[fun_prop]
 lemma measurable_cdfStat (y : ℝ) : Measurable (cdfStat y) :=
   measurable_const.indicator measurableSet_Iic
 
 /-- The lower-ray indicator is nonnegative. -/
 lemma cdfStat_nonneg (y z : ℝ) : 0 ≤ cdfStat y z := by
-  unfold cdfStat
+  simp only [causal_defs_simps]
   by_cases h : z ∈ Set.Iic y <;> simp [Set.indicator_of_mem, Set.indicator_of_notMem, h]
 
 /-- The lower-ray indicator is bounded above by one. -/
 lemma cdfStat_le_one (y z : ℝ) : cdfStat y z ≤ 1 := by
-  unfold cdfStat
+  simp only [causal_defs_simps]
   by_cases h : z ∈ Set.Iic y <;> simp [Set.indicator_of_mem, Set.indicator_of_notMem, h]
 
 /-- The indicator is idempotent: `(1{z ≤ y})² = 1{z ≤ y}`. -/
 lemma cdfStat_sq (y z : ℝ) : (cdfStat y z) ^ 2 = cdfStat y z := by
-  unfold cdfStat
+  simp only [causal_defs_simps]
   by_cases h : z ∈ Set.Iic y <;> simp [Set.indicator_of_mem, Set.indicator_of_notMem, h]
 
 /-- `cdfStat y` is integrable (bounded by `1` on a finite measure). -/
+@[fun_prop]
 lemma integrable_cdfStat [IsProbabilityMeasure P] (y : ℝ) : Integrable (cdfStat y) P := by
   refine (integrable_const (1 : ℝ)).mono' (measurable_cdfStat y).aestronglyMeasurable ?_
   filter_upwards with z
@@ -85,7 +95,7 @@ lemma integrable_cdfStat [IsProbabilityMeasure P] (y : ℝ) : Integrable (cdfSta
 lemma integral_cdfStat [IsProbabilityMeasure P] (y : ℝ) :
     ∫ z, cdfStat y z ∂P = cdf P y := by
   rw [cdf_eq_real]
-  unfold cdfStat
+  simp only [causal_defs_simps]
   rw [MeasureTheory.integral_indicator measurableSet_Iic, setIntegral_const]
   simp [measureReal_def]
 
@@ -103,6 +113,7 @@ noncomputable def cdfIF (P : Measure ℝ) (y : ℝ) : ℝ → ℝ :=
   fun z => cdfStat y z - cdf P y
 
 /-- The empirical-cdf influence function is measurable. -/
+@[fun_prop]
 lemma measurable_cdfIF (y : ℝ) : Measurable (cdfIF P y) :=
   (measurable_cdfStat y).sub measurable_const
 
@@ -120,14 +131,15 @@ lemma abs_cdfIF_le_one [IsProbabilityMeasure P] (y z : ℝ) : |cdfIF P y z| ≤ 
   unfold cdfIF
   by_cases hz : z ≤ y
   · have h1 : cdfStat y z = 1 := by
-      unfold cdfStat; rw [Set.indicator_of_mem (Set.mem_Iic.mpr hz)]
+      simp only [causal_defs_simps]; rw [Set.indicator_of_mem (Set.mem_Iic.mpr hz)]
     rw [h1, abs_le]; constructor <;> linarith
   · have h0 : cdfStat y z = 0 := by
-      unfold cdfStat
+      simp only [causal_defs_simps]
       rw [Set.indicator_of_notMem (by simp only [Set.mem_Iic]; exact hz)]
     rw [h0, zero_sub, abs_neg, abs_of_nonneg hF0]; linarith
 
 /-- `cdfIF` is square-integrable (it is bounded). -/
+@[fun_prop]
 lemma cdfIF_sq_integrable [IsProbabilityMeasure P] (y : ℝ) :
     Integrable (fun z => (cdfIF P y z) ^ 2) P := by
   refine (integrable_const (1 : ℝ)).mono'
@@ -150,8 +162,8 @@ lemma cdfIF_variance [IsProbabilityMeasure P] (y : ℝ) :
     rw [show (cdfStat y z - cdf P y) ^ 2
           = (cdfStat y z) ^ 2 - 2 * cdf P y * cdfStat y z + (cdf P y) ^ 2 from by ring,
       cdfStat_sq y z]
-  have h1 : Integrable (fun z => cdfStat y z - 2 * cdf P y * cdfStat y z) P :=
-    hstat_int.sub (hstat_int.const_mul (2 * cdf P y))
+  have h1 : Integrable (fun z => cdfStat y z - 2 * cdf P y * cdfStat y z) P := by
+    fun_prop
   rw [hexpand, integral_add h1 (integrable_const _),
     integral_sub hstat_int (hstat_int.const_mul (2 * cdf P y)), integral_const_mul]
   simp only [integral_cdfStat, integral_const, probReal_univ, one_smul]

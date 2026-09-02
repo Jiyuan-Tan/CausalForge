@@ -223,6 +223,7 @@ noncomputable def inducedEval
     M'.evalMap (combinedFixed M s r) ℓ ⟨v.val, hmem⟩
 
 /-- The induced joint evaluation map of a structural model is measurable in the latent draw. -/
+@[fun_prop]
 lemma inducedEval_measurable (M : Causalean.SCM N Ω)
     (s : SCM.FixedValues M) (r : Regime (ObsIdx M) (obsValue M)) :
     Measurable (inducedEval M s r) := by

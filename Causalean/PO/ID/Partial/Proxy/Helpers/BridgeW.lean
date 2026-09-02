@@ -11,6 +11,7 @@ Authors: Jiyuan Tan
 -/
 
 import Causalean.PO.ID.Partial.Proxy.Helpers.Common
+import Causalean.Tactic.CondexpLinearity
 
 /-! # W-proxy bridge identity for partial identification
 
@@ -172,7 +173,7 @@ lemma condIntYofA_eq_h_arm (HA : POProximalSystem.WBasedAssumptions S μ) (a : B
     --   ⇒ μ[Y | σ_AUX] =ᵐ μ[h(A,W,X) | σ_AUX] globally.
     have hCEsub : μ[fun ω => S.Y ω - HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]
         =ᵐ[μ] μ[S.Y | S.σ_AUX] - μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX] :=
-      MeasureTheory.condExp_sub (m := S.σ_AUX) hYInt hhAInt
+      by condexp_linearity
     have hBridge : μ[S.Y | S.σ_AUX]
         =ᵐ[μ] μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX] := by
       have h1 := hCEsub.symm.trans HA.bridge
@@ -219,7 +220,7 @@ lemma condIntYofA_eq_h_arm (HA : POProximalSystem.WBasedAssumptions S μ) (a : B
       have hCE_dsub : μ[d | S.σ_AUX]
           =ᵐ[μ] μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]
               - μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX] :=
-        MeasureTheory.condExp_sub (m := S.σ_AUX) hhAInt hhArmInt
+        by condexp_linearity
       have hCE_dsub_restrict :
           μ[d | S.σ_AUX]
             =ᵐ[μ.restrict {ω | S.A ω = a}]

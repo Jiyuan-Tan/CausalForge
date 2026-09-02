@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 
+import Causalean.Tactic.SumAlgebraSimps
 import Causalean.Panel.Weighted.AdditiveSpan
 import Causalean.Panel.Weighted.Subspace
 import Mathlib.Algebra.BigOperators.Field
@@ -131,27 +132,21 @@ private theorem ddot_orthogonal_unit_of_card_ne_zero (w : UnitWeights Unit)
       ∑ t, ∑ i, w.p i * V i t = ∑ i, ∑ t, w.p i * V i t := by
         rw [Finset.sum_comm]
       _ = ∑ i, w.p i * ∑ t, V i t := by
-        apply Finset.sum_congr rfl
-        intro i _hi
-        rw [Finset.mul_sum]
+        simp only [sum_algebra_simps]
       _ = ∑ i, w.p i * ((Fintype.card Time : ℝ) * unitMean V i) := by
         apply Finset.sum_congr rfl
         intro i _hi
         rw [h_unitMean_count i]
       _ = (Fintype.card Time : ℝ) * ∑ i, w.p i * unitMean V i := by
-        rw [Finset.mul_sum]
-        apply Finset.sum_congr rfl
-        intro i _hi
-        ring
+        simp only [sum_algebra_simps]
+        exact Finset.sum_congr rfl fun _ _ => by ring
   have hrow : ∀ i, ∑ t, ddot w V i t = 0 := by
     intro i
     calc
       ∑ t, ddot w V i t =
           ∑ t, V i t - (Fintype.card Time : ℝ) * unitMean V i -
             ∑ t, timeMean w V t + (Fintype.card Time : ℝ) * grandMean w V := by
-          simp only [ddot, Finset.sum_sub_distrib, Finset.sum_add_distrib,
-            Finset.sum_const, nsmul_eq_mul]
-          rw [Finset.card_univ]
+          simp only [ddot, sum_algebra_simps]
       _ = 0 := by
           rw [h_unitMean_count i, h_timeMean_sum]
           ring
@@ -167,7 +162,7 @@ private theorem ddot_orthogonal_unit_of_card_ne_zero (w : UnitWeights Unit)
           intro t _ht
           ring
         _ = (w.p i * a i) * ∑ t, ddot w V i t := by
-          rw [Finset.mul_sum]
+          simp only [sum_algebra_simps]
         _ = w.p i * ((∑ t, ddot w V i t) * a i) := by
           ring
     _ = 0 := by
@@ -208,7 +203,7 @@ theorem ddot_orthogonal_time (w : UnitWeights Unit)
       _ = ∑ i, w.p i * V i t - ∑ i, w.p i * unitMean V i -
             (∑ i, w.p i) * timeMean w V t +
             (∑ i, w.p i) * grandMean w V := by
-        simp only [Finset.sum_sub_distrib, Finset.sum_add_distrib, Finset.sum_mul]
+        simp only [sum_algebra_simps]
       _ = 0 := by
         rw [w.sum_one]
         unfold timeMean grandMean
@@ -226,7 +221,7 @@ theorem ddot_orthogonal_time (w : UnitWeights Unit)
           intro i _hi
           ring
         _ = (∑ i, w.p i * ddot w V i t) * b t := by
-          rw [Finset.sum_mul]
+          simp only [sum_algebra_simps]
     _ = 0 := by
       simp [hcol]
 
@@ -247,7 +242,7 @@ theorem ddot_orthogonal_unit_time (w : UnitWeights Unit)
           simp [hh]
     _ = (∑ i, ∑ t, w.p i * (ddot w V i t * a i)) +
           (∑ i, ∑ t, w.p i * (ddot w V i t * b t)) := by
-          simp [mul_add, Finset.sum_add_distrib]
+          simp only [sum_algebra_simps]
     _ = 0 := by
           rw [ddot_orthogonal_unit w V a, ddot_orthogonal_time w V b, zero_add]
 
@@ -291,7 +286,7 @@ noncomputable def cellSupport (w : UnitWeights Unit) :
     have hrow : ∀ i : Unit,
         (∑ _t : Time, w.p i / (Fintype.card Time : ℝ)) = w.p i := by
       intro i
-      rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+      simp only [sum_algebra_simps]
       field_simp
     simp_rw [hrow]
     exact w.sum_one
@@ -334,12 +329,9 @@ theorem inner_eq_card_smul_ip (w : UnitWeights Unit) (V W : Unit → Time → �
     have h := Fintype.card_pos (α := Time)
     exact_mod_cast h.ne'
   simp only [inner, WeightedSupport.ip_def, cellSupport_observed, cellSupport_weight]
-  rw [Fintype.sum_prod_type, Finset.mul_sum]
-  refine Finset.sum_congr rfl ?_
-  intro i _
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl ?_
-  intro t _
+  rw [Fintype.sum_prod_type]
+  simp only [sum_algebra_simps]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun t _ => ?_
   field_simp
   -- Unfold `inner` and `WeightedSupport.ip`; rewrite the cell sum over
   -- `Unit × Time` as `∑_i ∑_t` (`Fintype.sum_prod_type`).  Each cell summand is

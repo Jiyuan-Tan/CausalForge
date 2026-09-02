@@ -64,6 +64,7 @@ noncomputable def stepFun (M : Causalean.SCM N Ω) {n : ℕ}
     observed node by assembling its parent tuple from the fixed values,
     latent values, and previously generated observed prefix and applying the
     node's structural equation, is measurable](goal). -/
+@[fun_prop]
 theorem measurable_stepFun (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n + 1 ≤ M.observed.card) :
     Measurable (M.stepFun hn) :=

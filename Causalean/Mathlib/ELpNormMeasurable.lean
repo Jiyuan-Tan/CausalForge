@@ -15,9 +15,9 @@ This file provides two flavours, both consequences of Tonelli for the
 parametric integral `ω ↦ ∫⁻ x, ‖g ω x‖₊^p.toReal ∂P` followed by the post-processing
 `(·)^(1/p.toReal)` and `.toReal`:
 
-* `measurable_eLpNorm_two_toReal_of_uncurry`  — top-σ-algebra version: from
+* `measurable_eLpNorm_toReal_of_uncurry`  — top-σ-algebra version: from
   joint measurability of `Function.uncurry g`.
-* `measurable_eLpNorm_two_toReal_of_uncurry_of_factor`  — sub-σ-algebra
+* `measurable_eLpNorm_toReal_of_uncurry_of_factor`  — sub-σ-algebra
   version: from joint measurability wrt the sub-σ-algebra product.
 
 These are causal-agnostic measurability facts and are candidates for
@@ -36,10 +36,10 @@ its finite nonzero Lp norm under a fixed measure is measurable. It supplies a ca
 Tonelli-based measurability tool for empirical-process and sample-splitting
 arguments.
 
-The top-σ-algebra lemma is `measurable_eLpNorm_two_toReal_of_uncurry`; the
+The top-σ-algebra lemma is `measurable_eLpNorm_toReal_of_uncurry`; the
 sub-σ-algebra version, where joint measurability factors through
 `mΩ × MeasurableSpace X`, is
-`measurable_eLpNorm_two_toReal_of_uncurry_of_factor`. -/
+`measurable_eLpNorm_toReal_of_uncurry_of_factor`. -/
 
 namespace Causalean.Mathlib
 
@@ -58,7 +58,8 @@ real-valued Lp norm `ω ↦ ‖g ω‖_{Lp(P)}` is measurable as a function of `
   joint measurable from `hg` via `Measurable.pow_const` and `enorm`.
 * `Measurable.pow_const` for the `(1/p.toReal)` power.
 * `ENNReal.measurable_toReal` for the final `.toReal`. -/
-lemma measurable_eLpNorm_two_toReal_of_uncurry
+@[fun_prop]
+lemma measurable_eLpNorm_toReal_of_uncurry
     [MeasurableSpace Ω] {P : Measure X} [SFinite P]
     {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
     [OpensMeasurableSpace E]
@@ -74,16 +75,17 @@ lemma measurable_eLpNorm_two_toReal_of_uncurry
       (h_int.pow_const (1 / p.toReal))
   exact ENNReal.measurable_toReal.comp h_norm
 
-/-- Alias for `measurable_eLpNorm_two_toReal_of_uncurry` whose name reflects
-that the exponent may be any finite nonzero value. -/
-lemma measurable_eLpNorm_toReal_of_uncurry
+/-- Vestigial `_two_` spelling of `measurable_eLpNorm_toReal_of_uncurry`; the exponent `p` was
+never fixed to `2`. -/
+@[deprecated measurable_eLpNorm_toReal_of_uncurry (since := "2026-08-29")]
+lemma measurable_eLpNorm_two_toReal_of_uncurry
     [MeasurableSpace Ω] {P : Measure X} [SFinite P]
     {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
     [OpensMeasurableSpace E]
     {g : Ω → X → E} {p : ℝ≥0∞} (hp_zero : p ≠ 0) (hp_top : p ≠ ⊤)
     (hg : Measurable (Function.uncurry g)) :
     Measurable (fun ω => (eLpNorm (g ω) p P).toReal) :=
-  measurable_eLpNorm_two_toReal_of_uncurry hp_zero hp_top hg
+  measurable_eLpNorm_toReal_of_uncurry hp_zero hp_top hg
 
 /-- **Lp-norm measurable with respect to a sub-σ-algebra.** For a σ-finite base measure `P` and
 [an exponent `p` that is neither zero](hyp:hp_zero) [nor infinite](hyp:hp_top), if [the map
@@ -94,7 +96,8 @@ measurable with respect to `mΩ`](goal).
 **Proof sketch.** Apply `Measurable.lintegral_prod_right'` at the
 sub-σ-algebra product level to `‖g ω x‖₊^p.toReal`, then post-process by
 `(·)^(1/p.toReal)` and `.toReal`. -/
-lemma measurable_eLpNorm_two_toReal_of_uncurry_of_factor
+@[fun_prop]
+lemma measurable_eLpNorm_toReal_of_uncurry_of_factor
     {mΩ : MeasurableSpace Ω}
     {P : Measure X} [SFinite P]
     {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
@@ -114,9 +117,10 @@ lemma measurable_eLpNorm_two_toReal_of_uncurry_of_factor
       (h_int.pow_const (1 / p.toReal))
   exact ENNReal.measurable_toReal.comp h_norm
 
-/-- Alias for `measurable_eLpNorm_two_toReal_of_uncurry_of_factor` whose name
-reflects that the exponent may be any finite nonzero value. -/
-lemma measurable_eLpNorm_toReal_of_uncurry_of_factor
+/-- Vestigial `_two_` spelling of `measurable_eLpNorm_toReal_of_uncurry_of_factor`; the exponent
+`p` was never fixed to `2`. -/
+@[deprecated measurable_eLpNorm_toReal_of_uncurry_of_factor (since := "2026-08-29")]
+lemma measurable_eLpNorm_two_toReal_of_uncurry_of_factor
     {mΩ : MeasurableSpace Ω}
     {P : Measure X} [SFinite P]
     {E : Type*} [MeasurableSpace E] [TopologicalSpace E] [ContinuousENorm E]
@@ -127,6 +131,6 @@ lemma measurable_eLpNorm_toReal_of_uncurry_of_factor
         (@Prod.instMeasurableSpace Ω X mΩ inferInstance) inferInstance
         (Function.uncurry g)) :
     Measurable[mΩ] (fun ω => (eLpNorm (g ω) p P).toReal) :=
-  measurable_eLpNorm_two_toReal_of_uncurry_of_factor hp_zero hp_top hg_uncurry
+  measurable_eLpNorm_toReal_of_uncurry_of_factor hp_zero hp_top hg_uncurry
 
 end Causalean.Mathlib

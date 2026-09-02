@@ -55,6 +55,7 @@ noncomputable def czSup (R : Polynomial ℝ) : ℝ :=
 
 /-- `czTrig R` is continuous (composition of the polynomial evaluation with
 `t ↦ -cos t`). -/
+@[fun_prop]
 theorem czTrig_continuous (R : Polynomial ℝ) : Continuous (czTrig R) := by
   unfold czTrig
   fun_prop

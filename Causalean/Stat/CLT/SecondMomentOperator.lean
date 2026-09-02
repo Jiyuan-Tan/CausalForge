@@ -55,6 +55,7 @@ variable {X E : Type*} [MeasurableSpace X] {P : Measure X}
 
 /-- The integrand `x ↦ ⟪t, ψ x⟫ • ψ x` is integrable when `‖ψ‖²` is, by the
 Cauchy–Schwarz bound `‖⟪t,ψ⟫ • ψ‖ ≤ ‖t‖ ‖ψ‖²`. -/
+@[fun_prop]
 theorem integrable_inner_smul (hψ : Measurable ψ)
     (hvar : Integrable (fun x => ‖ψ x‖ ^ 2) P) (t : E) :
     Integrable (fun x => ⟪t, ψ x⟫ • ψ x) P := by

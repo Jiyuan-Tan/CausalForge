@@ -539,6 +539,7 @@ theorem modulus_of_not_badData
 /-! ## Main theorem: cross-fit lift to a random nuisance -/
 
 /-- The fold-B coordinate map is measurable. -/
+@[fun_prop]
 theorem foldBCoord_meas
     {S_iid : IIDSample Ω Z μ P_Z}
     (split : OneShotSplit S_iid) (n : ℕ) :

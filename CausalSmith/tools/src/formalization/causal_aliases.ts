@@ -47,7 +47,7 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "augmented inverse probability weighting",
     aliases: ["aipw","double robustness","doubly robust","doubly robust estimator"],
-    modules: ["Causalean/Estimation/","Causalean/Estimation/StructureAgnostic/"],
+    modules: ["Causalean/Estimation/","Causalean/Estimation/MinimaxATE/"],
   },
   {
     canonical: "average treatment effect",
@@ -202,7 +202,7 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "dr learner",
     aliases: ["doubly robust learner"],
-    modules: ["Causalean/Estimation/CATE/","Causalean/Estimation/CATE/OSL/"],
+    modules: ["Causalean/Estimation/CATE/","Causalean/Estimation/CATE/OrthogonalLearning/"],
   },
   {
     canonical: "dudley entropy integral",
@@ -222,7 +222,7 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "e value",
     aliases: ["evalue"],
-    modules: ["Causalean/Estimation/StructureAgnostic/","Causalean/PO/ID/Partial/SupportFunction/"],
+    modules: ["Causalean/Estimation/MinimaxATE/","Causalean/PO/ID/Partial/SupportFunction/"],
   },
   {
     canonical: "efficiency bound",
@@ -399,12 +399,12 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "minimax lower bound",
     aliases: ["assouad lower bound","fano lower bound","le cam lower bound","minimax risk lower bound","testing lower bound","two point lower bound","worst case lower bound"],
-    modules: ["Causalean/Estimation/StructureAgnostic/","Causalean/Stat/Minimax/"],
+    modules: ["Causalean/Estimation/MinimaxATE/","Causalean/Stat/Minimax/"],
   },
   {
     canonical: "minimax rate",
     aliases: ["convergence rate","lower bound rate","minimax","minimax optimal rate","minimax rate threshold","optimal rate","rate optimality"],
-    modules: ["Causalean/Estimation/StructureAgnostic/","Causalean/Stat/","Causalean/Stat/Minimax/"],
+    modules: ["Causalean/Estimation/MinimaxATE/","Causalean/Stat/","Causalean/Stat/Minimax/"],
   },
   {
     canonical: "monotone instrumental variable",
@@ -454,12 +454,12 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "nuisance estimation",
     aliases: ["first stage estimation","nuisance function estimation","nuisance learning","nuisance parameter estimation"],
-    modules: ["Causalean/Estimation/ATE/","Causalean/Estimation/ATT/","Causalean/Estimation/CATE/","Causalean/Estimation/OSL/"],
+    modules: ["Causalean/Estimation/ATE/","Causalean/Estimation/ATT/","Causalean/Estimation/CATE/","Causalean/Estimation/OrthogonalLearning/"],
   },
   {
     canonical: "omitted variable bias",
     aliases: ["cinelli hazlett bias","ovb","unobserved confounding bias"],
-    modules: ["Causalean/Estimation/StructureAgnostic/","Causalean/PO/ID/Partial/SupportFunction/"],
+    modules: ["Causalean/Estimation/MinimaxATE/","Causalean/PO/ID/Partial/SupportFunction/"],
   },
   {
     canonical: "one step estimator",
@@ -484,7 +484,7 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "plug in estimator",
     aliases: ["plug in estimation","plugin estimation","plugin estimator"],
-    modules: ["Causalean/Estimation/ATE/","Causalean/Estimation/OSL/"],
+    modules: ["Causalean/Estimation/ATE/","Causalean/Estimation/OrthogonalLearning/"],
   },
   {
     canonical: "potential outcome",
@@ -529,7 +529,7 @@ export const CAUSAL_ALIASES: AliasEntry[] = [
   {
     canonical: "sample splitting",
     aliases: ["sample split","split sample estimation"],
-    modules: ["Causalean/Estimation/OSL/","Causalean/Estimation/OrthogonalMoments/"],
+    modules: ["Causalean/Estimation/OrthogonalLearning/","Causalean/Estimation/OrthogonalMoments/"],
   },
   {
     canonical: "semiparametric efficiency bound",

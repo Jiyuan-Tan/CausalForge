@@ -37,7 +37,7 @@ describe("recordProof", () => {
     expect(w.solved["lem:a"].snapshot.stmt).toBe("S");
   });
 
-  it("omits node and owner rather than storing undefined for a frozen proto member", () => {
+  it("omits node and an absent owner rather than storing undefined for a frozen proto member", () => {
     // A proto member's definition already lives in the proto; a literal `node: undefined`
     // key would make the record look like an agent-added node with a missing definition.
     const w = emptyWorking();
@@ -47,6 +47,36 @@ describe("recordProof", () => {
     expect("node" in w.solved["lem:a"]).toBe(false);
     expect("owner" in w.solved["lem:a"]).toBe(false);
     expect("partial" in w.solved["lem:a"]).toBe(false);
+  });
+
+  it("preserves a durable frozen-overlay owner across proof refreshes and permits an explicit transition", () => {
+    const w = emptyWorking();
+    const node = stmt();
+    const proto = makeCore([node]);
+
+    recordProof(w, proto, {
+      id: node.id,
+      snapshotOf: node,
+      proofTex: "P1",
+      owner: "thm:directed-root",
+    });
+    expect(w.solved[node.id]).toMatchObject({ proof_tex: "P1", owner: "thm:directed-root" });
+    expect("node" in w.solved[node.id]).toBe(false);
+
+    // The merge/apply refresh path normally omits owner for a frozen member. It must
+    // not erase the directed ownership receipt when replacing the proof record.
+    recordProof(w, proto, { id: node.id, snapshotOf: node, proofTex: "P2" });
+    expect(w.solved[node.id]).toMatchObject({ proof_tex: "P2", owner: "thm:directed-root" });
+    expect("node" in w.solved[node.id]).toBe(false);
+
+    // An explicit semantic reassignment remains possible and wins deterministically.
+    recordProof(w, proto, {
+      id: node.id,
+      snapshotOf: node,
+      proofTex: "P3",
+      owner: "thm:new-root",
+    });
+    expect(w.solved[node.id]).toMatchObject({ proof_tex: "P3", owner: "thm:new-root" });
   });
 
   it("snapshots the statement given by snapshotOf, not the stored node", () => {

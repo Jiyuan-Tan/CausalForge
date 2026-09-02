@@ -98,6 +98,7 @@ theorem IIDSample.sampleVariance_nonneg (S : IIDSample Ω X μ P) (f : X → ℝ
     positivity
 
 /-- The sample variance is a measurable function of `ω`. -/
+@[fun_prop]
 theorem IIDSample.measurable_sampleVariance (S : IIDSample Ω X μ P)
     (hf : Measurable f) (n : ℕ) : Measurable (S.sampleVariance f n) := by
   unfold IIDSample.sampleVariance

@@ -1,5 +1,6 @@
 import Causalean.Estimation.ATT.Score.MeanZero
 import Causalean.Estimation.ATT.Score.FiniteVar
+import Causalean.Tactic.IntegralLinearity
 
 /-!
 Establishes the exact second-order remainder formula for the ATT AIPW moment.
@@ -608,12 +609,7 @@ theorem aipw_remainder_identity_ATT
           rfl
     _ = (∫ ω, truth ω ∂P.μ) + (∫ ω, crossInd ω ∂P.μ) -
           (∫ ω, resid ω ∂P.μ) := by
-          rw [integral_sub (htruth_int.add hcrossInd_int) hresid_int]
-          rw [show (fun a => (truth + crossInd) a) =
-              (fun a => truth a + crossInd a) by
-            funext a
-            rfl]
-          rw [integral_add htruth_int hcrossInd_int]
+          integral_linearity
     _ = ∫ ω, crossInd ω ∂P.μ := by
           rw [htruth_zero_Ω, hresid_zero]
           ring

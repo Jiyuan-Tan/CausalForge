@@ -14,6 +14,10 @@ import { startSharedLeanLsp } from "../shared/lean_lsp_server.js";
 import { runStage1 } from "./stage1.js";
 import { runStage1_5 } from "./stage1_5.js";
 import { runStage2 } from "./stage2.js";
+import {
+  F2_REVISION_TARGETS_HEADER,
+  revisionTargetsFromRedirect,
+} from "./f2_revision_context.js";
 import { runStage5 } from "./stage5.js";
 import { resetD0LoopCountersForRewind, resetFormalizationLoopCounters } from "../shared/intervention_routing.js";
 
@@ -105,7 +109,12 @@ export async function consumePendingScaffoldRedirect(
 ): Promise<StageResult | null> {
   if (!args.state.flags.scaffold_redirect) return null;
   console.warn("[F] pending flags.scaffold_redirect found at F2.5 entry — running an F2 pass to consume it before the review loop.");
-  const result = await scaffoldFn({ ctx: args.ctx, state: args.state, deps: args.deps });
+  const result = await scaffoldFn({
+    ctx: args.ctx,
+    state: args.state,
+    deps: args.deps,
+    revisionTargets: revisionTargetsFromRedirect(args.state.flags.scaffold_redirect),
+  });
   if (result.status !== "completed") return result;
   return null; // runStage2 self-clears the flag on completion
 }
@@ -290,10 +299,15 @@ async function runProofReviewLoopStage(args: {
       args.state.flags.scaffold_redirect = [
         redirect,
         targets.length
-          ? `Declarations to edit (one obj_id per line, verbatim):\n${targets.map((t) => `- ${t}`).join("\n")}`
+          ? `${F2_REVISION_TARGETS_HEADER}\n${targets.map((t) => `- ${t}`).join("\n")}`
           : "",
       ].filter(Boolean).join("\n\n");
-      const result = await runStage2({ ctx: args.ctx, state: args.state, deps: args.deps });
+      const result = await runStage2({
+        ctx: args.ctx,
+        state: args.state,
+        deps: args.deps,
+        revisionTargets: targets,
+      });
       if (result.status !== "completed") {
         // why: a failed F2 scaffold redirect must reject so the proof-review loop blocks fail-closed.
         throw new Error(`Stage 2 scaffold redirect did not complete (${result.status}): ${result.message}`);

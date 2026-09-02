@@ -179,7 +179,7 @@ export function decideGeneralReroute(args: {
  * want. The bank is used for CALIBRATION ANCHORS instead — see `loadPaperScoreAnchors`.
  */
 export const CEILING_FOR_FLAGSHIP = 9.0;
-export const CEILING_FOR_FIELD = 7.5;
+export const CEILING_FOR_FIELD = 7.0;
 export const CEILING_FOR_SUBFIELD = 6.5;
 
 /**
@@ -591,7 +591,7 @@ export function normalizeGeneralReview(
   return {
     tier,
     // When the ceiling caps the tier it also decides the route, overriding the referee's
-    // own `salvageable`: in [6.5, 7.5) the result can still be lifted, so REVISE on the
+    // own `salvageable`: in [6.5, 7.0) the result can still be lifted, so REVISE on the
     // ceiling directive; below 6.5 the topic cannot reach the bar however it is rewritten,
     // so REJECT. Uncapped notes keep the pre-existing behaviour exactly.
     salvageable: capped

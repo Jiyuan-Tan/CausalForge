@@ -22,6 +22,10 @@ export const VERDICT_ONLY_PROMPTS: ReadonlySet<string> = new Set([
   "p3_citation_support_batch",
   "p3_overclaim",
   "p1_notation_check",
+  // Emit/judge substring pairs over already-frozen text; they author no prose, so the
+  // full ~4k-char prose/cross-reference contracts would be dead weight on every block.
+  "p4_nl_links",
+  "p4_nl_links_verify",
 ]);
 // p3_rubric is deliberately NOT verdict-only: it scores prose quality directly
 // against the contracts, so it keeps the full text.

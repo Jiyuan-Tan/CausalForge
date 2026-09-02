@@ -52,11 +52,16 @@ private lemma measurableSet_countFiber {Y : Type*} [MeasurableSpace Y]
     (measurable_finiteSample_count.comp (measurable_pi_apply j))
       (measurableSet_singleton (c j))
 
-private noncomputable def pointsOfCount {Y : Type*} [MeasurableSpace Y]
+/-- The `n` points of a finite sample that is known to have exactly `n` of them, read off as
+an `n`-tuple. -/
+noncomputable def pointsOfCount {Y : Type*} [MeasurableSpace Y]
     (n : ℕ) (s : {s : FiniteSample Y // s.count = n}) : Fin n → Y :=
   fun k => s.1.points (Fin.cast s.2.symm k)
 
-private lemma measurable_pointsOfCount {Y : Type*} [MeasurableSpace Y] (n : ℕ) :
+/-- Reading the `n` points off a finite sample of known size `n` is a measurable map into the
+space of `n`-tuples. -/
+@[fun_prop]
+lemma measurable_pointsOfCount {Y : Type*} [MeasurableSpace Y] (n : ℕ) :
     Measurable (pointsOfCount n : {s : FiniteSample Y // s.count = n} → Fin n → Y) := by
   apply measurable_pi_lambda
   intro k t ht
@@ -68,7 +73,7 @@ private lemma measurable_pointsOfCount {Y : Type*} [MeasurableSpace Y] (n : ℕ)
     change MeasurableSet (fixedSizeEmbed m ⁻¹' A)
     by_cases hmn : m = n
     · subst m
-      have hk : Measurable (fun x : Fin n → Y => x k) := measurable_pi_apply k
+      have hk : Measurable (fun x : Fin n → Y => x k) := by fun_prop
       have heq : fixedSizeEmbed n ⁻¹' A = (fun x : Fin n → Y => x k) ⁻¹' t := by
         ext x
         constructor
@@ -99,14 +104,19 @@ private lemma measurable_pointsOfCount {Y : Type*} [MeasurableSpace Y] (n : ℕ)
   rw [hpre]
   exact hA.preimage measurable_subtype_coe
 
-private noncomputable def fixedCountSuperpose {Y : Type*} [MeasurableSpace Y]
+/-- Concatenate one tuple of points per index into a single finite sample, given the per-index
+point counts `c`. -/
+noncomputable def fixedCountSuperpose {Y : Type*} [MeasurableSpace Y]
     (c : ι → ℕ) (x : ∀ j, Fin (c j) → Y) : FiniteSample Y := by
   classical
   let S := Σ j : ι, Fin (c j)
   let e : S ≃ Fin (Fintype.card S) := Fintype.equivFin S
   exact ⟨Fintype.card S, fun k => x (e.symm k).1 (e.symm k).2⟩
 
-private lemma measurable_fixedCountSuperpose {Y : Type*} [MeasurableSpace Y]
+/-- Concatenating a family of point tuples of fixed sizes into one finite sample is a
+measurable map. -/
+@[fun_prop]
+lemma measurable_fixedCountSuperpose {Y : Type*} [MeasurableSpace Y]
     (c : ι → ℕ) : Measurable (fixedCountSuperpose (Y := Y) c) := by
   classical
   unfold fixedCountSuperpose
@@ -116,11 +126,16 @@ private lemma measurable_fixedCountSuperpose {Y : Type*} [MeasurableSpace Y]
   let u := (Fintype.equivFin (Σ j : ι, Fin (c j))).symm k
   exact (measurable_pi_apply u.2).comp (measurable_pi_apply u.1)
 
-private noncomputable def fiberPoints {Y : Type*} [MeasurableSpace Y]
+/-- On the event that each component sample has exactly `c j` points, read off the points of
+every component as a family of tuples. -/
+noncomputable def fiberPoints {Y : Type*} [MeasurableSpace Y]
     (c : ι → ℕ) (q : countFiber (Y := Y) c) : ∀ j, Fin (c j) → Y :=
   fun j => pointsOfCount (c j) ⟨q.1 j, q.2 j⟩
 
-private lemma measurable_fiberPoints {Y : Type*} [MeasurableSpace Y]
+/-- Reading off the points of every component sample on the fixed-count event is a measurable
+map. -/
+@[fun_prop]
+lemma measurable_fiberPoints {Y : Type*} [MeasurableSpace Y]
     (c : ι → ℕ) : Measurable (fiberPoints (Y := Y) c) := by
   apply measurable_pi_lambda
   intro j
@@ -144,6 +159,7 @@ private lemma fixedCountSuperpose_fiberPoints
   exact fixedCountSuperpose_eq_superpose q.1 c hc
 
 /-- Finite superposition is measurable. -/
+@[fun_prop]
 lemma measurable_superpose :
     Measurable (superpose : (ι → FiniteSample (X × ℝ)) → FiniteSample (X × ℝ)) := by
   intro s hs
@@ -213,6 +229,7 @@ noncomputable def orderByMarks (s : FiniteSample (X × ℝ)) :
   rfl
 
 /-- The mark-ordering map is measurable. -/
+@[fun_prop]
 lemma measurable_orderByMarks :
     Measurable (orderByMarks : FiniteSample (X × ℝ) → FiniteSample (X × ℝ)) := by
   intro s hs
@@ -290,8 +307,7 @@ lemma measurable_orderByMarks :
         simp only [Prod.Lex.toLex_lt_toLex]
         measurability
   · have hg : Measurable
-        (fun x : Fin n → X × ℝ => fun k => x (f k)) :=
-      measurable_pi_lambda _ fun k => measurable_pi_apply (f k)
+        (fun x : Fin n → X × ℝ => fun k => x (f k)) := by fun_prop
     have hsn : MeasurableSet (fixedSizeEmbed n ⁻¹' s) := hs n
     exact hsn.preimage hg
 
@@ -319,6 +335,7 @@ noncomputable def superposeByMarks
   orderByMarks (superpose q)
 
 /-- Mark-ordered finite superposition is measurable. -/
+@[fun_prop]
 lemma measurable_superposeByMarks :
     Measurable (superposeByMarks :
       (ι → FiniteSample (X × ℝ)) → FiniteSample (X × ℝ)) := by
@@ -784,9 +801,7 @@ lemma map_restrictPartition_canonicalMarkedPoissonSampleLaw
   let f : (i : ι) → FiniteSample (X × ℝ) → FiniteSample (X × ℝ) :=
     fun _ => orderByMarks
   have hf : Measurable (fun q : ι → FiniteSample (X × ℝ) =>
-      fun j => f j (q j)) :=
-    measurable_pi_lambda _ fun j =>
-      measurable_orderByMarks.comp (measurable_pi_apply j)
+      fun j => f j (q j)) := by fun_prop
   have hdistinct :=
     finiteMarkedPoissonSampleLaw_marks_pairwise_distinct P R lam
   rw [← mem_ae_iff_prob_eq_one measurableSet_marks_pairwise_distinct] at hdistinct

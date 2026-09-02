@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 import Causalean.Stat.Coupling.ProductLossMonotoneCoupling.Survival
 import Causalean.Stat.Coupling.ProductLossMonotoneCoupling.TailIntegral
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.MeasureTheory.Function.L2Space
 
@@ -208,10 +209,7 @@ lemma fiber_integral_pi (h : IsCoupling π μ ν) (s t : ℝ) :
             + (fun _ : ℝ × ℝ => a * b)) p ∂π)
       = jointSurv π s t - tailInd 0 t * survFst π s - tailInd 0 s * survSnd π t
         + tailInd 0 s * tailInd 0 t
-  rw [integral_add' ((hIC.sub hBA).sub hAB) hK]
-  rw [integral_sub' (hIC.sub hBA) hAB]
-  rw [integral_sub' hIC hBA]
-  rw [integral_const_mul, integral_const_mul]
+  integral_linearity
   rw [hIntA, hIntB, hIntC, integral_const]
   simp [jointSurv, survFst, survSnd, A, B, C, a, b, Measure.real, smul_eq_mul]
 

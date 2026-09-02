@@ -136,14 +136,10 @@ describe("changedSymbolNames — semantic fingerprint over real symbol shapes", 
     expect(changedSymbolNames(prev, added).size).toBe(0);
   });
 
-  it("a `refs`-only rewire is bookkeeping, NOT a semantic change", () => {
-    // `refs` lists the other symbols this symbol's `def` mentions and exists for G1's
-    // defined-before-use ordering check. It is derived from `def`, which IS hashed, so it
-    // carries no meaning of its own — and it is the field most likely to be rewritten by
-    // a re-ordering rather than by anyone changing what the symbol means.
+  it("a `refs` rewire changes the symbol's semantic dependency closure", () => {
     const prev = solvedCursor(base);
     const rewired = protoWith([SYM_D, SYM_N, SYM_ETA, SYM_XCAL, { ...SYM_PIREF, refs: ["\\mathcal X"] }]);
-    expect(changedSymbolNames(prev, rewired).size).toBe(0);
+    expect([...changedSymbolNames(prev, rewired)]).toEqual([SYM_PIREF.name]);
   });
 
   it("`ref` IS semantic — re-pointing it swaps the symbol's referent", () => {
@@ -201,11 +197,11 @@ describe("legacy cores (no free_symbols anywhere) keep the global invalidation",
     expect(declaredSymbolScope(base, member, prev.solved[member.id].snapshot)).toBeNull();
   });
 
-  it("does NOT invalidate on a pure refs rewire or a symbol addition", () => {
+  it("conservatively invalidates when a refs rewire and new symbol change an undeclared closure", () => {
     const prev = solvedCursor(base);
     const benign = protoWith([SYM_D, SYM_N, SYM_ETA, SYM_XCAL, { ...SYM_PIREF, refs: [] }, { name: "T", type: "scalar", def: "temperature" }]);
-    expect(computeValidNodes(prev, benign).size).toBe(2);
-    expect(memberValid(prev, benign, benign.statements[0])).toBe(true);
+    expect(computeValidNodes(prev, benign).size).toBe(0);
+    expect(memberValid(prev, benign, benign.statements[0])).toBe(false);
   });
 });
 

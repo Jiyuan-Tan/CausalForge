@@ -217,6 +217,7 @@ private noncomputable def d2ofZ2EqIndicator (S : PODynLATESystem P γ₀ γ₁)
     (z₂ b : Bool) : P.Ω → ℝ :=
   (S.D2ofZ2 z₂ ⁻¹' {b}).indicator (fun _ => (1 : ℝ))
 
+@[fun_prop]
 private lemma measurable_d2ofZ2EqIndicator (S : PODynLATESystem P γ₀ γ₁)
     (z₂ b : Bool) : Measurable (S.d2ofZ2EqIndicator z₂ b) := by
   unfold d2ofZ2EqIndicator

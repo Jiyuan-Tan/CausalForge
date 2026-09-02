@@ -5,7 +5,7 @@
 // cursor LAST), the proposal/withheld-content checkpoint with its review packet
 // and closure/preflight receipts, the open-obligation and incomplete-round
 // checkpoints, and the clean-discharge result.
-import { rm } from "node:fs/promises";
+import { appendFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { writeJsonAtomic } from "../../shared/json_atomic.js";
@@ -13,11 +13,13 @@ import { buildReviewPacket } from "../review_packet.js";
 import { formatPreflightViolations } from "../core/preflight.js";
 import { assembleCore } from "../core/assemble.js";
 import { CoreSchema, type Core } from "../core/schema.js";
+import { coreRevision } from "../core/revision.js";
 import {
   proposalReviewPacketPath,
   openObligationsPath,
 } from "../discovery_paths.js";
 import { archiveProofs, type ProofToArchive } from "../proof_archive.js";
+import { NOISE_WITHHELD_REASONS } from "./merge.js";
 import { workingPath, saveWorkingState, normalizeWorkingState, WORKING_STORE_FORMAT } from "../stages/d0_working.js";
 import type { ProposedStatementChange } from "./schemas.js";
 import { formatSolveEmissionConflicts } from "./ownership.js";
@@ -30,6 +32,7 @@ import {
   checkpointSymbolDrift,
   runPostSolveGate,
 } from "./gates.js";
+import { solveReuseReceiptsDir } from "./dispatch.js";
 
 export interface Stage0SolveResult {
   message: string;
@@ -82,6 +85,10 @@ export function makeCommitRound(args: {
     if (withheldProofBytes.length > 0) await archiveProofs(path.dirname(corePath), withheldProofBytes);
     await writeJsonAtomic(corePath, rendered);
     await saveWorkingState(ctx, next);
+    // A committed round's solve outputs are consumed; drop their reuse receipts so
+    // the next round can never resurrect them (its prompts change anyway once the
+    // core moves, but the receipts' absence makes that a hard guarantee).
+    await rm(solveReuseReceiptsDir(ctx), { recursive: true, force: true });
   };
   return commitRound;
 }
@@ -100,16 +107,50 @@ export async function surfaceProposalCheckpoint(args: {
   const { corePath, next } = sctx;
   const {
     emissionConflicts,
+    withheldConflictConsumers,
+    withheldCapabilityEmissions,
+    withheldPayloads,
+    unfulfilledExactTargets,
+    structuredDirectiveUnfulfilled,
     addedLemmaCollisions,
     oeqAnswerCollisions,
     unmatchedProofIds,
+    quarantinedProofs,
     proposedChanges,
     defChanges,
     proposedAssumptions,
     proposedCoreEdits,
     deferredProofs,
+    deferredCitationRevalidations,
     illegalDefTargets,
   } = mr;
+  // Withheld records that carry no mathematics (stray prose, an unmatched id, a
+  // duplicate re-proof) are persisted for audit but must not force a checkpoint on
+  // their own — the same predicate merge uses to arm its structured-directive abort.
+  const substantiveWithheldPayloads = withheldPayloads.filter((record) =>
+    sctx.requiredCoreTargets.has(record.target) || !NOISE_WITHHELD_REASONS.has(record.reason));
+  const withheld = {
+    emission_conflicts: emissionConflicts,
+    conflict_consumers: withheldConflictConsumers,
+    capability_emissions: withheldCapabilityEmissions,
+    withheld_payloads: withheldPayloads,
+    added_lemma_collisions: addedLemmaCollisions,
+    oeq_answer_collisions: oeqAnswerCollisions,
+    invalid_resolutions: [...new Set(mr.withheldInvalidResolutions)],
+    // Proofs emitted against ids present in NO core store (a genuine id fault) —
+    // reported separately from ownership quarantines of existing ids.
+    unmatched_proof_ids: [...new Set(unmatchedProofIds)],
+    quarantined_proofs: quarantinedProofs,
+  };
+  // Append-only per-run audit trail: the round sweep deletes withheld_content.json,
+  // so this is the only durable record of what a round refused and why.
+  if (Object.values(withheld).some((v) => v.length > 0)) {
+    await appendFile(
+      path.join(path.dirname(corePath), "withheld_log.jsonl"),
+      `${JSON.stringify({ at: new Date().toISOString(), round: next.round, ...withheld })}\n`,
+      "utf8",
+    );
+  }
   // SURFACE PROPOSALS for the D0 revise loop (runStage0Typed). The solver's
   // statement narrowings, definition corrections, new assumptions, and structured
   // edits are written to canonical proposed_*.json files and the run CHECKPOINTS.
@@ -128,8 +169,21 @@ export async function surfaceProposalCheckpoint(args: {
   // content belongs in this list.
   if (proposedChanges.length > 0 || defChanges.length > 0 || proposedAssumptions.length > 0 ||
       proposedCoreEdits.length > 0 || emissionConflicts.length > 0 ||
+      withheldConflictConsumers.length > 0 ||
+      withheldCapabilityEmissions.length > 0 ||
       addedLemmaCollisions.length > 0 || oeqAnswerCollisions.length > 0 ||
-      unmatchedProofIds.length > 0) {
+      unmatchedProofIds.length > 0 || mr.withheldInvalidResolutions.length > 0 ||
+      substantiveWithheldPayloads.length > 0) {
+    // Retain the journal cursor only when merge's FINAL normalized postimage has
+    // no substantive accepted carrier for an exact target.  A quarantined worker
+    // payload may share a target with a canonical applicable mandate; inferring
+    // non-fulfillment from the withheld record would replay that mandate after
+    // APPLY has already changed its adjudicated snapshot.
+    // A structured directive with no exact target is fulfilled only by a landed
+    // structural change; quarantined noise alone must not consume it.
+    if (unfulfilledExactTargets.length > 0 || structuredDirectiveUnfulfilled) {
+      next.escalation_entries_consumed = sctx.prev?.escalation_entries_consumed ?? 0;
+    }
     // (Batch B: the checkpoint-withheld recording loop is gone — the records-only
     // merge writes a record for EVERY install, so an agent node cannot exist
     // outside the cursor; the render republishes it on every directed round by
@@ -154,6 +208,11 @@ export async function surfaceProposalCheckpoint(args: {
     if (deferredProofs.length > 0) {
       blocks.push(`${deferredProofs.length} PROVISIONAL proof payload(s) preserved for adjudication`);
     }
+    if (deferredCitationRevalidations.length > 0) {
+      blocks.push(
+        `${deferredCitationRevalidations.length} CITATION revalidation receipt(s) preserved for adjudication`,
+      );
+    }
     // Obligations isolated in the SAME round as a proposal used to be dropped here
     // (only finalizeRound wrote them), so the orchestrator adjudicated the proposals
     // never knowing an obstruction had been isolated, and the next round re-paid the
@@ -169,6 +228,13 @@ export async function surfaceProposalCheckpoint(args: {
       );
       next.sealed_open_oeqs ??= {};
       const sourceById = new Map(renderRoundCore(sctx).statements.map((statement) => [statement.id, statement]));
+      // The render wires dependencies discovered in proof text.  Those edges are
+      // proof-reuse state, not part of an OEQ's mathematical source identity.  A
+      // seal made from the rendered node therefore went stale on the next round
+      // whenever an OEQ's partial argument cited an extra helper.  Prefer the
+      // canonical source catalog for every known question; keep the render only
+      // as fallback for same-round agent-authored OEQs.
+      for (const [id, source] of sctx.sourceById) sourceById.set(id, source);
       for (const obligation of mr.openObligations) {
         const source = sourceById.get(obligation.node_id);
         if (source?.kind === "openendedquestion") {
@@ -186,6 +252,7 @@ export async function surfaceProposalCheckpoint(args: {
       assumptions: proposedAssumptions,
       coreEdits: proposedCoreEdits,
       proofs: deferredProofs,
+      citationRevalidations: deferredCitationRevalidations,
     };
     // One canonical adjudication input prevents reviewers from seeing only the
     // pre-proposal paper or only a pile of deltas. It contains the complete paper
@@ -196,6 +263,7 @@ export async function surfaceProposalCheckpoint(args: {
     // assemble over proto + working), so adjudication and the durable artifact
     // can never diverge.
     const renderedForPacket = renderRoundCore(sctx);
+    next.proposals.basis_revision = coreRevision(renderedForPacket);
     await writeJsonAtomic(
       reviewPacketPath,
       buildReviewPacket({
@@ -207,6 +275,7 @@ export async function surfaceProposalCheckpoint(args: {
         proposedCoreEdits,
         requiredCoreEditMandates: next.required_core_edit_mandates,
         provisionalProofs: deferredProofs,
+        citationRevalidations: deferredCitationRevalidations,
       }),
     );
     artifacts.push(reviewPacketPath);
@@ -226,6 +295,29 @@ export async function surfaceProposalCheckpoint(args: {
     if (emissionConflicts.length > 0) {
       blocks.push(formatSolveEmissionConflicts(emissionConflicts));
     }
+    if (withheldConflictConsumers.length > 0) {
+      blocks.push(
+        `${withheldConflictConsumers.length} same-round conflict consumer(s) WITHHELD with their dependency closure: ` +
+          withheldConflictConsumers.join(", "),
+      );
+    }
+    if (withheldCapabilityEmissions.length > 0) {
+      blocks.push(
+        `${withheldCapabilityEmissions.length} ownership/capability emission(s) WITHHELD: ` +
+          withheldCapabilityEmissions.join(", "),
+      );
+    }
+    if (withheldPayloads.length > 0) {
+      blocks.push(`${withheldPayloads.length} complete WITHHELD structured payload(s) persisted for adjudication`);
+    }
+    if (mr.withheldInvalidResolutions.length > 0) {
+      blocks.push(
+        `${mr.withheldInvalidResolutions.length} OEQ resolution(s) WITHHELD — the source is not a live open-ended ` +
+          `question in the frozen core (sealed, already resolved, or mis-addressed); the replacement theorem bytes ` +
+          `were archived. Reopen the OEQ via an exact-target directive if the answer should land: ` +
+          mr.withheldInvalidResolutions.join(", "),
+      );
+    }
     if (addedLemmaCollisions.length > 0) {
       blocks.push(
         `${addedLemmaCollisions.length} added helper(s) WITHHELD — the id already names a different claim (or a ` +
@@ -243,6 +335,12 @@ export async function surfaceProposalCheckpoint(args: {
     }
     // Informational only (never a checkpoint trigger): identical-claim re-proofs of
     // settled nodes skipped as no-ops, so emitted-vs-persisted counts reconcile.
+    if (mr.duplicateEchoEditIds.length > 0) {
+      console.warn(
+        `[D0-SOLVE] ${mr.duplicateEchoEditIds.length} statement-replace echo(es) dropped as no-ops ` +
+          `(post-image identical to the shown node): ${[...new Set(mr.duplicateEchoEditIds)].join(", ")}`,
+      );
+    }
     if (mr.duplicateReproofIds.length > 0) {
       blocks.push(
         `${mr.duplicateReproofIds.length} duplicate re-proof(s) of settled node(s) skipped as no-ops ` +
@@ -262,6 +360,12 @@ export async function surfaceProposalCheckpoint(args: {
     if (illegalDefTargets.length > 0) {
       blocks.push(`IGNORED ${illegalDefTargets.length} illegal class/unknown def change(s): ${illegalDefTargets.join(", ")}`);
     }
+    if (quarantinedProofs.length > 0) {
+      blocks.push(
+        `OWNERSHIP — ${quarantinedProofs.length} proof(s) withheld because the emitter did not own the node: ` +
+          quarantinedProofs.map((p) => `${p.id} (emitted by '${p.unit}'; owner '${p.owner}')`).join(", "),
+      );
+    }
     if (unmatchedProofIds.length > 0) {
       blocks.push(
         `PLUMBING FAULT — ${unmatchedProofIds.length} emitted proof(s) named no core statement and were ` +
@@ -274,17 +378,6 @@ export async function surfaceProposalCheckpoint(args: {
     // empty, so this checkpoint was swallowed and the loop continued — the fix inside this
     // function never reached the orchestrator. Drop a marker artifact, exactly as
     // open_obligations.json does, so the caller can see it without parsing the message.
-    const withheld = {
-      emission_conflicts: emissionConflicts,
-      added_lemma_collisions: addedLemmaCollisions,
-      oeq_answer_collisions: oeqAnswerCollisions,
-      // Proofs emitted against ids present in NO core store. These were reported only
-      // inside the incomplete-round checkpoint, so a round that discharged every target
-      // AND dropped a proof completed clean with the drop invisible. That is the silent
-      // id-mapping drop the project's own debugging rule calls out: what the agent EMITTED
-      // must be reconciled against what was PERSISTED, and a count mismatch IS the bug.
-      unmatched_proof_ids: [...new Set(unmatchedProofIds)],
-    };
     // NOT included: `illegalDefTargets`. The audit read its absence from the guard as the
     // same accidental omission as the two collectors above, but the A6 class-definition
     // firewall is DELIBERATE and tested: a class-targeted def change is rejected, the run
@@ -361,6 +454,8 @@ export async function finalizeRound(args: {
     // All open obligations are on OEQ nodes → acknowledged-open residual(s); proceed to D0.5.
     next.sealed_open_oeqs ??= {};
     const sourceById = new Map(core.statements.map((statement) => [statement.id, statement]));
+    // As above, seal the authored question, not its proof-wired render.
+    for (const [id, source] of sctx.sourceById) sourceById.set(id, source);
     for (const obligation of openObligations) {
       const source = sourceById.get(obligation.node_id);
       if (source?.kind === "openendedquestion") {

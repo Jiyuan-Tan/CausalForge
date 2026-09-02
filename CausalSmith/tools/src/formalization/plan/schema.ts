@@ -21,7 +21,7 @@ export const DispositionSchema = z.enum(["reuse", "define-local"]);
 export const LeanKindSchema = z.enum([
   "assumption", // assumption atom → named `def … : Prop` (referenced by hyps/fields)
   "structure", // class definition (by_member_properties) → structure / typeclass
-  "def", // construction definition (inputs) → def / noncomputable def
+  "def", // construction definition, unresolved OEQ, or cited non-Prop metadata carrier
   "theorem", // statement (T-block)
   "lemma", // statement (L-block)
 ]);
@@ -70,15 +70,21 @@ export const NodeEntrySchema = z.object({
   //    is its verification, and it is recorded in SUBSTRATE_DEBT.md until discharged.
   //    This is the existing substrate-gate behavior (the `substrate_build_required`
   //    channel), unchanged — so pre-split plans (no `gate_class`) keep working.
-  //  - "cited": the gate will NOT be discharged this run — a deferred assumption
-  //    that is formalized + assumed + MATCHED against `source` (a cite: entry), may
-  //    be built in a future run, and is recorded in CITED_DEPENDENCIES.md. Its only
-  //    verification is the F2.5 source-match (it is never proven this run).
+  //  - "cited": the node will NOT be discharged this run — either a deferred Prop
+  //    assumption or a non-Prop bibliographic metadata def, always MATCHED against
+  //    `source` (a cite: entry), and recorded in CITED_DEPENDENCIES.md. It is never
+  //    proven this run; a metadata carrier is not threaded as a hypothesis.
   gate_class: z.enum(["gated", "cited"]).optional(),
   // The id of the `cite:` entry (in the plan's `citations`) this node is matched
   // against. REQUIRED for `gate_class:"cited"` (a never-proven assumption needs
-  // something exact to check against); optional provenance for "gated".
+  // something exact to check against). A proved lemma/theorem produced by the supported
+  // citation-discharge path retains this field as provenance after the gate keys are
+  // removed; P9 checks both representations and source resolution.
   source: z.string().optional(),
+  // Set ONLY by `bin/gate.ts --discharge` when it clears a `gate_class:"cited"` gate. P9
+  // accepts a `status:"cited"` core statement as a proved lemma/theorem only with this
+  // stamp, so F1 cannot author the discharged shape directly (re-laundering).
+  citation_discharged: z.boolean().optional(),
   // structure only: the member-atom ids, in field order (== core by_member_properties).
   members: z.array(z.string()).optional(),
   // statement only: the file the decl is emitted to, and the node ids it takes as

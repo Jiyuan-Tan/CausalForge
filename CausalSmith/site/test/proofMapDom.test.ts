@@ -117,9 +117,9 @@ const PAPER = `
   </article>`;
 
 /** Mount the page. `wide` decides whether the rail exists (matchMedia). */
-function mount(worker = "", wide = true): void {
+function mount(worker = "", wide = true, reduceMotion = true): void {
   vi.stubGlobal("matchMedia", (q: string) => ({
-    matches: q.includes("min-width") ? wide : false,
+    matches: q.includes("min-width") ? wide : q.includes("prefers-reduced-motion") && reduceMotion,
     media: q,
     addEventListener() {},
     removeEventListener() {},
@@ -148,11 +148,18 @@ const lit = () => ({
 });
 
 let scrolled: string[] = [];
+let scrollTargets: Element[] = [];
+let scrollOptions: ScrollIntoViewOptions[] = [];
 
 beforeEach(() => {
   scrolled = [];
-  Element.prototype.scrollIntoView = function (this: Element) {
-    scrolled.push(this.getAttribute("data-objid") ?? this.id ?? "");
+  scrollTargets = [];
+  scrollOptions = [];
+  Element.prototype.scrollIntoView = function (this: Element, options?: boolean | ScrollIntoViewOptions) {
+    const block = this.closest<HTMLElement>(".formal-block");
+    scrolled.push(block?.dataset.objid ?? this.getAttribute("data-objid") ?? this.id ?? "");
+    scrollTargets.push(this);
+    if (options && typeof options === "object") scrollOptions.push(options);
   } as typeof Element.prototype.scrollIntoView;
   sessionStorage.clear();
 });
@@ -293,6 +300,8 @@ describe("proof map in the rail — read-only (no worker configured)", () => {
     dblclick(node("lem:base"));
     const block = document.querySelector('.formal-block[data-objid="lem:base"]')!;
     expect(scrolled).toEqual(["lem:base"]);
+    expect(scrollTargets[0].classList.contains("env-label")).toBe(true);
+    expect(scrollOptions[0]).toMatchObject({ block: "center", behavior: "auto" });
     expect(block.classList.contains("flash")).toBe(true);
     // A jump is a link-follow: it goes on the history stack.
     expect(push).toHaveBeenCalledWith(null, "", "#obj-lem:base");
@@ -300,6 +309,86 @@ describe("proof map in the rail — read-only (no worker configured)", () => {
     expect(block.classList.contains("flash")).toBe(false);
     expect(node("lem:base").classList.contains("is-selected")).toBe(true);
     push.mockRestore();
+  });
+
+  it("recenters after content-visibility changes the target position", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    }));
+    const label = document.querySelector<HTMLElement>(
+      '.formal-block[data-objid="lem:base"] .env-label',
+    )!;
+    vi.spyOn(label, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 900,
+      top: 900,
+      right: 100,
+      bottom: 920,
+      left: 0,
+      width: 100,
+      height: 20,
+      toJSON: () => ({}),
+    });
+
+    dblclick(node("lem:base"));
+    expect(scrolled).toEqual(["lem:base"]); // the immediate, first-click anchor
+    expect(frames).toHaveLength(1);
+    frames.shift()!(0); // layout reports that the label moved off-centre
+    expect(scrolled).toEqual(["lem:base", "lem:base"]); // automatic correction
+  });
+
+  it("keeps a smooth transition while following a moving content-visibility target", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("min-width"),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    }));
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(1000);
+    let scrollY = 0;
+    vi.spyOn(window, "scrollY", "get").mockImplementation(() => scrollY);
+    const positions: number[] = [];
+    vi.spyOn(window, "scrollTo").mockImplementation((options?: ScrollToOptions | number) => {
+      if (typeof options === "object" && typeof options.top === "number") {
+        scrollY = options.top;
+        positions.push(scrollY);
+      }
+    });
+    const label = document.querySelector<HTMLElement>(
+      '.formal-block[data-objid="lem:base"] .env-label',
+    )!;
+    vi.spyOn(label, "getBoundingClientRect").mockImplementation(() => {
+      // Once the scroll passes the skipped middle of the paper, its real
+      // content expands and pushes the destination another 1000 px down.
+      const documentTop = scrollY > 100 ? 5000 : 4000;
+      const top = documentTop - scrollY;
+      return {
+        x: 0,
+        y: top,
+        top,
+        right: 100,
+        bottom: top + 20,
+        left: 0,
+        width: 100,
+        height: 20,
+        toJSON: () => ({}),
+      };
+    });
+
+    dblclick(node("lem:base"));
+    frames.shift()!(0);    // establish the start
+    frames.shift()!(240);  // animated midpoint activates the skipped content
+    expect(positions.at(-1)).toBeGreaterThan(100);
+    frames.shift()!(1000); // the live destination, not the stale 4000 px one
+    expect(positions.at(-1)).toBeCloseTo(4510, 5);
+    expect(positions.length).toBeGreaterThan(1); // it was a transition, not a teleport
   });
 
   it("suppresses the anchor default on a single click and on the double", () => {

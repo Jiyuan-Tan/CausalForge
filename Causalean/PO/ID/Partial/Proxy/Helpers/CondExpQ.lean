@@ -106,11 +106,9 @@ private lemma integrableOn_stratumOddsRatio_arm
   set R : P.Ω → ℝ := S.stratumOddsRatio μ a with hR_def
   have hR_meas_X : Measurable[S.σ_X] R := by
     have h1 : Measurable[S.σ_X]
-        (μ[Set.indicator {ω' | S.A ω' ≠ a} (fun _ => (1 : ℝ)) | S.σ_X]) :=
-      stronglyMeasurable_condExp.measurable
+        (μ[Set.indicator {ω' | S.A ω' ≠ a} (fun _ => (1 : ℝ)) | S.σ_X]) := by fun_prop
     have h2 : Measurable[S.σ_X]
-        (μ[Set.indicator {ω' | S.A ω' = a} (fun _ => (1 : ℝ)) | S.σ_X]) :=
-      stronglyMeasurable_condExp.measurable
+        (μ[Set.indicator {ω' | S.A ω' = a} (fun _ => (1 : ℝ)) | S.σ_X]) := by fun_prop
     exact h1.div h2
   have hR_nn : 0 ≤ᵐ[μ] R := by
     have hnum : 0 ≤ᵐ[μ]
@@ -178,21 +176,17 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
     · ext ω; rfl
   have hs_in_AUX : MeasurableSet[S.σ_AUX] {ω | S.A ω = a} :=
     S.σ_AX_le_σ_AUX _ hs_in_AX
-  have hq'_int : Integrable q' μ := HA.integrable_q a
-  have hLa_int : Integrable L_a μ := HA.integrable_likelihoodRatio_swapA a
-  have hLa_m_UX : Measurable[S.σ_UX] L_a := HA.measurable_likelihoodRatio_swapA a
+  have hq'_int : Integrable q' μ := by fun_prop
+  have hLa_int : Integrable L_a μ := by fun_prop
+  have hLa_m_UX : Measurable[S.σ_UX] L_a := by fun_prop
   -- ind is bounded by 1 and σ_AX-measurable (lifts to mΩ).
-  have hind_meas_AX : Measurable[S.σ_AX] ind := by
-    refine Measurable.indicator (m := S.σ_AX) measurable_const ?_
-    exact hs_in_AX
-  have hind_meas : Measurable ind := hind_meas_AX.mono S.σ_AX_le le_rfl
+  have hind_meas_AX : Measurable[S.σ_AX] ind := by fun_prop
+  have hind_meas : Measurable ind := by fun_prop
   have hind_le : ∀ ω, ‖ind ω‖ ≤ 1 := by
     intro ω; by_cases h : ω ∈ {ω' | S.A ω' = a}
     · simp [ind, Set.indicator_of_mem h]
     · simp [ind, Set.indicator_of_notMem h]
-  have hind_int : Integrable ind μ := by
-    refine (integrable_const (1 : ℝ)).mono' hind_meas.aestronglyMeasurable ?_
-    exact Filter.Eventually.of_forall (by intro ω; simpa using hind_le ω)
+  have hind_int : Integrable ind μ := by fun_prop
   -- f := ind * q', g := ind * R.
   set f : P.Ω → ℝ := fun ω => ind ω * q' ω with hf_def
   set g : P.Ω → ℝ := fun ω => ind ω * R ω with hg_def
@@ -205,11 +199,9 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
     have := stronglyMeasurable_condExp (m := S.σ_X) (μ := μ)
         (f := Set.indicator {ω' | S.A ω' ≠ a} (fun _ => (1:ℝ)))
     have h1 : Measurable[S.σ_X]
-        (μ[Set.indicator {ω' | S.A ω' ≠ a} (fun _ => (1:ℝ)) | S.σ_X]) :=
-      this.measurable
+        (μ[Set.indicator {ω' | S.A ω' ≠ a} (fun _ => (1:ℝ)) | S.σ_X]) := by fun_prop
     have h2 : Measurable[S.σ_X]
-        (μ[Set.indicator {ω' | S.A ω' = a} (fun _ => (1:ℝ)) | S.σ_X]) :=
-      stronglyMeasurable_condExp.measurable
+        (μ[Set.indicator {ω' | S.A ω' = a} (fun _ => (1:ℝ)) | S.σ_X]) := by fun_prop
     exact h1.div h2
   have hR_meas_AX : Measurable[S.σ_AX] R := hR_meas_X.mono S.σ_X_le_σ_AX le_rfl
   have hR_meas_UX : Measurable[S.σ_UX] R := hR_meas_X.mono S.σ_X_le_σ_UX le_rfl
@@ -228,9 +220,7 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
     rw [hg_eq_indicator]
     exact hR_armOn.integrable_indicator hs_meas
   -- AEStronglyMeasurable[σ_AX] g.
-  have hg_aesm_AX : AEStronglyMeasurable[S.σ_AX] g μ := by
-    refine (Measurable.stronglyMeasurable ?_).aestronglyMeasurable
-    exact hind_meas_AX.mul hR_meas_AX
+  have hg_aesm_AX : AEStronglyMeasurable[S.σ_AX] g μ := by fun_prop
   -- σ-finite trim for σ_AX, σ_UX, σ_AUX.
   haveI : IsFiniteMeasure (μ.trim S.σ_AX_le) := isFiniteMeasure_trim S.σ_AX_le
   haveI : SigmaFinite (μ.trim S.σ_AX_le) := inferInstance
@@ -259,18 +249,11 @@ lemma condExp_q_eq_stratumOddsRatio_arm_AX
     set g_X : P.Ω → ℝ := fun ω => Set.indicator C_a (fun _ => (1:ℝ)) (S.X ω)
       with hgX_def
     -- g_X is σ_X-measurable (and bounded by 1).
-    have hgX_meas_X : Measurable[S.σ_X] g_X := by
-      -- comap-form: Set.indicator C_a (·1) ∘ S.X has σ_X-meas preimages.
-      have hbase : Measurable (Set.indicator C_a (fun _ : γ_X => (1:ℝ))) :=
-        measurable_const.indicator hCa_meas
-      -- A function of S.X is σ_X-measurable.
-      intro t ht
-      refine ⟨Set.indicator C_a (fun _ : γ_X => (1:ℝ)) ⁻¹' t, hbase ht, ?_⟩
-      rfl
-    have hgX_meas : Measurable g_X := hgX_meas_X.mono S.σ_X_le le_rfl
-    have hgX_meas_AX : Measurable[S.σ_AX] g_X := hgX_meas_X.mono S.σ_X_le_σ_AX le_rfl
-    have hgX_meas_UX : Measurable[S.σ_UX] g_X := hgX_meas_X.mono S.σ_X_le_σ_UX le_rfl
-    have hgX_meas_AUX : Measurable[S.σ_AUX] g_X := hgX_meas_X.mono S.σ_X_le_σ_AUX le_rfl
+    have hgX_meas_X : Measurable[S.σ_X] g_X := by fun_prop
+    have hgX_meas : Measurable g_X := by fun_prop
+    have hgX_meas_AX : Measurable[S.σ_AX] g_X := by fun_prop
+    have hgX_meas_UX : Measurable[S.σ_UX] g_X := by fun_prop
+    have hgX_meas_AUX : Measurable[S.σ_AUX] g_X := by fun_prop
     have hgX_le : ∀ ω, ‖g_X ω‖ ≤ 1 := by
       intro ω
       by_cases h : S.X ω ∈ C_a

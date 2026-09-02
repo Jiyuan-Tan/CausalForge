@@ -4,7 +4,7 @@
 // comparison; unknown/stale hashes skip fail-safe.
 
 import { describe, it, expect } from "vitest";
-import { statementRevision, stampRevision, stampCoreStatements, REVISION_PATTERN } from "../../src/discovery/core/revision.js";
+import { definitionRevision, statementRevision, stampRevision, stampCoreStatements, REVISION_PATTERN } from "../../src/discovery/core/revision.js";
 import { describeRevisionMismatch } from "../../src/discovery/stages/d0_apply.js";
 import { buildReviewPacket } from "../../src/discovery/review_packet.js";
 import type { Core, CoreStatement } from "../../src/discovery/core/schema.js";
@@ -41,6 +41,31 @@ describe("statementRevision", () => {
     expect(statementRevision(node({ depends_on: ["def:d", "ass:a", "lem:wired-in"] }))).toBe(base);
     expect(statementRevision({ ...node(), proof_tex: "long proof" } as CoreStatement)).toBe(base);
     expect(statementRevision({ ...node(), source: { cite: "K" } } as never)).toBe(base);
+  });
+});
+
+describe("definitionRevision", () => {
+  const definition = {
+    id: "def:d", name: "D", construction: "D(X)=X", free_symbols: ["X"], inputs: ["X"],
+  };
+
+  it("covers construction and complete semantic metadata", () => {
+    const base = definitionRevision(definition);
+    expect(definitionRevision({ ...definition, construction: "D(X)=2X" })).not.toBe(base);
+    expect(definitionRevision({ ...definition, inputs: ["X", "Z"] })).not.toBe(base);
+    expect(definitionRevision({ ...definition, free_symbols: ["X", "Z"] })).not.toBe(base);
+  });
+
+  it("covers the complete frozen semantic basis, including referenced symbols", () => {
+    const basis = {
+      qid: "q", symbols: [{ name: "X", type: "scalar", def: "old meaning" }],
+      assumptions: [], definitions: [definition], statements: [], bibliography: [],
+      target_estimand: "T",
+    } as unknown as Core;
+    const base = definitionRevision(definition, basis);
+    const changed = structuredClone(basis);
+    changed.symbols[0].def = "new meaning";
+    expect(definitionRevision(definition, changed)).not.toBe(base);
   });
 });
 

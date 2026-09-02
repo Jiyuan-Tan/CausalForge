@@ -68,6 +68,7 @@ def τ_val (S : CATEEstimationSystem P γ) (x : γ) : ℝ :=
   S.μ_val true x - S.μ_val false x
 
 /-- The value-space CATE is measurable, since both arms of `μ_val` are. -/
+@[fun_prop]
 lemma measurable_τ_val (S : CATEEstimationSystem P γ) :
     Measurable S.τ_val :=
   (S.μ_meas true).sub (S.μ_meas false)

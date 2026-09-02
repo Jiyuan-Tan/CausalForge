@@ -47,7 +47,7 @@ theorem Tendsto_inProb.comp_continuousAt
     {g : ℝ → ℝ} (hg : ContinuousAt g c)
     (h : Tendsto_inProb Yn (fun _ => c) μ) :
     Tendsto_inProb (fun n ω => g (Yn n ω)) (fun _ => g c) μ := by
-  unfold Tendsto_inProb at h ⊢
+  simp only [causal_defs_simps] at h ⊢
   rw [tendstoInMeasure_iff_dist] at h ⊢
   intro ε hε
   have hev : ∀ᶠ y in 𝓝 c, dist (g y) (g c) < ε :=
@@ -68,7 +68,7 @@ theorem Tendsto_inProb.inv
     {Ω : Type*} [MeasurableSpace Ω] {Yn : ℕ → Ω → ℝ} {Y₀ : ℝ} {μ : Measure Ω}
     (h : Tendsto_inProb Yn (fun _ => Y₀) μ) (hY₀ : Y₀ ≠ 0) :
     Tendsto_inProb (fun n ω => 1 / Yn n ω) (fun _ => 1 / Y₀) μ := by
-  unfold Tendsto_inProb at h ⊢
+  simp only [causal_defs_simps] at h ⊢
   rw [tendstoInMeasure_iff_dist] at h ⊢
   intro ε hε
   have hcont : ContinuousAt (fun x : ℝ => x⁻¹) Y₀ := continuousAt_inv₀ hY₀
@@ -91,7 +91,7 @@ theorem Tendsto_inProb.sub_const
     {Ω : Type*} [MeasurableSpace Ω] {Yn : ℕ → Ω → ℝ} {Y₀ : ℝ} {μ : Measure Ω}
     (h : Tendsto_inProb Yn (fun _ => Y₀) μ) :
     Tendsto_inProb (fun n ω => Yn n ω - Y₀) (fun _ => 0) μ := by
-  unfold Tendsto_inProb at h ⊢
+  simp only [causal_defs_simps] at h ⊢
   rw [tendstoInMeasure_iff_norm] at h ⊢
   intro ε hε
   simpa [Pi.sub_apply, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using h ε hε
@@ -106,7 +106,7 @@ theorem Tendsto_inProb.sub
     (hX : Tendsto_inProb Xn (fun _ => a) μ)
     (hY : Tendsto_inProb Yn (fun _ => b) μ) :
     Tendsto_inProb (fun n ω => Xn n ω - Yn n ω) (fun _ => a - b) μ := by
-  unfold Tendsto_inProb at hX hY ⊢
+  simp only [causal_defs_simps] at hX hY ⊢
   rw [tendstoInMeasure_iff_norm] at hX hY ⊢
   intro ε hε
   have hhalf : 0 < ε / 2 := by positivity
@@ -143,7 +143,7 @@ theorem Tendsto_inProb.isLittleOp_one
     (h : Tendsto_inProb Yn (fun _ => 0) μ) :
     IsLittleOp Yn (fun _ => (1 : ℝ)) μ := by
   intro ε hε
-  unfold Tendsto_inProb at h
+  simp only [causal_defs_simps] at h
   rw [tendstoInMeasure_iff_norm] at h
   have ht := h ε hε
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ht
@@ -162,7 +162,7 @@ theorem Tendsto_inProb.isBigOp_one
     IsBigOp Xn (fun _ => (1 : ℝ)) μ := by
   intro ε hε
   refine ⟨|c| + 1, ?_⟩
-  unfold Tendsto_inProb at h
+  simp only [causal_defs_simps] at h
   rw [tendstoInMeasure_iff_norm] at h
   have ht := h 1 one_pos
   have hlim :
@@ -196,7 +196,7 @@ theorem Tendsto_inProb.pi_comp_continuousAt
     (h : ∀ i, Tendsto_inProb (fun n ω => Yn n ω i) (fun _ => c i) μ) :
     Tendsto_inProb (fun n ω => g (Yn n ω)) (fun _ => g c) μ := by
   classical
-  unfold Tendsto_inProb
+  simp only [causal_defs_simps]
   rw [tendstoInMeasure_iff_dist]
   intro ε hε
   have hev := (Metric.tendsto_nhds.mp hg) ε hε
@@ -209,7 +209,7 @@ theorem Tendsto_inProb.pi_comp_continuousAt
   have hentry : ∀ i, Filter.Tendsto (fun n => μ (Bad n i)) Filter.atTop (nhds 0) := by
     intro i
     have hi := h i
-    unfold Tendsto_inProb at hi
+    simp only [causal_defs_simps] at hi
     rw [tendstoInMeasure_iff_norm] at hi
     have ht := hi δ hδpos
     simpa [Bad, Real.norm_eq_abs] using ht

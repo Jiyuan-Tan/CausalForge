@@ -30,6 +30,7 @@ import Causalean.PO.ID.Exact.PartialLinear.Identification
 import Causalean.Estimation.PLR.Moment
 import Causalean.Estimation.OrthogonalMoments.MomentFunctional
 import Mathlib.MeasureTheory.Function.LpSeminorm.Basic
+import Causalean.Tactic.Attr
 
 /-! # Partially linear DML estimation system
 
@@ -90,6 +91,8 @@ structure PLRSystem (P : POSystem) (γ : Type*) [MeasurableSpace γ]
     ∫ ω, (toPOPartialLinearSystem.factualD ω
             - mVal (toPOPartialLinearSystem.factualX ω)) ^ 2 ∂P.μ ≠ 0
 
+attribute [fun_prop] PLRSystem.lVal_meas PLRSystem.mVal_meas
+
 namespace PLRSystem
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ] [IsFiniteMeasure P.μ]
@@ -101,6 +104,7 @@ noncomputable def factualZ : P.Ω → γ × ℝ × ℝ :=
   fun ω => (S.factualX ω, S.factualD ω, S.factualY ω)
 
 /-- The observed-data map is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ :=
   S.measurable_factualX.prodMk (S.measurable_factualD.prodMk S.measurable_factualY)
 
@@ -111,6 +115,16 @@ noncomputable def P_Z : Measure (γ × ℝ × ℝ) := P.μ.map S.factualZ
 /-- The covariate marginal is the distribution of the observed covariate induced
 by the population measure. -/
 noncomputable def P_X : Measure γ := P.μ.map S.factualX
+
+/-- The joint observed-data law is the image of the population measure under the map recording
+the observed covariate, treatment, and outcome. -/
+@[causal_defs_simps]
+lemma P_Z_eq : S.P_Z = P.μ.map S.factualZ := rfl
+
+/-- The covariate marginal is the image of the population measure under the observed covariate
+map. -/
+@[causal_defs_simps]
+lemma P_X_eq : S.P_X = P.μ.map S.factualX := rfl
 
 /-- The true nuisance is the pair of value-space outcome and treatment
 regressions. -/

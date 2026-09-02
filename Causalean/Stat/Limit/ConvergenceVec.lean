@@ -147,8 +147,8 @@ theorem Tendsto_dist_vec.add_isLittleOp_one
       exact (abs_sub_abs_le_abs_sub (F (Xn n a)) (F 0)).trans hF_bounded
     have h_int_sub : Integrable (fun a ↦ ‖F (Yn n a) - F (Xn n a)‖) μ :=
       (h_int_Y.sub h_int_X).norm
-    have hD_aemeas : AEMeasurable (fun a ↦ ‖F (Yn n a) - F (Xn n a)‖) μ :=
-      h_int_sub.aemeasurable
+    have hD_aemeas : AEMeasurable (fun a ↦ ‖F (Yn n a) - F (Xn n a)‖) μ := by
+      fun_prop
     rw [integral_map (hYn n) hF_cont.aestronglyMeasurable,
         integral_map (hXn n) hF_cont.aestronglyMeasurable,
       ← integral_sub h_int_Y h_int_X, ← Real.norm_eq_abs]

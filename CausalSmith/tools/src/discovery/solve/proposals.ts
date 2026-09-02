@@ -29,6 +29,7 @@ import type { PipelineContext } from "../../types.js";
 import { normalizeTexWhitespace, stripTexComments } from "../../shared/tex_text.js";
 import type { WorkingState } from "../stages/d0_working.js";
 import type { RawChange, RawAssumption, RawCoreEdit } from "../stages/d0_apply.js";
+import type { CoreStatement } from "../core/schema.js";
 
 /** A same-round proof payload, banked while a structural proposal is pending.
  *  It supersedes the node's stale `proof_tex` for review and adjudication.
@@ -42,11 +43,17 @@ export interface ProvisionalProof {
 
 /** Everything one D0 round proposes, adjudicated as a unit. */
 export interface RoundProposals {
+  basis_revision?: string;
   statements: RawChange[];
   definitions: RawChange[];
   assumptions: RawAssumption[];
   coreEdits: RawCoreEdit[];
   proofs: ProvisionalProof[];
+  /** Byte-faithful cited nodes re-emitted in the same solve round. Unlike a proof,
+   * the citation object is the justification. Keeping the receipt in the atomic
+   * proposal carrier lets apply validate it against the selected postimage instead
+   * of consuming it prematurely against the preimage. */
+  citationRevalidations?: CoreStatement[];
 }
 
 export function emptyProposals(): RoundProposals {

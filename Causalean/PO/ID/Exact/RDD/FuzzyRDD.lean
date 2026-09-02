@@ -40,6 +40,7 @@ import Mathlib.MeasureTheory.Function.AEEqOfIntegral
 import Mathlib.MeasureTheory.Integral.Bochner.Set
 import Mathlib.MeasureTheory.Measure.Map
 import Mathlib.Topology.Order.Basic
+import Causalean.Tactic.Attr
 
 /-! # Fuzzy Regression Discontinuity
 
@@ -116,6 +117,14 @@ noncomputable def YofD (d : Bool) : P.Ω → ℝ :=
 noncomputable def YofDofZ (z : Bool) : P.Ω → ℝ :=
   fun ω => if S.DofZ z ω then S.YofD true ω else S.YofD false ω
 
+/-- The potential outcome under the treatment that an instrument value induces sends a unit to
+that unit's treated potential outcome when the induced treatment is one, and to its untreated
+potential outcome otherwise. -/
+@[causal_defs_simps]
+lemma YofDofZ_def (z : Bool) :
+    S.YofDofZ z = fun ω => if S.DofZ z ω then S.YofD true ω else S.YofD false ω :=
+  rfl
+
 /-- Y-difference weighted by the complier indicator `1_{D(1)=1, D(0)=0}`.
 Equals `Y(D(1)) − Y(D(0))` a.e. under monotonicity; used in the LATE bridge. -/
 noncomputable def YdiffComplier : P.Ω → ℝ :=
@@ -123,29 +132,37 @@ noncomputable def YdiffComplier : P.Ω → ℝ :=
     if S.DofZ true ω = true ∧ S.DofZ false ω = false then 1 else 0
 
 /-- The factual running variable is measurable. -/
+@[fun_prop]
 lemma measurable_factualX : Measurable S.factualX := S.Xvar.measurable_factual
 /-- The factual cutoff-eligibility instrument is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.Zvar.measurable_factual
 /-- The factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.Dvar.measurable_factual
 /-- The factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.Yvar.measurable_factual
 
 /-- The instrument-specific potential treatment is measurable. -/
+@[fun_prop]
 lemma measurable_DofZ (z : Bool) : Measurable (S.DofZ z) :=
   S.Dvar.measurable_cfUnder S.Zvar z
 
 /-- The treatment-specific potential outcome is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.Yvar.measurable_cfUnder S.Dvar d
 
 /-- The outcome under the instrument-induced treatment is measurable. -/
+@[fun_prop]
 lemma measurable_YofDofZ (z : Bool) : Measurable (S.YofDofZ z) := by
-  unfold YofDofZ
+  simp only [causal_defs_simps]
   exact Measurable.ite (S.measurable_DofZ z (MeasurableSet.singleton true))
     (S.measurable_YofD true) (S.measurable_YofD false)
 
 /-- The complier-weighted outcome difference is measurable. -/
+@[fun_prop]
 lemma measurable_YdiffComplier : Measurable S.YdiffComplier := by
   unfold YdiffComplier
   apply Measurable.mul
@@ -278,7 +295,9 @@ lemma tendsto_nuY_left_limit (hA : S.Assumptions) :
     Tendsto hA.nuY (𝓝[<] S.c) (𝓝 (S.nuY_left_limit hA)) :=
   Classical.choose_spec hA.nuY_left_limit_exists
 
-private lemma aemeasurable_factualX (S : POFuzzyRDDSystem P) :
+/-- The observed running variable is almost-everywhere measurable. -/
+@[fun_prop]
+lemma aemeasurable_factualX (S : POFuzzyRDDSystem P) :
     AEMeasurable S.factualX P.μ := S.measurable_factualX.aemeasurable
 
 /-! ### D-side bridges -/
@@ -377,7 +396,7 @@ private lemma factualY_eq_YofDofZ_on_zEvent
     _ = S.YofD (S.DofZ z ω) ω := by
       rw [S.factualD_eq_DofZ_on_zEvent hC z ω hω]
     _ = S.YofDofZ z ω := by
-      unfold YofDofZ
+      simp only [causal_defs_simps]
       cases S.DofZ z ω <;> rfl
 
 private lemma factualY_eq_YofDofZ_true_ae_restrict_Ici

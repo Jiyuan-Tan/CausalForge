@@ -79,9 +79,8 @@ theorem obsKernel_marginal_singleton_eq_latentProduct_agree
   have hcomp :
       Measurable
         ((valuesProjection (Ω := swigΩ Ω) hP) ∘ M.randomToObserved) :=
-    hproj.comp M.measurable_randomToObserved
-  have heval : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) :=
-    M.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+    by fun_prop
+  have heval : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by fun_prop
   rw [SCM.obsKernel, Kernel.map_apply _ M.measurable_randomToObserved,
     Measure.map_map hproj M.measurable_randomToObserved]
   rw [M.jointKernel_apply_eq s, Measure.map_map hcomp heval]

@@ -106,32 +106,32 @@ def fdSWIG : SWIGGraph FDNode where
     intro u hu; simp at hu
     subst hu
     exact ⟨_, rfl⟩
-  obs_unobs_disjoint := by native_decide
-  dag_edges_classified := by native_decide
+  obs_unobs_disjoint := by decide
+  dag_edges_classified := by decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by
     intro u hu; simp at hu
     subst hu
     simpa [initialSWIG] using
-      swig_random_root_of_root fdDAG ∅ fdU (by native_decide : fdDAG.parents fdU = ∅)
+      swig_random_root_of_root fdDAG ∅ fdU (by decide : fdDAG.parents fdU = ∅)
   fixed_outside_fixed_isolated := by
     intro n _
-    cases n <;> exact ⟨by native_decide, by native_decide⟩
-  all_children_in_observed := by native_decide
+    cases n <;> exact ⟨by decide, by decide⟩
+  all_children_in_observed := by decide
 
 -- ============================================================
 -- C-components and recursive ID witness
 -- ============================================================
 
 example : fdSWIG.cComponentOf (SWIGNode.random fdX) =
-    {SWIGNode.random fdX, SWIGNode.random fdY} := by native_decide
+    {SWIGNode.random fdX, SWIGNode.random fdY} := by decide
 
 example : fdSWIG.cComponentOf (SWIGNode.random fdM) =
-    {SWIGNode.random fdM} := by native_decide
+    {SWIGNode.random fdM} := by decide
 
 example : fdSWIG.cComponentOf (SWIGNode.random fdY) =
-    {SWIGNode.random fdX, SWIGNode.random fdY} := by native_decide
+    {SWIGNode.random fdX, SWIGNode.random fdY} := by decide
 
 example : Causalean.SCM.ID.inducedAncestral fdSWIG
     ({SWIGNode.random fdX, SWIGNode.random fdY} : Finset (SWIGNode FDNode))
@@ -139,7 +139,7 @@ example : Causalean.SCM.ID.inducedAncestral fdSWIG
     {SWIGNode.random fdY} := by
   unfold Causalean.SCM.ID.inducedAncestral
   simp [SWIGGraph.induce]
-  native_decide
+  decide
 
 example : Causalean.SCM.ID.containingCComponent fdSWIG
     ({SWIGNode.random fdY} : Finset (SWIGNode FDNode)) =
@@ -152,7 +152,7 @@ example : Causalean.SCM.ID.containingCComponent fdSWIG
       have hmem := Exists.choose_spec hne
       simpa using hmem
     rw [hchoose]
-    native_decide
+    decide
   · rename_i hne
     exact False.elim (hne (by simp))
 
@@ -163,13 +163,13 @@ example : Causalean.SCM.ID.idSucceedsRec ({fdX} : Finset FDNode)
     · intro D hD
       simp at hD
       subst hD
-      native_decide
+      decide
     · intro D hD
       simp at hD
       subst hD
-      native_decide
+      decide
   refine ⟨hX, ?_, ?_, ?_⟩
-  · native_decide
+  · decide
   · decide
   · intro S hS
     have hSet :
@@ -180,7 +180,7 @@ example : Causalean.SCM.ID.idSucceedsRec ({fdX} : Finset FDNode)
           Finset (Finset (SWIGNode FDNode))) := by
       rw [SWIGGraph.cComponentSet]
       simp [SWIGGraph.splitMono, SWIGGraph.induce]
-      native_decide
+      decide
     rw [hSet] at hS
     simp at hS
     rcases hS with hS | hS
@@ -188,8 +188,8 @@ example : Causalean.SCM.ID.idSucceedsRec ({fdX} : Finset FDNode)
       have hMmem :
           ({SWIGNode.random fdM} : Finset (SWIGNode FDNode)) ∈ fdSWIG.cComponentSet := by
         rw [SWIGGraph.cComponentSet]
-        refine Finset.mem_image.mpr ⟨SWIGNode.random fdM, by native_decide, ?_⟩
-        native_decide
+        refine Finset.mem_image.mpr ⟨SWIGNode.random fdM, by decide, ?_⟩
+        decide
       rw [Causalean.SCM.ID.containingCComponent_of_mem_cComponentSet fdSWIG _ hMmem]
       exact Causalean.SCM.ID.CFactorReachableRec.base (by simp) (by simp)
         (Causalean.SCM.ID.inducedAncestral_self_of_mem_cComponentSet fdSWIG _ hMmem)
@@ -206,14 +206,14 @@ example : Causalean.SCM.ID.idSucceedsRec ({fdX} : Finset FDNode)
             have hmem := Exists.choose_spec hne
             simpa using hmem
           rw [hchoose]
-          native_decide
+          decide
         · rename_i hne
           exact False.elim (hne (by simp))
       rw [hContaining]
       exact Causalean.SCM.ID.CFactorReachableRec.base (by simp) (by simp) (by
         unfold Causalean.SCM.ID.inducedAncestral
         simp [SWIGGraph.induce]
-        native_decide)
+        decide)
 
 example : ¬ Causalean.SCM.ID.cFactorReachable fdSWIG
     (Causalean.SCM.ID.containingCComponent fdSWIG
@@ -223,7 +223,7 @@ example : ¬ Causalean.SCM.ID.cFactorReachable fdSWIG
   have hnot :
       ({SWIGNode.random fdY} : Finset (SWIGNode FDNode)) ∉ fdSWIG.cComponentSet := by
     rw [SWIGGraph.cComponentSet]
-    native_decide
+    decide
   exact hnot hmem
 
 /-! ### Running the executable checker
@@ -232,10 +232,11 @@ The `idAlgorithm` decision procedure *computes* on the concrete frontdoor graph 
 returns `true` — a verified "P(Y ∣ do(X)) is identifiable", with the fixing step the
 no-fixing fragment cannot handle. -/
 
+set_option maxRecDepth 4096 in
 /-- `#eval` runs the checker; it prints `true`. -/
 example :
     Causalean.SCM.ID.idAlgorithm 10 fdSWIG ({fdX} : Finset FDNode)
       ({SWIGNode.random fdY} : Finset (SWIGNode FDNode)) = true := by
-  native_decide
+  decide
 
 end Causalean.SCM.Examples.Frontdoor

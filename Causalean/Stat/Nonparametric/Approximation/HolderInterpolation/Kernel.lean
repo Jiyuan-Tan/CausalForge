@@ -47,7 +47,10 @@ monomials `1, …, uᵐ` under the strictly positive weight `1 - u²` on `[-1,1]
 private noncomputable def hpkGram (m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ :=
   fun j i => ∫ u in Set.Icc (-1 : ℝ) 1, u ^ ((i : ℕ) + (j : ℕ)) * (1 - u ^ 2)
 
-private theorem hpkPoly_continuous (m : ℕ) (c : Fin (m + 1) → ℝ) :
+/-- The coefficient polynomial of degree at most `m` built from a coefficient vector is a
+continuous function on the real line. -/
+@[fun_prop]
+theorem hpkPoly_continuous (m : ℕ) (c : Fin (m + 1) → ℝ) :
     Continuous (hpkPoly m c) := by
   unfold hpkPoly
   exact continuous_finset_sum _ (fun i _ => continuous_const.mul (continuous_pow _))

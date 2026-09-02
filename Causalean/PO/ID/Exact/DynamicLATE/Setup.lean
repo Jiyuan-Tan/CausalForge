@@ -26,6 +26,7 @@ import Causalean.Mathlib.CondIndep
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.Independence.Conditional
+import Causalean.Tactic.Attr
 
 /-! # Two-Period Dynamic LATE Setup
 
@@ -263,17 +264,27 @@ map; `composition` consistency identifies it with the explicit composition. -/
 noncomputable def YofDofZ (z : Fin 2 → Bool) : P.Ω → ℝ :=
   S.yVar.cf (S.encouragementRegime z)
 
+/-- The outcome under a two-target encouragement is the counterfactual outcome variable
+evaluated at the encouragement regime induced by the encouragement values. -/
+@[causal_defs_simps]
+lemma YofDofZ_eq (z : Fin 2 → Bool) :
+    S.YofDofZ z = S.yVar.cf (S.encouragementRegime z) :=
+  rfl
+
 /-- `Y(D₁, D₂(Z₁, z₂))` realised as `Y` under the regime fixing only
 `Z₂ = z₂`. -/
 noncomputable def YofZ2 (z₂ : Bool) : P.Ω → ℝ := S.yVar.cf (S.encZ2Regime z₂)
 
 /-- The first treatment under a two-target encouragement regime is measurable. -/
+@[fun_prop]
 lemma measurable_D1ofZ (z : Fin 2 → Bool) : Measurable (S.D1ofZ z) :=
   S.d1Var.measurable_cf _
 /-- The second treatment under a two-target encouragement regime is measurable. -/
+@[fun_prop]
 lemma measurable_D2ofZ (z : Fin 2 → Bool) : Measurable (S.D2ofZ z) :=
   S.d2Var.measurable_cf _
 /-- The joint counterfactual treatment vector under encouragement is measurable. -/
+@[fun_prop]
 lemma measurable_DofZ (z : Fin 2 → Bool) : Measurable (S.DofZ z) := by
   refine measurable_pi_lambda _ ?_
   intro i
@@ -281,30 +292,41 @@ lemma measurable_DofZ (z : Fin 2 → Bool) : Measurable (S.DofZ z) := by
   · simpa [DofZ] using S.measurable_D1ofZ z
   · intro _; simpa [DofZ] using S.measurable_D2ofZ z
 /-- The second treatment under a stage-2-only encouragement regime is measurable. -/
+@[fun_prop]
 lemma measurable_D2ofZ2 (z₂ : Bool) : Measurable (S.D2ofZ2 z₂) :=
   S.d2Var.measurable_cf _
 /-- The outcome under a fixed treatment vector is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Fin 2 → Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cf _
 /-- The outcome under a fixed encouragement vector is measurable. -/
+@[fun_prop]
 lemma measurable_YofDofZ (z : Fin 2 → Bool) : Measurable (S.YofDofZ z) :=
   S.yVar.measurable_cf _
 /-- The outcome under a stage-2-only encouragement regime is measurable. -/
+@[fun_prop]
 lemma measurable_YofZ2 (z₂ : Bool) : Measurable (S.YofZ2 z₂) :=
   S.yVar.measurable_cf _
 /-- The observed baseline state is measurable. -/
+@[fun_prop]
 lemma measurable_factualS0 : Measurable S.factualS0 := S.S0.measurable_factual
 /-- The observed intermediate state is measurable. -/
+@[fun_prop]
 lemma measurable_factualS1 : Measurable S.factualS1 := S.S1.measurable_factual
 /-- The observed first encouragement is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ1 : Measurable S.factualZ1 := S.z1Var.measurable_factual
 /-- The observed second encouragement is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ2 : Measurable S.factualZ2 := S.z2Var.measurable_factual
 /-- The observed first treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD1 : Measurable S.factualD1 := S.d1Var.measurable_factual
 /-- The observed second treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD2 : Measurable S.factualD2 := S.d2Var.measurable_factual
 /-- The observed outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- Factual `Y` is integrable once the two stage-2 counterfactual outcomes are
@@ -412,11 +434,13 @@ noncomputable def indZ (z : Fin 2 → Bool) : P.Ω → ℝ :=
   fun ω => S.z1Var.indicator (z 0) ω * S.z2Var.indicator (z 1) ω
 
 /-- The joint treatment indicator is measurable. -/
+@[fun_prop]
 lemma measurable_indD (d : Fin 2 → Bool) : Measurable (S.indD d) :=
   (S.d1Var.measurable_indicator _ (MeasurableSet.singleton _)).mul
     (S.d2Var.measurable_indicator _ (MeasurableSet.singleton _))
 
 /-- The joint encouragement indicator is measurable. -/
+@[fun_prop]
 lemma measurable_indZ (z : Fin 2 → Bool) : Measurable (S.indZ z) :=
   (S.z1Var.measurable_indicator _ (MeasurableSet.singleton _)).mul
     (S.z2Var.measurable_indicator _ (MeasurableSet.singleton _))
@@ -598,6 +622,7 @@ namespace Assumptions
 
 /-- Compatibility projection for older call sites: factual outcome integrability
 is derived from consistency plus integrability of the two `YofZ2` cells. -/
+@[fun_prop]
 lemma integrable_factualY [StandardBorelSpace P.Ω] (As : S.Assumptions) :
     Integrable S.factualY P.μ :=
   S.integrable_factualY_of_consistency_integrable_YofZ2 As.consistency As.integrable_YofZ2

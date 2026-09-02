@@ -146,6 +146,7 @@ theorem mechanismFunCf_fixedParentVals (F : EnvFamily N Ω ι) (i₀ i : ι) :
   rfl
 
 /-- `mechanismFunCf` is measurable. -/
+@[fun_prop]
 theorem measurable_mechanismFunCf (F : EnvFamily N Ω ι) (i₀ i : ι)
     (cf : ValuesOn (F.paFix i) (swigΩ Ω)) :
     Measurable (F.mechanismFunCf i₀ i cf) := by
@@ -167,6 +168,7 @@ theorem measurable_mechanismFunCf (F : EnvFamily N Ω ι) (i₀ i : ι)
           exact (measurable_pi_apply _).comp measurable_fst)
 
 /-- `mechanismFun` is measurable. -/
+@[fun_prop]
 theorem measurable_mechanismFun (F : EnvFamily N Ω ι) (i₀ i : ι) :
     Measurable (F.mechanismFun i₀ i) := by
   classical

@@ -5,8 +5,9 @@
 // and empty bodies are not archived (there are no bytes to preserve).
 
 import { describe, it, expect } from "vitest";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -54,6 +55,47 @@ describe("proof archive", () => {
       expect(second).toHaveLength(1);
       const index = await readProofArchiveIndex(dir);
       expect(index.map((e) => e.node_id).sort()).toEqual(["lem:x", "lem:y"]);
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects a corrupt pre-existing hash object instead of indexing its pathname", async () => {
+    const dir = await tmpDiscoveryDir();
+    try {
+      const proofTex = "The intended complete proof.";
+      const hash = createHash("sha256").update(proofTex, "utf8").digest("hex");
+      const objects = path.join(proofArchiveDir(dir), "objects");
+      await mkdir(objects, { recursive: true });
+      await writeFile(path.join(objects, `${hash}.tex`), "torn", "utf8");
+
+      await expect(archiveProofs(dir, [
+        { nodeId: "lem:x", proofTex, reason: "round-cleared" },
+      ])).rejects.toThrow(/archive object is corrupt/);
+      expect(existsSync(path.join(proofArchiveDir(dir), "index.jsonl"))).toBe(false);
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
+  it("repairs a missing object before an existing index row may dedupe hot bytes", async () => {
+    const dir = await tmpDiscoveryDir();
+    try {
+      const proof = { nodeId: "lem:x", proofTex: "Recoverable hot proof.", reason: "round-cleared" };
+      const [entry] = await archiveProofs(dir, [proof]);
+      const objectPath = path.join(proofArchiveDir(dir), "objects", `${entry.hash}.tex`);
+      await rm(objectPath, { force: true });
+
+      expect(await archiveProofs(dir, [proof])).toHaveLength(0);
+      expect(await readFile(objectPath, "utf8")).toBe(proof.proofTex);
+    } finally { await rm(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects a corrupt object even when an existing index row would dedupe it", async () => {
+    const dir = await tmpDiscoveryDir();
+    try {
+      const proof = { nodeId: "lem:x", proofTex: "Recoverable hot proof.", reason: "round-cleared" };
+      const [entry] = await archiveProofs(dir, [proof]);
+      const objectPath = path.join(proofArchiveDir(dir), "objects", `${entry.hash}.tex`);
+      await writeFile(objectPath, "torn", "utf8");
+
+      await expect(archiveProofs(dir, [proof])).rejects.toThrow(/archive object is corrupt/);
     } finally { await rm(dir, { recursive: true, force: true }); }
   });
 

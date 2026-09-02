@@ -61,7 +61,9 @@ export interface MemberSnapshot {
 
 /** One proved node carried across rounds. Spec statements store just proof+snapshot;
  *  agent-added lemmas additionally store their `node` (they are not in the proto) and
- *  the `owner` group label that authored them. */
+ *  the `owner` group label that authored them. Frozen overlays may also carry an
+ *  owner when a directed repair assigns a durable semantic owner to a published
+ *  node that is not itself a later dispatch root. */
 // A record's `node` is not an optional extra — it is the KIND distinction, and reading
 // it without establishing which kind you hold is a live source of wrong answers. A
 // frozen proto member's statement is defined in `proto_core.json`, so its record carries
@@ -74,7 +76,7 @@ interface ProtoMemberProof {
   proof_tex: string;
   snapshot: MemberSnapshot;
   node?: undefined;
-  owner?: undefined;
+  owner?: string;
   partial?: boolean;
   /** Never set on a frozen member: its render comes from the proto text, so there
    *  is nothing to shelve. Typed `undefined` so a union read is legal. */
@@ -157,6 +159,8 @@ export interface WorkingState {
    * to avoid a cycle with stage0_apply's raw edit types.
    */
   proposals?: {
+    /** Exact assembled-core revision persisted with this adjudication packet. */
+    basis_revision?: string;
     statements: unknown[];
     definitions: unknown[];
     assumptions: unknown[];
@@ -165,6 +169,8 @@ export interface WorkingState {
      *  this id (see solve/proposals.ts `ProvisionalProof`); apply promotes it when that
      *  basis materializes. Kept structural here to avoid an import cycle. */
     proofs: Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>;
+    /** Exact cited-source receipts reviewed with this same atomic postimage. */
+    citationRevalidations?: CoreStatement[];
   };
   /** Independently adjudicated exact edits remain authoritative across any number
    * of solve regenerations and are cleared only by a successful atomic apply or an
@@ -369,6 +375,9 @@ export interface EscalationLogEntry {
   round: number;
   changed: Array<{ id: string; kind: "definition" | "statement" | "assumption" | "bibliography" | "symbol" | "metadata"; from: string; to: string; reason: string }>;
   note?: string;
+  /** Reviewed provisional proofs explicitly rejected while their independently
+   * accepted semantic variants applied. These targets are reopened for reproof. */
+  rejected_proof_ids?: string[];
   /** A standalone orchestrator directive to the next solve (no applied change) — e.g. a
    *  D0.5 review finding routed back for re-derivation. Rendered even when `changed` is empty. */
   directive?: string;
@@ -539,19 +548,164 @@ export async function narrowPendingDirectiveTargets(
  *  to protect against. Narrow blast radius either way: 13 of the 2095 symbols in the 42
  *  real cores under doc/research carry `ref` at all.
  *
- *  `refs` stays EXCLUDED. It lists the other symbols this symbol's `def` mentions and
- *  exists for G1's defined-before-use ordering check — it is derived from `def`, which is
- *  already hashed, so it carries no meaning of its own and would only add invalidation on
- *  a pure re-ordering. 1287 symbols carry it. */
-export function symbolBasis(proto: Core): Record<string, string> {
-  const out: Record<string, string> = {};
+ *  Symbol meaning is a GRAPH, not a flat row. `refs` names symbols used by this symbol's
+ *  definition, and `ref` may name a definition/assumption/statement whose content defines
+ *  the symbol. A consumer declaring only the root symbol must therefore reopen when any
+ *  transitive symbol or referenced core node changes. Each root fingerprint hashes its
+ *  complete reachable symbol payload, sorted by name; the visited set makes cycles finite
+ *  and order-independent. */
+export function symbolBasis(
+  proto: Core,
+  carriedStatements: CoreStatement[] = [],
+  resolvedOeqs: WorkingState["resolved_oeqs"] = undefined,
+): Record<string, string> {
+  const carriedById = new Map(carriedStatements.map((node) => [node.id, node] as const));
+  const resolvedEndpoints = new Map<string, string>();
+  for (const [sourceId, resolution] of Object.entries(resolvedOeqs ?? {})) {
+    if (typeof resolution === "string") continue;
+    if (carriedById.get(resolution.theorem_id)?.id === resolution.theorem_id) {
+      resolvedEndpoints.set(sourceId, resolution.theorem_id);
+    }
+  }
+  // Symbol declarations and free-symbol scopes use delimiter-insensitive equality
+  // everywhere else in D0.  The semantic graph must use the same identity or a
+  // declaration such as `\(tau\)` silently becomes a missing node next to `tau`.
+  const symbols = new Map<string, (typeof proto.symbols)[number]>();
   for (const sym of proto.symbols ?? []) {
-    out[sym.name] = createHash("sha256")
-      .update(
-        JSON.stringify({
-          type: sym.type, space: sym.space, sig: sym.sig, def: sym.def, role: sym.role, ref: sym.ref,
-        }),
-      )
+    const name = normalizeSymbol(sym.name);
+    const prior = symbols.get(name);
+    if (prior !== undefined && prior.name !== sym.name) {
+      throw new Error(
+        `Ambiguous symbol declarations ${JSON.stringify(prior.name)} and ${JSON.stringify(sym.name)} ` +
+          `normalize to ${JSON.stringify(name)}`,
+      );
+    }
+    symbols.set(name, sym.ref !== undefined
+      ? { ...sym, ref: resolvedEndpoints.get(sym.ref) ?? sym.ref }
+      : sym);
+  }
+  const definitions = new Map((proto.definitions ?? []).map((node) => [node.id, node] as const));
+  const assumptions = new Map((proto.assumptions ?? []).map((node) => [node.id, node] as const));
+  const statements = new Map(carriedById);
+  for (const node of proto.statements ?? []) statements.set(node.id, node); // frozen proto wins
+  const allSymbolNames = [...symbols.keys()].sort();
+  const knownCoreId = (id: string): boolean =>
+    definitions.has(id) || assumptions.has(id) || statements.has(id);
+  const semanticCoreRefs = (values: Array<string | undefined>): string[] =>
+    [...new Set(values.flatMap((value) => {
+      if (value === undefined) return [];
+      return [
+        ...(knownCoreId(value) ? [value] : []),
+        ...extractCitationRefs(value).filter(knownCoreId),
+      ];
+    }))].sort();
+  const semanticClosure = (root: string): Array<[string, unknown]> => {
+    const closure = new Map<string, unknown>();
+    const pending = [`sym:${root}`];
+    const enqueueSymbolScope = (scope: string[] | undefined): void => {
+      const names = scope === undefined ? allSymbolNames : scope;
+      for (const name of names) pending.push(`sym:${normalizeSymbol(name)}`);
+    };
+    while (pending.length > 0) {
+      const key = pending.pop()!;
+      if (closure.has(key)) continue;
+      if (key.startsWith("sym:")) {
+        const name = key.slice(4);
+        const sym = symbols.get(name);
+        if (!sym) {
+          closure.set(key, { missing: true });
+          continue;
+        }
+        const refs = [...new Set((sym.refs ?? []).map(normalizeSymbol))].sort();
+        closure.set(key, {
+          type: sym.type, space: sym.space, sig: sym.sig, def: sym.def,
+          role: sym.role, ref: sym.ref, refs,
+        });
+        for (const dep of refs) pending.push(`sym:${dep}`);
+        if (sym.ref !== undefined) pending.push(`core:${sym.ref}`);
+        continue;
+      }
+      const id = key.slice(5);
+      const definition = definitions.get(id);
+      if (definition) {
+        const deps = semanticCoreRefs([
+          ...(definition.inputs ?? []),
+          ...(definition.by_member_properties ?? []),
+          definition.construction,
+        ]);
+        closure.set(key, {
+          kind: "definition",
+          node: {
+            id: definition.id,
+            construction: definition.construction,
+            ...(definition.free_symbols === undefined
+              ? {}
+              : { free_symbols: definition.free_symbols.map(normalizeSymbol).sort() }),
+            ...(definition.inputs === undefined ? {} : { inputs: definition.inputs }),
+            ...(definition.by_member_properties === undefined
+              ? {}
+              : { by_member_properties: [...definition.by_member_properties].sort() }),
+          },
+          semantic_deps: deps,
+        });
+        for (const dep of deps) pending.push(`core:${dep}`);
+        enqueueSymbolScope(definition.free_symbols);
+        continue;
+      }
+      const assumption = assumptions.get(id);
+      if (assumption) {
+        const deps = semanticCoreRefs([assumption.condition, ...(assumption.free_symbols ?? [])]);
+        closure.set(key, {
+          kind: "assumption",
+          node: {
+            id: assumption.id,
+            condition: assumption.condition,
+            ...(assumption.free_symbols === undefined
+              ? {}
+              : { free_symbols: assumption.free_symbols.map(normalizeSymbol).sort() }),
+            ...(assumption.constants === undefined ? {} : { constants: [...assumption.constants].sort() }),
+          },
+          semantic_deps: deps,
+        });
+        for (const dep of deps) pending.push(`core:${dep}`);
+        enqueueSymbolScope(assumption.free_symbols);
+        continue;
+      }
+      const statement = statements.get(id);
+      if (statement) {
+        // A symbol-ref fingerprint represents the claim, not its route, proof state,
+        // or motivation prose.  Letting `consumer`/`gap` churn change this hash would
+        // falsely authorize the narrow semantic-invalidation deferral in D0 apply.
+        const semantic = {
+          id: statement.id,
+          kind: statement.kind,
+          statement: statement.statement,
+          ...(statement.free_symbols === undefined
+            ? {}
+            : { free_symbols: statement.free_symbols.map(normalizeSymbol).sort() }),
+          depends_on: [...new Set(statement.depends_on ?? [])].sort(),
+          ...(statement.source?.verbatim_statement === undefined
+            ? {}
+            : { source_verbatim_statement: statement.source.verbatim_statement }),
+        };
+        const deps = semanticCoreRefs([
+          ...(statement.depends_on ?? []),
+          statement.statement,
+          statement.source?.verbatim_statement,
+        ]);
+        closure.set(key, { kind: "statement", node: semantic, semantic_deps: deps });
+        for (const dep of deps) pending.push(`core:${dep}`);
+        enqueueSymbolScope(statement.free_symbols);
+        continue;
+      }
+      closure.set(key, { kind: "missing", ref: id });
+    }
+    return [...closure.entries()].sort(([a], [b]) => a.localeCompare(b));
+  };
+  const out: Record<string, string> = {};
+  for (const root of proto.symbols ?? []) {
+    out[root.name] = createHash("sha256")
+      .update(JSON.stringify(semanticClosure(normalizeSymbol(root.name))))
       .digest("hex")
       .slice(0, 16);
   }
@@ -565,7 +719,8 @@ export function symbolBasis(proto: Core): Record<string, string> {
 export function changedSymbolNames(prev: WorkingState | null, proto: Core): Set<string> {
   const before = prev?.symbol_basis;
   if (!before) return new Set();
-  const after = symbolBasis(proto);
+  const carried = Object.values(prev?.solved ?? {}).flatMap((record) => record.node ? [record.node] : []);
+  const after = symbolBasis(proto, carried, prev?.resolved_oeqs);
   // Admitting `ref` to the fingerprint is not a corpus-wide re-baselining: `JSON.stringify`
   // omits an `undefined` value, so a symbol without `ref` hashes exactly as it did before
   // and a cursor checkpointed under the old scheme still matches. Only the 13 ref-bearing
@@ -640,23 +795,43 @@ export function snapshotMember(proto: Core, member: CoreStatement): MemberSnapsh
   const assumptions: Record<string, string> = {};
   const defById = new Map(proto.definitions.map((d) => [d.id, d] as const));
   const assById = new Map(proto.assumptions.map((a) => [a.id, a] as const));
-  const visitDef = (id: string): void => {
+  function visitAuthoredRefs(text: string | undefined): void {
+    for (const ref of extractCitationRefs(text ?? "")) visitDep(ref);
+  }
+  function visitDef(id: string): void {
     if (defs[id] !== undefined) return;
     const d = defById.get(id);
     if (!d) return;
     defs[id] = d.construction;
-    // why: structured definition refs are transitive dependencies for proof reuse.
-    for (const r of d.by_member_properties ?? []) visitDep(r);
-    for (const r of d.inputs ?? []) visitDep(r);
-  };
-  const visitDep = (dep: string): void => {
+    // Real cores encode semantic dependencies both structurally and as literal
+    // def:/ass: ids inside constructions/inputs.  Snapshot the same cycle-safe
+    // closure used by the apply invalidation guard so a nested correction cannot
+    // leave an old consumer proof reusable.
+    for (const r of d.by_member_properties ?? []) {
+      visitDep(r);
+      visitAuthoredRefs(r);
+    }
+    for (const r of d.inputs ?? []) {
+      visitDep(r);
+      visitAuthoredRefs(r);
+    }
+    visitAuthoredRefs(d.construction);
+  }
+  function visitAssumption(id: string): void {
+    if (assumptions[id] !== undefined) return;
+    const a = assById.get(id);
+    if (!a) return;
+    assumptions[id] = a.condition;
+    visitAuthoredRefs(a.condition);
+    for (const symbol of a.free_symbols ?? []) visitAuthoredRefs(symbol);
+  }
+  function visitDep(dep: string): void {
     if (dep.startsWith("def:")) {
       visitDef(dep);
     } else if (dep.startsWith("ass:")) {
-      const a = assById.get(dep);
-      if (a) assumptions[dep] = a.condition;
+      visitAssumption(dep);
     }
-  };
+  }
   for (const dep of member.depends_on ?? []) visitDep(dep);
   return { stmt: member.statement, depends_on: [...(member.depends_on ?? [])], defs, assumptions };
 }

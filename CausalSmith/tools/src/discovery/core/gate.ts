@@ -5,6 +5,7 @@
 // reviewer. Checks G1–G7; returns every violation with its gate code + location.
 import { CoreSchema, type Core } from "./schema.js";
 import { extractNodeRefs } from "./node_ids.js";
+import { normalizeSymbol } from "./preflight.js";
 import { hasPlausibleSentenceEnd, maskNonBoundaryPeriods } from "../../shared/tex_text.js";
 
 export interface GateViolation {
@@ -197,9 +198,14 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
     ...core.definitions,
     ...core.statements,
   ];
+  // Delimiter-normalized on both sides, matching `preflight.checkSymbolDeclarations`,
+  // `d0_working.declaredSymbolScope`, and APPLY's own free-symbol check: `\(\eta\)` and
+  // `\eta` name the same table entry everywhere else, so raw equality here rejected an
+  // already-accepted bundle at the APPLY structural gate.
+  const normalizedSymbolNames = new Set(core.symbols.map((s) => normalizeSymbol(s.name)));
   for (const node of declaringNodes) {
     for (const fs of node.free_symbols ?? []) {
-      if (!symbolNames.has(fs)) {
+      if (!normalizedSymbolNames.has(normalizeSymbol(fs))) {
         violations.push({
           code: "G1",
           where: node.id,
@@ -212,6 +218,13 @@ export function runStructuralGate(coreInput: unknown, opts: GateOptions = {}): G
   }
   const seenSymbols = new Set<string>();
   for (const s of core.symbols) {
+    if (s.ref !== undefined && !nodeIds.has(s.ref)) {
+      violations.push({
+        code: "G1",
+        where: `symbol:${s.name}`,
+        message: `ref '${s.ref}' does not resolve to a surviving definition, assumption, or statement`,
+      });
+    }
     for (const r of s.refs ?? []) {
       if (symbolNames.has(r) && !seenSymbols.has(r)) {
         violations.push({

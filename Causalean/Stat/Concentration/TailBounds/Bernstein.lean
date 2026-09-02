@@ -38,6 +38,7 @@ denominator-form MGF), so the variance proxy is `2σ²` and the scale is `c`.
 
 import Causalean.Stat.Concentration.TailBounds.SubExponential
 import Causalean.Stat.Concentration.TailBounds.Hoeffding
+import Causalean.Tactic.IntegralLinearity
 
 /-! # Bernstein inequalities
 
@@ -115,12 +116,8 @@ lemma bounded_mgf_le_exp_sq [IsProbabilityMeasure μ] {c σ : ℝ} (hc : 0 ≤ c
     ((integrable_const (1 : ℝ)).add (hint_X.const_mul t)).add (hint_Xsq.const_mul (t ^ 2))
   have hval : (∫ ω, (1 + t * X ω + t ^ 2 * X ω ^ 2) ∂μ)
       = 1 + t ^ 2 * (μ[fun ω => X ω ^ 2]) := by
-    have h1a : Integrable (fun _ : Ω => (1 : ℝ)) μ := integrable_const 1
-    have h1b : Integrable (fun ω => t * X ω) μ := hint_X.const_mul t
-    have h1 : Integrable (fun ω => (1 : ℝ) + t * X ω) μ := h1a.add h1b
-    have hg : Integrable (fun ω => t ^ 2 * X ω ^ 2) μ := hint_Xsq.const_mul (t ^ 2)
-    rw [integral_add h1 hg, integral_add h1a h1b, integral_const_mul, integral_const_mul,
-      integral_const, hmean]
+    integral_linearity
+    rw [integral_const, hmean]
     simp
   calc mgf X μ t = ∫ ω, Real.exp (t * X ω) ∂μ := by rw [ProbabilityTheory.mgf]
     _ ≤ ∫ ω, (1 + t * X ω + t ^ 2 * X ω ^ 2) ∂μ := integral_mono_ae hint_exp hrhs_int hpt

@@ -60,6 +60,25 @@ describe("lean snippet extraction", () => {
     expect(s).not.toContain("omega");
   });
 
+  it("keeps a let-bound theorem conclusion through its real proof marker", () => {
+    const src = `/-- comparative static -/
+theorem sharp_sign (x : ℝ) :
+    let W := x + 1
+    let denominator := W ^ 2 + 1
+    let derivative := W / denominator
+    HasDerivAt (fun y => y) derivative x ∧
+    0 < denominator ∧
+    (derivative < 0 ↔ W < 0) := by
+  dsimp only
+  sorry
+`;
+    const s = extractDeclSnippet(src, "sharp_sign", 2);
+    expect(s).toContain("let W := x + 1");
+    expect(s).toContain("let derivative := W / denominator");
+    expect(s).toContain("derivative < 0 ↔ W < 0");
+    expect(s).not.toContain("dsimp only");
+  });
+
   it("takes def with body, capped", () => {
     const s = extractDeclSnippet(SRC, "myDef", 7);
     expect(s).toContain("x + 1");

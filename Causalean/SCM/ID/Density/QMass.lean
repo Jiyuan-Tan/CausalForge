@@ -10,6 +10,7 @@ import Causalean.SCM.ID.Density.MassBridge
 import Causalean.SCM.ID.DiscreteID.Positive
 import Causalean.SCM.ID.GraphicalThms.DoGFormula
 import Mathlib.Probability.Independence.InfinitePi
+import Causalean.Tactic.Attr
 
 /-! # Local q-masses for ID density factorization
 
@@ -45,12 +46,25 @@ noncomputable def qLocalMass
   M.latentProduct {ℓ | ∀ v (hv : v ∈ T),
     M.localConsistent s x v (hT hv) ℓ}
 
+/-- The local q-mass of an observed subset is the latent-product mass of the set of latent draws
+that make every node of that subset locally consistent with the given fixed values and observed
+values. -/
+@[causal_defs_simps]
+lemma qLocalMass_eq
+    (M : Causalean.SCM N Ω) (s : M.FixedValues)
+    (T : Finset (SWIGNode N)) (hT : T ⊆ M.observed)
+    (x : ValuesOn M.observed (swigΩ Ω)) :
+    M.qLocalMass s T hT x =
+      M.latentProduct {ℓ | ∀ v (hv : v ∈ T),
+        M.localConsistent s x v (hT hv) ℓ} :=
+  rfl
+
 /-- The empty local q-mass is one. -/
 @[simp] lemma qLocalMass_empty
     (M : Causalean.SCM N Ω) (s : M.FixedValues)
     (x : ValuesOn M.observed (swigΩ Ω)) :
     M.qLocalMass s ∅ (by simp) x = 1 := by
-  simp [qLocalMass]
+  simp [causal_defs_simps]
 
 /-- Local q-mass is antitone in the constrained observed set. -/
 lemma qLocalMass_anti
@@ -464,7 +478,7 @@ lemma qLocalMass_sum_point_eliminate
       (⋃ ω ∈ (Finset.univ : Finset (swigΩ Ω v)), Erest ∩ Fset ω) = Erest := by
     ext ℓ
     simp [Fset]
-  simp only [qLocalMass]
+  simp only [causal_defs_simps]
   calc
     (∑ ω : swigΩ Ω v,
         M.latentProduct {ℓ : M.LatentValues | ∀ w (hw : w ∈ T),
@@ -1325,7 +1339,7 @@ lemma qLocalMass_prod_of_latentBlock_disjoint
               rw [Finset.prod_insert hUnot]
               rw [mul_comm]
   have hfull := hfactor 𝒞 (fun _ h => h)
-  unfold qLocalMass
+  simp only [causal_defs_simps]
   rw [hevent]
   rw [hfull]
   refine Finset.prod_congr rfl ?_
@@ -1563,7 +1577,7 @@ lemma qLocalMass_prod_inter_of_latentBlock_disjoint
               rw [Finset.prod_insert hUnot]
               rw [mul_comm]
   have hfull := hfactor 𝒞 (fun _ h => h)
-  unfold qLocalMass
+  simp only [causal_defs_simps]
   rw [hevent]
   rw [hfull]
   refine Finset.prod_congr rfl ?_
@@ -1733,7 +1747,7 @@ lemma doObsKernelAncestralMarginal_positiveMass
         MX.qLocalMass sDo (C ∩ D)
             (fun _ hv => hDclosed.1 (Finset.mem_of_mem_inter_right hv)) xDo =
           M.qLocalMass (M.fixSetProj X hObs hFix sDo) (C ∩ D) hsubsetM xFull := by
-      unfold qLocalMass
+      simp only [causal_defs_simps]
       congr 1
       ext ℓ
       constructor

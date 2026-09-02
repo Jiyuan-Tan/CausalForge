@@ -252,6 +252,10 @@ Mathlib-adjacent general object can decouple—restate it over a general ambient
 version as a specialization; leave coupled speculative one-offs. Present the `helper → target` list/tags at
 CKPT 2 or auto banner before dispatch. Place each result in the narrowest existing domain hierarchy (`Mathlib/`, `Stat/`, `SCM/`, `PO/`,
 `Estimation/`, etc.), or create a properly named topic module inside that hierarchy when none exists.
+**Docstrings are part of promotion, not a follow-up:** every promoted declaration carries the docstring-canonical
+first paragraph with NL↔Lean crosslinks (`[phrase](hyp:binder)` for every hypothesis/explicit binder, `[phrase](goal)`
+for the conclusion), and anything added to `headline_theorems` must already be annotated. Promotion is accepted only
+with `lake exe library_index` regenerated and `npm run lint:nl-links` clean; a study run's coordinate gate enforces the same.
 
 **Dispatch:**
 
@@ -264,6 +268,11 @@ names free of run jargon). Regression returns to the agent; never patch around i
 `reusable_artifacts` in the bank README and a `command` decision-log entry.
 
 ## Pipeline-bug fixes (main's job; sub flags)
+
+**Minimal repair rule.** Make the smallest change that closes the reproduced defect. Prefer one concise
+general rule or one existing-boundary check over a new stage, state field, channel, abstraction, or recovery
+lane. Do not redesign adjacent machinery while fixing the run; preserve current contracts unless changing
+one is necessary for soundness, and remove any added complexity that is not load-bearing before resuming.
 
 **When debugging ANYTHING, check the I/O log FIRST — before inferring cause from `state.json`,
 `sorry`/stage counts, or a halt signal.** The agent's OWN I/O (`doc/research/_agent_logs/`,

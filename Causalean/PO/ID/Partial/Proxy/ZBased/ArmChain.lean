@@ -79,14 +79,9 @@ private lemma condIntYq_factor_arm
     · exact measurable_fst (measurableSet_singleton a)
     · ext ω; rfl
   -- X is σ_AUX-measurable (third projection of (A, U, X)).
-  have hX_m_AUX : Measurable[S.σ_AUX] S.X := by
-    intro t ht
-    refine ⟨(fun p : Bool × γ_U × γ_X => p.2.2) ⁻¹' t, ?_, ?_⟩
-    · exact (measurable_snd.comp measurable_snd) ht
-    · ext ω; rfl
+  have hX_m_AUX : Measurable[S.σ_AUX] S.X := by fun_prop
   -- (Z, X) measurable.
-  have hZX_meas : Measurable (fun ω : P.Ω => (S.Z ω, S.X ω)) :=
-    Measurable.prodMk S.measurable_Z S.measurable_X
+  have hZX_meas : Measurable (fun ω : P.Ω => (S.Z ω, S.X ω)) := by fun_prop
   -- Lift CI: Z ⟂ Y | σ_AUX (= proxy_YZ.symm)  ⟹  (Z, X) ⟂ Y | σ_AUX.
   have hZ_Y : ProbabilityTheory.CondIndepFun S.σ_AUX S.σ_AUX_le S.Z S.Y μ :=
     HA.proxy_YZ.symm
@@ -98,12 +93,8 @@ private lemma condIntYq_factor_arm
   -- u (z, x) = q (z, a, x), v = id.
   set u : γ_Z × γ_X → ℝ := fun p => HA.q (p.1, a, p.2) with hu_def
   set v : ℝ → ℝ := fun y => y with hv_def
-  have hu_meas : Measurable u := by
-    have hpair : Measurable (fun p : γ_Z × γ_X => (p.1, a, p.2)) :=
-      Measurable.prodMk measurable_fst
-        (Measurable.prodMk measurable_const measurable_snd)
-    exact HA.measurable_q.comp hpair
-  have hv_meas : Measurable v := measurable_id
+  have hu_meas : Measurable u := by fun_prop
+  have hv_meas : Measurable v := by fun_prop
   have hu_int : Integrable (fun ω => u (S.Z ω, S.X ω)) μ := by
     change Integrable (fun ω => HA.q (S.Z ω, a, S.X ω)) μ
     exact HA.integrable_q a
@@ -116,25 +107,13 @@ private lemma condIntYq_factor_arm
         = (fun ω => S.Y ω * HA.q (S.Z ω, a, S.X ω)) := by funext ω; ring
     rw [hcomm]; exact hYq
   have huv_int : Integrable
-      (fun ω => u (S.Z ω, S.X ω) * v (S.Y ω)) μ := by
-    change Integrable (fun ω => HA.q (S.Z ω, a, S.X ω) * S.Y ω) μ
-    exact hqY
+      (fun ω => u (S.Z ω, S.X ω) * v (S.Y ω)) μ := by fun_prop
   have hCondExpMul := Causalean.condExp_mul_of_condIndep S.σ_AUX_le
     hZX_meas S.measurable_Y hZX_Y hu_meas hv_meas hu_int hv_int huv_int
   -- σ_AZX-measurability of `q (Z ω, a, X ω)` (factor through (A, Z, X)).
-  have hq_meas_AZX : Measurable[S.σ_AZX] (fun ω => HA.q (S.Z ω, a, S.X ω)) := by
-    intro t ht
-    refine ⟨(fun p : Bool × γ_Z × γ_X => HA.q (p.2.1, a, p.2.2)) ⁻¹' t, ?_, ?_⟩
-    · have hpair : Measurable
-          (fun p : Bool × γ_Z × γ_X => (p.2.1, a, p.2.2)) :=
-        Measurable.prodMk (measurable_fst.comp measurable_snd)
-          (Measurable.prodMk measurable_const
-            (measurable_snd.comp measurable_snd))
-      exact (HA.measurable_q.comp hpair) ht
-    · ext ω; rfl
+  have hq_meas_AZX : Measurable[S.σ_AZX] (fun ω => HA.q (S.Z ω, a, S.X ω)) := by fun_prop
   have hq_sm_AZX : StronglyMeasurable[S.σ_AZX]
-      (fun ω => HA.q (S.Z ω, a, S.X ω)) :=
-    hq_meas_AZX.stronglyMeasurable
+      (fun ω => HA.q (S.Z ω, a, S.X ω)) := by fun_prop
   -- (A) Substitute under integral via `condExp_mul_of_condIndep`:
   --     ∫_s μ[Y|σ_AUX] · μ[q|σ_AUX] dμ = ∫_s μ[q · Y | σ_AUX] dμ.
   have hStepA : (∫ ω in s, (μ[S.Y | S.σ_AUX]) ω
@@ -259,7 +238,7 @@ lemma condIntYofA_le_envelope_arm
   -- Integrability shortcuts.
   have hYInt : Integrable S.Y μ := HA.integrable_Y
   have hYaInt : Integrable (S.YofA a) μ := HA.integrable_YofA a
-  have hqInt : Integrable (fun ω => HA.q (S.Z ω, a, S.X ω)) μ := HA.integrable_q a
+  have hqInt : Integrable (fun ω => HA.q (S.Z ω, a, S.X ω)) μ := by fun_prop
   -- σ_AUX-version of latent_exch and consistency.
   have hLatent : μ[S.YofA a | S.σ_AUX] =ᵐ[μ] μ[S.YofA a | S.σ_UX] :=
     POProximalSystem.latent_exch_to_condExp' a (HA.latent_exch a) hYaInt
@@ -297,13 +276,11 @@ lemma condIntYofA_le_envelope_arm
             * HA.likelihoodRatio_swapA a ω ∂μ) := by
     -- Apply L2 (`setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap`).
     -- Setup: m = σ_UX, A = S.A, (a, a') = (a, !a), f = μ[Y(a)|σ_UX], L = LR.
-    have hf_m : Measurable[S.σ_UX] (μ[S.YofA a | S.σ_UX] : P.Ω → ℝ) :=
-      (stronglyMeasurable_condExp).measurable
-    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) :=
-      HA.measurable_likelihoodRatio_swapA a
+    have hf_m : Measurable[S.σ_UX] (μ[S.YofA a | S.σ_UX] : P.Ω → ℝ) := by fun_prop
+    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) := by fun_prop
     haveI : IsFiniteMeasure (μ.trim S.σ_UX_le) := isFiniteMeasure_trim S.σ_UX_le
     haveI : SigmaFinite (μ.trim S.σ_UX_le) := inferInstance
-    have hfInt : Integrable (fun ω => (μ[S.YofA a | S.σ_UX]) ω) μ := integrable_condExp
+    have hfInt : Integrable (fun ω => (μ[S.YofA a | S.σ_UX]) ω) μ := by fun_prop
     -- Integrability of f * L is supplied by the bundle field below.
     have hfLInt :
         Integrable (fun ω => (μ[S.YofA a | S.σ_UX]) ω * HA.likelihoodRatio_swapA a ω) μ :=
@@ -416,11 +393,7 @@ lemma condIntYofA_le_envelope_arm
     -- Then bridge_q substitutes μ[q|σ_AUX] for L on s.
     have hUmeas_X : Measurable[S.σ_X] (fun ω => Uenv (a, S.X ω)) := by
       have hUenv_meas : Measurable Uenv := hU.1
-      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by
-        refine Measurable.prodMk (m := S.σ_X) (measurable_const) ?_
-        -- S.X is σ_X-measurable by definition.
-        intro t ht
-        exact ⟨t, ht, rfl⟩
+      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by fun_prop
       exact hUenv_meas.comp hpair
     have hUmeas_AUX : Measurable[S.σ_AUX] (fun ω => Uenv (a, S.X ω)) :=
       hUmeas_X.mono S.σ_X_le_σ_AUX le_rfl
@@ -445,14 +418,11 @@ lemma condIntYofA_le_envelope_arm
     -- {S.A ω = !a} back to {S.A ω ≠ a}.
     have hUmeas_X : Measurable[S.σ_X] (fun ω => Uenv (a, S.X ω)) := by
       have hUenv_meas : Measurable Uenv := hU.1
-      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by
-        refine Measurable.prodMk (m := S.σ_X) (measurable_const) ?_
-        intro t ht; exact ⟨t, ht, rfl⟩
+      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by fun_prop
       exact hUenv_meas.comp hpair
     have hUmeas_UX : Measurable[S.σ_UX] (fun ω => Uenv (a, S.X ω)) :=
       hUmeas_X.mono S.σ_X_le_σ_UX le_rfl
-    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) :=
-      HA.measurable_likelihoodRatio_swapA a
+    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) := by fun_prop
     have hSpec := HA.likelihoodRatio_swapA_spec a
     have h_ne_eq : ({ω | S.A ω ≠ a} : Set P.Ω) = {ω | S.A ω = !a} := by
       ext ω; constructor
@@ -529,7 +499,7 @@ lemma envelope_le_condIntYofA_arm
     · ext ω; rfl
   have hYInt : Integrable S.Y μ := HA.integrable_Y
   have hYaInt : Integrable (S.YofA a) μ := HA.integrable_YofA a
-  have hqInt : Integrable (fun ω => HA.q (S.Z ω, a, S.X ω)) μ := HA.integrable_q a
+  have hqInt : Integrable (fun ω => HA.q (S.Z ω, a, S.X ω)) μ := by fun_prop
   have hLatent : μ[S.YofA a | S.σ_AUX] =ᵐ[μ] μ[S.YofA a | S.σ_UX] :=
     POProximalSystem.latent_exch_to_condExp' a (HA.latent_exch a) hYaInt
   have hConsist : μ[S.Y | S.σ_AUX]
@@ -550,13 +520,11 @@ lemma envelope_le_condIntYofA_arm
   have hArmSwap_Y : (∫ ω in s', (μ[S.YofA a | S.σ_UX]) ω ∂μ)
       = (∫ ω in s, (μ[S.YofA a | S.σ_UX]) ω
             * HA.likelihoodRatio_swapA a ω ∂μ) := by
-    have hf_m : Measurable[S.σ_UX] (μ[S.YofA a | S.σ_UX] : P.Ω → ℝ) :=
-      (stronglyMeasurable_condExp).measurable
-    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) :=
-      HA.measurable_likelihoodRatio_swapA a
+    have hf_m : Measurable[S.σ_UX] (μ[S.YofA a | S.σ_UX] : P.Ω → ℝ) := by fun_prop
+    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) := by fun_prop
     haveI : IsFiniteMeasure (μ.trim S.σ_UX_le) := isFiniteMeasure_trim S.σ_UX_le
     haveI : SigmaFinite (μ.trim S.σ_UX_le) := inferInstance
-    have hfInt : Integrable (fun ω => (μ[S.YofA a | S.σ_UX]) ω) μ := integrable_condExp
+    have hfInt : Integrable (fun ω => (μ[S.YofA a | S.σ_UX]) ω) μ := by fun_prop
     have hfLInt :
         Integrable (fun ω => (μ[S.YofA a | S.σ_UX]) ω * HA.likelihoodRatio_swapA a ω) μ :=
       HA.integrable_condExpYofA_mul_L a
@@ -634,9 +602,7 @@ lemma envelope_le_condIntYofA_arm
                     * HA.likelihoodRatio_swapA a ω ∂μ) := by
     have hLmeas_X : Measurable[S.σ_X] (fun ω => Lenv (a, S.X ω)) := by
       have hLenv_meas : Measurable Lenv := hL.1
-      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by
-        refine Measurable.prodMk (m := S.σ_X) (measurable_const) ?_
-        intro t ht; exact ⟨t, ht, rfl⟩
+      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by fun_prop
       exact hLenv_meas.comp hpair
     have hLmeas_AUX : Measurable[S.σ_AUX] (fun ω => Lenv (a, S.X ω)) :=
       hLmeas_X.mono S.σ_X_le_σ_AUX le_rfl
@@ -655,14 +621,11 @@ lemma envelope_le_condIntYofA_arm
       = (∫ ω in s', Lenv (a, S.X ω) ∂μ) := by
     have hLmeas_X : Measurable[S.σ_X] (fun ω => Lenv (a, S.X ω)) := by
       have hLenv_meas : Measurable Lenv := hL.1
-      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by
-        refine Measurable.prodMk (m := S.σ_X) (measurable_const) ?_
-        intro t ht; exact ⟨t, ht, rfl⟩
+      have hpair : Measurable[S.σ_X] (fun ω : P.Ω => (a, S.X ω)) := by fun_prop
       exact hLenv_meas.comp hpair
     have hLmeas_UX : Measurable[S.σ_UX] (fun ω => Lenv (a, S.X ω)) :=
       hLmeas_X.mono S.σ_X_le_σ_UX le_rfl
-    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) :=
-      HA.measurable_likelihoodRatio_swapA a
+    have hL_m : Measurable[S.σ_UX] (HA.likelihoodRatio_swapA a) := by fun_prop
     have hSpec := HA.likelihoodRatio_swapA_spec a
     have h_ne_eq : ({ω | S.A ω ≠ a} : Set P.Ω) = {ω | S.A ω = !a} := by
       ext ω; constructor

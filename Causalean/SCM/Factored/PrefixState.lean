@@ -76,6 +76,7 @@ noncomputable def observedPrefixValue (M : Causalean.SCM N Ω) :
         i
 
 /-- `observedPrefixValue` is measurable in its prefix-state argument. -/
+@[fun_prop]
 theorem measurable_observedPrefixValue (M : Causalean.SCM N Ω) :
     ∀ {n : ℕ} (hn : n ≤ M.observed.card) (i : Fin n),
       Measurable (fun ξ : M.ObservedPrefixValues n hn => M.observedPrefixValue hn ξ i)
@@ -118,6 +119,7 @@ def extendOrderedLatentPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     map that appends the freshly generated value of that node to a length-`n`
     prefix of previously observed values, together with the latent
     assignment, producing a length-`(n + 1)` prefix, is measurable](goal). -/
+@[fun_prop]
 theorem measurable_extendOrderedLatentPrefix (M : Causalean.SCM N Ω) {n : ℕ}
     (hn : n + 1 ≤ M.observed.card) :
     Measurable (M.extendOrderedLatentPrefix hn) :=

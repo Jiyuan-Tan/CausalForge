@@ -25,6 +25,7 @@ This file collects:
 import Causalean.PO.ID.Exact.ATT
 import Causalean.Stat.Orthogonality.Orthogonality
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Causalean.Tactic.Attr
 
 /-!
 Defines the treated-estimation system for ATT estimation under back-door
@@ -99,6 +100,8 @@ structure TreatedEstimationSystem (P : POSystem) (γ : Type*)
     toPOBackdoorSystem.propScore true
       =ᵐ[P.μ] (fun ω => e_val (toPOBackdoorSystem.factualX ω))
 
+attribute [fun_prop] TreatedEstimationSystem.μ₀_meas TreatedEstimationSystem.e_meas
+
 namespace TreatedEstimationSystem
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
@@ -154,6 +157,13 @@ def OneSidedOverlap (S : TreatedEstimationSystem P γ) (ε : ℝ) : Prop :=
 noncomputable def P_X (S : TreatedEstimationSystem P γ) : Measure γ :=
   P.μ.map S.toPOBackdoorSystem.factualX
 
+/-- The covariate marginal is the image of the population measure under the factual covariate
+map. -/
+@[causal_defs_simps]
+lemma P_X_eq (S : TreatedEstimationSystem P γ) :
+    S.P_X = P.μ.map S.toPOBackdoorSystem.factualX :=
+  rfl
+
 /-- Data triple `(X, A, Y) : Ω → γ × Bool × ℝ`. -/
 noncomputable def factualZ (S : TreatedEstimationSystem P γ) :
     P.Ω → γ × Bool × ℝ :=
@@ -162,6 +172,7 @@ noncomputable def factualZ (S : TreatedEstimationSystem P γ) :
             S.toPOBackdoorSystem.factualY ω)
 
 /-- Measurability of the data triple. -/
+@[fun_prop]
 lemma measurable_factualZ (S : TreatedEstimationSystem P γ) :
     Measurable S.factualZ :=
   (S.toPOBackdoorSystem.measurable_factualX).prodMk
@@ -172,6 +183,13 @@ lemma measurable_factualZ (S : TreatedEstimationSystem P γ) :
 noncomputable def P_Z (S : TreatedEstimationSystem P γ) :
     Measure (γ × Bool × ℝ) :=
   P.μ.map S.factualZ
+
+/-- The joint data law is the image of the population measure under the map recording the
+observed covariate, treatment, and outcome. -/
+@[causal_defs_simps]
+lemma P_Z_eq (S : TreatedEstimationSystem P γ) :
+    S.P_Z = P.μ.map S.factualZ :=
+  rfl
 
 /-- The covariate marginal `P_X` is the pushforward of `P_Z` along the
 projection `(x, a, y) ↦ x`.  Used to bridge integrals/`eLpNorm` between

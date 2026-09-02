@@ -25,7 +25,8 @@ describe("ceilingTierCap", () => {
     expect(ceilingTierCap(9.0)).toBe("flagship");
     expect(ceilingTierCap(8.9)).toBe("field");
     expect(ceilingTierCap(CEILING_FOR_FIELD)).toBe("field");
-    expect(ceilingTierCap(7.4)).toBe("subfield");
+    expect(ceilingTierCap(7.4)).toBe("field");
+    expect(ceilingTierCap(6.9)).toBe("subfield");
     expect(ceilingTierCap(CEILING_FOR_SUBFIELD)).toBe("subfield");
     expect(ceilingTierCap(6.4)).toBe("incremental");
   });
@@ -45,11 +46,11 @@ describe("normalizeGeneralReview ceiling cap", () => {
     expect(gen.paper_score_ceiling).toBe(7.8);
   });
 
-  it("caps to subfield and routes to REVISE on the ceiling directive in [6.5, 7.5)", () => {
+  it("caps to subfield and routes to REVISE on the ceiling directive in [6.5, 7.0)", () => {
     const gen = normalizeGeneralReview(
       {
         ...base,
-        paper_score_ceiling: 7.0,
+        paper_score_ceiling: 6.8,
         ceiling_directive: "restate the converse over the published class",
       },
       "raw",

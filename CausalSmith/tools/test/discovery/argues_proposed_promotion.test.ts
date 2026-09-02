@@ -17,6 +17,9 @@ import { describe, it, expect } from "vitest";
 import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
 import { saveWorkingState, loadWorkingState, snapshotMember } from "../../src/discovery/stages/d0_working.js";
 import { createDStageHarness } from "./d_stage_harness.js";
+import { coreRevision, definitionRevision, statementRevision } from "../../src/discovery/core/revision.js";
+import { assembleCore } from "../../src/discovery/core/assemble.js";
+import { CoreSchema } from "../../src/discovery/core/schema.js";
 
 const STMT = {
   id: "thm:main", kind: "theorem", statement: "Under ass:redundant, tau is identified", depends_on: ["ass:overlap"],
@@ -37,28 +40,52 @@ async function seedBundle(h: Awaited<ReturnType<typeof createDStageHarness>>, op
   proofTex?: string;
   arguesProposed?: boolean;
   extraDefChange?: boolean;
+  owner?: string;
 }): Promise<void> {
   const proto = await h.readProto();
+  const revision = definitionRevision(proto.definitions[0], proto);
+  const statementRev = statementRevision(proto.statements[0]);
   await saveWorkingState(h.ctx(), {
     round: 1,
     solved: {
       // What merge banks when it defers the same-round proof: the payload bytes as the
       // node's hot partial.
-      "thm:main": { proof_tex: opts.proofTex ?? NEW_PROOF, snapshot: snapshotMember(proto, proto.statements[0]), partial: true },
+      "thm:main": {
+        proof_tex: opts.proofTex ?? NEW_PROOF,
+        snapshot: snapshotMember(proto, proto.statements[0]),
+        partial: true,
+        ...(opts.owner ? { owner: opts.owner } : {}),
+      },
     },
     resolved_oeqs: {},
     proposals: {
-      statements: [{ id: "thm:main", current: STMT.statement, proposed: NEW_TEXT, reason: "drop redundant assumption", direction: "correct" }],
+      statements: [{ id: "thm:main", current: STMT.statement, proposed: NEW_TEXT, based_on_revision: statementRev, reason: "drop redundant assumption", direction: "correct" }],
       definitions: opts.extraDefChange
-        ? [{ id: "def:env", current: "U = a", proposed: "U = a + b", reason: "widen", direction: "correct" }]
+        ? [{ id: "def:env", current: "U = a", proposed: "U = a + b", based_on_revision: revision, reason: "widen", direction: "correct" }]
         : [],
-      assumptions: [], coreEdits: [],
+      assumptions: [], coreEdits: [
+        {
+          kind: "statement-replace", id: "thm:main", based_on_revision: statementRev,
+          proposed: { ...proto.statements[0], statement: NEW_TEXT },
+          reason: "complete statement post-image", direction: "correct",
+        },
+        ...(opts.extraDefChange ? [{
+          kind: "definition-replace", id: "def:env", based_on_revision: revision,
+          proposed: { ...proto.definitions[0], construction: "U = a + b", free_symbols: [] },
+          reason: "complete post-image", direction: "correct",
+        }] : []),
+      ],
       proofs: [{ id: "thm:main", proof_tex: opts.proofTex ?? NEW_PROOF, ...(opts.arguesProposed ? { argues_proposed: true } : {}) }],
     },
   } as never);
+  if (opts.extraDefChange) {
+    const working = await loadWorkingState(h.ctx());
+    working!.proposals!.basis_revision = coreRevision(CoreSchema.parse(assembleCore(proto, working!)));
+    await saveWorkingState(h.ctx(), working!);
+  }
 }
 
-type Rec = { proof_tex?: string; partial?: boolean; snapshot?: { stmt?: string } };
+type Rec = { proof_tex?: string; partial?: boolean; owner?: string; snapshot?: { stmt?: string } };
 async function readRec(h: Awaited<ReturnType<typeof createDStageHarness>>): Promise<Rec | undefined> {
   const w = await loadWorkingState(h.ctx());
   return (w as never as { solved: Record<string, Rec> }).solved["thm:main"];
@@ -68,18 +95,20 @@ describe("argues_proposed paired-proof promotion", () => {
   it("promotes the node to proved in the SAME apply when the declared basis materialized", async () => {
     const h = await createDStageHarness({ qid: "stat_promote", specialization: "v1", proto: PROTO });
     try {
-      await seedBundle(h, { arguesProposed: true });
+      await seedBundle(h, { arguesProposed: true, owner: "thm:directed-root" });
       await applyProposedChanges({ ctx: h.ctx() });
 
       const after = await h.readProto();
       expect(after.statements[0].statement).toBe(NEW_TEXT);
-      expect(after.statements[0].status, "no second round is owed — the proof argued this text").toBe("proved");
-      expect(after.statements[0].proof_tex).toBe(NEW_PROOF);
+      expect(after.statements[0].status, "frozen proof ownership stays in the working overlay").toBe("to-prove");
+      expect(after.statements[0].proof_tex).toBeUndefined();
 
       const rec = await readRec(h);
       expect(rec?.partial, "the record must be a settled reusable proof").toBeUndefined();
       expect(rec?.proof_tex).toBe(NEW_PROOF);
       expect(rec?.snapshot?.stmt, "validity must be measured against the NEW statement").toBe(NEW_TEXT);
+      expect(rec?.owner, "paired promotion must preserve the frozen overlay's durable owner")
+        .toBe("thm:directed-root");
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -93,13 +122,9 @@ describe("argues_proposed paired-proof promotion", () => {
         arguesProposed: true,
         extraDefChange: true,
       });
-      await applyProposedChanges({ ctx: h.ctx(), ids: new Set(["thm:main"]) });
-
-      const after = await h.readProto();
-      expect(after.statements[0].statement).toBe(NEW_TEXT);
-      expect(after.statements[0].status, "ambiguous basis → conservative reopen").toBe("to-prove");
-      const rec = await readRec(h);
-      expect(rec?.partial).toBe(true);
+      await expect(applyProposedChanges({ ctx: h.ctx(), ids: new Set(["thm:main"]) }))
+        .rejects.toThrow(/complete coherence closure/);
+      expect((await h.readProto()).statements[0].statement).toBe(STMT.statement);
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -123,20 +148,16 @@ describe("argues_proposed paired-proof promotion", () => {
           definitions: [], assumptions: [],
           coreEdits: [{
             kind: "statement-replace", id: "thm:main",
-            proposed: { ...STMT, depends_on: ["ass:overlap", "def:env"] },
+            proposed: { ...STMT, statement: NEW_TEXT, depends_on: ["ass:overlap", "def:env"] },
             reason: "declare the envelope dependency", direction: "correct",
           }],
           proofs: [{ id: "thm:main", proof_tex: NEW_PROOF, argues_proposed: true }],
         },
       } as never);
 
-      await applyProposedChanges({ ctx: h.ctx(), ids: new Set(["statement:thm:main"]) });
-
-      const after = await h.readProto();
-      expect(after.statements[0].statement).toBe(NEW_TEXT);
-      expect(after.statements[0].status, "a rejected same-id variant makes the declared basis ambiguous").toBe("to-prove");
-      const rec = await readRec(h);
-      expect(rec?.partial).toBe(true);
+      await expect(applyProposedChanges({ ctx: h.ctx(), ids: new Set(["statement:thm:main"]) }))
+        .rejects.toThrow(/selected atomically/);
+      expect((await h.readProto()).statements[0].statement).toBe(STMT.statement);
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -158,16 +179,18 @@ describe("argues_proposed paired-proof promotion", () => {
           statements: [{ id: "thm:main", current: STMT.statement, proposed: NEW_TEXT, reason: "drop redundant assumption", direction: "correct" }],
           definitions: [],
           assumptions: [{ id: "ass:new-moment", condition: "a new moment bound", reason: "needed", standard_or_novel: "novel: needed", not_crux: "supporting" }],
-          coreEdits: [],
+          coreEdits: [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...proto.statements[0], statement: NEW_TEXT },
+            reason: "complete statement post-image", direction: "correct",
+          }],
           proofs: [{ id: "thm:main", proof_tex: NEW_PROOF, argues_proposed: true }],
         },
       } as never);
 
-      await applyProposedChanges({ ctx: h.ctx(), ids: new Set(["statement:thm:main"]) });
-
-      const after = await h.readProto();
-      expect(after.statements[0].status, "an unapplied global invalidator must block promotion").toBe("to-prove");
-      expect((await readRec(h))?.partial).toBe(true);
+      await expect(applyProposedChanges({ ctx: h.ctx(), ids: new Set(["thm:main"]) }))
+        .rejects.toThrow(/did not reach a complete exact postimage/);
+      expect((await h.readProto()).statements[0].statement).toBe(STMT.statement);
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -193,7 +216,11 @@ describe("argues_proposed paired-proof promotion", () => {
         resolved_oeqs: {},
         proposals: {
           statements: [{ id: "lem:helper", current: "helper as first stated", proposed: "helper, revised", reason: "narrow", direction: "correct" }],
-          definitions: [], assumptions: [], coreEdits: [],
+          definitions: [], assumptions: [], coreEdits: [{
+            kind: "statement-replace", id: "lem:helper",
+            proposed: { ...agentNode, statement: "helper, revised", status: "to-prove", proof_tex: undefined },
+            reason: "complete carried statement post-image", direction: "correct",
+          }],
           proofs: [{ id: "lem:helper", proof_tex: "Proof of the revised helper claim.", argues_proposed: true }],
         },
       } as never);
@@ -248,7 +275,18 @@ describe("argues_proposed paired-proof promotion", () => {
             { id: "thm:main", current: "main, old", proposed: "main, new", reason: "tighten", direction: "correct" },
             { id: "lem:helper", current: "helper, old", proposed: "helper, new", reason: "tighten", direction: "correct" },
           ],
-          definitions: [], assumptions: [], coreEdits: [],
+          definitions: [], assumptions: [], coreEdits: [
+            {
+              kind: "statement-replace", id: "thm:main",
+              proposed: { ...consumer, statement: "main, new", status: "to-prove", proof_tex: undefined },
+              reason: "complete main post-image", direction: "correct",
+            },
+            {
+              kind: "statement-replace", id: "lem:helper",
+              proposed: { ...helper, statement: "helper, new", status: "to-prove", proof_tex: undefined },
+              reason: "complete helper post-image", direction: "correct",
+            },
+          ],
           proofs: [
             { id: "thm:main", proof_tex: "new main proof using lem:helper", argues_proposed: true },
             { id: "lem:helper", proof_tex: "new helper proof", argues_proposed: true },
@@ -259,9 +297,11 @@ describe("argues_proposed paired-proof promotion", () => {
       await applyProposedChanges({ ctx: h.ctx() });
 
       const after = await h.readProto();
-      expect(after.statements.find((s) => s.id === "lem:helper")?.status).toBe("proved");
-      expect(after.statements.find((s) => s.id === "thm:main")?.status).toBe("proved");
+      expect(after.statements.find((s) => s.id === "lem:helper")?.status).toBe("to-prove");
+      expect(after.statements.find((s) => s.id === "thm:main")?.status).toBe("to-prove");
       expect((await readRec(h))?.partial).toBeUndefined();
+      const working = await loadWorkingState(h.ctx());
+      expect(working?.solved["lem:helper"].partial).toBeUndefined();
     } finally { await h.dispose(); }
   }, 30000);
 
@@ -269,12 +309,9 @@ describe("argues_proposed paired-proof promotion", () => {
     const h = await createDStageHarness({ qid: "stat_promote", specialization: "v1", proto: PROTO });
     try {
       await seedBundle(h, { arguesProposed: false });
-      await applyProposedChanges({ ctx: h.ctx() });
-      const after = await h.readProto();
-      expect(after.statements[0].status).toBe("to-prove");
-      const rec = await readRec(h);
-      expect(rec?.partial).toBe(true);
-      expect(rec?.proof_tex, "the payload bytes stay as the hot repair basis").toBe(NEW_PROOF);
+      await expect(applyProposedChanges({ ctx: h.ctx() }))
+        .rejects.toThrow(/argues_proposed:true/);
+      expect((await h.readProto()).statements[0].statement).toBe(STMT.statement);
     } finally { await h.dispose(); }
   }, 30000);
 });

@@ -49,12 +49,14 @@ def streamToFiniteSample (z : ℕ × (ℕ → X)) : FiniteSample X :=
   ⟨z.1, fun i => z.2 i⟩
 
 /-- Embedding a fixed-size tuple into the finite-sequence space is measurable. -/
+@[fun_prop]
 lemma measurable_fixedSizeEmbed (n : ℕ) : Measurable (fixedSizeEmbed (X := X) n) := by
   change Measurable (Sigma.mk n)
   apply Measurable.of_le_map
   exact iInf_le _ n
 
 /-- Reading the count of a finite sequence is measurable. -/
+@[fun_prop]
 lemma measurable_finiteSample_count : Measurable (FiniteSample.count : FiniteSample X → ℕ) := by
   apply measurable_to_countable'
   intro n
@@ -70,6 +72,7 @@ lemma measurable_finiteSample_count : Measurable (FiniteSample.count : FiniteSam
     simp [hmn]
 
 /-- Truncating a count-and-stream outcome to its selected prefix is measurable. -/
+@[fun_prop]
 lemma measurable_streamToFiniteSample :
     Measurable (streamToFiniteSample : (ℕ × (ℕ → X)) → FiniteSample X) := by
   intro s hs

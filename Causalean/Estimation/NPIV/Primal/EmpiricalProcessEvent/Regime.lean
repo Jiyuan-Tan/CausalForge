@@ -100,6 +100,8 @@ attribute [instance] LocalizedRegimeBundle.meas_𝒳
   LocalizedRegimeBundle.nonempty_ι
   LocalizedRegimeBundle.countable_ι
 
+attribute [fun_prop] LocalizedRegimeBundle.X_meas LocalizedRegimeBundle.F_meas
+
 /-- This structure bundles [four localized regime witnesses, one for each function class entering
 the empirical-process and centred-regulariser arguments — the product, moment, critic, and candidate
 classes](hyp:bundle_HF,bundle_mF,bundle_F,bundle_H), with the deterministic hypotheses that [the

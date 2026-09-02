@@ -186,6 +186,7 @@ theorem cosComp_isTrigPolyLE (R : Polynomial ℝ) (β : ℕ) (hβ : R.natDegree 
         ring
 
 /-- The Szegő interpolant is continuous as a function of its argument. -/
+@[fun_prop]
 theorem szegoInterp_continuous (β : ℕ) (Q₀ Q₁ t₀ : ℝ) :
     Continuous (szegoInterp β Q₀ Q₁ t₀) := by
   unfold szegoInterp

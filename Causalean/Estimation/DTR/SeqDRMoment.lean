@@ -78,6 +78,24 @@ noncomputable def indEq (d d' : δ) : ℝ :=
   haveI : Decidable (d = d') := Classical.dec _
   if d = d' then 1 else 0
 
+/-- On a treatment space whose one-point sets are measurable, comparing a varying
+treatment against a fixed reference treatment is a measurable real-valued function
+of the varying treatment. -/
+@[fun_prop]
+lemma measurable_indEq (d : δ) :
+    Measurable (fun x : δ => indEq x d) := by
+  have hset : MeasurableSet {x : δ | x = d} := MeasurableSet.singleton d
+  have hfun : (fun x : δ => indEq x d)
+      = Set.indicator {x : δ | x = d} (fun _ => (1 : ℝ)) := by
+    funext x
+    by_cases hx : x = d
+    · rw [Set.indicator_of_mem (by simpa using hx)]
+      simp [indEq, hx]
+    · rw [Set.indicator_of_notMem (by simpa using hx)]
+      simp [indEq, hx]
+  rw [hfun]
+  exact measurable_const.indicator hset
+
 /-! ## Nuisance vector for sequential DR (n = 2) -/
 
 end DTR
@@ -117,6 +135,12 @@ namespace DTRNuisanceVec₂
 
 variable {δ : Type} [MeasurableSpace δ] [MeasurableSingletonClass δ]
 variable {γ : Fin 2 → Type} [∀ k, MeasurableSpace (γ k)]
+
+-- The four nuisance-regularity fields are registered with `fun_prop`, so the
+-- measurability of a nuisance vector's stagewise regressions and propensities is
+-- reachable by the standard function-property tactics.
+attribute [fun_prop] DTRNuisanceVec₂.μ₀_meas DTRNuisanceVec₂.e₀_meas
+  DTRNuisanceVec₂.μ₁_meas DTRNuisanceVec₂.e₁_meas
 
 /-- The zero nuisance vector sets every stagewise regression and propensity component to zero. -/
 instance : Zero (DTRNuisanceVec₂ δ γ) where
@@ -369,6 +393,7 @@ noncomputable def seqDRMomentFunctional (S : DTREstimationSystem P δ γ) :
 /-- The sequential doubly robust moment functional is measurable as a function of the observed data tuple.
 
 This measurability result lets the abstract DML layer consume the moment. -/
+@[fun_prop]
 lemma measurable_seqDRMomentFunctional (S : DTREstimationSystem P δ γ)
     (η : DTRNuisanceVec₂ δ γ) (θ : ℝ) :
     Measurable (fun z : γ 0 × δ × γ 1 × δ × ℝ =>
@@ -429,12 +454,14 @@ lemma measurable_seqDRMomentFunctional (S : DTREstimationSystem P δ γ)
 
 omit [MeasurableSingletonClass δ] in
 /-- The initial-state projection is measurable. -/
+@[fun_prop]
 lemma measurable_projS₀ :
     Measurable (fun z : γ 0 × δ × γ 1 × δ × ℝ => projS₀ z) := by
   unfold projS₀; exact measurable_fst
 
 omit [MeasurableSingletonClass δ] in
 /-- The cons-ordered stage-1 history projection is measurable. -/
+@[fun_prop]
 lemma measurable_histH₁ :
     Measurable (fun z : γ 0 × δ × γ 1 × δ × ℝ => histH₁ z) := by
   unfold histH₁ projS₁ projD₀ projS₀; measurability

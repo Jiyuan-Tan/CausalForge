@@ -29,6 +29,7 @@ centered i.i.d. sum to which the CLT applies; on fold `B(n)` the scaling is
 -/
 
 import Causalean.Estimation.ATE.InfluenceFunction
+import Causalean.Tactic.IntegralLinearity
 import Causalean.Stat.Sample
 import Causalean.Stat.SampleSplit
 import Causalean.Stat.CLT.AsymptoticLinearity
@@ -190,8 +191,9 @@ theorem plugIn_isAsymLinear
         = (fun ω => (S.μ_val true (S.toPOBackdoorSystem.factualX ω) -
             S.μ_val false (S.toPOBackdoorSystem.factualX ω)) - S.θ₀) := by
       funext ω; rfl
-    rw [heq, integral_sub hbase_int hθ_int,
-      ← theta_zero_factualX_integral S, hθ_const]
+    rw [heq]
+    integral_linearity
+    rw [← theta_zero_factualX_integral S, hθ_const]
     ring
   · -- finite_var: ψ_plugin = (μ_val 1 ∘ X) − (μ_val 0 ∘ X) − θ₀ ∈ L²(P_Z).
     -- L² of `μ_val d ∘ factualX` follows from `h_yd2` via conditional Jensen

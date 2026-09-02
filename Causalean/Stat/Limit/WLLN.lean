@@ -42,6 +42,7 @@ namespace IIDSample
 
 /-- `S.sampleMean g N` is measurable for measurable `g`: it is a finite sum of
 `g ∘ Z i` scaled by a constant. -/
+@[fun_prop]
 theorem measurable_sampleMean (S : IIDSample Ω X μ P) {g : X → ℝ}
     (hg_meas : Measurable g) (N : ℕ) :
     Measurable (S.sampleMean g N) := by

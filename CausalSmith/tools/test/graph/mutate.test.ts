@@ -66,8 +66,8 @@ describe("mutate", () => {
   it("setNodeReview sets an explicit review status", () => {
     let g = createEmptyGraph("q", "v1");
     g = addNode(g, { id: "l1", kind: "lemma", provenance: "from-note", nl_statement: "h", tex_anchor: "" });
-    g = setNodeReview(g, "l1", "derived", "h2");
-    expect(g.nodes[0].review).toEqual({ status: "derived", passed_hash: "h2" });
+    g = setNodeReview(g, "l1", "matched", "h2");
+    expect(g.nodes[0].review).toEqual({ status: "matched", passed_hash: "h2" });
     g = setNodeReview(g, "l1", "drift", "h3");
     expect(g.nodes[0].review.status).toBe("drift");
   });

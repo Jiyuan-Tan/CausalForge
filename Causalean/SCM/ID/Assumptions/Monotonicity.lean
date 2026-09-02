@@ -180,7 +180,10 @@ def flipStructFun (v : {v // v ∈ boolChainSWIG.observed}) :
   | fixed n =>
       cases n <;> simp [boolChainSWIG] at hn
 
-private theorem copyStructFun_measurable (v : {v // v ∈ boolChainSWIG.observed}) :
+/-- Each structural function of the copy mechanism on the Boolean chain example is
+measurable. -/
+@[fun_prop]
+theorem copyStructFun_measurable (v : {v // v ∈ boolChainSWIG.observed}) :
     Measurable (copyStructFun v) := by
   rcases v with ⟨n, hn⟩
   cases n with
@@ -191,7 +194,10 @@ private theorem copyStructFun_measurable (v : {v // v ∈ boolChainSWIG.observed
   | fixed n =>
       cases n <;> simp [boolChainSWIG] at hn
 
-private theorem flipStructFun_measurable (v : {v // v ∈ boolChainSWIG.observed}) :
+/-- Each structural function of the flip mechanism on the Boolean chain example is
+measurable. -/
+@[fun_prop]
+theorem flipStructFun_measurable (v : {v // v ∈ boolChainSWIG.observed}) :
     Measurable (flipStructFun v) := by
   rcases v with ⟨n, hn⟩
   cases n with

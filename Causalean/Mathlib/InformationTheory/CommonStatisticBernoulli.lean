@@ -319,6 +319,7 @@ noncomputable def clippedStatisticSuccessParameter
     (statisticSuccessParameter nu p stat r))
 
 -- @node: clippedStatisticSuccessParameter_measurable
+@[fun_prop]
 lemma clippedStatisticSuccessParameter_measurable
     {A : Type*} [MeasurableSpace A]
     (nu : Measure A) (p : A → ℝ) (stat : A → ℝ) :

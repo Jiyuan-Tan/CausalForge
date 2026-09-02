@@ -50,29 +50,32 @@ function fixture(): Core {
   });
 }
 
-describe("D0 frozen-core hybrid projection", () => {
+describe("D0 frozen-core local projection", () => {
   it("inlines target upstream/downstream and referenced catalog closure", () => {
-    const projected = projectFrozenCore(fixture(), new Set(["thm:target"]), false);
+    const projected = projectFrozenCore(fixture(), new Set(["thm:target"]));
     expect(projected.manifest.mode).toBe("projected");
-    expect(projected.manifest.included.statements).toEqual(["lem:upstream", "thm:target"]);
+    expect(projected.inline.statements.map(({ id }) => id)).toEqual(["lem:upstream", "thm:target"]);
     expect(projected.manifest.affected_downstream_statement_ids).toEqual(["prop:downstream"]);
-    expect(projected.manifest.included.assumptions).toEqual(["ass:up", "ass:sibling"]);
-    expect(projected.manifest.included.definitions).toEqual(["def:up", "def:sibling"]);
-    expect(projected.manifest.included.symbols).toEqual(["x", "y", "z"]);
-    expect(projected.manifest.omitted.statements.map(({ id }) => id)).toEqual(["prop:downstream", "thm:sibling"]);
-    expect(projected.manifest.omitted.definitions[0]).toMatchObject({ id: "def:omitted" });
-    expect(projected.manifest.omitted.definitions[0].revision).toMatch(/^rev:[a-f0-9]{64}$/);
-    expect(projected.manifest.omitted.statements[0].revision).toMatch(/^rev:[a-f0-9]{64}$/);
+    expect(projected.inline.assumptions.map(({ id }) => id)).toEqual(["ass:up"]);
+    expect(projected.inline.definitions.map(({ id }) => id)).toEqual(["def:up"]);
+    expect(projected.inline.symbols.map(({ name }) => name)).toEqual(["x"]);
+    expect(projected.manifest.omitted).toEqual({
+      symbols: ["y", "z"],
+      assumptions: ["ass:down", "ass:sibling"],
+      definitions: ["def:sibling", "def:omitted"],
+      statements: ["prop:downstream", "thm:sibling"],
+    });
   });
 
-  it("keeps all symbols when a present free_symbols declaration is incomplete", () => {
+  it("recovers a visibly used symbol when free_symbols is incomplete", () => {
     const core = fixture();
     const target = core.statements.find(({ id }) => id === "thm:target")!;
     target.statement = "The target involving y holds";
     target.free_symbols = ["x"];
-    const projected = projectFrozenCore(core, new Set(["thm:target"]), false);
-    expect(projected.manifest.included.symbols).toEqual(["x", "y", "z"]);
+    const projected = projectFrozenCore(core, new Set(["thm:target"]));
+    expect(projected.inline.symbols.map(({ name }) => name)).toEqual(["x", "y"]);
     expect(projected.inline.symbols.find(({ name }) => name === "y")).toBeDefined();
+    expect(projected.manifest.omitted.symbols).toEqual(["z"]);
   });
 
   it("inlines catalog nodes cited only literally in TeX bodies", () => {
@@ -80,17 +83,8 @@ describe("D0 frozen-core hybrid projection", () => {
     const target = core.statements.find(({ id }) => id === "thm:target")!;
     // Not in depends_on, free_symbols, or any symbol ref — a bare textual citation.
     target.statement = "The target holds by the construction in def:omitted";
-    const projected = projectFrozenCore(core, new Set(["thm:target"]), false);
-    expect(projected.manifest.included.definitions).toContain("def:omitted");
+    const projected = projectFrozenCore(core, new Set(["thm:target"]));
     expect(projected.inline.definitions.find(({ id }) => id === "def:omitted")).toBeDefined();
-  });
-
-  it("keeps the complete formal view for a cross-cutting owner", () => {
-    const projected = projectFrozenCore(fixture(), new Set(["thm:target"]), true);
-    expect(projected.manifest.mode).toBe("full");
-    expect(projected.manifest.affected_downstream_statement_ids).toEqual([]);
-    expect(projected.manifest.omitted).toEqual({ symbols: [], assumptions: [], definitions: [], statements: [] });
-    expect(projected.inline.statements).toHaveLength(4);
   });
 
   it("makes a stable snapshot hash while retaining selectively readable full fields", () => {

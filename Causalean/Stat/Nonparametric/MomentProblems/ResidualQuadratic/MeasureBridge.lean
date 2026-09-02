@@ -8,6 +8,7 @@ import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Data.Real.StarOrdered
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Causalean.Stat.Nonparametric.MomentProblems.ResidualQuadratic.MomentAlgebra
+import Causalean.Tactic.IntegralLinearity
 
 /-!
 # Measure-level L² projection residual of `y ↦ y²` onto `span{1, y}`
@@ -66,6 +67,11 @@ structure FiniteMoment4 (μ : Measure ℝ) : Prop where
   int3 : Integrable (fun y : ℝ => y ^ 3) μ
   /-- `y ↦ y⁴` is integrable (finite fourth moment). -/
   int4 : Integrable (fun y : ℝ => y ^ 4) μ
+
+-- The four moment-integrability facts are exposed to the function-property tactics, so a proof
+-- holding a `FiniteMoment4` hypothesis need not name the fields to see that polynomials of
+-- degree at most four are integrable.
+attribute [fun_prop] FiniteMoment4.int1 FiniteMoment4.int2 FiniteMoment4.int3 FiniteMoment4.int4
 
 /-- The quadratic regression objective in `L²(μ)`: the mean squared residual of the linear fit
 `b₀ + b₁ y` to `y²`, i.e. `∫ (y² − b₀ − b₁ y)² ∂μ`. -/
@@ -130,11 +136,7 @@ theorem residualQuad_eq (μ : Measure ℝ) [IsProbabilityMeasure μ] (h : Finite
       (fun y : ℝ => (((y ^ 4 + (-(2 * b₁)) * y ^ 3) + (-(2 * b₀)) * y ^ 2) +
         (b₁ ^ 2) * y ^ 2) + (2 * b₀ * b₁) * y) μ :=
     hs3.add hi1
-  rw [MeasureTheory.integral_add hs4 hic]
-  rw [MeasureTheory.integral_add hs3 hi1]
-  rw [MeasureTheory.integral_add hs2 hi2b]
-  rw [MeasureTheory.integral_add hs1 hi2a]
-  rw [MeasureTheory.integral_add h.int4 hi3]
+  integral_linearity
   simp [MeasureTheory.integral_const_mul, MeasureTheory.integral_mul_const,
     MeasureTheory.integral_neg, MeasureTheory.integral_const, mul_assoc, mul_left_comm, mul_comm]
   ring

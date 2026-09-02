@@ -31,6 +31,7 @@ outer → inner).
 
 import Causalean.PO.ID.Exact.DTR.Main
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Causalean.Tactic.Attr
 
 /-!
 # Two-Stage DTR Estimation Setup
@@ -159,6 +160,40 @@ variable {P : POSystem} {δ : Type} {γ : Fin 2 → Type}
   [MeasurableSpace δ] [MeasurableSingletonClass δ]
   [∀ k, MeasurableSpace (γ k)]
   [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
+
+-- The four nuisance-regularity fields are registered with `fun_prop`, so the
+-- measurability of the stagewise regressions and propensities carried by an
+-- estimation system is reachable by the standard function-property tactics.
+attribute [fun_prop] DTREstimationSystem.μ₀_meas DTREstimationSystem.e₀_meas
+  DTREstimationSystem.μ₁_meas DTREstimationSystem.e₁_meas
+
+/-- The stage-0 outcome regression carried by an estimation system is strongly
+measurable on the stage-0 state space. -/
+@[fun_prop]
+lemma stronglyMeasurable_μ₀_val (S : DTREstimationSystem P δ γ) :
+    StronglyMeasurable S.μ₀_val :=
+  S.μ₀_meas.stronglyMeasurable
+
+/-- The stage-0 propensity carried by an estimation system is strongly measurable
+on the stage-0 state space. -/
+@[fun_prop]
+lemma stronglyMeasurable_e₀_val (S : DTREstimationSystem P δ γ) :
+    StronglyMeasurable S.e₀_val :=
+  S.e₀_meas.stronglyMeasurable
+
+/-- The stage-1 outcome regression carried by an estimation system is strongly
+measurable on the stage-1 history space. -/
+@[fun_prop]
+lemma stronglyMeasurable_μ₁_val (S : DTREstimationSystem P δ γ) :
+    StronglyMeasurable S.μ₁_val :=
+  S.μ₁_meas.stronglyMeasurable
+
+/-- The stage-1 propensity carried by an estimation system is strongly measurable
+on the stage-1 history space. -/
+@[fun_prop]
+lemma stronglyMeasurable_e₁_val (S : DTREstimationSystem P δ γ) :
+    StronglyMeasurable S.e₁_val :=
+  S.e₁_meas.stronglyMeasurable
 
 /-- The stage-0 value-space regression equals the counterfactual stage-0 regression under identification.
 
@@ -442,6 +477,7 @@ noncomputable def factualZ (S : DTREstimationSystem P δ γ) :
      S.toPODTRSystem.factualY ω)
 
 /-- The full observed two-stage data tuple is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ (S : DTREstimationSystem P δ γ) :
     Measurable S.factualZ := by
   refine (S.toPODTRSystem.measurable_factualS ⟨0, by decide⟩).prodMk ?_
@@ -454,6 +490,13 @@ lemma measurable_factualZ (S : DTREstimationSystem P δ γ) :
 noncomputable def P_Z (S : DTREstimationSystem P δ γ) :
     Measure (γ 0 × δ × γ 1 × δ × ℝ) :=
   P.μ.map S.factualZ
+
+/-- The joint two-stage data law is the image of the population measure under the map recording
+the full observed two-stage data tuple. -/
+@[causal_defs_simps]
+lemma P_Z_eq (S : DTREstimationSystem P δ γ) :
+    S.P_Z = P.μ.map S.factualZ :=
+  rfl
 
 /-! ### DTR estimand on the value space -/
 

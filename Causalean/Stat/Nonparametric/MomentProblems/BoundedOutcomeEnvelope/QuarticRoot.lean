@@ -61,6 +61,7 @@ theorem envelopeQuartic_neg_at_v (v : ℝ) (hv0 : 0 < v) (hv1 : v < 1) :
   nlinarith [mul_pos hpos hsq]
 
 /-- The continuous polynomial `t ↦ envelopeQuartic t q`. -/
+@[fun_prop]
 theorem continuous_envelopeQuartic (q : ℝ) :
     Continuous (fun t => envelopeQuartic t q) := by
   unfold envelopeQuartic; fun_prop

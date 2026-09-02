@@ -110,6 +110,7 @@ theorem partialEvalMap_latent (M : Causalean.SCM N Ω)
     `n`: the base case is a product of projections, and the step case composes
     the measurable `stepFun`, `extendOrderedLatentPrefix`, and the inductive
     hypothesis. -/
+@[fun_prop]
 theorem measurable_partialEvalMap (M : Causalean.SCM N Ω) :
     ∀ (n : ℕ) (hn : n ≤ M.observed.card),
       Measurable (fun sℓ : FixedValues M × LatentValues M =>
@@ -355,14 +356,10 @@ theorem jointKernelPrefix_apply_eq (M : Causalean.SCM N Ω) (s : FixedValues M) 
       have hstep := M.measurable_stepFun hn
       have hpair :
           Measurable (fun ξ : M.OrderedLatentPrefixValues k (Nat.le_of_succ_le hn) =>
-            (ξ, M.stepFun hn (s, ξ))) :=
-        Measurable.prodMk measurable_id
-          (hstep.comp (Measurable.prodMk measurable_const measurable_id))
+            (ξ, M.stepFun hn (s, ξ))) := by fun_prop
       have hpem :
           Measurable (fun ℓ : LatentValues M =>
-            M.partialEvalMap k (Nat.le_of_succ_le hn) s ℓ) :=
-        (M.measurable_partialEvalMap k (Nat.le_of_succ_le hn)).comp
-          (Measurable.prodMk measurable_const measurable_id)
+            M.partialEvalMap k (Nat.le_of_succ_le hn) s ℓ) := by fun_prop
       -- Unfold `jointKernelPrefix (k+1)` to `(compProd k ⊗ stepKernel).map extend`.
       change (((M.jointKernelPrefix k (Nat.le_of_succ_le hn)) ⊗ₖ
               (M.stepKernel hn)).map (M.extendOrderedLatentPrefix hn)) s = _

@@ -83,15 +83,18 @@ theorem self_mem_nbhd (i : ι) : i ∈ D.nbhd i := D.mem_nbhd_iff.mpr (D.refl i)
 
 omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- The neighborhood sum is measurable. -/
-private theorem measurable_nbhdSum (i : ι) :
+@[fun_prop]
+theorem measurable_nbhdSum (i : ι) :
     Measurable (fun ω => ∑ k ∈ D.nbhd i, X k ω) :=
   Finset.measurable_sum _ (fun k _ => D.meas k)
 
 omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- The localized product `gᵢ = Xᵢ · Tᵢ` is measurable. -/
-private theorem measurable_locProd (i : ι) :
+@[fun_prop]
+theorem measurable_locProd (i : ι) :
     Measurable (fun ω => X i ω * ∑ k ∈ D.nbhd i, X k ω) :=
   (D.meas i).mul (D.measurable_nbhdSum i)
+
 
 omit [IsProbabilityMeasure μ] [DecidableEq ι] in
 /-- If each summand is bounded in absolute value by B and every closed neighborhood has at most m
@@ -133,10 +136,10 @@ theorem indepFun_leaveOut (i : ι) :
   have hind := D.indep ({i} : Finset ι) (Finset.univ \ D.nbhd i) hsep
   -- Eval at `i` on the `{i}`-tuple, and the total sum on the `(univ \ N i)`-tuple.
   -- The two composing maps are measurable (Pi-evaluation / finite sum of evaluations).
-  have hφ : Measurable fun t : (({i} : Finset ι) → ℝ) => t ⟨i, Finset.mem_singleton.mpr rfl⟩ :=
-    measurable_pi_apply _
-  have hψ : Measurable fun t : ((Finset.univ \ D.nbhd i : Finset ι) → ℝ) => ∑ k, t k :=
-    Finset.measurable_sum _ (fun k _ => measurable_pi_apply _)
+  have hφ : Measurable fun t : (({i} : Finset ι) → ℝ) =>
+      t ⟨i, Finset.mem_singleton.mpr rfl⟩ := by fun_prop
+  have hψ : Measurable fun t : ((Finset.univ \ D.nbhd i : Finset ι) → ℝ) => ∑ k, t k := by
+    fun_prop
   have hcomp := hind.comp hφ hψ
   -- Identify the two sides with `X i` and the leave-out sum.
   have h1 : (fun t : (({i} : Finset ι) → ℝ) => t ⟨i, Finset.mem_singleton.mpr rfl⟩)
@@ -166,10 +169,8 @@ theorem cov_mul_nbhd_eq_zero {i j : ι}
     fun t => t ⟨i, D.self_mem_nbhd i⟩ * ∑ k, t k
   let ψ : (↥(D.nbhd j) → ℝ) → ℝ :=
     fun t => t ⟨j, D.self_mem_nbhd j⟩ * ∑ k, t k
-  have hφ : Measurable φ :=
-    (measurable_pi_apply _).mul (Finset.measurable_sum _ (fun k _ => measurable_pi_apply _))
-  have hψ : Measurable ψ :=
-    (measurable_pi_apply _).mul (Finset.measurable_sum _ (fun k _ => measurable_pi_apply _))
+  have hφ : Measurable φ := by fun_prop
+  have hψ : Measurable ψ := by fun_prop
   -- Both tuples are AEMeasurable (each coordinate `X k` is measurable).
   have hXi : AEMeasurable (fun ω => fun k : ↥(D.nbhd i) => X k ω) μ :=
     (measurable_pi_lambda _ (fun k : ↥(D.nbhd i) => D.meas (↑k))).aemeasurable
@@ -364,8 +365,7 @@ theorem sum_E_nbhd_sq_le (N : ι → Finset ι) (hmeas : ∀ i, Measurable (X i)
   -- Hence each integral is `≤ m²·B³`.
   have hint : ∀ i, ∫ ω, |X i ω| * (∑ k ∈ N i, X k ω) ^ 2 ∂μ ≤ (m : ℝ) ^ 2 * B ^ 3 := by
     intro i
-    have hmeas_i : Measurable (fun ω => |X i ω| * (∑ k ∈ N i, X k ω) ^ 2) :=
-      ((hmeas i).abs).mul ((Finset.measurable_sum _ (fun k _ => hmeas k)).pow_const 2)
+    have hmeas_i : Measurable (fun ω => |X i ω| * (∑ k ∈ N i, X k ω) ^ 2) := by fun_prop
     have hbdd : ∀ ω, |(|X i ω| * (∑ k ∈ N i, X k ω) ^ 2)| ≤ (m : ℝ) ^ 2 * B ^ 3 := by
       intro ω
       rw [abs_of_nonneg (by positivity)]

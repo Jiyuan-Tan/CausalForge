@@ -359,6 +359,31 @@ structure TwoProxyAssumptions
   overlap_strong : ∀ a : Bool, ∀ s : Set P.Ω, MeasurableSet[S.σ_UX] s →
       μ (s ∩ {ω | S.A ω = a}) = 0 → μ s = 0
 
+/-! ### `fun_prop` accessors for the bundled side conditions
+
+The measurability and integrability *fields* of the three assumption bundles are the
+suppliers every downstream proof needs, but a bare field projection is invisible to
+`fun_prop`. Registering the projections themselves makes each bundled side condition
+reachable by a bare `fun_prop` from any consumer that has the bundle in context. Only fields whose bundle argument is recoverable from the conclusion are
+registered; facts such as `integrable_Y`, whose statement does not mention the bundle,
+cannot be found by unification and stay name-called. -/
+
+attribute [fun_prop]
+  WBasedAssumptions.measurable_h
+  WBasedAssumptions.integrable_h
+  WBasedAssumptions.integrable_h_arm
+  ZBasedAssumptions.measurable_q
+  ZBasedAssumptions.measurable_likelihoodRatio_swapA
+  ZBasedAssumptions.integrable_likelihoodRatio_swapA
+  ZBasedAssumptions.integrable_q
+  TwoProxyAssumptions.measurable_h
+  TwoProxyAssumptions.integrable_h
+  TwoProxyAssumptions.integrable_h_arm
+  TwoProxyAssumptions.measurable_q
+  TwoProxyAssumptions.measurable_likelihoodRatio_swapA
+  TwoProxyAssumptions.integrable_likelihoodRatio_swapA
+  TwoProxyAssumptions.integrable_q
+
 end POProximalSystem
 
 end PO

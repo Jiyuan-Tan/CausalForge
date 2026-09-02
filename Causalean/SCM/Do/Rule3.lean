@@ -371,13 +371,9 @@ theorem condDistrib_intervention_ancestral_eq
   classical
   -- Measurability bookkeeping.
   have hf_2 : Measurable (fun ℓ : LatentValues (M'.fixSet Z hZ_obs hZ_fixed) =>
-      (M'.fixSet Z hZ_obs hZ_fixed).evalMap s' ℓ) :=
-    (M'.fixSet Z hZ_obs hZ_fixed).evalMap_measurable.comp
-      (Measurable.prodMk measurable_const measurable_id)
+      (M'.fixSet Z hZ_obs hZ_fixed).evalMap s' ℓ) := by fun_prop
   have hf_1 : Measurable (fun ℓ : LatentValues M' =>
-      M'.evalMap (M'.fixSetProj Z hZ_obs hZ_fixed s') ℓ) :=
-    M'.evalMap_measurable.comp
-      (Measurable.prodMk measurable_const measurable_id)
+      M'.evalMap (M'.fixSetProj Z hZ_obs hZ_fixed s') ℓ) := by fun_prop
   have hRTO_2 : Measurable (M'.fixSet Z hZ_obs hZ_fixed).randomToObserved :=
     (M'.fixSet Z hZ_obs hZ_fixed).measurable_randomToObserved
   have hRTO_1 : Measurable M'.randomToObserved :=

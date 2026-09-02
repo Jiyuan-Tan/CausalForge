@@ -23,6 +23,7 @@ import Mathlib.MeasureTheory.Function.LpSpace.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Topology.MetricSpace.Basic
 import Causalean.Mathlib.ConvergenceInDistribution
+import Causalean.Tactic.Attr
 
 /-!
 Defines scalar convergence in probability, L² convergence, convergence in distribution, and
@@ -55,6 +56,13 @@ predicate along the natural-number limit. -/
 def Tendsto_inProb (Xn : ℕ → Ω → ℝ) (X : Ω → ℝ) (μ : Measure Ω) : Prop :=
   TendstoInMeasure μ Xn atTop X
 
+/-- Convergence in probability of a sequence of real random variables to a limit is exactly
+convergence in measure of that sequence along the natural numbers. -/
+@[causal_defs_simps]
+lemma Tendsto_inProb_iff (Xn : ℕ → Ω → ℝ) (X : Ω → ℝ) (μ : Measure Ω) :
+    Tendsto_inProb Xn X μ ↔ TendstoInMeasure μ Xn atTop X :=
+  Iff.rfl
+
 /-! ## L² convergence -/
 
 /-- `Tendsto_L2 Xn X μ` is convergence in `L²(μ)` of `Xn` to `X`. -/
@@ -80,6 +88,20 @@ def Tendsto_dist (Xn : ℕ → Ω → ℝ) (Q : Measure ℝ) (μ : Measure Ω)
     (fun n =>
       ⟨μ.map (Xn n), Measure.isProbabilityMeasure_map (hXn n)⟩) atTop
     (𝓝 ⟨Q, ‹IsProbabilityMeasure Q›⟩)
+
+/-- Convergence in distribution of a sequence of real random variables to a probability law on
+the real line is exactly convergence, in the space of probability measures on the real line, of
+the pushforward laws of the random variables to that law. -/
+@[causal_defs_simps]
+lemma Tendsto_dist_iff (Xn : ℕ → Ω → ℝ) (Q : Measure ℝ) (μ : Measure Ω)
+    [IsProbabilityMeasure μ] [IsProbabilityMeasure Q]
+    (hXn : ∀ n, AEMeasurable (Xn n) μ) :
+    Tendsto_dist Xn Q μ hXn ↔
+      Tendsto (β := ProbabilityMeasure ℝ)
+        (fun n =>
+          ⟨μ.map (Xn n), Measure.isProbabilityMeasure_map (hXn n)⟩) atTop
+        (𝓝 ⟨Q, ‹IsProbabilityMeasure Q›⟩) :=
+  Iff.rfl
 
 /-- Deterministic-scalar Slutsky for the project's measure-level
 `Tendsto_dist` wrapper.
@@ -108,7 +130,7 @@ theorem Tendsto_dist.const_mul_tendsto
     Measure.isProbabilityMeasure_map (measurable_const.mul measurable_id).aemeasurable
   change Tendsto_dist (fun n ω => a n * Xn n ω)
     (Q.map (fun x : ℝ => a₀ * x)) μ hScaled
-  unfold Tendsto_dist at hX ⊢
+  simp only [causal_defs_simps] at hX ⊢
   have hpm := MeasureTheory.ProbabilityMeasure.tendsto_map_mul_of_tendsto hX ha
   refine hpm.congr' ?_
   filter_upwards with n
@@ -186,7 +208,7 @@ theorem Tendsto_dist.tightness
   let F : Set ℝ := s N
   have hFclosed : IsClosed F := by
     exact isClosed_le continuous_const continuous_abs
-  unfold Tendsto_dist at hX
+  simp only [causal_defs_simps] at hX
   let νs : ℕ → ProbabilityMeasure ℝ := fun n =>
     ⟨μ.map (Xn n), Measure.isProbabilityMeasure_map (hXn n)⟩
   let ν : ProbabilityMeasure ℝ := ⟨Q, inferInstance⟩

@@ -15,8 +15,9 @@
 //                          well-formed (historical receipts cannot be re-validated
 //                          end-to-end: the pre-apply working state is consumed by the
 //                          apply transaction, whose journal is deleted on commit);
-//   4. solve outputs     — every persisted `solve_*.json` through the exact production
-//                          ingest (`readSolveUnitOutput`);
+//   4. solve outputs     — every persisted `solve_*.json` through the pure mechanical
+//                          production reader (catalog-dependent live acceptance is
+//                          intentionally not claimed by this global sweep);
 //   5. review packets    — every `proposal_review_packet.json` parses, and its payload
 //                          is replayed through the apply validator against the sibling
 //                          proto (the packet embeds the working state it was built from);
@@ -837,12 +838,14 @@ export async function runReplay(opts: {
       await readSolveUnitOutput(f, path.basename(f));
       solveOk += 1;
     } catch (err) {
-      const line = `solve output ${relToRoot(opts.researchRoot, f)} failed production ingest: ${errMsg(err)}`;
+      const line = `solve output ${relToRoot(opts.researchRoot, f)} failed mechanical ingest: ${errMsg(err)}`;
       if (tierOf(opts.researchRoot, f) === "active") failures.push(line);
       else warnings.push(line);
     }
   }
-  if (solveFiles.length > 0) log(`Solve outputs: ${solveOk}/${solveFiles.length} pass production ingest.`);
+  if (solveFiles.length > 0) {
+    log(`Solve outputs: ${solveOk}/${solveFiles.length} pass pure mechanical ingest (catalog checks not replayed).`);
+  }
 
   const packetFiles = sweepFiles.filter((f) => {
     const b = path.basename(f);

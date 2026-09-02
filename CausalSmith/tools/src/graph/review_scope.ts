@@ -62,11 +62,12 @@ function frozenUsesClosure(graph: FormalizationGraph): Set<string> {
 export function reviewTargets(graph: FormalizationGraph, dirty: string[]): ReviewTargets {
   const dirtySet = new Set(dirty);
   const closure = frozenUsesClosure(graph);
-  // A target needs review if its statement changed (dirty) OR it is not yet cleared. A node
-  // flagged `drift` (or never reviewed) must stay in scope until it is `matched`/`derived` —
-  // otherwise a drift whose hash didn't change since the last pass would silently slip the gate.
-  const needsReview = (id: string, status: string) =>
-    dirtySet.has(id) || (status !== "matched" && status !== "derived");
+  // A target needs review if its statement changed (dirty) OR it is not yet cleared. `matched` is
+  // the ONLY clearing status — a defensive invariant, not just a restatement of today's writer: any
+  // status that clears without being a pass lets a failure whose hash didn't change since the last
+  // pass (an F2 reroute that edited nothing) slip the gate. Legacy `derived` loads as `drift` and so
+  // stays in scope; every failing verdict grades to `drift` before it reaches the graph.
+  const needsReview = (id: string, status: string) => dirtySet.has(id) || status !== "matched";
   const statementTargets: string[] = [];
   const assumptionTargets: string[] = [];
   const definitionTargets: string[] = [];

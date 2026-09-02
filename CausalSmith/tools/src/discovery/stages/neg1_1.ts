@@ -1,7 +1,7 @@
 // D-1.1 (literature scout + gaps context) — first framework-ported stage.
 // Shape: assembleContext → dispatchAgents → parseOutputs → decide (pure) → persist.
 // The verdict logic is the pure `decideLitReviewOutcome`; I/O stays in the thin
-// runner. See docs/superpowers/specs/2026-07-20-dstage-framework-rewrite-design.md.
+// runner. See internal/plans/superpowers/specs/2026-07-20-dstage-framework-rewrite-design.md.
 
 import { mkdir, readFile } from "node:fs/promises";
 import { MODEL_PLAN } from "../../constants.js";

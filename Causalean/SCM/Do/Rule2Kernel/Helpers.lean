@@ -68,6 +68,7 @@ omit [Fintype N] in
 
 At every output coordinate the map is just a coordinate projection of the input
 fixed-value assignment. -/
+@[fun_prop]
 lemma measurable_zFixedAsRandom {Z : Finset N} :
     Measurable (zFixedAsRandom (Ω := Ω) (Z := Z)) := by
   refine measurable_pi_iff.mpr ?_
@@ -155,6 +156,7 @@ noncomputable def valuesUnionEquiv {A B : Finset (SWIGNode N)}
 
 The post-intervention fixed slice contributes only a constant assignment, while
 the free coordinates enter through coordinate projections. -/
+@[fun_prop]
 theorem measurable_fillZrW (M' : Causalean.SCM N Ω) (Z : Finset N)
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M'.observed)
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
@@ -169,6 +171,7 @@ and the free conditioning coordinates.
 
 This is the local bridge used to pull the observational conditional kernel back
 along the map that pairs the base fixed slice with the filled conditioning value. -/
+@[fun_prop]
 theorem measurable_fillZrW_prod (M' : Causalean.SCM N Ω) (Z : Finset N)
     (hZ_obs : ∀ D ∈ Z, SWIGNode.random D ∈ M'.observed)
     (hZ_fixed : ∀ D ∈ Z, SWIGNode.fixed D ∉ M'.fixed)
@@ -208,6 +211,7 @@ noncomputable def xRandomAsFixed {X : Finset N}
 
 omit [Fintype N] in
 /-- Reading observed treatment values as intervention-coordinate values is measurable. -/
+@[fun_prop]
 lemma measurable_xRandomAsFixed {X : Finset N} :
     Measurable (xRandomAsFixed (Ω := Ω) (X := X)) := by
   refine measurable_pi_iff.mpr ?_
@@ -245,6 +249,7 @@ intervention coordinate. -/
 
 /-- Extending a base fixed-value assignment is measurable in the treatment
 value when the base assignment is held fixed. -/
+@[fun_prop]
 lemma measurable_fixSetExtend (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) (s0 : M.FixedValues) :

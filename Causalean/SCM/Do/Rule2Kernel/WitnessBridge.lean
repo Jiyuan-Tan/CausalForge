@@ -185,10 +185,7 @@ theorem measurableSet_measure_eq
 theorem obsKernel_eq_latentProduct_map (M : Causalean.SCM N Ω) (s : M.FixedValues) :
     M.obsKernel s
       = M.latentProduct.map (fun ℓ => M.randomToObserved (M.evalMap s ℓ)) := by
-  have hev : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by
-    have : M.evalMap s = fun ℓ => Function.uncurry M.evalMap (s, ℓ) := rfl
-    rw [this]
-    exact M.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+  have hev : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by fun_prop
   rw [obsKernel, ProbabilityTheory.Kernel.map_apply _ M.measurable_randomToObserved,
     jointKernel_apply_eq, MeasureTheory.Measure.map_map M.measurable_randomToObserved hev]
   rfl
@@ -197,15 +194,13 @@ theorem obsKernel_eq_latentProduct_map (M : Causalean.SCM N Ω) (s : M.FixedValu
     is the latent projection of the evaluation, `valuesProjection hY ∘ randomToObserved ∘ E`.
     This is definitional unfolding, exposed so downstream `condDistrib_map_comp`
     rewrites can name the composite. -/
+@[fun_prop]
 theorem valuesProjection_randomToObserved_evalMap_meas
     (M : Causalean.SCM N Ω) {Y : Finset (SWIGNode N)} (hY : Y ⊆ M.observed)
     (s : M.FixedValues) :
     Measurable (fun ℓ : M.LatentValues =>
         valuesProjection hY (M.randomToObserved (M.evalMap s ℓ))) := by
-  have hev : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by
-    have : M.evalMap s = fun ℓ => Function.uncurry M.evalMap (s, ℓ) := rfl
-    rw [this]
-    exact M.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+  have hev : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by fun_prop
   exact (measurable_valuesProjection hY).comp (M.measurable_randomToObserved.comp hev)
 
 -- ============================================================
@@ -443,10 +438,7 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
     change M.evalMap s ℓ ⟨v.val, hCW_rv v.property⟩ = ℓ ⟨v.val, hCWsub v.property⟩
     rw [M.evalMap_unobserved s ℓ _ (hCWsub v.property)]
   -- Measurability of the pulled-back coordinate maps (as compositions with evalMap s).
-  have hev : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by
-    have : M.evalMap s = fun ℓ => Function.uncurry M.evalMap (s, ℓ) := rfl
-    rw [this]
-    exact M.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+  have hev : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by fun_prop
   -- Abbreviations for the pulled-back coordinate maps.
   set Xmap : M.LatentValues → ValuesOn Zr (swigΩ Ω) :=
     fun ℓ => valuesProjection hZr (M.randomToObserved (M.evalMap s ℓ)) with hX_def
@@ -454,11 +446,9 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
     fun ℓ => valuesProjection hW (M.randomToObserved (M.evalMap s ℓ)) with hZmap_def
   set Cmap : M.LatentValues → ValuesOn CW (swigΩ Ω) :=
     valuesProjection hCWsub with hC_def
-  have hXmeas : Measurable Xmap :=
-    (measurable_valuesProjection hZr).comp (M.measurable_randomToObserved.comp hev)
-  have hZmeas : Measurable Zmap :=
-    (measurable_valuesProjection hW).comp (M.measurable_randomToObserved.comp hev)
-  have hCmeas : Measurable Cmap := measurable_valuesProjection hCWsub
+  have hXmeas : Measurable Xmap := by fun_prop
+  have hZmeas : Measurable Zmap := by fun_prop
+  have hCmeas : Measurable Cmap := by fun_prop
   -- Step 1: cutset graph d-sep is now a direct hypothesis; global Markov
   -- (FullCondIndep under jointKernel) follows.  (Previously derived internally
   -- via `cutsetLatent_dSep_of_dSep` from `dSep Y Zr`, which is FALSE at M1; the
@@ -478,12 +468,9 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
     fullCondIndep_symm M hCW_rv hZr_rv hW_rv hFCI
   haveI : MeasureTheory.IsProbabilityMeasure M.latentProduct := inferInstance
   -- Measurability of the `valuesProjection` maps on `RandomValues`.
-  have hCW_proj_meas : Measurable (valuesProjection (Ω := swigΩ Ω) hCW_rv) :=
-    measurable_valuesProjection hCW_rv
-  have hZr_proj_meas : Measurable (valuesProjection (Ω := swigΩ Ω) hZr_rv) :=
-    measurable_valuesProjection hZr_rv
-  have hW_proj_meas : Measurable (valuesProjection (Ω := swigΩ Ω) hW_rv) :=
-    measurable_valuesProjection hW_rv
+  have hCW_proj_meas : Measurable (valuesProjection (Ω := swigΩ Ω) hCW_rv) := by fun_prop
+  have hZr_proj_meas : Measurable (valuesProjection (Ω := swigΩ Ω) hZr_rv) := by fun_prop
+  have hW_proj_meas : Measurable (valuesProjection (Ω := swigΩ Ω) hW_rv) := by fun_prop
   -- Step 2: Mathlib iff turns `FullCondIndep` into a condDistrib-pair equality
   -- under `jointKernel s`, conditioning on the pair `(W, Zr)`.
   have hCI_joint :
@@ -503,7 +490,7 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
   set CWmap_rv : M.RandomValues → ValuesOn CW (swigΩ Ω) := valuesProjection hCW_rv with hCWmap_rv
   set pairWZr : M.RandomValues → ValuesOn W (swigΩ Ω) × ValuesOn Zr (swigΩ Ω) :=
     fun ξ => (Wmap_rv ξ, Zrmap_rv ξ) with hpairWZr
-  have hpairWZr_meas : Measurable pairWZr := hW_proj_meas.prodMk hZr_proj_meas
+  have hpairWZr_meas : Measurable pairWZr := by fun_prop
   -- Rewrite `jointKernel s` as the pushforward of `latentProduct`.
   have hjk : M.jointKernel s = M.latentProduct.map (fun ℓ => M.evalMap s ℓ) :=
     jointKernel_apply_eq M s
@@ -530,7 +517,7 @@ theorem cutset_condIndep_condDistrib (M : Causalean.SCM N Ω)
   -- The `(W, Zr)`-ordered latent pair map and its marginal measure facts.
   set pairWZr_lat : M.LatentValues → ValuesOn W (swigΩ Ω) × ValuesOn Zr (swigΩ Ω) :=
     fun ℓ => (Zmap ℓ, Xmap ℓ) with hpairWZr_lat
-  have hpairWZr_lat_meas : Measurable pairWZr_lat := hZmeas.prodMk hXmeas
+  have hpairWZr_lat_meas : Measurable pairWZr_lat := by fun_prop
   -- Push `htr_pair`/`htr_W`/`hCI_joint` filters into `LP.map (·∘E)` form.
   rw [MeasureTheory.Measure.map_map hpairWZr_meas hev, hcomp_pair, hcomp_CW]
     at htr_pair
@@ -669,15 +656,12 @@ theorem obsSide_eq_witness (M : Causalean.SCM N Ω)
             M.latentProduct p.2).map (h p.1 p.2)) := by
   haveI : MeasureTheory.IsProbabilityMeasure M.latentProduct := inferInstance
   have hX : Measurable (fun ℓ : M.LatentValues =>
-      valuesProjection hZr (M.randomToObserved (M.evalMap s ℓ))) :=
-    M.valuesProjection_randomToObserved_evalMap_meas hZr s
+      valuesProjection hZr (M.randomToObserved (M.evalMap s ℓ))) := by fun_prop
   have hZmeas : Measurable (fun ℓ : M.LatentValues =>
-      valuesProjection hW (M.randomToObserved (M.evalMap s ℓ))) :=
-    M.valuesProjection_randomToObserved_evalMap_meas hW s
+      valuesProjection hW (M.randomToObserved (M.evalMap s ℓ))) := by fun_prop
   have hCmeas : Measurable
       (valuesProjection (Ω := swigΩ Ω)
-        (M.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W))) :=
-    measurable_valuesProjection _
+        (M.cutsetLatent_subset Y (Z.image SWIGNode.random ∪ W))) := by fun_prop
   -- The witness lemma's `Y = h X Z C` pointwise (from `hfac`).
   have hY_eq : (fun ℓ : M.LatentValues =>
         valuesProjection hY (M.randomToObserved (M.evalMap s ℓ)))
@@ -772,16 +756,9 @@ theorem obsCondKernel_union_eq_witness (M : Causalean.SCM N Ω)
   -- Abbreviations: the observed-eval pullback `E` and the conditioning maps.
   set E : M.LatentValues → M.ObservedValues :=
     fun ℓ => M.randomToObserved (M.evalMap s ℓ) with hE_def
-  have hEmeas : Measurable E :=
-    M.measurable_randomToObserved.comp (by
-      have : (fun ℓ : M.LatentValues => M.evalMap s ℓ)
-          = fun ℓ => Function.uncurry M.evalMap (s, ℓ) := rfl
-      rw [show E = M.randomToObserved ∘ (fun ℓ => M.evalMap s ℓ) from rfl] at *
-      exact M.evalMap_measurable.comp (measurable_const.prodMk measurable_id))
-  have hπY : Measurable (valuesProjection (Ω := swigΩ Ω) hY) :=
-    measurable_valuesProjection hY
-  have hπZrW : Measurable (valuesProjection (Ω := swigΩ Ω) hZrW) :=
-    measurable_valuesProjection hZrW
+  have hEmeas : Measurable E := by fun_prop
+  have hπY : Measurable (valuesProjection (Ω := swigΩ Ω) hY) := by fun_prop
+  have hπZrW : Measurable (valuesProjection (Ω := swigΩ Ω) hZrW) := by fun_prop
   -- Step 1: obsCondKernel ↔ condDistrib.
   have h1 := M.obsCondKernel_ae_eq_condDistrib Y (Z.image SWIGNode.random ∪ W) hY hZrW s
   -- Step 2: transport the condDistrib onto `latentProduct` along `E`.
@@ -1033,10 +1010,9 @@ theorem doSide_M2_pullback_eq_M1_witness
     rw [← hcW, ← hdrop, hcompat]
     exact (hoverride t w ℓ).symm
   -- Measurability of the M1 conditioning / cut-set maps (reuse the SCM helper).
-  have hZmeas : Measurable (fun ℓ : M'.LatentValues => valuesProjection hW (E1 ℓ)) :=
-    M'.valuesProjection_randomToObserved_evalMap_meas hW s0
+  have hZmeas : Measurable (fun ℓ : M'.LatentValues => valuesProjection hW (E1 ℓ)) := by fun_prop
   have hCmeas : Measurable
-      (valuesProjection (Ω := swigΩ Ω) hCWsub) := measurable_valuesProjection hCWsub
+      (valuesProjection (Ω := swigΩ Ω) hCWsub) := by fun_prop
   -- `H := fun w c => h t w c` packages the witness map at the fixed treatment `t`.
   have hH : Measurable (fun p : ValuesOn W (swigΩ Ω)
         × ValuesOn (M'.cutsetLatent Y (Z.image SWIGNode.random ∪ W)) (swigΩ Ω) =>
@@ -1058,9 +1034,8 @@ theorem doSide_M2_pullback_eq_M1_witness
     funext ℓ; rw [hP1 ℓ, hP2 ℓ]
   rw [hYeq] at hwit
   -- The base `M'.latentProduct.map (π_W ∘ E1)` equals `μW = (obsKernel s0).map π_W`.
-  have hE1meas : Measurable (fun ℓ : M'.LatentValues => M'.randomToObserved (M'.evalMap s0 ℓ)) :=
-    M'.measurable_randomToObserved.comp
-      (M'.evalMap_measurable.comp (measurable_const.prodMk measurable_id))
+  have hE1meas : Measurable (fun ℓ : M'.LatentValues =>
+      M'.randomToObserved (M'.evalMap s0 ℓ)) := by fun_prop
   have hbaseμW : M'.latentProduct.map (fun ℓ : M'.LatentValues => valuesProjection hW (E1 ℓ))
       = (M'.obsKernel s0).map (valuesProjection hW) := by
     rw [M'.obsKernel_eq_latentProduct_map s0,
@@ -1187,15 +1162,10 @@ theorem doSide_M2_condDistrib_eq_M1_witness
   set E2 : M2.LatentValues → M2.ObservedValues :=
     fun ℓ => M2.randomToObserved (M2.evalMap s' ℓ) with hE2_def
   have hE2meas : Measurable E2 := by
-    have hev : Measurable (fun ℓ : M2.LatentValues => M2.evalMap s' ℓ) := by
-      have : M2.evalMap s' = fun ℓ => Function.uncurry M2.evalMap (s', ℓ) := rfl
-      rw [this]
-      exact M2.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+    have hev : Measurable (fun ℓ : M2.LatentValues => M2.evalMap s' ℓ) := by fun_prop
     exact M2.measurable_randomToObserved.comp hev
-  have hπY : Measurable (valuesProjection (Ω := swigΩ Ω) hY_M2) :=
-    measurable_valuesProjection hY_M2
-  have hπW : Measurable (valuesProjection (Ω := swigΩ Ω) hW_M2) :=
-    measurable_valuesProjection hW_M2
+  have hπY : Measurable (valuesProjection (Ω := swigΩ Ω) hY_M2) := by fun_prop
+  have hπW : Measurable (valuesProjection (Ω := swigΩ Ω) hW_M2) := by fun_prop
   -- Base alignment: the M2 `W`-marginal at the slice `s'` equals `μW` (Rule 3).
   have hbase : (M2.obsKernel s').map (valuesProjection hW_M2) = μW := by
     have hRule3 := obsKernel_fixSet_W_marginal_eq_M1_marginal M' Z hZ_obs hZ_fixed W hW
@@ -1523,7 +1493,7 @@ theorem obsCondKernel_fixSet_M1_eq_ae_product
   set G : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) × ValuesOn W (swigΩ Ω)
       → ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω) :=
     fun p => valuesUnionMk p.1 p.2 with hG
-  have hG_meas : Measurable G := measurable_valuesUnionMk
+  have hG_meas : Measurable G := by fun_prop
   haveI hΩne : ∀ n, Nonempty (Ω n) := fun n =>
     (inferInstance : Nonempty (swigΩ Ω (SWIGNode.random n)))
   obtain ⟨h, hh, hfac, hoverride⟩ := cutset_factor_pointwise M' Y W Z hY hZrW s0
@@ -1602,10 +1572,7 @@ theorem obsCondKernel_fixSet_M1_eq_ae_product
       have hfst : Measurable (fun p :
           ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) × ValuesOn W (swigΩ Ω) =>
           M2.obsCondKernel Y W hY_M2 hW_M2
-            (M'.fixSetExtend Z hZ_obs hZ_fixed s0 p.1, p.2)) := by
-        refine (ProbabilityTheory.Kernel.measurable _).comp ?_
-        exact ((M'.measurable_fixSetExtend Z hZ_obs hZ_fixed s0).comp
-          measurable_fst).prodMk measurable_snd
+            (M'.fixSetExtend Z hZ_obs hZ_fixed s0 p.1, p.2)) := by fun_prop
       have hwk_meas : Measurable wk := by
         rw [hwk]
         exact ProbabilityTheory.Kernel.measurable

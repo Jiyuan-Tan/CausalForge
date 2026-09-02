@@ -87,7 +87,7 @@ async function main() {
       "usage: gate.ts <qid> <spec> <node_id> --consumers <id1,id2> [--class gated|cited] [--source ..] [--reason ..] [--show]\n" +
         "         [--statement \"<premise>\"]   # MINT the node when it does not exist yet (prose-only debt)\n" +
         "         [--supersedes \"<label>\"]    # retire the prose-only disclosure this registration replaces\n" +
-        "       gate.ts <qid> <spec> <node_id> --discharge [--lean-name <Name>]   # reverse: --discharge | --ungate | --unset\n" +
+        "       gate.ts <qid> <spec> <node_id> --discharge [--lean-name <Name>] [--lean-kind lemma|theorem]   # reverse: --discharge | --ungate | --unset\n" +
         "       gate.ts <qid> <spec> --audit   # list disclosed substrate-gates that are NOT registered (what blocks banking 'accepted')",
     );
     process.exit(2);
@@ -209,6 +209,17 @@ async function main() {
     const pn = plan.nodes[nodeId] ?? {};
     if (ungate) {
       const stripped = withoutGateKeys(pn as Record<string, unknown>);
+      // A discharged CITED gate is re-realized as a proved lemma (or `--lean-kind theorem`);
+      // plan_gate P9 accepts that form only with this stamp, which nothing else writes.
+      if ((pn as { gate_class?: unknown }).gate_class === "cited") {
+        stripped.citation_discharged = true;
+        const requestedKind = flag(args, "--lean-kind");
+        stripped.lean_kind = requestedKind === "theorem" || requestedKind === "lemma"
+          ? requestedKind
+          : stripped.lean_kind === "theorem" ? "theorem" : "lemma";
+        if (stripped.disposition === undefined) stripped.disposition = "define-local";
+        if (leanName) stripped.lean_name = leanName;
+      }
       // A gate-only plan node (nothing left once the gate keys go) must be DELETED, not left as
       // `{}` — an empty entry has no `lean_kind`/`lean_name`/`disposition` and trips the F2
       // post-sync `plan_gate` schema check on every subsequent run. Only a node that carried a

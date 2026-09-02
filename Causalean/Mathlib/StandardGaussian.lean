@@ -84,7 +84,7 @@ instance isProbabilityMeasure_piGaussian : IsProbabilityMeasure (piGaussian E) :
 
 omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
 /-- Each coordinate is `MemLp` of order 2 under the product measure. -/
-private lemma memLp_eval (i : Fin (Module.finrank ℝ E)) :
+lemma memLp_eval (i : Fin (Module.finrank ℝ E)) :
     MemLp (fun ω : Fin (Module.finrank ℝ E) → ℝ => ω i) 2 (piGaussian E) := by
   have : MemLp id 2 (gaussianReal (0 : ℝ) 1) := memLp_id_gaussianReal' 2 (by simp)
   exact this.comp_measurePreserving (measurePreserving_eval _ i)

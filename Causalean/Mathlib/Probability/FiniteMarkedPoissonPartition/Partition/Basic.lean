@@ -31,6 +31,10 @@ structure FiniteMeasurablePartition (X : Type*) (ι : Type*)
 
 namespace FiniteMeasurablePartition
 
+-- The `measurable_cell` field states `Measurable p.cell`, whose head is the projection
+-- `FiniteMeasurablePartition.cell`, so it registers as a `fun_prop` leaf directly.
+attribute [fun_prop] measurable_cell
+
 /-- A finite family of measurable, pairwise disjoint sets covering the whole
 space determines its unique measurable classifier partition. -/
 noncomputable def ofSets (A : ι → Set X)
@@ -179,6 +183,7 @@ noncomputable def restrictPartition (p : FiniteMeasurablePartition X ι)
 
 /-- Restriction to one measurable cell is a measurable map on finite marked
 sequences. -/
+@[fun_prop]
 lemma measurable_restrictCell (p : FiniteMeasurablePartition X ι) (j : ι) :
     Measurable (p.restrictCell j) := by
   classical
@@ -254,6 +259,7 @@ lemma measurable_restrictCell (p : FiniteMeasurablePartition X ι) (j : ι) :
 /-- [For a finite measurable partition `p` of the sample space into cells indexed by
 `ι`](hyp:p), [the map sending a finite marked sequence to its family of restrictions to
 every cell simultaneously is measurable](goal). -/
+@[fun_prop]
 lemma measurable_restrictPartition (p : FiniteMeasurablePartition X ι) :
     Measurable p.restrictPartition := by
   unfold restrictPartition

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 
+import Causalean.Tactic.Attr
 import Causalean.PO.Core.System
 
 /-! # Cross-World Counterfactual Distributions
@@ -33,7 +34,21 @@ def crossWorldEval
     P.Ω → (i : Fin qs.length) → ValuesOn (qs[i].2) P.X :=
   fun ω i => P.poVariable (qs[i].1) (qs[i].2) ω
 
+/-- Reading off the `i`-th coordinate of the cross-world evaluation of a unit
+returns the joint potential outcome of the `i`-th query's variable set under the
+`i`-th query's regime, at that same unit.
+
+This is the simp-shaped form of the definition of cross-world evaluation:
+rewriting with it replaces the tuple-valued map by the single-query potential
+outcome, after which the potential-outcome API applies. -/
+@[causal_defs_simps]
+lemma crossWorldEval_apply (qs : List (Regime P.V P.X × Finset P.V))
+    (ω : P.Ω) (i : Fin qs.length) :
+    P.crossWorldEval qs ω i = P.poVariable (qs[i].1) (qs[i].2) ω :=
+  rfl
+
 /-- The cross-world evaluation map for a finite list of counterfactual queries is measurable. -/
+@[fun_prop]
 lemma measurable_crossWorldEval
     (qs : List (Regime P.V P.X × Finset P.V)) :
     Measurable (P.crossWorldEval qs) := by
@@ -52,10 +67,22 @@ noncomputable def counterfactualDist
     Measure ((i : Fin qs.length) → ValuesOn (qs[i].2) P.X) :=
   P.μ.map (P.crossWorldEval qs)
 
+/-- The joint counterfactual law of a finite list of queries is the pushforward
+of the system's probability measure along the cross-world evaluation map for
+those queries.
+
+This is the simp-shaped form of the definition of the counterfactual
+distribution: rewriting with it replaces the project constant by an explicit
+pushforward measure, after which the pushforward API applies. -/
+@[causal_defs_simps]
+lemma counterfactualDist_eq (qs : List (Regime P.V P.X × Finset P.V)) :
+    P.counterfactualDist qs = P.μ.map (P.crossWorldEval qs) :=
+  rfl
+
 /-- The finite cross-world counterfactual distribution is a probability measure. -/
 instance (qs : List (Regime P.V P.X × Finset P.V)) :
     IsProbabilityMeasure (P.counterfactualDist qs) := by
-  unfold counterfactualDist
+  simp only [causal_defs_simps]
   exact MeasureTheory.Measure.isProbabilityMeasure_map
     (P.measurable_crossWorldEval qs).aemeasurable
 
@@ -69,7 +96,7 @@ theorem counterfactualDist_marginal
     (qs : List (Regime P.V P.X × Finset P.V)) (i : Fin qs.length) :
     (P.counterfactualDist qs).map (fun f => f i) =
       P.poOperator (qs[i].1) (qs[i].2) := by
-  unfold counterfactualDist poOperator
+  simp only [causal_defs_simps]
   rw [MeasureTheory.Measure.map_map
         (measurable_pi_apply i) (P.measurable_crossWorldEval qs)]
   rfl

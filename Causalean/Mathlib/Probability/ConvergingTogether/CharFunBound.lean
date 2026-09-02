@@ -102,9 +102,9 @@ theorem norm_charFun_sub_le (μ : Measure Ω) [IsFiniteMeasure μ]
   have hcharT : charFun (μ.map T) t = ∫ ω, gT ω ∂μ := by
     rw [MeasureTheory.charFun_apply_real]
     exact MeasureTheory.integral_map hT (by fun_prop)
-  have hdiff_int : Integrable (fun ω => gS ω - gT ω) μ := hgS_int.sub hgT_int
-  have hnorm_int : Integrable (fun ω => ‖gS ω - gT ω‖) μ := hdiff_int.norm
-  have hright_int : Integrable (fun ω => |t| * |S ω - T ω|) μ := hint.abs.const_mul |t|
+  have hdiff_int : Integrable (fun ω => gS ω - gT ω) μ := by fun_prop
+  have hnorm_int : Integrable (fun ω => ‖gS ω - gT ω‖) μ := by fun_prop
+  have hright_int : Integrable (fun ω => |t| * |S ω - T ω|) μ := by fun_prop
   have hpoint : ∀ ω, ‖gS ω - gT ω‖ ≤ |t| * |S ω - T ω| := by
     intro ω
     calc

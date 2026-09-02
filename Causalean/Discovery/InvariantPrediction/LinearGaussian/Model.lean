@@ -234,4 +234,9 @@ abbrev paY : Finset (Fin (p + 1)) := F.obs.paY
 
 end EnvFamily
 
+-- The per-coordinate measurability fields of the observational SEM and of a do-environment
+-- are the leaf atoms of every measurability argument in this area; registering them lets
+-- `fun_prop` reach them without naming the projection.
+attribute [fun_prop] ObsSEM.hXmeas Env.hXmeas
+
 end Causalean.Discovery.InvariantPrediction.LinearGaussian

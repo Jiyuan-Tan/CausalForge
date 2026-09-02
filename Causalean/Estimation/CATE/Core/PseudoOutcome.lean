@@ -67,6 +67,7 @@ Proof outline: mirror the proof of `measurable_ψ_AIPW` in
 `η.μ_fn` and `S.e_val` with `η.e_fn`, and noting that `aipwMoment` with
 `θ = 0` differs from `ψ_AIPW` only by a constant subtraction that has
 already been cleared. -/
+@[fun_prop]
 lemma measurable_phi_eta (η : NuisanceVec γ) :
     Measurable (fun z : γ × Bool × ℝ => phi_eta z η) := by
   unfold phi_eta BackdoorEstimationSystem.aipwMoment BackdoorEstimationSystem.indA
@@ -93,6 +94,7 @@ lemma measurable_phi_eta (η : NuisanceVec γ) :
 measurable as a function of the observed data](goal).
 
 Proof outline: apply `measurable_phi_eta` at `η := S.toBackdoorEstimationSystem.η₀`. -/
+@[fun_prop]
 lemma measurable_phi₀ (S : CATEEstimationSystem P γ) :
     Measurable (fun z : γ × Bool × ℝ => phi₀ S z) := by
   unfold phi₀

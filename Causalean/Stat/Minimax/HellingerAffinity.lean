@@ -34,6 +34,7 @@ lower bound on the affinity) lives in `Causalean/Stat/Minimax/BretagnolleHuber.l
 
 import Causalean.Stat.Minimax.TotalVariation
 import Causalean.Stat.Minimax.Scheffe
+import Causalean.Tactic.IntegralLinearity
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.Pi
 
@@ -156,7 +157,8 @@ lemma tvDist_le_sqrt_two_mul_one_sub_affinity
     · exact Filter.Eventually.of_forall fun x => hg0 x
   have hfg : Integrable (fun x => f x - g x) μ := hf.sub hg
   have hfg0 : ∫ x, (f x - g x) ∂μ = 0 := by
-    rw [integral_sub hf hg, hf1, hg1]
+    integral_linearity
+    rw [hf1, hg1]
     ring
   have htv :
       tvDist P Q ≤

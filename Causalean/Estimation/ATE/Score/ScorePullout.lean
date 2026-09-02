@@ -44,6 +44,7 @@ noncomputable def e_val_label (S : BackdoorEstimationSystem P γ)
   if d then S.e_val x else 1 - S.e_val x
 
 /-- The value-space propensity for any treatment label is measurable. -/
+@[fun_prop]
 lemma measurable_e_val_label (S : BackdoorEstimationSystem P γ) (d : Bool) :
     Measurable (S.e_val_label d) := by
   cases d

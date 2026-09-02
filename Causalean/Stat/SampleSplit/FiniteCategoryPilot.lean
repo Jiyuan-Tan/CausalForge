@@ -44,6 +44,7 @@ def categoryIndicator [DecidableEq Iota] (label : X -> Iota) (k : Iota) (x : X) 
 /-- Given [a measurable category label](hyp:hlabel) and [a fixed
 category](hyp:k), [the corresponding zero-one category indicator is
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_categoryIndicator [DecidableEq Iota] [MeasurableSingletonClass Iota]
     {label : X -> Iota} (hlabel : Measurable label) (k : Iota) :
     Measurable (categoryIndicator label k) := by
@@ -73,6 +74,7 @@ def pilotCategoryCount (S : Causalean.Stat.IIDSample Omega X mu P)
 /-- Given [an iid sample](hyp:S), [a measurable category label](hyp:hlabel), [a
 finite coordinate block](hyp:block), and [a fixed category](hyp:k), [the pilot
 count of that category is measurable](goal). -/
+@[fun_prop]
 lemma measurable_pilotCategoryCount [DecidableEq Iota] [MeasurableSingletonClass Iota]
     (S : Causalean.Stat.IIDSample Omega X mu P)
     {label : X -> Iota} (hlabel : Measurable label)

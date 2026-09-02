@@ -79,6 +79,7 @@ lemma stdNormalMeasure_Ioi_toReal_eq_integral (t : ℝ) :
   simp [stdNormalPDF]
 
 /-- The standard normal density has a finite first absolute moment. -/
+@[fun_prop]
 lemma integrable_id_mul_stdNormalPDF : Integrable (fun x : ℝ => x * stdNormalPDF x) := by
   have hbase : Integrable (fun x : ℝ => x * Real.exp (-(1 / 2 : ℝ) * x ^ 2)) := by
     simpa using integrable_mul_exp_neg_mul_sq (b := (1 / 2 : ℝ)) (by norm_num)

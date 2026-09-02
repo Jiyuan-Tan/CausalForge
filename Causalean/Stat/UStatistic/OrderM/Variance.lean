@@ -81,6 +81,7 @@ variable [IsProbabilityMeasure P] {m : ℕ} [NeZero m]
 omit [IsProbabilityMeasure P] in
 /-- A square-integrable order-`m` degenerate kernel is integrable under the
 product law. -/
+@[fun_prop]
 theorem integrable [IsFiniteMeasure P] (hg : OrderDegenKernel P g) :
     Integrable g (Measure.pi fun _ : Fin m => P) :=
   ((memLp_two_iff_integrable_sq hg.meas.aestronglyMeasurable).mpr hg.sq).integrable
@@ -242,8 +243,7 @@ theorem integral_uStatisticOrder_eq_uMean {m n : ℕ} {h : (Fin m → X) → ℝ
     intro t ht
     exact S.integrable_orderKernelTerm hmeas hint ((Finset.mem_filter.mp ht).2)
   simp only [uStatisticOrder]
-  rw [integral_const_mul,
-    integral_finset_sum _ (fun t ht => hterm_int t ht)]
+  integral_linearity
   have hsum_eval :
       (∑ t ∈ injectiveTuples m n,
         ∫ ω, h (fun j => S.Z (t j : ℕ) ω) ∂μ)
@@ -279,7 +279,8 @@ theorem integral_rescaled_uStatisticOrder_eq_sqrt_mul_uMean {m n : ℕ}
     (hmn : m ≤ n) :
     ∫ ω, Real.sqrt (n : ℝ) * uStatisticOrder S h n ω ∂μ =
       Real.sqrt (n : ℝ) * uMeanOrder h P := by
-  rw [integral_const_mul, S.integral_uStatisticOrder_eq_uMean hmeas hint hmn]
+  integral_linearity
+  rw [S.integral_uStatisticOrder_eq_uMean hmeas hint hmn]
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- If an order-`m` kernel has product-law mean zero, then the rescaled
@@ -426,6 +427,7 @@ theorem integrable_orderTerm_mul (hmeas : Measurable g)
 
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The injective-tuple sum of an order-`m` kernel is integrable. -/
+@[fun_prop]
 theorem integrable_injectiveTuples_sum (hmeas : Measurable g)
     (hint : Integrable g (Measure.pi fun _ : Fin m => P))
     (n : ℕ) :
@@ -513,8 +515,7 @@ theorem integral_normalizedFiniteKernelStatistic
     exact (integrable_map_measure hkmeas.aestronglyMeasurable
       (measurable_pi_lambda _ (fun i : ι => S.meas (t i : ℕ))).aemeasurable).mp hmap
   simp only [normalizedFiniteKernelStatistic]
-  rw [integral_const_mul,
-    integral_finsetSum _ (fun t ht => hterm_int t ht)]
+  integral_linearity
   have hsum_eval :
       (∑ t ∈ finiteInjectiveTuples ι n,
         ∫ ω, k (fun i => S.Z (t i : ℕ) ω) ∂μ) =

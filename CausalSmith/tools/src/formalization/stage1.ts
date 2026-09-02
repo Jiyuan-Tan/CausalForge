@@ -271,6 +271,11 @@ export async function runStage1(args: {
       for (const d of builtDecls) {
         const node = pj.nodes[d.gate_id];
         if (node) {
+          // A built gate is no longer a gate: clear the gate keys so P9/P-gate rules see a
+          // proved reuse lemma, and stamp a cited discharge (the only other writer is gate.ts).
+          if (node.gate_class === "cited") node.citation_discharged = true;
+          delete node.gate;
+          delete node.gate_class;
           node.lean_kind = "lemma";
           node.disposition = "reuse";
           node.reuse = d.decl_name;

@@ -599,8 +599,7 @@ theorem condIndepFun_weak_union_of_prodMk
   have hdrop_mVA :
       μ[oneS | mVA] =ᵐ[μ] μ[oneS | m] := by
     have hs_ind_meas :
-        Measurable (s.indicator (fun _ : α => (1 : ℝ))) :=
-      measurable_const.indicator hs
+        Measurable (s.indicator (fun _ : α => (1 : ℝ))) := by fun_prop
     have hone : oneS = fun ω => s.indicator (fun _ : α => (1 : ℝ)) (W ω) := by
       funext ω
       by_cases hω : W ω ∈ s <;> simp [oneS, S, hω]
@@ -611,8 +610,7 @@ theorem condIndepFun_weak_union_of_prodMk
   have hdrop_mA :
       μ[oneS | mA] =ᵐ[μ] μ[oneS | m] := by
     have hs_ind_meas :
-        Measurable (s.indicator (fun _ : α => (1 : ℝ))) :=
-      measurable_const.indicator hs
+        Measurable (s.indicator (fun _ : α => (1 : ℝ))) := by fun_prop
     have hone : oneS = fun ω => s.indicator (fun _ : α => (1 : ℝ)) (W ω) := by
       funext ω
       by_cases hω : W ω ∈ s <;> simp [oneS, S, hω]
@@ -822,7 +820,7 @@ theorem condIndepFun_contraction_of_prodMk
   let pairsets : Set (Set Ω) :=
     {q | ∃ t : Set β, MeasurableSet t ∧
       ∃ u : Set γ, MeasurableSet u ∧ pair ⁻¹' (t ×ˢ u) = q}
-  have hpair_meas : Measurable pair := hY.prod hW
+  have hpair_meas : Measurable pair := by fun_prop
   have hpX_pi : IsPiSystem xsets := by
     simpa [xsets] using (MeasurableSpace.isPiSystem_measurableSet (α := α)).comap X
   have hpPair_pi : IsPiSystem pairsets := by
@@ -896,8 +894,7 @@ theorem condIndepFun_contraction_of_prodMk
         h2 s u hs_meas hu_meas
     have hdropA :
         μ[oneA | mW] =ᵐ[μ] μ[oneA | m] := by
-      have hs_ind_meas : Measurable (s.indicator (fun _ : α => (1 : ℝ))) :=
-        measurable_const.indicator hs_meas
+      have hs_ind_meas : Measurable (s.indicator (fun _ : α => (1 : ℝ))) := by fun_prop
       have hone : oneA = fun ω => s.indicator (fun _ : α => (1 : ℝ)) (X ω) := by
         funext ω
         by_cases hω : X ω ∈ s <;> simp [oneA, A, hω]

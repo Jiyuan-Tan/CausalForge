@@ -34,6 +34,8 @@ import Causalean.PO.ID.Exact.MultipleInstrumentIV.Main
 import Causalean.PO.Assumptions.ConsistencyLemmas
 import Causalean.PO.Assumptions.IndepCF
 import Causalean.PO.Conditioning.EventCondExp
+import Causalean.Tactic.Attr
+
 /-! # Multiple-Instrument IV Potential-Outcome Bridge
 
 This file grounds the MTW multiple-instrument finite algebra in a
@@ -126,6 +128,14 @@ def zEvent (k : Fin K) : Set P.Ω := S.zVar.event k
 def YofDofZ (k : Fin K) : P.Ω → ℝ :=
   fun ω => if S.DofZ k ω then S.YofD true ω else S.YofD false ω
 
+/-- The potential outcome under the treatment that an instrument value induces sends a unit to
+that unit's treated potential outcome when the induced treatment is one, and to its untreated
+potential outcome otherwise. -/
+@[causal_defs_simps]
+lemma YofDofZ_def (k : Fin K) :
+    S.YofDofZ k = fun ω => if S.DofZ k ω then S.YofD true ω else S.YofD false ω :=
+  rfl
+
 /-- Regimed variable `D(zᵏ)` (treatment under instrument set to `zᵏ`). -/
 def dUnderZ (k : Fin K) : RegimedVar P Bool :=
   ⟨S.dVar, Regime.single S.Z (S.hZfin.symm k)⟩
@@ -146,23 +156,29 @@ def cfCell (k : Fin K) : POCFBundle P :=
 /-! ### Measurability -/
 
 /-- The potential treatment under any instrument support point is measurable. -/
+@[fun_prop]
 lemma measurable_DofZ (k : Fin K) : Measurable (S.DofZ k) :=
   S.dVar.measurable_cfUnder S.zVar k
 
 /-- The potential outcome under either treatment arm is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 
 /-- The factual instrument value is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.zVar.measurable_factual
 
 /-- The factual treatment value is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 
 /-- The factual outcome value is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- The response-type map collecting all treatment responses is measurable. -/
+@[fun_prop]
 lemma measurable_responseType : Measurable S.responseType :=
   measurable_pi_lambda _ (fun k => S.measurable_DofZ k)
 
@@ -175,6 +191,7 @@ lemma measurableSet_zEvent (k : Fin K) : MeasurableSet (S.zEvent k) :=
   S.zVar.measurableSet_event k (measurableSet_singleton k)
 
 /-- The outcome under the treatment induced by an instrument support point is measurable. -/
+@[fun_prop]
 lemma measurable_YofDofZ (k : Fin K) : Measurable (S.YofDofZ k) := by
   unfold YofDofZ
   exact Measurable.ite (S.measurable_DofZ k (MeasurableSet.singleton true))

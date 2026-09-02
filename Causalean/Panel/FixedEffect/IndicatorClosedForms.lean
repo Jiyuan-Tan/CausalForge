@@ -42,6 +42,7 @@ unit-plus-period projection candidate, verify the two row/column normal
 equations, and conclude by `proj_apply_eq_of_mem_orthogonal`.
 -/
 
+import Causalean.Tactic.SumAlgebraSimps
 import Causalean.Panel.Cells
 import Causalean.Panel.InnerProduct
 import Causalean.Panel.Subspace
@@ -95,8 +96,7 @@ lemma sum_centered_indicator_mem_real {α : Type*}
   · letI := hα
     simp
   · letI := hα
-    rw [Finset.sum_sub_distrib, sum_indicator_mem_real]
-    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+    simp only [sum_algebra_simps, sum_indicator_mem_real]
     have hcard : (Fintype.card α : ℝ) ≠ 0 := by
       have : 0 < Fintype.card α := Fintype.card_pos
       exact_mod_cast this.ne'
@@ -107,10 +107,7 @@ private lemma sum_centered_eq_indicator_real {α : Type*}
     [Fintype α] [DecidableEq α] [Nonempty α] (a₀ : α) :
     (∑ x : α,
       ((if x = a₀ then (1 : ℝ) else 0) - 1 / (Fintype.card α : ℝ))) = 0 := by
-  rw [Finset.sum_sub_distrib]
-  rw [show (∑ x : α, (if x = a₀ then (1 : ℝ) else 0)) = (1 : ℝ) by
-    simpa using (Fintype.sum_ite_eq (i := a₀) (f := fun _ : α => (1 : ℝ))).symm]
-  rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  simp only [sum_algebra_simps, Finset.mem_univ, if_true]
   have hcard : (Fintype.card α : ℝ) ≠ 0 := by
     have : 0 < Fintype.card α := Fintype.card_pos
     exact_mod_cast this.ne'
@@ -167,9 +164,7 @@ lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
                     c.weight x * g x * (if x.1 = i₀ then (1 : ℝ) else 0)) =
                 ∑ i₀ : I, ∑ x ∈ c.observed,
                   a i₀ * (c.weight x * g x * (if x.1 = i₀ then (1 : ℝ) else 0)) by
-            refine Finset.sum_congr rfl ?_
-            intro i₀ _
-            rw [Finset.mul_sum]]
+            simp only [sum_algebra_simps]]
           rw [Finset.sum_comm]
           refine Finset.sum_congr rfl ?_
           intro x hx
@@ -182,10 +177,8 @@ lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
                   a i₀ * (c.weight x * g x * (if x.1 = i₀ then (1 : ℝ) else 0))) =
                   (c.weight x * g x) *
                     ∑ i₀ : I, a i₀ * (if x.1 = i₀ then (1 : ℝ) else 0) by
-              rw [Finset.mul_sum]
-              refine Finset.sum_congr rfl ?_
-              intro i₀ _
-              ring]
+              simp only [sum_algebra_simps]
+              exact Finset.sum_congr rfl fun _ _ => by ring]
             rw [show (∑ i₀ : I, a i₀ * (if x.1 = i₀ then (1 : ℝ) else 0)) =
                 a x.1 by
               rw [Finset.sum_eq_single x.1]
@@ -215,9 +208,7 @@ lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
                     c.weight x * g x * (if x.2 = t₀ then (1 : ℝ) else 0)) =
                 ∑ t₀ : T, ∑ x ∈ c.observed,
                   b t₀ * (c.weight x * g x * (if x.2 = t₀ then (1 : ℝ) else 0)) by
-            refine Finset.sum_congr rfl ?_
-            intro t₀ _
-            rw [Finset.mul_sum]]
+            simp only [sum_algebra_simps]]
           rw [Finset.sum_comm]
           refine Finset.sum_congr rfl ?_
           intro x hx
@@ -230,10 +221,8 @@ lemma H_twfe_orthogonal_iff (c : Cells I T) (g : V I T) :
                   b t₀ * (c.weight x * g x * (if x.2 = t₀ then (1 : ℝ) else 0))) =
                   (c.weight x * g x) *
                     ∑ t₀ : T, b t₀ * (if x.2 = t₀ then (1 : ℝ) else 0) by
-              rw [Finset.mul_sum]
-              refine Finset.sum_congr rfl ?_
-              intro t₀ _
-              ring]
+              simp only [sum_algebra_simps]
+              exact Finset.sum_congr rfl fun _ _ => by ring]
             rw [show (∑ t₀ : T, b t₀ * (if x.2 = t₀ then (1 : ℝ) else 0)) =
                 b x.2 by
               rw [Finset.sum_eq_single x.2]
@@ -489,7 +478,7 @@ noncomputable def cohortPeriodCells {C S : ℕ}
           = ∑ x : Fin C, (law.pi x : ℝ) := by
             refine Finset.sum_congr rfl ?_
             intro x _
-            rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ]
+            simp only [sum_algebra_simps]
             field_simp [hS]
       _ = 1 := law.sumOne
 
@@ -508,22 +497,9 @@ lemma cohort_sum_pi_centered_eq_zero {α : Type*} [Fintype α] [DecidableEq α]
     (∑ g : α,
       w g * ((if g = g₀ then (1 : ℝ) else 0) - w g₀)) =
         0 := by
-  rw [show (∑ g : α,
-      w g * ((if g = g₀ then (1 : ℝ) else 0) - w g₀)) =
-      (∑ g : α, w g * (if g = g₀ then (1 : ℝ) else 0)) -
-        ∑ g : α, w g * w g₀ by
-    rw [← Finset.sum_sub_distrib]
-    refine Finset.sum_congr rfl ?_
-    intro g hg
-    ring]
-  rw [show (∑ x : α, w x * if x = g₀ then 1 else 0) = w g₀ by
-    simpa [mul_comm] using
-      (Fintype.sum_ite_eq (i := g₀) (f := fun g : α => w g)).symm]
-  rw [show (∑ g : α, w g * w g₀) =
-      (∑ g : α, w g) * w g₀ by
-    rw [Finset.sum_mul]]
-  rw [hw]
-  ring
+  simp only [sum_algebra_simps, mul_ite, mul_zero, mul_one]
+  rw [← Finset.sum_mul, hw]
+  simp
 
 private lemma cohort_cell_centered_orth_unit (law : CohortLaw C)
     (hpi : ∀ g : Fin C, 0 < (law.pi g : ℝ)) (g₀ g₁ : Fin C) (t₀ : Fin S) :
@@ -884,20 +860,8 @@ private lemma diagonal_sum_Y_over_periods_eq_zero (law : CohortLaw C)
     (∑ t : Fin S, diagY (S := S) law (g₁, t)) = 0 := by
   unfold diagY diagX diagRowMean diagGrandMean
   simp only [Prod.fst, Prod.snd]
-  rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, Finset.sum_sub_distrib]
-  rw [diagonal_row_hit_sum (S := S) (g := g₁)]
-  rw [diagonal_periodMean_sum_eq_grand_sum (S := S) (law := law)]
-  rw [show (∑ x : Fin S, (if g₁.val < S then 1 / (Fintype.card (Fin S) : ℝ) else 0)) =
-      (Fintype.card (Fin S) : ℝ) *
-        (if g₁.val < S then 1 / (Fintype.card (Fin S) : ℝ) else 0) by
-    rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ]]
-  rw [show (∑ x : Fin S,
-        1 / (Fintype.card (Fin S) : ℝ) *
-          ∑ g : Fin C, (if g.val < S then (law.pi g : ℝ) else 0)) =
-      (Fintype.card (Fin S) : ℝ) *
-        (1 / (Fintype.card (Fin S) : ℝ) *
-          ∑ g : Fin C, (if g.val < S then (law.pi g : ℝ) else 0)) by
-    rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ]]
+  simp only [sum_algebra_simps, diagonal_row_hit_sum (S := S) (g := g₁),
+    diagonal_periodMean_sum_eq_grand_sum (S := S) (law := law)]
   have hS0 : (Fintype.card (Fin S) : ℝ) ≠ 0 := by
     have : 0 < Fintype.card (Fin S) := Fintype.card_pos
     exact_mod_cast this.ne'
@@ -905,30 +869,19 @@ private lemma diagonal_sum_Y_over_periods_eq_zero (law : CohortLaw C)
     simpa [Fintype.card_fin] using hS0
   have hS_mul_inv : (S : ℝ) * (S : ℝ)⁻¹ = 1 := by
     field_simp [hSnz]
-  by_cases hg : g₁.val < S
-  · simp only [hg, if_true, Fintype.card_fin, one_div, mul_ite, mul_zero]
-    rw [← mul_assoc, hS_mul_inv, one_mul]
-    ring
-  · simp only [hg, if_false, Fintype.card_fin, one_div, mul_ite, mul_zero]
-    rw [← mul_assoc, hS_mul_inv, one_mul]
-    ring
+  by_cases hg : g₁.val < S <;>
+    simp [sum_algebra_simps, hg, Fintype.card_fin, mul_comm, mul_left_comm,
+      ← mul_assoc, hS_mul_inv, hSnz]
 
 private lemma diagonal_weighted_sum_Y_over_cohorts_eq_zero (law : CohortLaw C)
     (t₁ : Fin S) :
     (∑ g : Fin C, (law.pi g : ℝ) * diagY (S := S) law (g, t₁)) = 0 := by
   unfold diagY diagX
   simp only [Prod.fst, Prod.snd]
-  simp_rw [mul_add, mul_sub]
-  rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, Finset.sum_sub_distrib]
-  rw [diagonal_col_hit_sum (law := law) (t := t₁)]
-  rw [diagonal_weighted_rowMean_eq_grand (S := S) (law := law)]
-  rw [show (∑ g : Fin C, (law.pi g : ℝ) * diagPeriodMean law t₁) =
-      (∑ g : Fin C, (law.pi g : ℝ)) * diagPeriodMean law t₁ by
-    rw [Finset.sum_mul]]
-  rw [show (∑ g : Fin C, (law.pi g : ℝ) * diagGrandMean (S := S) law) =
-      (∑ g : Fin C, (law.pi g : ℝ)) * diagGrandMean (S := S) law by
-    rw [Finset.sum_mul]]
-  rw [law.sumOne]
+  simp only [sum_algebra_simps,
+    diagonal_col_hit_sum (law := law) (t := t₁),
+    diagonal_weighted_rowMean_eq_grand (S := S) (law := law)]
+  rw [← Finset.sum_mul, ← Finset.sum_mul, law.sumOne]
   ring
 
 private lemma diagonal_centered_orth_unit (law : CohortLaw C)
@@ -1009,24 +962,7 @@ private lemma tri_sum_Y_over_periods_eq_zero (law : CohortLaw C)
     (∑ t : Fin S, triY (S := S) law (g₁, t)) = 0 := by
   unfold triY triX triRowMean triGrandMean
   simp only [Prod.fst, Prod.snd]
-  rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, Finset.sum_sub_distrib]
-  rw [tri_sum_periodMean_eq_double (S := S) (law := law)]
-  rw [show (∑ x : Fin S,
-        (∑ t : Fin S, if g₁.val < t.val then (1 : ℝ) else 0) /
-          (Fintype.card (Fin S) : ℝ)) =
-      (Fintype.card (Fin S) : ℝ) *
-        ((∑ t : Fin S, if g₁.val < t.val then (1 : ℝ) else 0) /
-          (Fintype.card (Fin S) : ℝ)) by
-    rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ]]
-  rw [show (∑ x : Fin S,
-        1 / (Fintype.card (Fin S) : ℝ) *
-          ∑ g : Fin C, ∑ t : Fin S,
-            (if g.val < t.val then (law.pi g : ℝ) else 0)) =
-      (Fintype.card (Fin S) : ℝ) *
-        (1 / (Fintype.card (Fin S) : ℝ) *
-          ∑ g : Fin C, ∑ t : Fin S,
-            (if g.val < t.val then (law.pi g : ℝ) else 0)) by
-    rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ]]
+  simp only [sum_algebra_simps, tri_sum_periodMean_eq_double (S := S) (law := law)]
   have hS0 : (Fintype.card (Fin S) : ℝ) ≠ 0 := by
     have : 0 < Fintype.card (Fin S) := Fintype.card_pos
     exact_mod_cast this.ne'
@@ -1038,24 +974,9 @@ private lemma tri_weighted_sum_Y_over_cohorts_eq_zero (law : CohortLaw C)
     (∑ g : Fin C, (law.pi g : ℝ) * triY (S := S) law (g, t₁)) = 0 := by
   unfold triY triX triPeriodMean
   simp only [Prod.fst, Prod.snd]
-  simp_rw [mul_add, mul_sub]
-  rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, Finset.sum_sub_distrib]
-  rw [tri_weighted_rowMean_eq_grand (S := S) (law := law)]
-  rw [show (∑ g : Fin C, (law.pi g : ℝ) *
-        (∑ g' : Fin C, (if g'.val < t₁.val then (1 : ℝ) else 0) * (law.pi g' : ℝ))) =
-      (∑ g : Fin C, (law.pi g : ℝ)) *
-        (∑ g' : Fin C, (if g'.val < t₁.val then (1 : ℝ) else 0) * (law.pi g' : ℝ)) by
-    rw [Finset.sum_mul]]
-  rw [show (∑ g : Fin C, (law.pi g : ℝ) * triGrandMean (S := S) law) =
-      (∑ g : Fin C, (law.pi g : ℝ)) * triGrandMean (S := S) law by
-    rw [Finset.sum_mul]]
-  rw [law.sumOne]
-  rw [show (∑ x : Fin C, (law.pi x : ℝ) * (if x.val < t₁.val then (1 : ℝ) else 0)) =
-      ∑ x : Fin C, (if x.val < t₁.val then (1 : ℝ) else 0) * (law.pi x : ℝ) by
-    refine Finset.sum_congr rfl ?_
-    intro x _
-    ring]
-  ring_nf
+  simp only [sum_algebra_simps, tri_weighted_rowMean_eq_grand (S := S) (law := law)]
+  simp only [← Finset.mul_sum, ← Finset.sum_mul, law.sumOne, one_mul]
+  simp [← Finset.sum_mul, law.sumOne, mul_comm]
 
 private lemma tri_centered_orth_unit (law : CohortLaw C)
     (hpi : ∀ g : Fin C, 0 < (law.pi g : ℝ)) (g₁ : Fin C) :

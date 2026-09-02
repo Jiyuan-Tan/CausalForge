@@ -134,6 +134,10 @@ interface State {
 const MAX_AVATARS = 5;
 /** Below this the site hides the contents rail, so the panel collapses instead. */
 const RAIL_MIN_PX = 1281;
+/** Close to the browser's native smooth-scroll duration, but with a live target. */
+const JUMP_DURATION_MS = 480;
+/** Cancels an older animation when the reader chooses another statement. */
+let jumpGeneration = 0;
 
 /** Entry point; safe to call on any page. */
 export function initProofMap(): void {
@@ -538,13 +542,72 @@ function revealInPaper(objId: string): void {
     `.formal-block[data-objid="${cssEscape(objId)}"]`,
   );
   if (!target) return;
+  // Centre the LABEL, not the whole formal block. A theorem can be taller than
+  // the viewport; centring that box lands halfway through its body, far below
+  // the statement the reader selected in the proof map.
+  const label = target.querySelector<HTMLElement>(".env-label") ?? target;
+  const generation = ++jumpGeneration;
+  const viewportHeight = () => window.innerHeight || document.documentElement.clientHeight;
+  const centerError = () => {
+    const rect = label.getBoundingClientRect();
+    return rect.top + rect.height / 2 - viewportHeight() / 2;
+  };
+  const center = () => label.scrollIntoView({ block: "center", behavior: "auto" });
+
+  // Activating the destination can itself replace one last intrinsic-size
+  // placeholder. Re-check after layout and recenter until two frames agree, so
+  // a single double-click settles on the label even in a never-visited paper.
+  const settle = () => {
+    if (typeof requestAnimationFrame !== "function") return;
+    let attempts = 0;
+    let stableFrames = 0;
+    const frame = () => {
+      if (generation !== jumpGeneration || !label.isConnected) return;
+      const error = viewportHeight() > 0 ? centerError() : 0;
+      if (Math.abs(error) > 1) {
+        center();
+        stableFrames = 0;
+      } else {
+        stableFrames++;
+      }
+      attempts++;
+      if (attempts < 8 && stableFrames < 2) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  };
+
   const reduce =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // `center` (not `start`) is deliberate: it puts the statement's own heading
-  // well inside the viewport, so the first heading the reader sees is the one
-  // they chose and not the next result down the page.
-  target.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  if (
+    reduce ||
+    typeof requestAnimationFrame !== "function" ||
+    typeof window.scrollTo !== "function" ||
+    viewportHeight() <= 0
+  ) {
+    center();
+    settle();
+  } else {
+    // Native smooth scrolling fixes its destination before it starts. That is
+    // wrong for this paper: `content-visibility: auto` activates skipped
+    // sections along the route, replacing placeholder heights and moving L4
+    // (or any later result) while the scroll is under way. Animate manually and
+    // recompute the destination every frame, preserving the transition while
+    // following the target's live position.
+    const startY = window.scrollY;
+    let startedAt: number | null = null;
+    const animate = (now: number) => {
+      if (generation !== jumpGeneration || !label.isConnected) return;
+      if (startedAt === null) startedAt = now;
+      const progress = Math.min(1, Math.max(0, (now - startedAt) / JUMP_DURATION_MS));
+      const eased = 1 - (1 - progress) ** 3;
+      const desiredY = window.scrollY + centerError();
+      window.scrollTo({ top: startY + (desiredY - startY) * eased, behavior: "auto" });
+      if (progress < 1) requestAnimationFrame(animate);
+      else settle();
+    };
+    requestAnimationFrame(animate);
+  }
   target.classList.add("flash");
   window.setTimeout(() => target.classList.remove("flash"), 1600);
 }

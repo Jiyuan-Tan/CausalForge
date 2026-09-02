@@ -25,6 +25,7 @@ import Causalean.PO.Assumptions.IndepCF
 import Causalean.PO.Conditioning.EventCondExp
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Probability.Independence.Basic
+import Causalean.Tactic.Attr
 
 /-! # Heckman-Roy IV Setup
 
@@ -130,20 +131,26 @@ def intervalComplierEvent (z₀ z₁ : α) : Set P.Ω :=
 
 /-- For [a fixed instrument value `z`](hyp:z), [the potential treatment `D(z)` is
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_DofZ (z : α) : Measurable (S.DofZ z) :=
   S.dVar.measurable_cfUnder S.zVar z
 
 /-- The potential outcome under a fixed treatment value is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 
 /-- The factual instrument is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.zVar.measurable_factual
 /-- The factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 /-- The factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 /-- The factual latent rank is measurable. -/
+@[fun_prop]
 lemma measurable_factualU : Measurable S.factualU := S.uVar.measurable_factual
 
 /-- The factual instrument event is measurable. -/
@@ -163,7 +170,16 @@ lemma measurableSet_intervalComplierEvent (z₀ z₁ : α) :
 noncomputable def YofDofZ (z : α) : P.Ω → ℝ :=
   fun ω => if S.DofZ z ω then S.YofD true ω else S.YofD false ω
 
+/-- The potential outcome under the treatment that an instrument value induces sends a unit to
+that unit's treated potential outcome when the induced treatment is one, and to its untreated
+potential outcome otherwise. -/
+@[causal_defs_simps]
+lemma YofDofZ_def (z : α) :
+    S.YofDofZ z = fun ω => if S.DofZ z ω then S.YofD true ω else S.YofD false ω :=
+  rfl
+
 /-- The outcome composed with the instrument-induced treatment is measurable. -/
+@[fun_prop]
 lemma measurable_YofDofZ (z : α) : Measurable (S.YofDofZ z) := by
   unfold YofDofZ
   exact Measurable.ite (S.measurable_DofZ z (MeasurableSet.singleton true))

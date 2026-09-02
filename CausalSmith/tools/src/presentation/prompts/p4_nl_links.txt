@@ -1,0 +1,55 @@
+The website shows a paper's formal statement beside the Lean statement that formalizes it, and
+highlights the two together when a reader hovers either side. Decide which paper text belongs to
+which Lean row.
+
+Both sides have already been cut up for you. For each object below you are given its LEAN ROWS
+(one hypothesis, side condition, or conclusion clause each, with an id), its PAPER SEGMENTS (the
+whole block, split into sentences and displayed formulas, each with an id), and the labelled
+DECLARATIONS that formalize it. A single list of every declaration of this development follows the
+objects. You choose only among these ids and names; you never quote, rewrite, or compose text.
+
+{{objects_payload}}
+
+Output exactly one JSON object, nothing else:
+{"blocks": {"<object id>": {
+  "assignments": [{"row": "r1", "segments": ["s2"]}, {"row": "r2", "unstated": true}],
+  "displayLinks": [{"segment": "s5", "decl": "<declaration name>"},
+                   {"segment": "s5", "decl": "<another declaration the same display defines>"},
+                   {"segment": "s6", "presentationOnly": true}]
+}}}
+
+The answer must be TOTAL. Every object id above appears exactly once. Within an object, every row
+id appears exactly once in `assignments` — with a non-empty `segments` list, or with
+`"unstated": true` and no segments, never both and never neither. Every DISPLAY segment appears
+in `displayLinks` — either with one or more `decl` entries, each naming a declaration of this
+paper's Lean development, or with a single `"presentationOnly": true` entry. Never both forms for
+one segment, never neither, and never the same declaration twice for one segment. Text segments
+are not listed there.
+Any id you invent, omit, or answer twice discards the whole request and it is re-run.
+
+How to choose:
+- Assign a row the segments that STATE it — the sentence or formula a reader would point at to
+  find that hypothesis or that conclusion. Prefer the smallest set that states it fully; several
+  segments are right only when the statement genuinely runs across them.
+- A segment may serve several rows, and often does: one sentence can state two hypotheses.
+- Mark a row `unstated` when the block does not state it: a technical side condition the prose
+  leaves implicit, or something stated elsewhere in the paper. This is a normal, expected answer,
+  and far better than pointing a row at text that does not state it. Do not use it merely because
+  the wording is indirect — prose states things in words, not in Lean syntax.
+- For a displayed formula, name the declaration of this paper's Lean development that realizes it.
+  Every `decl` must be COPIED from the NAMEABLE DECLARATIONS list at the end of this request, or
+  from a labelled block's header, character for character. A name that is not there does not exist,
+  however plausible it looks: if the quantity's declaration is not on the list under any name, the
+  display is `presentationOnly`, not a guess.
+  A display that DEFINES SEVERAL named quantities at once — a line of constants, a group of
+  definitions sharing one display — realizes one declaration per quantity: give an entry for each,
+  all with that segment's id. One entry is right only when the display defines one thing.
+  The DECLARATIONS listed with the object are the likely candidates, but they are only the ones
+  closest to hand: any declaration of the development may be named, by its fully-qualified name or
+  by a short name no other declaration shares. When a display DEFINES a named quantity, that is the
+  declaration for the whole quantity, not a helper its right-hand side references; a helper is
+  named only by the display that defines the helper itself. Mark a display `presentationOnly` only
+  when NO declaration realizes it — an intermediate step, a restatement, or a formula the
+  formalization does not carry. A display that introduces notation is not presentation-only if some
+  declaration realizes it anyway: the declaration entries are then the complete answer, and the two
+  forms are never given together for one segment.

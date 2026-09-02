@@ -80,6 +80,7 @@ theorem coveringNumber_nonzero {X : Type*} [PseudoMetricSpace X] {A : Set X}
 
 /-- The covering-number function of the radius is almost-everywhere measurable
 on the real line. -/
+@[fun_prop]
 theorem coveringNumber_aemeasurable {X : Type*} [PseudoMetricSpace X] {A : Set X}
     (ha : TotallyBounded A) (μ : MeasureTheory.Measure ℝ) :
     AEMeasurable (coveringNumber ha) μ := by

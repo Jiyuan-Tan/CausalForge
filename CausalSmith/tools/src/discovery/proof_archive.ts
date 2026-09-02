@@ -18,9 +18,9 @@
 //   objects/<sha256>.tex   — proof bodies, content-addressed and deduplicated
 //   index.jsonl            — one metadata line per archived (node, bytes) pair
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { normalizeRawModelJson, repairLatexStringsDeep } from "./core/latex_serialization.js";
 import { sliceTexCompanion, resolveTexRefs } from "./solve/tex_companion.js";
@@ -50,6 +50,20 @@ export function proofArchiveDir(discoveryDir: string): string {
 }
 function indexPath(discoveryDir: string): string {
   return path.join(proofArchiveDir(discoveryDir), "index.jsonl");
+}
+
+async function syncArchiveDirectory(dir: string): Promise<void> {
+  const handle = await open(dir, "r");
+  try {
+    try {
+      await handle.sync();
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "EINVAL" && code !== "ENOTSUP" && code !== "EISDIR") throw err;
+    }
+  } finally {
+    await handle.close();
+  }
 }
 
 export async function readProofArchiveIndex(discoveryDir: string): Promise<ProofArchiveEntry[]> {
@@ -191,11 +205,41 @@ async function archiveProofsSerial(
   for (const p of candidates) {
     const hash = createHash("sha256").update(p.proofTex, "utf8").digest("hex");
     const key = `${hash} ${p.nodeId}`;
+    // The index is metadata, not proof recovery. Verify (or reconstruct from
+    // the still-hot bytes) its content-addressed object before dedup may skip
+    // this pair; a valid-looking row with a missing/corrupt object must never
+    // authorize deletion of the last proof copy.
+    await mkdir(objectsDir, { recursive: true });
+    const objectPath = path.join(objectsDir, `${hash}.tex`);
+    if (existsSync(objectPath)) {
+      const existing = await readFile(objectPath, "utf8");
+      const existingHash = createHash("sha256").update(existing, "utf8").digest("hex");
+      if (existingHash !== hash || existing !== p.proofTex) {
+        throw new Error(`proof archive object is corrupt at ${objectPath}; refusing to trust its pathname`);
+      }
+    } else {
+      const stagedObject = `${objectPath}.tmp-${process.pid}-${randomUUID()}`;
+      try {
+        const objectHandle = await open(stagedObject, "wx");
+        try {
+          await objectHandle.writeFile(p.proofTex, "utf8");
+          await objectHandle.sync();
+        } finally {
+          await objectHandle.close();
+        }
+        await rename(stagedObject, objectPath);
+        await syncArchiveDirectory(objectsDir);
+        // `mkdir({recursive:true})` may have recreated objects/ while an index
+        // row already existed. A dedup return writes no new index, so persist
+        // both parent directory entries here before it can skip the hot bytes.
+        await syncArchiveDirectory(proofArchiveDir(discoveryDir));
+        await syncArchiveDirectory(discoveryDir);
+      } finally {
+        await rm(stagedObject, { force: true });
+      }
+    }
     if (seen.has(key)) continue;
     seen.add(key);
-    if (written.length === 0) await mkdir(objectsDir, { recursive: true });
-    const objectPath = path.join(objectsDir, `${hash}.tex`);
-    if (!existsSync(objectPath)) await writeFile(objectPath, p.proofTex, "utf8");
     const entry: ProofArchiveEntry = {
       hash,
       node_id: p.nodeId,
@@ -207,6 +251,29 @@ async function archiveProofsSerial(
     written.push(entry);
     lines.push(JSON.stringify(entry));
   }
-  if (lines.length > 0) await appendFile(indexPath(discoveryDir), lines.join("\n") + "\n", "utf8");
+  if (lines.length > 0) {
+    const archiveDir = proofArchiveDir(discoveryDir);
+    const targetIndex = indexPath(discoveryDir);
+    const before = existsSync(targetIndex) ? await readFile(targetIndex, "utf8") : "";
+    const separator = before.length === 0 || before.endsWith("\n") ? "" : "\n";
+    const stagedIndex = `${targetIndex}.tmp-${process.pid}-${randomUUID()}`;
+    try {
+      const indexHandle = await open(stagedIndex, "wx");
+      try {
+        await indexHandle.writeFile(`${before}${separator}${lines.join("\n")}\n`, "utf8");
+        await indexHandle.sync();
+      } finally {
+        await indexHandle.close();
+      }
+      await rename(stagedIndex, targetIndex);
+      await syncArchiveDirectory(archiveDir);
+    } finally {
+      await rm(stagedIndex, { force: true });
+    }
+    // `mkdir({recursive:true})` may have created proof_archive itself; sync its
+    // parent so the archive directory entry is durable before callers delete
+    // the only hot copy.
+    await syncArchiveDirectory(discoveryDir);
+  }
   return written;
 }

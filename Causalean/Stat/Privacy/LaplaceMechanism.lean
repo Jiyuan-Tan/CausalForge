@@ -40,7 +40,9 @@ private lemma laplacePDF_nonneg {b : ℝ} (hb : 0 < b) (x : ℝ) :
   unfold laplacePDF
   exact mul_nonneg (inv_nonneg.mpr (mul_nonneg (by norm_num) hb.le)) (Real.exp_pos _).le
 
-private lemma measurable_laplacePDF (b : ℝ) : Measurable (laplacePDF b) := by
+/-- The Laplace density with scale `b` is a measurable function on the real line. -/
+@[fun_prop]
+lemma measurable_laplacePDF (b : ℝ) : Measurable (laplacePDF b) := by
   unfold laplacePDF
   fun_prop
 
@@ -160,8 +162,8 @@ private lemma laplaceMech_eq_withDensity {D : Type*} (b : ℝ) (q : D → ℝ) (
     withDensity_apply _ (hs.preimage (by fun_prop)), withDensity_apply _ hs]
   rw [← lintegral_indicator (hs.preimage (by fun_prop)), ← lintegral_indicator hs]
   have hfun : Measurable
-      (fun x => s.indicator (fun y => ENNReal.ofReal (laplacePDF b (y - q d))) x) :=
-    (((measurable_laplacePDF b).comp (by fun_prop)).ennreal_ofReal).indicator hs
+      (fun x => s.indicator (fun y => ENNReal.ofReal (laplacePDF b (y - q d))) x) := by
+    fun_prop
   calc
     _ = ∫⁻ a, (fun x => s.indicator
           (fun y => ENNReal.ofReal (laplacePDF b (y - q d))) x) (a + q d) := by

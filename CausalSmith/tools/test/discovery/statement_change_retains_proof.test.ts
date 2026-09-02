@@ -38,7 +38,13 @@ describe("a frozen statement change retains the old proof as the hot partial", (
         resolved_oeqs: {},
         proposals: {
           statements: [{ id: "thm:main", current: "OLD CLAIM", proposed: "NEW, NARROWER CLAIM", reason: "narrow", direction: "narrow" }],
-          definitions: [], assumptions: [], coreEdits: [], proofs: [],
+          definitions: [], assumptions: [],
+          coreEdits: [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...STMT, statement: "NEW, NARROWER CLAIM", status: "to-prove", proof_tex: undefined },
+            reason: "complete statement post-image", direction: "correct",
+          }],
+          proofs: [],
         },
       } as never);
 
@@ -103,8 +109,8 @@ describe("a frozen statement change retains the old proof as the hot partial", (
           definitions: [], assumptions: [],
           coreEdits: [{
             kind: "statement-replace", id: "lem:agent",
-            proposed: { ...agentNode, depends_on: ["ass:overlap"] },
-            reason: "metadata echo", direction: "correct",
+            proposed: { ...agentNode, statement: "AGENT NEW CLAIM", status: "to-prove", proof_tex: undefined },
+            reason: "complete statement post-image", direction: "correct",
           }],
           proofs: [],
         },
@@ -141,7 +147,13 @@ describe("a frozen statement change retains the old proof as the hot partial", (
         resolved_oeqs: {},
         proposals: {
           statements: [{ id: "lem:agent", current: "AGENT OLD CLAIM", proposed: "AGENT NEW CLAIM", reason: "narrow", direction: "correct" }],
-          definitions: [], assumptions: [], coreEdits: [], proofs: [],
+          definitions: [], assumptions: [],
+          coreEdits: [{
+            kind: "statement-replace", id: "lem:agent",
+            proposed: { ...agentNode, statement: "AGENT NEW CLAIM", status: "to-prove", proof_tex: undefined },
+            reason: "complete statement post-image", direction: "correct",
+          }],
+          proofs: [],
         },
       } as never);
 

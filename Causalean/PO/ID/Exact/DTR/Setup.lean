@@ -229,21 +229,26 @@ noncomputable def factualS (S : PODTRSystem P n δ γ) (k : Fin n) : P.Ω → γ
   (S.S k).factual
 
 /-- The terminal counterfactual outcome under a treatment sequence is measurable. -/
+@[fun_prop]
 lemma measurable_Y_of (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
     Measurable (S.Y_of dbar) :=
   S.yVar.measurable_cf _
 /-- Each stage counterfactual state under the earlier treatment interventions is
 measurable. -/
+@[fun_prop]
 lemma measurable_S_of (S : PODTRSystem P n δ γ) (dbar : Fin n → δ)
     (k : Fin n) : Measurable (S.S_of dbar k) :=
   (S.S k).measurable_cf _
 /-- Each observed treatment process is measurable. -/
+@[fun_prop]
 lemma measurable_factualD (S : PODTRSystem P n δ γ) (k : Fin n) :
     Measurable (S.factualD k) := (S.dVar k).measurable_factual
 /-- The observed terminal outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY (S : PODTRSystem P n δ γ) :
     Measurable S.factualY := S.yVar.measurable_factual
 /-- Each observed state process is measurable. -/
+@[fun_prop]
 lemma measurable_factualS (S : PODTRSystem P n δ γ) (k : Fin n) :
     Measurable (S.factualS k) := (S.S k).measurable_factual
 
@@ -263,6 +268,7 @@ noncomputable def indD (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
         S.indD dbar k ω
 
 /-- The joint treatment-agreement indicator up to any cutoff is measurable. -/
+@[fun_prop]
 lemma measurable_indD (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
     ∀ k : ℕ, Measurable (S.indD dbar k)
   | 0 => measurable_const

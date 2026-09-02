@@ -82,14 +82,18 @@ def dEvent (d : Bool) : Set P.Ω := S.dVar.event d
 
 /-- For [a fixed treatment arm `d`](hyp:d), [the counterfactual outcome `Y(d)` is
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 
 /-- Factual instrument is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.zVar.measurable_factual
 /-- Factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 /-- Factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- Each instrument stratum event is measurable. -/

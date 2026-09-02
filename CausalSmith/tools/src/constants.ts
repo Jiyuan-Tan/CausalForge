@@ -379,9 +379,9 @@ export const REUSE_LIST_BY_CLUSTER = {
     "Inference.*",
     // Causalean/Estimation/ — causal-estimand estimation and inference theory
     "Efficiency.*",
-    "StructureAgnostic.*",
+    "MinimaxATE.*",
     "OrthogonalMoments.*",
-    "OSL.*",
+    "OrthogonalLearning.*",
     "NPIV.*",
     "GaussMarkov.*",
     "CATE.*",
@@ -463,7 +463,7 @@ export const CLUSTER_SUBSTRATE_ROOTS: Record<ClusterKey, string[]> = {
     "Causalean/Stat/",
     "Causalean/Estimation/",
     "Causalean/Estimation/Efficiency/",
-    "Causalean/Estimation/StructureAgnostic/",
+    "Causalean/Estimation/MinimaxATE/",
     "Causalean/PO/",
   ],
   experimentation: [

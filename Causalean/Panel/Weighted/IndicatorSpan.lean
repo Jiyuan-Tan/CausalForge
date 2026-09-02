@@ -22,6 +22,7 @@ constructions used elsewhere in the panel library. It is intended for weighted
 finite supports where sums over observed records are the primitive operation.
 -/
 
+import Causalean.Tactic.Attr
 import Causalean.Panel.Weighted.Support
 import Mathlib.Algebra.Module.Submodule.Basic
 import Mathlib.Algebra.Module.Submodule.Lattice
@@ -57,7 +58,8 @@ def cellIndicator {R 𝒢 : Type*} [DecidableEq 𝒢]
 
 /-- The cell indicator evaluates by checking whether the record belongs to the
 chosen classifier cell. -/
-@[simp] lemma cellIndicator_apply {R 𝒢 : Type*} [DecidableEq 𝒢]
+@[simp, causal_defs_simps]
+lemma cellIndicator_apply {R 𝒢 : Type*} [DecidableEq 𝒢]
     (G : R → 𝒢) (g : 𝒢) (r : R) :
     cellIndicator G g r = if G r = g then (1 : ℝ) else 0 := rfl
 

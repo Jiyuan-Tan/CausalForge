@@ -60,12 +60,16 @@ noncomputable def factualY : P.Ω → ℝ := S.Yvar.factual
 noncomputable def YofD (d : Bool) : P.Ω → ℝ := S.Yvar.cfUnder S.Dvar d
 
 /-- The factual running variable is measurable. -/
+@[fun_prop]
 lemma measurable_factualX : Measurable S.factualX := S.Xvar.measurable_factual
 /-- The factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.Dvar.measurable_factual
 /-- The factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.Yvar.measurable_factual
 /-- The treatment-specific potential outcome is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Bool) : Measurable (S.YofD d) :=
   S.Yvar.measurable_cfUnder S.Dvar d
 
@@ -212,7 +216,9 @@ private lemma regression_integral_bridge_left
 
 /-! ### Pushforward integrability and integral identity -/
 
-private lemma aemeasurable_factualX (S : POSharpRDDSystem P) :
+/-- The observed running variable is almost-everywhere measurable. -/
+@[fun_prop]
+lemma aemeasurable_factualX (S : POSharpRDDSystem P) :
     AEMeasurable S.factualX P.μ := S.measurable_factualX.aemeasurable
 
 /-- Pushforward form of the right-side integral bridge: on every measurable

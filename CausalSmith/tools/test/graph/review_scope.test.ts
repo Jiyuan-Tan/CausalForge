@@ -2,6 +2,18 @@ import { describe, it, expect } from "vitest";
 import { createEmptyGraph } from "../../src/graph/store.js";
 import { addNode, addEdge, addAssumption, setNodeReview } from "../../src/graph/mutate.js";
 import { reviewTargets, convergenceTargets, incrementalSymbolRows } from "../../src/graph/review_scope.js";
+import { GraphSchema } from "../../src/graph/types.js";
+
+/** A from-note theorem node carrying an as-persisted review block (pre-schema-parse). */
+const node = (id: string, review: { status: string; passed_hash: string | null }) => ({
+  id,
+  kind: "theorem",
+  provenance: "from-note",
+  nl: { statement: id, tex_anchor: "", frozen: true },
+  lean: { decl_name: null, file: null },
+  review,
+  proof: { state: "sorry", sorry_count: 1 },
+});
 
 function fixture() {
   let g = createEmptyGraph("q", "v1");
@@ -60,6 +72,24 @@ describe("reviewTargets", () => {
     expect(reviewTargets(g, ["t1", "t2"]).deliveryTargets).toEqual([]);
     expect(convergenceTargets(g).statementTargets).toEqual(["t1"]);
     expect(convergenceTargets(g).deliveryTargets).toEqual(["t2"]);
+  });
+
+  it("only `matched` clears a node — a legacy `derived` graph stays in scope after loading", () => {
+    // An F2 reroute that edited nothing leaves the flagged node CLEAN (not dirty) at the same hash,
+    // so a status that clears without being a pass would let it slip the gate. `derived` used to
+    // clear; a graph banked with that status now loads as `drift`, which must stay in scope.
+    const legacy = GraphSchema.parse({
+      qid: "q",
+      specialization: "v1",
+      nodes: [
+        node("t1", { status: "derived", passed_hash: "h" }),
+        node("t2", { status: "drift", passed_hash: "h" }),
+        node("t3", { status: "matched", passed_hash: "h" }),
+      ],
+      edges: [],
+    });
+    expect(legacy.nodes[0].review.status).toBe("drift");
+    expect(reviewTargets(legacy, []).statementTargets).toEqual(["t1", "t2"]);
   });
 });
 

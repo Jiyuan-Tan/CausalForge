@@ -6,6 +6,7 @@ Authors: Jiyuan Tan
 
 import Causalean.PO.ID.Partial.Sensitivity.MSM.ControlQuantileBalance
 import Causalean.PO.ID.Partial.Sensitivity.MSM.CutoffConstruct
+import Causalean.Tactic.Attr
 
 /-! # Marginal Sensitivity Model -- constructing the calibrating control cutoff
 
@@ -44,6 +45,15 @@ def controlSet : Set P.Ω := S.factualD ⁻¹' {false}
 outcome on the sub-population of control units, `(μ restricted to {D=0}) ∘ (X, Y)⁻¹`. -/
 noncomputable def controlXYLaw : Measure (γ × ℝ) :=
   (P.μ.restrict S.controlSet).map (fun ω => (S.factualX ω, S.factualY ω))
+
+/-- The control push-forward law of the covariate and outcome is the image, under the map
+recording the factual covariate and factual outcome, of the population measure restricted to the
+control set. -/
+@[causal_defs_simps]
+lemma controlXYLaw_eq :
+    S.controlXYLaw =
+      (P.μ.restrict S.controlSet).map (fun ω => (S.factualX ω, S.factualY ω)) :=
+  rfl
 
 /-- The **control conditional CDF** of `Y` given `X`, evaluated along the factual covariate:
 `F(t | X(ω)) = P(Y ≤ t | X = X(ω), D = 0)`. -/
@@ -86,18 +96,27 @@ private lemma integrable_control_le_indicator (t : ℝ) :
   exact (integrable_const (α := P.Ω) (μ := P.μ) (c := (1 : ℝ))).indicator
     ((S.measurableSet_controlSet).inter (S.measurableSet_factualY_le t))
 
-private lemma measurable_controlCondCDF_const (t : ℝ) :
+/-- At a fixed outcome level, the control conditional CDF depends on the unit only through the
+observed covariate, so it is measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_controlCondCDF_const (t : ℝ) :
     Measurable[S.sigmaX] (fun ω => S.controlCondCDF ω t) := by
   rw [POBackdoorSystem.sigmaX]
   unfold POBackdoorSystem.controlCondCDF
   exact (ProbabilityTheory.measurable_condCDF S.controlXYLaw t).comp
     (comap_measurable S.factualX)
 
-private lemma stronglyMeasurable_controlCondCDF_const (t : ℝ) :
+/-- The strongly-measurable form, for the covariate σ-algebra, of the control conditional CDF at a
+fixed outcome level. -/
+@[fun_prop]
+lemma stronglyMeasurable_controlCondCDF_const (t : ℝ) :
     StronglyMeasurable[S.sigmaX] (fun ω => S.controlCondCDF ω t) :=
   (S.measurable_controlCondCDF_const t).stronglyMeasurable
 
-private lemma measurable_controlCondCDF_const_ambient (t : ℝ) :
+/-- The control conditional CDF at a fixed outcome level is measurable for the ambient σ-algebra as
+well as for the covariate one. -/
+@[fun_prop]
+lemma measurable_controlCondCDF_const_ambient (t : ℝ) :
     Measurable (fun ω => S.controlCondCDF ω t) :=
   (S.measurable_controlCondCDF_const t).mono S.sigmaX_le le_rfl
 
@@ -353,7 +372,10 @@ private lemma integrable_control_le_indicator_variable (c : P.Ω → ℝ)
   exact (integrable_const (α := P.Ω) (μ := P.μ) (c := (1 : ℝ))).indicator
     ((S.measurableSet_controlSet).inter (S.measurableSet_factualY_le_cutoff c hc))
 
-private lemma measurable_controlCondCDF_variable (c : P.Ω → ℝ)
+/-- Evaluated at a cutoff that itself depends on the unit only through the observed covariate, the
+control conditional CDF is still measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_controlCondCDF_variable (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     Measurable[S.sigmaX] (fun ω => S.controlCondCDF ω (c ω)) := by
   obtain ⟨q, hq, hc_eq⟩ := S.exists_factor_through_factualX hc
@@ -365,12 +387,18 @@ private lemma measurable_controlCondCDF_variable (c : P.Ω → ℝ)
   exact (measurable_condCDF_variable S.controlXYLaw hq).comp
     (comap_measurable S.factualX)
 
-private lemma stronglyMeasurable_controlCondCDF_variable (c : P.Ω → ℝ)
+/-- The strongly-measurable form, for the covariate σ-algebra, of the control conditional CDF at a
+covariate-measurable cutoff. -/
+@[fun_prop]
+lemma stronglyMeasurable_controlCondCDF_variable (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     StronglyMeasurable[S.sigmaX] (fun ω => S.controlCondCDF ω (c ω)) :=
   (S.measurable_controlCondCDF_variable c hc).stronglyMeasurable
 
-private lemma measurable_controlCondCDF_variable_ambient (c : P.Ω → ℝ)
+/-- The control conditional CDF at a covariate-measurable cutoff is measurable for the ambient
+σ-algebra as well as for the covariate one. -/
+@[fun_prop]
+lemma measurable_controlCondCDF_variable_ambient (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     Measurable (fun ω => S.controlCondCDF ω (c ω)) :=
   (S.measurable_controlCondCDF_variable c hc).mono S.sigmaX_le le_rfl

@@ -93,13 +93,6 @@ describe("applyVerdictsToGraph", () => {
     expect(g.nodes.find((n) => n.id === "l3")!.review.status).toBe("unreviewed"); // unmatched → skipped
   });
 
-  it("derivedObjIds override matched→derived", () => {
-    let g = createEmptyGraph("q", "v1");
-    g = addNode(g, { id: "l1", kind: "lemma", provenance: "from-note", nl_statement: "h", tex_anchor: "" });
-    g = applyVerdictsToGraph(g, [cw("L-1", "exact")], {}, new Set(["L-1"]));
-    expect(g.nodes[0].review.status).toBe("derived");
-  });
-
   it("prefers an exact case-sensitive uncolonized graph id over legacy normalization", () => {
     let g = createEmptyGraph("q", "v1");
     g = addNode(g, { id: "hP_pointwise_witness", kind: "assumption", provenance: "agent-introduced", nl_statement: "witness", tex_anchor: "" });
@@ -152,7 +145,6 @@ describe("applyVerdictsToGraph", () => {
       g,
       [cw("sym:r_star", "equivalent"), cw("sym:synthetic", "equivalent")],
       { "sym:r_star": "real-sym-hash" },
-      new Set(),
       owners,
     );
 
@@ -172,7 +164,6 @@ describe("applyVerdictsToGraph", () => {
       g,
       [cw("T-1", "equivalent"), cw("missing", "equivalent")],
       { t1: "h1" },
-      new Set(),
       owners,
     )).toThrow('review verdict target resolution failed for "missing": bound graph node "does-not-exist" is missing');
     expect(g.nodes[0].review.status).toBe("unreviewed");

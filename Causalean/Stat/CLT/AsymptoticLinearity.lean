@@ -21,6 +21,7 @@ i.i.d. sums.
 import Mathlib.Probability.CentralLimitTheorem
 import Causalean.Stat.Sample
 import Causalean.Stat.Limit.Convergence
+import Causalean.Tactic.Attr
 
 /-! # Scalar Asymptotic Linearity
 
@@ -103,6 +104,16 @@ noncomputable def normalizedSum (S : IIDSample Ω X μ P) (ψ : X → ℝ)
     (I : ℕ → Finset ℕ) (n : ℕ) : Ω → ℝ :=
   fun ω => (Real.sqrt ((I n).card : ℝ))⁻¹ * ∑ i ∈ I n, ψ (S.Z i ω)
 
+/-- The normalised partial sum at sample size index `n` sends a unit to the sum of the
+influence-function values over the index block, rescaled by the reciprocal square root of the
+block size. -/
+@[causal_defs_simps]
+lemma normalizedSum_def (S : IIDSample Ω X μ P) (ψ : X → ℝ)
+    (I : ℕ → Finset ℕ) (n : ℕ) :
+    normalizedSum S ψ I n =
+      fun ω => (Real.sqrt ((I n).card : ℝ))⁻¹ * ∑ i ∈ I n, ψ (S.Z i ω) :=
+  rfl
+
 /-- The rescaled estimator `√|I n| (θn n − θ₀)`. -/
 noncomputable def rescaledEstimator (θn : ℕ → Ω → ℝ) (θ₀ : ℝ)
     (I : ℕ → Finset ℕ) (n : ℕ) : Ω → ℝ :=
@@ -148,7 +159,7 @@ theorem IIDSample.clt_normalized_sum
   have hSum_meas : ∀ n, AEMeasurable
       (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ := by
     intro n
-    unfold IsAsymLinear.normalizedSum
+    simp only [causal_defs_simps]
     exact ((Finset.measurable_sum _
       (fun i _ => hψ_meas.comp (S.meas i))).const_mul _).aemeasurable
   -- The transformed sample `W i = ψ ∘ Z i` is i.i.d., centred, and square integrable.
@@ -193,8 +204,8 @@ theorem IIDSample.clt_normalized_sum
         = IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n := by
     intro n
     funext ω
-    simp [IsAsymLinear.normalizedSum, hmean, Finset.card_range]
-  unfold Tendsto_dist
+    simp [causal_defs_simps, hmean, Finset.card_range]
+  simp only [causal_defs_simps]
   have htgt : (⟨gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P),
         instIsProbabilityMeasureGaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)⟩ : ProbabilityMeasure ℝ)
       = ⟨(gaussianMeasure 0 (∫ x, (ψ x) ^ 2 ∂P)).map id,
@@ -244,7 +255,7 @@ theorem Tendsto_dist.add_isLittleOp_one
         simpa [Real.norm_eq_abs] using hω
       exact lt_of_lt_of_le (by linarith) hω'
     exact le_trans (measure_mono hsubset) hn
-  unfold Tendsto_dist at hX ⊢
+  simp only [causal_defs_simps] at hX ⊢
   suffices ∀ (F : ℝ → ℝ) (hF_bounded : ∃ (C : ℝ), ∀ x y, dist (F x) (F y) ≤ C)
       (hF_lip : ∃ L, LipschitzWith L F),
       Tendsto (fun n ↦ ∫ y, F y ∂(μ.map (Yn n))) atTop (𝓝 (∫ y, F y ∂Q)) by
@@ -336,7 +347,7 @@ theorem Tendsto_dist.congr_ae
     (hX : Tendsto_dist Xn Q μ hXn)
     (hXY : ∀ᶠ n in atTop, Xn n =ᵐ[μ] Yn n) :
     Tendsto_dist Yn Q μ hYn := by
-  unfold Tendsto_dist at hX ⊢
+  simp only [causal_defs_simps] at hX ⊢
   refine hX.congr' ?_
   filter_upwards [hXY] with n hn
   apply Subtype.ext
@@ -405,7 +416,7 @@ theorem IsAsymLinear.tendsto_normal
   have hSum_meas : ∀ n : ℕ, AEMeasurable
       (IsAsymLinear.normalizedSum S ψ (fun m => Finset.range m) n) μ := by
     intro n
-    unfold IsAsymLinear.normalizedSum
+    simp only [causal_defs_simps]
     exact ((Finset.measurable_sum _
       (fun i _ => hψ_meas.comp (S.meas i))).const_mul _).aemeasurable
   have hCLT :=

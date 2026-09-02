@@ -171,8 +171,8 @@ theorem integral_comp_pi_restrict {X E : Type*} [MeasurableSpace X]
     ∫ s : ι → X, g (fun i : Subtype p => s i.1) ∂(Measure.pi fun _ : ι => μ) =
       ∫ z, g z ∂(Measure.pi fun _ : Subtype p => μ) := by
   classical
-  have hmeasf : Measurable (fun (s : ι → X) (i : Subtype p) => s i.1) :=
-    measurable_pi_lambda _ fun i => measurable_pi_apply i.1
+  have hmeasf : Measurable (fun (s : ι → X) (i : Subtype p) => s i.1) := by
+    fun_prop
   by_cases hg : AEStronglyMeasurable g (Measure.pi fun _ : Subtype p => μ)
   · have hmap := integral_map (f := g) hmeasf.aemeasurable (by rwa [map_pi_restrict μ p])
     rw [map_pi_restrict μ p] at hmap

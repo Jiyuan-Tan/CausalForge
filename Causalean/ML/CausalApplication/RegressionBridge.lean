@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jiyuan Tan
 -/
 import Causalean.ML.Core.PopulationTarget
+import Causalean.Tactic.CondexpLinearity
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
 
@@ -59,9 +60,9 @@ theorem isL2Projection_of_condExp
     rw [measurable_iff_comap_le]
     exact le_rfl
   have hM_sm : StronglyMeasurable[covarSigma (X := X)] (fun z : X × ℝ => m z.1) := by
-    exact (hm.comp hfst).stronglyMeasurable
+    fun_prop
   have hG_sm : StronglyMeasurable[covarSigma (X := X)] (fun z : X × ℝ => g z.1) := by
-    exact (hgm.comp hfst).stronglyMeasurable
+    fun_prop
   have hM_int : Integrable (fun z : X × ℝ => m z.1) P := by
     exact (MeasureTheory.integrable_condExp (μ := P) (m := covarSigma (X := X))
       (f := fun z : X × ℝ => z.2)).congr hcond.symm
@@ -76,7 +77,7 @@ theorem isL2Projection_of_condExp
       P[(fun z : X × ℝ => z.2 - m z.1) | covarSigma (X := X)]
           =ᵐ[P] P[(fun z : X × ℝ => z.2) | covarSigma (X := X)] -
               P[(fun z : X × ℝ => m z.1) | covarSigma (X := X)] :=
-        MeasureTheory.condExp_sub (μ := P) (m := covarSigma (X := X)) hY hM_int
+        by condexp_linearity
       _ =ᵐ[P] P[(fun z : X × ℝ => z.2) | covarSigma (X := X)] -
               (fun z : X × ℝ => m z.1) := by
         rw [hM_ce]
@@ -146,7 +147,7 @@ theorem condExp_of_isL2Projection
   obtain ⟨A, hA, hAeq⟩ := hs
   let g₀ : X → ℝ := Set.indicator A (fun _ => (1 : ℝ))
   have hg₀ : Measurable g₀ := by
-    exact measurable_const.indicator hA
+    fun_prop
   have hres_int : Integrable (fun z : X × ℝ => z.2 - m z.1) P := hY.sub hmint
   have hprod_eq_indicator :
       (fun z : X × ℝ => (z.2 - m z.1) * g₀ z.1)

@@ -28,6 +28,7 @@ the same hypothesis must be threaded through here.
 -/
 
 import Causalean.Estimation.ATT.Score.ScorePullout
+import Causalean.Tactic.IntegralLinearity
 
 /-!
 Proves the population centering facts for the ATT AIPW score. The measurable
@@ -60,6 +61,7 @@ variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 -- combine with measurability of `S.μ₀_val`, `S.e_val`, the indicator
 -- `if · = true then 1 else 0` on `Bool`, and the projections.  Same recipe as
 -- `BackdoorEstimationSystem.measurable_ψ_AIPW`.
+@[fun_prop]
 lemma measurable_ψ_ATT (S : TreatedEstimationSystem P γ) :
     Measurable S.ψ_ATT := by
   unfold TreatedEstimationSystem.ψ_ATT
@@ -69,12 +71,14 @@ lemma measurable_ψ_ATT (S : TreatedEstimationSystem P γ) :
 /-- Measurability of `aipwMomentATT z η₀ θ₀` as a function of `z`. -/
 -- Outline: this is `measurable_aipwMomentATTFunctional S.η₀ S.θ₀` after
 -- unfolding `aipwMomentATTFunctional` and `η₀`.
+@[fun_prop]
 lemma measurable_aipwMomentATT_at_θ₀
     (S : TreatedEstimationSystem P γ) :
     Measurable (fun z => aipwMomentATT z S.μ₀_val S.e_val S.θ₀) := by
   simpa [aipwMomentATTFunctional, TreatedEstimationSystem.η₀] using
     measurable_aipwMomentATTFunctional S.η₀ S.θ₀
 
+@[fun_prop]
 private lemma measurable_adjustedCE
     (S : TreatedEstimationSystem P γ) (d : Bool) :
     Measurable (S.toPOBackdoorSystem.adjustedCE d) := by
@@ -232,12 +236,8 @@ theorem aipw_mean_zero_ATT
     _ = N - S.θ₀ * S.π_val := by
       have hAconst :
           ∫ ω, A ω * S.θ₀ ∂P.μ = S.θ₀ * ∫ ω, A ω ∂P.μ := by
-        calc
-          ∫ ω, A ω * S.θ₀ ∂P.μ = ∫ ω, S.θ₀ * A ω ∂P.μ := by
-            apply MeasureTheory.integral_congr_ae
-            exact Filter.Eventually.of_forall (fun ω => by ring)
-          _ = S.θ₀ * ∫ ω, A ω ∂P.μ := by
-            rw [MeasureTheory.integral_const_mul]
+        integral_linearity
+        ring
       rw [hAconst]
       simp [TreatedEstimationSystem.π_val, POBackdoorSystem.propTreated, A]
     _ = 0 := by

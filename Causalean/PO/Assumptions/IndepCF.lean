@@ -67,6 +67,7 @@ def jointValue : P.Ω → (∀ i : Fin B.n, B.type i) :=
   fun ω i => (B.vars i).value ω
 
 /-- The joint counterfactual-value map of a bundle is measurable. -/
+@[fun_prop]
 lemma measurable_jointValue : Measurable B.jointValue :=
   measurable_pi_lambda _ (fun i => (B.vars i).measurable_value)
 

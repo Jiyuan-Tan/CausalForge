@@ -69,11 +69,13 @@ noncomputable def maxAbsK (w : EuclideanSpace ℝ (Fin k)) : ℝ :=
   Finset.univ.sup' Finset.univ_nonempty (fun j => |w j|)
 
 /-- The grid supremum statistic is continuous. -/
+@[fun_prop]
 lemma continuous_maxAbsK : Continuous (maxAbsK (k := k)) := by
   unfold maxAbsK
   fun_prop
 
 /-- The grid supremum statistic is measurable. -/
+@[fun_prop]
 lemma measurable_maxAbsK : Measurable (maxAbsK (k := k)) :=
   continuous_maxAbsK.measurable
 

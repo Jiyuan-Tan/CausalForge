@@ -591,14 +591,21 @@ export async function runProofReviewLoop(args: {
       //    an omitted clause, fix the logical form. Auto-rescaffolding a frozen statement risks F2
       //    GERRYMANDERING it to pass, a faithfulness hazard — so the orchestrator (or human) makes the
       //    statement change, then re-gates).
-      // EVERYTHING ELSE — `scaffold-mismatch` (a SETUP/env realization F2 can mechanically retype),
-      // `unadjudicable`, or a model-INVENTED kind — is scaffold-fixable: reroute the drifted targets to
-      // F2, bounded by SCAFFOLD_MAX. (The reviewer mislabels kinds, so this escalates ONLY on the three
-      // explicit protect-kinds and reroutes anything else.)
+      //  • an EXPLICIT `unadjudicable` (the reviewer could not judge — the evidence or protocol lacks
+      //    a side it needed). Auto-rescaffolding an unjudged target is the same gerrymandering hazard
+      //    as `statement-wrong`: F2 re-emits, the next round returns `matched`, and nothing records
+      //    that the original question was never answered. A human resolves it. A SYNTHESIZED
+      //    `unadjudicable` (`kind_synthesized` — the model emitted a reason with no kind, routine
+      //    schema drift) is NOT that judgment, and stays scaffold-fixable so noise cannot halt a run.
+      // EVERYTHING ELSE — `scaffold-mismatch` (a SETUP/env realization F2 can mechanically retype) or a
+      // model-INVENTED kind — is scaffold-fixable: reroute the drifted targets to F2, bounded by
+      // SCAFFOLD_MAX. (The reviewer mislabels kinds, so this escalates ONLY on the explicit
+      // protect-kinds and reroutes anything else.)
       const futile =
         r.escalate.kind === "note-wrong" ||
         r.escalate.kind === "needs-substrate" ||
         r.escalate.kind === "statement-wrong" ||
+        (r.escalate.kind === "unadjudicable" && !r.escalate.kind_synthesized) ||
         r.escalate.kind === "claim-false" || // a refuted claim can't be rescaffolded — never reroute to F2
         r.escalate.kind === "missing-review-evidence" ||
         r.escalate.kind === "missing-review-target" ||

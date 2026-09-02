@@ -426,10 +426,12 @@ describe("runReviewer", () => {
       });
 
       expect(calls).toBe(0);
-      expect(r.escalate).toEqual({
-        kind: "review-target-resolution-error",
-        reason: `synthetic reviewer target "sym:sigma" occurs 2 times with ${distinct} distinct row payload(s)`,
-      });
+      // CoreSchema rejects exact duplicate symbol names upstream (2026-08-31), so the
+      // reviewer now fails closed at the typed-core read, before its own per-target
+      // duplicate check could run. Either way: no dispatch, graph untouched.
+      expect(r.escalate?.kind).toBe("missing-review-evidence");
+      expect(r.escalate?.reason).toMatch(/duplicate symbol name\(s\): sigma/);
+      expect(distinct).toBeGreaterThan(0);
       expect(JSON.stringify(r.graph)).toBe(graphBefore);
     } finally {
       await rm(root, { recursive: true, force: true });

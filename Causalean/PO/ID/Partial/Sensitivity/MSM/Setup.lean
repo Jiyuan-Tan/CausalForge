@@ -5,6 +5,7 @@ Authors: Jiyuan Tan
 -/
 
 import Causalean.PO.ID.Exact.ATE
+import Causalean.Tactic.Attr
 
 /-! # Marginal Sensitivity Model (MSM) for the treated mean `E[Y(1)]`
 
@@ -70,6 +71,15 @@ at the true complete propensity this returns `E[Y(1)]`; traced over the ambiguit
 it sweeps out the MSM interval. -/
 noncomputable def candMean (etilde : P.Ω → ℝ) : ℝ :=
   ∫ ω, S.dVar.indicator true ω * S.factualY ω / etilde ω ∂P.μ
+
+/-- The candidate inverse-probability-weighted mean for a candidate complete propensity is the
+population mean of the treatment indicator times the factual outcome, divided by that candidate
+propensity. -/
+@[causal_defs_simps]
+lemma candMean_eq (etilde : P.Ω → ℝ) :
+    S.candMean etilde =
+      ∫ ω, S.dVar.indicator true ω * S.factualY ω / etilde ω ∂P.μ :=
+  rfl
 
 /-- The estimand `μ = E[Y(1)]`, the mean of the treated potential outcome. -/
 noncomputable def Y1mean : ℝ := ∫ ω, S.YofD true ω ∂P.μ

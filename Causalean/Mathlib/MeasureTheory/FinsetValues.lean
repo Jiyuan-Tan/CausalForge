@@ -49,6 +49,7 @@ coordinates in `J` is a measurable map](goal).
 
     Coordinate restriction `valuesProjection hJI` is measurable; since it coincides with
     `Finset.restrict₂ hJI`, measurability is exactly `Finset.measurable_restrict₂`. -/
+@[fun_prop]
 theorem measurable_valuesProjection {M : Type*}
     {I J : Finset M} {Ω' : M → Type*} [∀ n, MeasurableSpace (Ω' n)]
     (hJI : J ⊆ I) : Measurable (valuesProjection (Ω := Ω') hJI) :=
@@ -143,6 +144,7 @@ noncomputable def valuesUnionMk {M : Type*} [DecidableEq M]
 
 At every output coordinate the value is either constant or a coordinate
 projection of the second assignment. -/
+@[fun_prop]
 lemma measurable_valuesUnionMk_right {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M}
     (a : ValuesOn A Ω) :
@@ -165,6 +167,7 @@ lemma measurable_valuesUnionMk_right {M : Type*} [DecidableEq M]
     exact measurable_pi_apply _
 
 /-- Combining assignments is jointly measurable in both input assignments. -/
+@[fun_prop]
 lemma measurable_valuesUnionMk {M : Type*} [DecidableEq M]
     {Ω : M → Type*} [∀ n, MeasurableSpace (Ω n)] {A B : Finset M} :
     Measurable

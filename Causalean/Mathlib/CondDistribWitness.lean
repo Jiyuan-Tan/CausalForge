@@ -118,7 +118,7 @@ theorem condDistrib_map_of_condDistrib_fst_eq
       (fun p => (condDistrib C Z μ p.2).map (h p.1 p.2)) := by
   set W : Ω → 𝒳 × 𝒵 := fun ω => (X ω, Z ω) with hW
   set Y : Ω → 𝒴 := fun ω => h (X ω) (Z ω) (C ω) with hY
-  have hWmeas : Measurable W := hX.prodMk hZ
+  have hWmeas : Measurable W := by fun_prop
   have hYmeas : Measurable Y := by
     have : Y = (fun p : (𝒳 × 𝒵) × 𝒞 => h p.1.1 p.1.2 p.2) ∘ (fun ω => (W ω, C ω)) := rfl
     rw [this]; exact hh.comp ((hWmeas).prodMk hC)

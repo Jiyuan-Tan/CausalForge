@@ -57,6 +57,7 @@ theorem monotone_cdf [IsFiniteMeasure P] :
   fun _ _ hs => measureReal_mono (fun ω (hω : U ω ≤ _) => le_trans hω hs) (measure_ne_top P _)
 
 /-- The integrand `t ↦ P{U ≤ t⁻¹}` is measurable (monotone CDF ∘ inversion). -/
+@[fun_prop]
 theorem measurable_tailIntegrand [IsFiniteMeasure P] :
     Measurable (fun t : ℝ => P.real {ω | U ω ≤ t⁻¹}) :=
   (monotone_cdf.measurable).comp measurable_inv

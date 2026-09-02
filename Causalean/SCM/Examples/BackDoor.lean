@@ -168,17 +168,17 @@ example : bdD  ∈ bdDAG.parents bdY := by decide
 example : bdU3 ∈ bdDAG.parents bdY := by decide
 
 -- Latent roots have no parents
-example : bdDAG.parents bdU1 = ∅ := by native_decide
-example : bdDAG.parents bdU2 = ∅ := by native_decide
-example : bdDAG.parents bdU3 = ∅ := by native_decide
+example : bdDAG.parents bdU1 = ∅ := by decide
+example : bdDAG.parents bdU2 = ∅ := by decide
+example : bdDAG.parents bdU3 = ∅ := by decide
 
 -- U₁, U₂, U₃ are roots; D, Y, Z are not
-example : bdDAG.isRoot bdU1 := by native_decide
-example : bdDAG.isRoot bdU2 := by native_decide
-example : bdDAG.isRoot bdU3 := by native_decide
-example : ¬bdDAG.isRoot bdD := by native_decide
-example : ¬bdDAG.isRoot bdY := by native_decide
-example : ¬bdDAG.isRoot bdZ := by native_decide
+example : bdDAG.isRoot bdU1 := by decide
+example : bdDAG.isRoot bdU2 := by decide
+example : bdDAG.isRoot bdU3 := by decide
+example : ¬bdDAG.isRoot bdD := by decide
+example : ¬bdDAG.isRoot bdY := by decide
+example : ¬bdDAG.isRoot bdZ := by decide
 
 -- ============================================================
 -- Testing DSep.lean: d-separation in the full DAG
@@ -190,7 +190,7 @@ example : ¬bdDAG.dSep {bdY} {bdD} ∅ := by decide
 -- Y and D ARE d-separated by {Z} (Z blocks D ← Z → Y AND direct path is not a backdoor)
 -- Actually: {D → Y} is still open. The backdoor path D ← Z → Y is blocked by Z.
 -- But {D → Y} alone means dSep {D} {Y} {Z} is False.
-example : ¬bdDAG.dSep {bdD} {bdY} {bdZ} := by native_decide
+example : ¬bdDAG.dSep {bdD} {bdY} {bdZ} := by decide
 
 -- Z d-separates Y from D in the *interventional* graph (see splitMono below)
 
@@ -221,23 +221,23 @@ def bdSWIG : SWIGGraph BDNode where
   unobserved_is_random := by
     intro u hu; simp at hu
     rcases hu with rfl | rfl | rfl <;> exact ⟨_, rfl⟩
-  obs_unobs_disjoint := by native_decide
-  dag_edges_classified := by native_decide
+  obs_unobs_disjoint := by decide
+  dag_edges_classified := by decide
   fixed_image_in_observed := by intro s hs; simp at hs
   fixed_are_roots := by intro s hs; simp at hs
   unobs_are_roots := by
     intro u hu; simp at hu
     rcases hu with rfl | rfl | rfl
     · simpa [initialSWIG] using
-        swig_random_root_of_root bdDAG ∅ bdU1 (by native_decide : bdDAG.parents bdU1 = ∅)
+        swig_random_root_of_root bdDAG ∅ bdU1 (by decide : bdDAG.parents bdU1 = ∅)
     · simpa [initialSWIG] using
-        swig_random_root_of_root bdDAG ∅ bdU2 (by native_decide : bdDAG.parents bdU2 = ∅)
+        swig_random_root_of_root bdDAG ∅ bdU2 (by decide : bdDAG.parents bdU2 = ∅)
     · simpa [initialSWIG] using
-        swig_random_root_of_root bdDAG ∅ bdU3 (by native_decide : bdDAG.parents bdU3 = ∅)
+        swig_random_root_of_root bdDAG ∅ bdU3 (by decide : bdDAG.parents bdU3 = ∅)
   fixed_outside_fixed_isolated := by
     intro n _
-    cases n <;> exact ⟨by native_decide, by native_decide⟩
-  all_children_in_observed := by native_decide
+    cases n <;> exact ⟨by decide, by decide⟩
+  all_children_in_observed := by decide
 
 -- ============================================================
 -- C-components
@@ -250,9 +250,9 @@ example : ¬bdSWIG.directlyConfounded (SWIGNode.random bdD) (SWIGNode.random bdY
 example : ¬bdSWIG.directlyConfounded (SWIGNode.random bdD) (SWIGNode.random bdZ) := by decide
 
 -- Each observed node is its own singleton C-component
-example : bdSWIG.cComponentOf (SWIGNode.random bdD) = {SWIGNode.random bdD} := by native_decide
-example : bdSWIG.cComponentOf (SWIGNode.random bdY) = {SWIGNode.random bdY} := by native_decide
-example : bdSWIG.cComponentOf (SWIGNode.random bdZ) = {SWIGNode.random bdZ} := by native_decide
+example : bdSWIG.cComponentOf (SWIGNode.random bdD) = {SWIGNode.random bdD} := by decide
+example : bdSWIG.cComponentOf (SWIGNode.random bdY) = {SWIGNode.random bdY} := by decide
+example : bdSWIG.cComponentOf (SWIGNode.random bdZ) = {SWIGNode.random bdZ} := by decide
 
 example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
     ({SWIGNode.random bdY} : Finset (SWIGNode BDNode)) bdSWIG := by
@@ -261,13 +261,13 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
     · intro D hD
       simp at hD
       subst hD
-      native_decide
+      decide
     · intro D hD
       simp at hD
       subst hD
-      native_decide
+      decide
   refine ⟨hX, ?_, ?_, ?_⟩
-  · native_decide
+  · decide
   · decide
   · intro S hS
     rw [SWIGGraph.cComponentSet] at hS
@@ -280,7 +280,7 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
           SWIGNode.random bdD ∉
             (bdSWIG.splitMono {bdD} hX.1 hX.2).dag.ancestralSet {SWIGNode.random bdY} := by
         simp [SWIGGraph.splitMono]
-        native_decide
+        decide
       exact False.elim (hnot haAnc)
     · have hComp :
           ((bdSWIG.splitMono {bdD} hX.1 hX.2).induce
@@ -288,7 +288,7 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
                 {SWIGNode.random bdY})).cComponentOf (SWIGNode.random bdY) =
             {SWIGNode.random bdY} := by
         simp [SWIGGraph.splitMono, SWIGGraph.induce]
-        native_decide
+        decide
       rw [hComp]
       unfold Causalean.SCM.ID.cFactorReachable Causalean.SCM.ID.containingCComponent
       refine ⟨by simp, ?_, ?_⟩
@@ -296,7 +296,7 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
         simp at hv
         have hOrigComp :
             bdSWIG.cComponentOf (SWIGNode.random bdY) = {SWIGNode.random bdY} := by
-          native_decide
+          decide
         subst v
         split
         · rename_i hne
@@ -309,15 +309,15 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
         · rename_i hne
           exact False.elim (hne (by simp))
       · rw [SWIGGraph.cComponentSet]
-        refine Finset.mem_image.mpr ⟨SWIGNode.random bdY, by native_decide, ?_⟩
-        native_decide
+        refine Finset.mem_image.mpr ⟨SWIGNode.random bdY, by decide, ?_⟩
+        decide
     · have hComp :
           ((bdSWIG.splitMono {bdD} hX.1 hX.2).induce
               ((bdSWIG.splitMono {bdD} hX.1 hX.2).dag.ancestralSet
                 {SWIGNode.random bdY})).cComponentOf (SWIGNode.random bdZ) =
             {SWIGNode.random bdZ} := by
         simp [SWIGGraph.splitMono, SWIGGraph.induce]
-        native_decide
+        decide
       rw [hComp]
       unfold Causalean.SCM.ID.cFactorReachable Causalean.SCM.ID.containingCComponent
       refine ⟨by simp, ?_, ?_⟩
@@ -325,7 +325,7 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
         simp at hv
         have hOrigComp :
             bdSWIG.cComponentOf (SWIGNode.random bdZ) = {SWIGNode.random bdZ} := by
-          native_decide
+          decide
         subst v
         split
         · rename_i hne
@@ -338,8 +338,8 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
         · rename_i hne
           exact False.elim (hne (by simp))
       · rw [SWIGGraph.cComponentSet]
-        refine Finset.mem_image.mpr ⟨SWIGNode.random bdZ, by native_decide, ?_⟩
-        native_decide
+        refine Finset.mem_image.mpr ⟨SWIGNode.random bdZ, by decide, ?_⟩
+        decide
 
 -- ============================================================
 -- Backdoor criterion: condition (ii) via splitMono
@@ -358,11 +358,11 @@ example : Causalean.SCM.ID.idSucceeds ({bdD} : Finset BDNode)
 -- We use the underlying computable DAG `splitMonoDAG` directly (since `splitMono`
 -- is noncomputable due to its SWIGGraph fields, but the DAG is fully computable).
 example : (bdSWIG.splitMonoDAG {bdD}).dSep
-    {SWIGNode.random bdY} {SWIGNode.random bdD} {SWIGNode.random bdZ} := by native_decide
+    {SWIGNode.random bdY} {SWIGNode.random bdD} {SWIGNode.random bdZ} := by decide
 
 -- Condition (i): Z contains no descendant of D
 -- (bdZ is not a descendant of bdD in bdDAG)
-example : ¬bdDAG.isAncestor bdD bdZ := by native_decide
+example : ¬bdDAG.isAncestor bdD bdZ := by decide
 
 -- awaits `SWIGGraph.backdoorCriterion` from `SCM/ID/Backdoor.lean`
 
@@ -384,8 +384,8 @@ example : bdEdgeTypes.isFullyNonparametric := by
 /-- The observed confounder satisfies the graphical backdoor criterion for the treatment-outcome effect in this example. -/
 example :
     bdSWIG.backdoorCriterion {bdD}
-      (by intro D hD; simp at hD; subst hD; native_decide)
-      (by intro D hD; simp at hD; subst hD; native_decide)
+      (by intro D hD; simp at hD; subst hD; decide)
+      (by intro D hD; simp at hD; subst hD; decide)
       {SWIGNode.random bdY}
       {SWIGNode.random bdZ} := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
@@ -393,22 +393,22 @@ example :
     intro z hz
     simp at hz
     subst hz
-    native_decide
+    decide
   · -- Guard: {Z} is disjoint from {Y}.
-    native_decide
+    decide
   · -- Guard: {Z} is disjoint from {D}.
-    native_decide
+    decide
   · -- Condition (i): {Z} contains no descendant of any random D
     intro z hz D hD
     simp at hz hD
     subst hz; subst hD
-    native_decide
+    decide
   · -- Condition (ii): Z d-separates Y from X in splitMono.
     -- `splitMono` is noncomputable, but `splitMono.dag = splitMonoDAG`
     -- definitionally, so we discharge via the computable `splitMonoDAG`
     -- decided natively (inlined to keep the goal free of free variables
-    -- that would trip up `native_decide`).
-    exact (by native_decide :
+    -- that would trip up `decide`).
+    exact (by decide :
       (bdSWIG.splitMonoDAG {bdD}).dSep
         {SWIGNode.random bdY} (Finset.image SWIGNode.random {bdD})
         ({SWIGNode.random bdZ} ∪ Finset.image SWIGNode.fixed {bdD}))

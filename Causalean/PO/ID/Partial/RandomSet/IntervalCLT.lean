@@ -74,9 +74,11 @@ endpoint gaps are `w₀` and `w₁` (cf. `hausdorffDist_Icc`). -/
 noncomputable def maxAbs (w : EuclideanSpace ℝ (Fin 2)) : ℝ := max |w 0| |w 1|
 
 /-- The max-absolute-value functional on endpoint deviations is continuous. -/
+@[fun_prop]
 lemma continuous_maxAbs : Continuous maxAbs := by unfold maxAbs; fun_prop
 
 /-- The max-absolute-value functional on endpoint deviations is measurable. -/
+@[fun_prop]
 lemma measurable_maxAbs : Measurable maxAbs := continuous_maxAbs.measurable
 
 section CLT
@@ -221,6 +223,7 @@ lemma norm_sq_intervalIFVec (yL yU : X → ℝ) (x : X) :
 
 omit [IsProbabilityMeasure P] in
 /-- `intervalIFVec` is measurable from measurability of the two endpoint maps. -/
+@[fun_prop]
 lemma measurable_intervalIFVec (yL yU : X → ℝ)
     (hLmeas : Measurable yL) (hUmeas : Measurable yU) :
     Measurable (intervalIFVec yL yU P) := by
@@ -300,6 +303,7 @@ lemma intervalIFVec_mean_zero (yL yU : X → ℝ)
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- The vector normalised sum of `intervalIFVec` is `AEMeasurable` for each `n`,
 from measurability of the endpoints and of the sample coordinates `S.Z i`. -/
+@[fun_prop]
 lemma intervalIFVec_sum_aemeasurable (S : IIDSample Ω X μ P) (yL yU : X → ℝ)
     (hLmeas : Measurable yL) (hUmeas : Measurable yU) :
     ∀ n, AEMeasurable

@@ -26,6 +26,7 @@ reduces to the existing scalar `IsAsymLinear`.
 -/
 
 import Causalean.Stat.CLT.AsymptoticLinearity
+import Causalean.Tactic.Attr
 import Causalean.Stat.Limit.Convergence
 import Causalean.Stat.Limit.ConvergenceVec
 import Causalean.Stat.Sample
@@ -99,6 +100,16 @@ variable {θn : ℕ → Ω → E} {θ₀ : E} {ψ : X → E} {S : IIDSample Ω X
 noncomputable def normalizedSum (S : IIDSample Ω X μ P) (ψ : X → E)
     (I : ℕ → Finset ℕ) (n : ℕ) : Ω → E :=
   fun ω => (Real.sqrt ((I n).card : ℝ))⁻¹ • ∑ i ∈ I n, ψ (S.Z i ω)
+
+/-- The vector normalised partial sum at sample size index `n` sends a unit to the sum of the
+influence-function values over the index block, rescaled by the reciprocal square root of the
+block size. -/
+@[causal_defs_simps]
+lemma normalizedSum_def (S : IIDSample Ω X μ P) (ψ : X → E)
+    (I : ℕ → Finset ℕ) (n : ℕ) :
+    normalizedSum S ψ I n =
+      fun ω => (Real.sqrt ((I n).card : ℝ))⁻¹ • ∑ i ∈ I n, ψ (S.Z i ω) :=
+  rfl
 
 /-- Vector rescaled estimator `√|I n| · (θn n − θ₀)`. -/
 noncomputable def rescaledEstimator (θn : ℕ → Ω → E) (θ₀ : E)

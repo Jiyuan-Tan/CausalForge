@@ -14,6 +14,7 @@ import Causalean.PO.ID.Exact.VariableIntensityIV.OrderedTreatment
 import Causalean.PO.Assumptions.ConsistencyLemmas
 import Causalean.PO.Assumptions.IndepCF
 import Causalean.PO.Conditioning.EventCondExp
+import Causalean.Tactic.Attr
 
 /-! # Variable-Intensity Instrumental Variables
 
@@ -109,20 +110,25 @@ def factualY : P.Ω → ℝ := S.yVar.factual
 def zEvent (z : 𝒵) : Set P.Ω := S.zVar.event z
 
 /-- The potential treatment under a fixed instrument value is measurable. -/
+@[fun_prop]
 lemma measurable_DofZ (z : 𝒵) : Measurable (S.DofZ z) :=
   S.dVar.measurable_cfUnder S.zVar z
 
 /-- The potential outcome under a fixed treatment value is measurable. -/
+@[fun_prop]
 lemma measurable_YofD (d : Fin (J + 1)) : Measurable (S.YofD d) :=
   S.yVar.measurable_cfUnder S.dVar d
 
 /-- The factual instrument is measurable. -/
+@[fun_prop]
 lemma measurable_factualZ : Measurable S.factualZ := S.zVar.measurable_factual
 
 /-- The factual treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 
 /-- The factual outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY : Measurable S.factualY := S.yVar.measurable_factual
 
 /-- The factual instrument cell is measurable. -/
@@ -170,16 +176,25 @@ def crossingEvent (z0 z1 : 𝒵) (j : Fin J) : Set P.Ω :=
 def crossingProb (z0 z1 : 𝒵) (j : Fin J) : ℝ :=
   (P.μ (S.crossingEvent z0 z1 j)).toReal
 
-private lemma measurable_intensityValue :
+/-- Reading an ordered treatment level as a real intensity is a measurable map on
+the finite level set. -/
+@[fun_prop]
+lemma measurable_intensityValue :
     Measurable (fun d : Fin (J + 1) => OrderedTreatment.intensityValue d) := by
   exact (by fun_prop : Measurable fun n : ℕ => (n : ℝ)).comp
     (by fun_prop : Measurable fun d : Fin (J + 1) => d.val)
 
-private lemma measurable_intensityValue_DofZ (z : 𝒵) :
+/-- The real intensity of the potential treatment at a fixed instrument value is a
+measurable function of the unit. -/
+@[fun_prop]
+lemma measurable_intensityValue_DofZ (z : 𝒵) :
     Measurable (fun ω => OrderedTreatment.intensityValue (S.DofZ z ω)) :=
   (measurable_intensityValue (J := J)).comp (S.measurable_DofZ z)
 
-private lemma integrable_intensityValue_DofZ (z : 𝒵) :
+/-- The real intensity of the potential treatment at a fixed instrument value is
+integrable, being a bounded measurable function under a finite measure. -/
+@[fun_prop]
+lemma integrable_intensityValue_DofZ (z : 𝒵) :
     Integrable (fun ω => OrderedTreatment.intensityValue (S.DofZ z ω)) P.μ := by
   have hbdd : ∀ ω,
       ‖OrderedTreatment.intensityValue (S.DofZ z ω)‖ ≤ (J : ℝ) := by
@@ -270,7 +285,17 @@ Equals `Y(d)` at `d = D(z)(ω)`.  No direct instrument effect enters because
 def YofDofZ (z : 𝒵) : P.Ω → ℝ :=
   fun ω => S.YofD (S.DofZ z ω) ω
 
-private lemma measurable_YofDofZ (z : 𝒵) :
+/-- The potential outcome under the treatment intensity that an instrument value induces sends
+a unit to that unit's potential outcome at the induced intensity. -/
+@[causal_defs_simps]
+lemma YofDofZ_def (z : 𝒵) :
+    S.YofDofZ z = fun ω => S.YofD (S.DofZ z ω) ω :=
+  rfl
+
+/-- The potential outcome under the instrument-induced treatment level is a
+measurable function of the unit. -/
+@[fun_prop]
+lemma measurable_YofDofZ (z : 𝒵) :
     Measurable (S.YofDofZ z) := by
   classical
   unfold YofDofZ

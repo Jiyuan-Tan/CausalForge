@@ -17,6 +17,7 @@ the constant simplifies accordingly.
 -/
 
 import Causalean.Estimation.ATT.Remainder.Identity
+import Causalean.Tactic.IntegralLinearity
 import Causalean.Stat.Limit.Convergence
 import Causalean.Stat.Orthogonality.ConditionalOp
 import Mathlib.MeasureTheory.Function.LpSpace.Basic
@@ -168,7 +169,7 @@ theorem aipw_remainder_bound_ATT
           rw [show bound = (fun x => aipw_rem_const_ATT ε * ‖de x * dμ x‖) by
             funext x
             simp [bound, Real.norm_eq_abs]]
-          rw [integral_const_mul]
+          integral_linearity
           simp [Real.norm_eq_abs]
     _ ≤ aipw_rem_const_ATT ε *
           ((eLpNorm dμ 2 S.P_X).toReal * (eLpNorm de 2 S.P_X).toReal) :=

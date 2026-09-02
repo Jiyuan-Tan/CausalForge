@@ -61,6 +61,10 @@ structure NetworkDependence (V Ω : Type*) [Fintype V] [DecidableEq V]
   indep : ∀ A B : Finset V, (∀ a ∈ A, ∀ b ∈ B, ¬ adj a b) →
     IndepFun (fun ω => fun k : A => X k ω) (fun ω => fun k : B => X k ω) μ
 
+-- The per-node measurability field is the leaf atom of every super-population side
+-- condition; registering it lets `fun_prop` reach it without naming the projection.
+attribute [fun_prop] NetworkDependence.meas
+
 namespace NetworkDependence
 
 variable (F : NetworkDependence V Ω μ)

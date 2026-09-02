@@ -285,12 +285,20 @@ function renderStatement(s: CoreStatement): string {
   if (s.proof_tex && s.proof_tex.trim()) {
     const proof = normalizeAuthoredLatex(s.proof_tex.trim());
     const shouldWrapProof = s.status === "proved";
+    // Legacy proof payloads often carry their own paragraph heading.  Once the
+    // renderer wraps such bytes in amsthm's list-based proof environment, that
+    // sectioning command leaves the trivlist without an item and TeX fails at
+    // `\\end{proof}`.  The environment already prints “Proof.”, so remove only
+    // this redundant leading heading while preserving every mathematical byte.
+    const proofBody = shouldWrapProof
+      ? proof.replace(/^\s*\\paragraph\{Proof\.\}\s*/, "")
+      : proof;
     // Anchor the already-wrapped test to the START: a long proof may open with
     // prose and contain a NESTED `\begin{proof}[Proof of Claim 1]` — detecting
     // that anywhere left the outer body unwrapped, running on as section text.
-    const renderedProof = !shouldWrapProof || /^\s*\\begin\{proof\}/.test(proof)
-      ? proof
-      : `\\begin{proof}\n${proof}\n\\end{proof}`;
+    const renderedProof = !shouldWrapProof || /^\s*\\begin\{proof\}/.test(proofBody)
+      ? proofBody
+      : `\\begin{proof}\n${proofBody}\n\\end{proof}`;
     // why: plain proof_tex after theorem text needs a LaTeX proof environment.
     lines.push(renderedProof);
   }

@@ -42,6 +42,7 @@ identity; `R₂` killed by empirical-process Markov + individual rates on the
 ATT score-difference L² rate; `R₃` lower-order arithmetic). -/
 
 import Causalean.Estimation.ATT.InfluenceFunction
+import Causalean.Tactic.IntegralLinearity
 import Causalean.Estimation.ATT.Remainder
 import Causalean.Estimation.ATT.Score.AIPWScoreL2
 import Causalean.Estimation.ATT.ATTInstance
@@ -175,15 +176,15 @@ theorem ψ_ATT_integral_zero
     rw [hsplit z]
   have hm0_integral :
       ∫ z, aipwMomentATT z S.μ₀_val S.e_val 0 ∂S.P_Z = S.θ₀ * S.π_val := by
-    rw [integral_congr_ae (Filter.Eventually.of_forall hsplit),
-      integral_add hm_int (hindA_int.mul_const S.θ₀), hmz, zero_add,
-      integral_mul_const, hindA_integral]
+    rw [integral_congr_ae (Filter.Eventually.of_forall hsplit)]
+    integral_linearity
+    rw [hmz, zero_add, hindA_integral]
     ring
   have hconst : ∫ _z : γ × Bool × ℝ, S.θ₀ ∂S.P_Z = S.θ₀ := by
     rw [integral_const]; simp
   unfold TreatedEstimationSystem.ψ_ATT
-  rw [integral_sub (hm0_int.const_mul (1 / S.π_val)) (integrable_const S.θ₀),
-    integral_const_mul, hm0_integral, hconst, one_div,
+  integral_linearity
+  rw [hm0_integral, hconst, one_div,
     mul_comm S.θ₀ S.π_val, inv_mul_cancel_left₀ hπ_ne, sub_self]
 
 /-- **Finite variance of the centered population-π ATT influence function.**

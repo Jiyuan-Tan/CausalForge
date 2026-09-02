@@ -128,6 +128,7 @@ lemma radialPolynomialEnergy_pos (p : ℕ) {v : Fin (p + 1) → ℝ}
 /-- The radial energy is a continuous quadratic function of its coefficient
 vector. -/
 -- @node: radialPolynomialEnergy_continuous
+@[fun_prop]
 lemma radialPolynomialEnergy_continuous (p : ℕ) :
     Continuous (radialPolynomialEnergy p) := by
   unfold radialPolynomialEnergy

@@ -160,11 +160,7 @@ theorem full_local_markov (M : Causalean.SCM N Ω)
   -- Step 1: identify jointKernel s with latentProduct.map (evalMap s).
   have hjk : M.jointKernel s = M.latentProduct.map (fun ℓ => M.evalMap s ℓ) :=
     M.jointKernel_apply_eq s
-  have hφ_meas : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by
-    have : (fun ℓ : M.LatentValues => M.evalMap s ℓ) =
-        fun ℓ => Function.uncurry M.evalMap (s, ℓ) := rfl
-    rw [this]
-    exact M.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+  have hφ_meas : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by fun_prop
   haveI : MeasureTheory.IsFiniteMeasure (M.latentProduct.map (fun ℓ => M.evalMap s ℓ)) :=
     hjk ▸ (inferInstance : MeasureTheory.IsFiniteMeasure (M.jointKernel s))
   -- Step 2: build the LatentValues-level CI via `condIndepFun_of_measurable_left`.
@@ -306,11 +302,7 @@ theorem full_local_markov_latent (M : Causalean.SCM N Ω)
   -- Step A: jointKernel s = latentProduct.map (evalMap s) and measurability of evalMap s.
   have hjk : M.jointKernel s = M.latentProduct.map (fun ℓ => M.evalMap s ℓ) :=
     M.jointKernel_apply_eq s
-  have hφ_meas : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by
-    have : (fun ℓ : M.LatentValues => M.evalMap s ℓ) =
-        fun ℓ => Function.uncurry M.evalMap (s, ℓ) := rfl
-    rw [this]
-    exact M.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+  have hφ_meas : Measurable (fun ℓ : M.LatentValues => M.evalMap s ℓ) := by fun_prop
   -- Step B: jointKernel s is a probability measure (pushforward of Measure.pi of probability
   -- measures is probability).
   haveI hP_joint : MeasureTheory.IsProbabilityMeasure (M.jointKernel s) := by

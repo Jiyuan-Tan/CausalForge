@@ -738,6 +738,7 @@ noncomputable def fixSetProj (M : Causalean.SCM N Ω) (X : Finset N)
   valuesProjection (fixSet_fixed_subset M X hObs hFix)
 
 /-- `fixSetProj` is measurable. -/
+@[fun_prop]
 theorem measurable_fixSetProj (M : Causalean.SCM N Ω) (X : Finset N)
     (hObs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)
     (hFix : ∀ D ∈ X, SWIGNode.fixed D ∉ M.fixed) :
@@ -767,6 +768,7 @@ noncomputable def fixSetZSlice
     (fixSet_image_fixed_subset (M.fixSet X hX_obs hX_fixed) Z hZ_obs hZ_fixed)
 
 /-- `fixSetZSlice` is measurable. -/
+@[fun_prop]
 theorem measurable_fixSetZSlice
     (M : Causalean.SCM N Ω) (X Z : Finset N)
     (hX_obs : ∀ D ∈ X, SWIGNode.random D ∈ M.observed)

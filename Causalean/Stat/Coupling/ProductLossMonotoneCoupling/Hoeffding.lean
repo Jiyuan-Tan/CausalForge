@@ -65,6 +65,7 @@ Proof: it is the difference of the integrable fibre `q ↦ ∫ Φ q p ∂π`
 (`integrable_fiber`) and the integrable tensor product
 `(SX - 𝟙{·<0}) ⊗ (SY - 𝟙{·<0})` (`Integrable.mul_prod`), by
 `fiber_sub_mean_prod`. -/
+@[fun_prop]
 theorem integrable_frechet_gap (h : IsCoupling π μ ν)
     (hμ : MemLp (fun x : ℝ => x) 2 μ) (hν : MemLp (fun y : ℝ => y) 2 ν) :
     Integrable (fun p : ℝ × ℝ => jointCdf π p.1 p.2 - cdf μ p.1 * cdf ν p.2)

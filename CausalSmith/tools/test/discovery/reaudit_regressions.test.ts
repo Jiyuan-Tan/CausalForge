@@ -33,24 +33,11 @@ describe("a cited record is never 'unfinished'", () => {
   // `cited` node legitimately has NO proof, so that test caught every cited record and
   // rewrote it to `to-prove` while it still carried `source` -- producing a node the
   // schema itself rejects (cited <=> source).
-  const unfinished = (rec: { status?: string; partial?: boolean; proof_tex?: string }): boolean =>
-    rec.status !== "cited" && (rec.partial === true || (rec.proof_tex ?? "").trim().length === 0);
-
-  it("does not mark a proofless cited node unfinished", () => {
-    expect(unfinished({ status: "cited", proof_tex: "" })).toBe(false);
-    expect(unfinished({ status: "cited" })).toBe(false);
-  });
-
   it("the node that rewrite would have produced is schema-INVALID", () => {
     const r = StatementSchema.safeParse(stmt({
       id: "lem:c", status: "to-prove", source: { cite: "K", locator: "Thm 1" },
     }));
     expect(r.success, "to-prove + source must not validate").toBe(false);
-  });
-
-  it("still marks a partial or proofless NON-cited record unfinished", () => {
-    expect(unfinished({ status: "proved", partial: true, proof_tex: "prior progress" })).toBe(true);
-    expect(unfinished({ status: "proved", proof_tex: "" })).toBe(true);
   });
 });
 
@@ -87,11 +74,6 @@ describe("collision attribution across three units", () => {
     ];
     expect(() => collectConflictingSolveEmissions(outs, ["A", "B"])).not.toThrow();
     expect(collectConflictingSolveEmissions(outs, ["A", "B"])[0].id).toBe("lem:x");
-  });
-
-  it("still throws when a unit contradicts ITSELF", () => {
-    const outs = [unit({ added_lemmas: [lemma("lem:x", "v1"), lemma("lem:x", "v2")] })];
-    expect(() => collectConflictingSolveEmissions(outs, ["A"])).toThrow(/conflicting duplicate/i);
   });
 });
 

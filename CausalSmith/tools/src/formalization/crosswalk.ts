@@ -257,7 +257,7 @@ export async function buildCompleteCrosswalkFromGraph(graph: FormalizationGraph,
     const verdict: CrosswalkVerdict =
       n.review?.status === "drift"
         ? "drift"
-        : (n.review?.status === "matched" || n.review?.status === "derived") && lean != null
+        : n.review?.status === "matched" && lean != null
           ? "equivalent"
           : "unmatched";
     out.push({

@@ -209,6 +209,7 @@ import Causalean.Mathlib.MeasureTheory.AnalyticSetUniversalMeasurability
 import Causalean.Mathlib.MeasureTheory.AnalyticSetUniversalMeasurability.Capacity
 import Causalean.Mathlib.MeasureTheory.AnalyticSetUniversalMeasurability.UniversalMeasurability
 import Causalean.Mathlib.MeasureTheory.AnalyticSetUniversalMeasurability.UpperSemianalytic
+import Causalean.Mathlib.MeasureTheory.CondExpLinearity
 import Causalean.Mathlib.MeasureTheory.FiniteAtomicMeasure
 import Causalean.Mathlib.MeasureTheory.FinsetValues
 import Causalean.Mathlib.MeasureTheory.IntegralBind
@@ -521,6 +522,12 @@ import Causalean.Stat.EmpiricalProcess.Equicontinuity.SecondMoment
 import Causalean.Stat.EmpiricalProcess.Equicontinuity.StochEquicont
 import Causalean.Stat.EmpiricalProcess.GlivenkoCantelli
 import Causalean.Stat.EmpiricalProcess.MEstimatorConsistency
+import Causalean.Stat.FiniteRaoBlackwell.Core
+import Causalean.Stat.FiniteRaoBlackwell.DesignPushforward
+import Causalean.Stat.FiniteRaoBlackwell.KernelBridge
+import Causalean.Stat.FiniteRaoBlackwell.Posterior
+import Causalean.Stat.FiniteRaoBlackwell.RaoBlackwell
+import Causalean.Stat.FiniteRaoBlackwell.Sufficiency
 import Causalean.Stat.GMM.AsymptoticNormality
 import Causalean.Stat.GMM.OverID
 import Causalean.Stat.GMM.Setup
@@ -532,6 +539,11 @@ import Causalean.Stat.Inference.HadamardDeriv
 import Causalean.Stat.Inference.RatioDeltaMethod
 import Causalean.Stat.Inference.VarianceEstimation
 import Causalean.Stat.Limit.Convergence
+import Causalean.Stat.Limit.ObservationDependentVanTrees.Basic
+import Causalean.Stat.Limit.ObservationDependentVanTrees.GuardedInformation
+import Causalean.Stat.Limit.ObservationDependentVanTrees.IntegrationByParts
+import Causalean.Stat.Limit.ObservationDependentVanTrees.Main
+import Causalean.Stat.Limit.ObservationDependentVanTrees.WeightedL2
 import Causalean.Stat.Limit.SequentialCumulativeRisk
 import Causalean.Stat.Limit.VanTreesInequality
 import Causalean.Stat.MEstimation.ArgmaxStability
@@ -547,6 +559,12 @@ import Causalean.Stat.Minimax.ChiSquared
 import Causalean.Stat.Minimax.ChiSquaredFinite
 import Causalean.Stat.Minimax.CoordinatewiseOverlap
 import Causalean.Stat.Minimax.Fano
+import Causalean.Stat.Minimax.FiniteKernelBayes
+import Causalean.Stat.Minimax.FinitePosteriorBayesRisk
+import Causalean.Stat.Minimax.FiniteSquaredLoss.Core
+import Causalean.Stat.Minimax.FiniteSquaredLoss.Mixing
+import Causalean.Stat.Minimax.FiniteSquaredLoss.PosteriorBarycenter
+import Causalean.Stat.Minimax.FiniteSquaredLoss.Saddle
 import Causalean.Stat.Minimax.HellingerAffinity
 import Causalean.Stat.Minimax.HonestConfidenceSet
 import Causalean.Stat.Minimax.LeCam
@@ -623,6 +641,11 @@ import Causalean.Stat.UStatistic
 import Causalean.Stat.UStatistic.OrderM.MixedOrderBounds
 import Causalean.Stat.UStatistic.OrderM.MixedOrderCovariance
 import Causalean.Stat.UStatistic.OrderM.PartialMatching
+import Causalean.Tactic.Attr
+import Causalean.Tactic.CondexpLinearity
+import Causalean.Tactic.IndicatorSimps
+import Causalean.Tactic.IntegralLinearity
+import Causalean.Tactic.SumAlgebraSimps
 -- Structure-agnostic ATE optimality (Jin–Syrgkanis 2024): single roll-up entry point.
 -- See `Estimation/MinimaxATE.lean` for the headline-theorem index.
 -- CausalSmith research catalogue moved to the sibling package `CausalSmith/`. The umbrella

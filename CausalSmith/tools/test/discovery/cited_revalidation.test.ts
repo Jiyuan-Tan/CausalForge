@@ -25,7 +25,10 @@ import path from "node:path";
 import { runStage0Solve } from "../../src/discovery/stages/d0_solve.js";
 import { protoCoreJsonPath } from "../../src/discovery/stages/neg1_2_author.js";
 import { coreJsonPath } from "../../src/discovery/stages/d0_core.js";
-import { appendEscalationLog, workingPath } from "../../src/discovery/stages/d0_working.js";
+import {
+  appendEscalationLog, loadWorkingState, workingPath,
+} from "../../src/discovery/stages/d0_working.js";
+import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
 import { promptPath } from "../../src/paths.js";
 import type { PipelineContext, StateJson } from "../../src/types.js";
 import type { StageDeps } from "../../src/pipeline_support.js";
@@ -39,6 +42,7 @@ const FROZEN_COMPARATOR = {
   kind: "lemma",
   statement: "the narrowed comparator claim",
   depends_on: [],
+  free_symbols: [],
   status: "cited",
   source: {
     cite: "Rosenbaum1983",
@@ -225,6 +229,64 @@ describe("reopened FROZEN cited leaf", () => {
     const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
     expect(core.statements.find((s: { id: string }) => s.id === FROZEN_COMPARATOR.id)?.source)
       .toMatchObject({ locator: "Theorem 2" });
+  }, 30000);
+
+  it("consumes a reviewed cited receipt only against the selected symbol postimage", async () => {
+    const ctx = makeCtx();
+    const r1 = await runStage0Solve({ ctx, state: makeState(), deps: solveDeps([FROZEN_COMPARATOR]) });
+    expect((r1 as { status?: string }).status).not.toBe("checkpoint");
+    await appendEscalationLog(ctx, {
+      round: 2,
+      changed: [],
+      directive: "revalidate the cited comparator under the corrected tau symbol basis",
+      required_core_targets: ["thm:main", FROZEN_COMPARATOR.id, "sym:tau", "sym:tau_aux"],
+    });
+    const reviewedMainProof = "Reviewed proof under the corrected tau symbol and cited comparator.";
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const segment = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]")
+          .split("SOLVE_OUTPUT_PATH")[0];
+        const targets = segment.includes("[")
+          ? JSON.parse(segment.slice(segment.indexOf("["), segment.lastIndexOf("]") + 1)) as Array<{ id: string }>
+          : [];
+        const targetIds = new Set(targets.map((target) => target.id));
+        const ownsBundle = targetIds.has("thm:main") || targetIds.has(FROZEN_COMPARATOR.id);
+        await writeFile(outPath, JSON.stringify({
+          proofs: targetIds.has("thm:main")
+            ? [{ id: "thm:main", proof_tex: reviewedMainProof }]
+            : [],
+          added_lemmas: ownsBundle ? [FROZEN_COMPARATOR] : [],
+          proposed_core_edits: ownsBundle ? [{
+            kind: "symbol-replace", name: "tau",
+            proposed: { ...PROTO.symbols[0], def: "E[Y(1)-Y(0)] under the corrected semantic basis" },
+            reason: "correct the symbol basis", direction: "correct",
+          }, {
+            kind: "symbol-add", name: "tau_aux",
+            proposed: { name: "tau_aux", type: "real", def: "an auxiliary scalar" },
+            reason: "declare the reviewed auxiliary symbol", direction: "correct",
+          }] : [],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+    const checkpoint = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect((checkpoint as { status?: string }).status).toBe("checkpoint");
+    const carrier = await loadWorkingState(ctx);
+    expect(carrier?.proposals?.citationRevalidations).toEqual([FROZEN_COMPARATOR]);
+    expect(carrier?.proposals?.proofs).toContainEqual(
+      expect.objectContaining({ id: "thm:main", proof_tex: reviewedMainProof }),
+    );
+    await expect(applyProposedChanges({ ctx, ids: new Set(["sym:tau"]), checkOnly: true }))
+      .rejects.toThrow(/cited-source revalidation receipts.*complete coherence closure/i);
+    await expect(applyProposedChanges({ ctx, checkOnly: true })).resolves.toHaveLength(2);
+    await applyProposedChanges({ ctx });
+    const applied = await loadWorkingState(ctx);
+    expect(applied?.solved[FROZEN_COMPARATOR.id]?.partial).toBeUndefined();
+    expect(applied?.solved["thm:main"]?.partial).toBeUndefined();
+    expect(applied?.solved["thm:main"]?.proof_tex).toBe(reviewedMainProof);
   }, 30000);
 });
 

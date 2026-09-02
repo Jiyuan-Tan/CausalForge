@@ -56,10 +56,10 @@ export function graphCrosswalk(graph: FormalizationGraph): CrosswalkEntry[] {
       verdict: isUndeliveredNode(n)
         ? "unmatched"
         : isCitedNode(n)
-        ? n.review?.status === "matched" || n.review?.status === "derived"
+        ? n.review?.status === "matched"
           ? "cited"
           : "cited-unverified"
-        : n.review?.status === "matched" || n.review?.status === "derived"
+        : n.review?.status === "matched"
           ? "equivalent"
           : "unmatched",
     }));

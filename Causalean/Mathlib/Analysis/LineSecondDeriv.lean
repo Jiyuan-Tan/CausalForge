@@ -84,6 +84,7 @@ lemma deriv_deriv_line {f : E → ℝ} (hf : ContDiff ℝ 2 f) (q d : E) (t : �
 
 /-- **The curvature modulus is continuous in the base point.** Hence bounded on any compact
 set, which supplies the `BddAbove` hypothesis of `le_ciSup`. -/
+@[fun_prop]
 lemma continuous_secondDirDeriv {f : E → ℝ} (hf : ContDiff ℝ 2 f) (d : E) :
     Continuous (secondDirDeriv f d) := by
   exact (ContinuousLinearMap.apply ℝ ℝ d).continuous.comp

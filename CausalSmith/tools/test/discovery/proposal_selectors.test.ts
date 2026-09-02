@@ -71,10 +71,7 @@ async function seedProposals(
   );
 }
 
-/** The collision this whole feature exists for: ONE round proposing a claim change
- *  AND a metadata-only `statement-replace` on the SAME node. The core edit echoes
- *  the CURRENT statement/status byte-for-byte, carries no proof text, and puts the
- *  real payload in `depends_on`. */
+/** A current-contract claim correction paired with its complete post-image. */
 async function seedCollidingProposals(ctx: PipelineContext): Promise<void> {
   await seedProposals(ctx, {
     statements: [
@@ -93,7 +90,7 @@ async function seedCollidingProposals(ctx: PipelineContext): Promise<void> {
         proposed: {
           id: "thm:main",
           kind: "theorem",
-          statement: "tau is identified",
+          statement: "tau is identified on the overlap region",
           depends_on: ["ass:overlap", "def:env"],
           status: "to-prove",
           justification: "core ID",
@@ -201,38 +198,26 @@ describe("validateProposalSelectors", () => {
 });
 
 describe("applyProposedChanges with a kind-qualified selector", () => {
-  it("applies ONLY the claim change when the round also proposes a core edit on that node", async () => {
+  it("rejects selecting only the claim half of a correction pair", async () => {
     const ctx = makeCtx(repoRoot);
     await seedCollidingProposals(ctx);
 
-    const changed = await applyProposedChanges({
+    await expect(applyProposedChanges({
       ctx,
       ids: parseProposalSelectors(["statement:thm:main"]),
       note: "accept the narrowing, defer the rewiring",
-    });
-
-    expect(changed).toHaveLength(1);
-    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
-    const thm = proto.statements.find((s: { id: string }) => s.id === "thm:main");
-    expect(thm.statement).toBe("tau is identified on the overlap region");
-    expect(thm.depends_on).toEqual(["ass:overlap"]); // the core edit was NOT applied
+    })).rejects.toThrow(/selected atomically/i);
   });
 
-  it("applies ONLY the core edit under the complementary selector", async () => {
+  it("rejects selecting only the metadata half of a correction pair", async () => {
     const ctx = makeCtx(repoRoot);
     await seedCollidingProposals(ctx);
 
-    const changed = await applyProposedChanges({
+    await expect(applyProposedChanges({
       ctx,
       ids: parseProposalSelectors(["core-edit:thm:main"]),
       note: "accept the rewiring, defer the narrowing",
-    });
-
-    expect(changed).toHaveLength(1);
-    const proto = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
-    const thm = proto.statements.find((s: { id: string }) => s.id === "thm:main");
-    expect(thm.depends_on).toEqual(["ass:overlap", "def:env"]);
-    expect(thm.statement).toBe("tau is identified"); // the claim change was NOT applied
+    })).rejects.toThrow(/selected atomically/i);
   });
 
   // A cited node's empty durable proof remains authoritative when metadata is replaced.
@@ -311,7 +296,9 @@ describe("applyProposedChanges with a kind-qualified selector", () => {
             node: { id: "lem:dep", kind: "lemma", statement: "A dependency.", depends_on: [], status: "proved", proof_tex: "Dep proof." },
           },
           "lem:rewired": {
-            proof_tex: "Old proof citing nothing.",
+            // Merge has already banked the reviewed provisional bytes as the hot
+            // partial; apply verifies exact equality instead of copying from proposals.
+            proof_tex: "New proof, via lem:dep.",
             partial: true,
             snapshot: { stmt: "A rewired claim.", depends_on: [], defs: {}, assumptions: {} },
             node: { id: "lem:rewired", kind: "lemma", statement: "A rewired claim.", depends_on: [], status: "to-prove" },
@@ -362,13 +349,14 @@ describe("applyProposedChanges with a kind-qualified selector", () => {
     const ctx = makeCtx(repoRoot);
     await seedRewiringWithPairedProof(ctx, { depValid: false }); // lem:dep is partial
 
-    await applyProposedChanges({ ctx, ids: new Set(["lem:rewired"]), note: "rewire onto a stale dep" });
+    await expect(applyProposedChanges({
+      ctx, ids: new Set(["lem:rewired"]), note: "rewire onto a stale dep",
+    })).rejects.toThrow(/did not reach a complete exact postimage/);
 
     const working = JSON.parse(await readFile(workingPath(ctx), "utf8"));
     const rec = working.solved["lem:rewired"];
-    expect(rec.node.depends_on).toEqual(["lem:dep"]); // the rewiring still lands
-    expect(rec.partial).toBe(true); // but the proof is NOT certified against a stale closure
-    expect(rec.node.status).toBe("to-prove");
+    expect(rec.node.depends_on).toEqual([]); // the transaction is atomic
+    expect(rec.partial).toBe(true);
   });
 
   it("a BARE id still selects both, so existing call sites are unaffected", async () => {

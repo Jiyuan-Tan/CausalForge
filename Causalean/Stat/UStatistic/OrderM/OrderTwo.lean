@@ -434,7 +434,7 @@ theorem uStatistic_clt_of_symmetric_via_orderM
     simpa [hψ_bridge] using (hproj_meas.const_mul 2)
   have hψ_mean' : ∫ x, uInfluenceOrder (pairKernel h) P x ∂P = 0 := by
     rw [hψ_bridge]
-    rw [integral_const_mul]
+    integral_linearity
     rw [uProj_integral_eq_zero hint, mul_zero]
   have hψ_sq' : Integrable (fun x => (uInfluenceOrder (pairKernel h) P x) ^ 2) P := by
     have hscaled : Integrable (fun x => (4 : ℝ) * (uProj h P x) ^ 2) P :=

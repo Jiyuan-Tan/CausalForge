@@ -8,7 +8,10 @@
 
 import { describe, it, expect } from "vitest";
 import { applyProposedChanges } from "../../src/discovery/stages/d0_apply.js";
-import { saveWorkingState } from "../../src/discovery/stages/d0_working.js";
+import { loadWorkingState, saveWorkingState } from "../../src/discovery/stages/d0_working.js";
+import { coreRevision, definitionRevision, statementRevision } from "../../src/discovery/core/revision.js";
+import { assembleCore } from "../../src/discovery/core/assemble.js";
+import { CoreSchema } from "../../src/discovery/core/schema.js";
 import { createDStageHarness } from "./d_stage_harness.js";
 
 const PROTO = {
@@ -27,10 +30,37 @@ const PROTO = {
 async function applyWith(proposals: Record<string, unknown>): Promise<{ ok: boolean; err: string }> {
   const h = await createDStageHarness({ qid: "stat_stale", specialization: "v1", proto: PROTO });
   try {
+    const proto = await h.readProto();
+    const definitions = (proposals.definitions ?? []) as Array<Record<string, any>>;
+    const statements = (proposals.statements ?? []) as Array<Record<string, any>>;
+    const revision = definitionRevision(proto.definitions[0], proto);
+    const statementRev = statementRevision(proto.statements[0]);
+    const pairedDefinitions = definitions.map((change) => ({ ...change, based_on_revision: revision }));
+    const pairedStatements = statements.map((change) => ({ ...change, based_on_revision: statementRev }));
+    const pairedCoreEdits = definitions.map((change) => ({
+      kind: "definition-replace", id: change.id, based_on_revision: revision,
+      proposed: { ...proto.definitions[0], construction: change.proposed, free_symbols: [] },
+      reason: "complete post-image", direction: "correct",
+    }));
+    const pairedStatementEdits = statements.map((change) => ({
+      kind: "statement-replace", id: change.id, based_on_revision: statementRev,
+      proposed: { ...proto.statements[0], statement: change.proposed },
+      reason: "complete statement post-image", direction: "correct",
+    }));
     await saveWorkingState(h.ctx(), {
       round: 1, solved: {}, resolved_oeqs: {},
-      proposals: { statements: [], definitions: [], assumptions: [], coreEdits: [], proofs: [], ...proposals },
+      proposals: {
+        assumptions: [], proofs: [], ...proposals,
+        statements: pairedStatements,
+        definitions: pairedDefinitions,
+        coreEdits: [...pairedCoreEdits, ...pairedStatementEdits, ...((proposals.coreEdits ?? []) as unknown[])],
+      },
     } as never);
+    if (definitions.length > 0) {
+      const working = await loadWorkingState(h.ctx());
+      working!.proposals!.basis_revision = coreRevision(CoreSchema.parse(assembleCore(proto, working!)));
+      await saveWorkingState(h.ctx(), working!);
+    }
     try {
       await applyProposedChanges({ ctx: h.ctx() });
       return { ok: true, err: "" };
@@ -93,10 +123,14 @@ describe("a stale proposal must not silently overwrite a moved node", () => {
             id: "thm:main", current: canonical, proposed: `${canonical} Narrowed.`,
             reason: "repair", direction: "narrow",
           }],
-          definitions: [], assumptions: [], coreEdits: [], proofs: [],
+          definitions: [], assumptions: [], coreEdits: [{
+            kind: "statement-replace", id: "thm:main",
+            proposed: { ...(await h.readProto()).statements[0], statement: `${canonical} Narrowed.` },
+            reason: "complete statement post-image", direction: "correct",
+          }], proofs: [],
         },
       } as never);
-      await expect(applyProposedChanges({ ctx: h.ctx() })).resolves.toHaveLength(1);
+      await expect(applyProposedChanges({ ctx: h.ctx() })).resolves.toHaveLength(2);
     } finally {
       await h.dispose();
     }

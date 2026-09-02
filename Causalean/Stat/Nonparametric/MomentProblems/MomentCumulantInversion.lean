@@ -216,6 +216,7 @@ theorem momFromCum_congr {c c' : ℕ → ℝ} (r : ℕ)
 moment of that order is a continuous function of the prescribed cumulant
 sequence](goal), so small perturbations of the target cumulants move the moments only
 slightly — the key to the openness arguments that use this inversion. -/
+@[fun_prop]
 theorem continuous_momFromCum (r : ℕ) :
     Continuous (fun c : ℕ → ℝ => momFromCum c r) := by
   induction r using Nat.strong_induction_on with

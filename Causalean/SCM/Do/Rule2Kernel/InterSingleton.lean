@@ -88,26 +88,21 @@ theorem obsKernel_inter_singleton_Zrand_eq
   let c := M'.fillZrW Z hZ_obs hZ_fixed W s' w
   -- Measurability bookkeeping.
   have h_sing : MeasurableSet ({c} : Set _) := measurableSet_singleton _
-  have hπ_M1 : Measurable (valuesProjection hZrW : M1.ObservedValues → _) :=
-    measurable_valuesProjection _
-  have hπ_M2 : Measurable (valuesProjection hZrW_M2 : M2.ObservedValues → _) :=
-    measurable_valuesProjection _
+  have hπ_M1 : Measurable (valuesProjection hZrW : M1.ObservedValues → _) := by fun_prop
+  have hπ_M2 : Measurable (valuesProjection hZrW_M2 : M2.ObservedValues → _) := by fun_prop
   have h_pre_M1 : MeasurableSet ((valuesProjection hZrW)⁻¹' {c}) := hπ_M1 h_sing
   have h_pre_M2 : MeasurableSet ((valuesProjection hZrW_M2)⁻¹' {c}) := hπ_M2 h_sing
   have hI_M1 : MeasurableSet (S ∩ (valuesProjection hZrW)⁻¹' {c}) :=
     hS.inter h_pre_M1
   have hI_M2 : MeasurableSet (S ∩ (valuesProjection hZrW_M2)⁻¹' {c}) :=
     hS.inter h_pre_M2
-  have hRTO_M2 : Measurable M2.randomToObserved := M2.measurable_randomToObserved
-  have hRTO_M1 : Measurable M1.randomToObserved := M1.measurable_randomToObserved
-  have hf_M1 : Measurable (fun ℓ : M1.LatentValues => M1.evalMap s_M1 ℓ) :=
-    M1.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
-  have hf_M2 : Measurable (fun ℓ : M2.LatentValues => M2.evalMap s' ℓ) :=
-    M2.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+  have hRTO_M2 : Measurable M2.randomToObserved := by fun_prop
+  have hRTO_M1 : Measurable M1.randomToObserved := by fun_prop
+  have hf_M1 : Measurable (fun ℓ : M1.LatentValues => M1.evalMap s_M1 ℓ) := by fun_prop
+  have hf_M2 : Measurable (fun ℓ : M2.LatentValues => M2.evalMap s' ℓ) := by fun_prop
   have hcast : Measurable (valuesProjection
       (le_of_eq (fixSet_unobserved M1 Z hZ_obs hZ_fixed).symm)
-      : M2.LatentValues → M1.LatentValues) :=
-    measurable_valuesProjection _
+      : M2.LatentValues → M1.LatentValues) := by fun_prop
   -- LHS: unfold obsKernel → jointKernel → latentProduct.map evalMap.
   unfold obsKernel
   rw [ProbabilityTheory.Kernel.map_apply _
@@ -150,13 +145,10 @@ theorem obsKernel_inter_singleton_Zrand_eq
       jointKernel_apply_eq M' (M'.fixSetProj Z hZ_obs hZ_fixed s')]
   have hf_M2_exp : Measurable
       (fun ℓ : (M'.fixSet Z hZ_obs hZ_fixed).LatentValues =>
-        (M'.fixSet Z hZ_obs hZ_fixed).evalMap s' ℓ) := by
-    exact (M'.fixSet Z hZ_obs hZ_fixed).evalMap_measurable.comp
-      (Measurable.prodMk measurable_const measurable_id)
+        (M'.fixSet Z hZ_obs hZ_fixed).evalMap s' ℓ) := by fun_prop
   have hf_M1_exp : Measurable
       (fun ℓ : M'.LatentValues =>
-        M'.evalMap (M'.fixSetProj Z hZ_obs hZ_fixed s') ℓ) := by
-    exact M'.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
+        M'.evalMap (M'.fixSetProj Z hZ_obs hZ_fixed s') ℓ) := by fun_prop
   have hpre_M2 : MeasurableSet
       ((M'.fixSet Z hZ_obs hZ_fixed).randomToObserved ⁻¹'
         (S ∩ (valuesProjection
@@ -385,16 +377,13 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
   let s_M1 : M1.FixedValues := M1.fixSetProj Z hZ_obs hZ_fixed s'
   let F := M'.fillZrW Z hZ_obs hZ_fixed W s'
   -- Measurability bookkeeping for the image preimage.
-  have hF_meas : Measurable F :=
-    M'.measurable_fillZrW Z hZ_obs hZ_fixed W s'
+  have hF_meas : Measurable F := by fun_prop
   -- The image `F '' A` has the explicit form
   --     `{c | π_W^C c ∈ A ∧ π_Zr^C c = ζ_s}`
   -- which is measurable.  Use this to deduce the cylinder
   -- `π_C⁻¹ (F '' A)` is measurable.
-  have hπ_M1 : Measurable (valuesProjection hZrW : M1.ObservedValues → _) :=
-    measurable_valuesProjection _
-  have hπ_M2 : Measurable (valuesProjection hZrW_M2 : M2.ObservedValues → _) :=
-    measurable_valuesProjection _
+  have hπ_M1 : Measurable (valuesProjection hZrW : M1.ObservedValues → _) := by fun_prop
+  have hπ_M2 : Measurable (valuesProjection hZrW_M2 : M2.ObservedValues → _) := by fun_prop
   -- Helper: the Zr-singleton `{ζ_s}` is measurable in
   -- `ValuesOn (Z.image .random) (swigΩ Ω)` provided we have a witness
   -- `w₀ : ValuesOn W (swigΩ Ω)`.  We isolate this as a parameterized lemma.
@@ -410,21 +399,7 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
     intro w₀
     have hmeas : Measurable
         (fun ζ : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) =>
-          valuesUnionMk ζ w₀) := by
-      refine measurable_pi_iff.mpr ?_
-      rintro ⟨v, hv⟩
-      by_cases hvZ : v ∈ Z.image SWIGNode.random
-      · have h_eq : (fun ζ : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) =>
-            valuesUnionMk ζ w₀ ⟨v, hv⟩) = (fun ζ => ζ ⟨v, hvZ⟩) :=
-          funext fun _ => valuesUnionMk_apply_left _ _ hvZ
-        rw [h_eq]
-        exact measurable_pi_apply _
-      · have hvW : v ∈ W := (Finset.mem_union.mp hv).resolve_left hvZ
-        have h_eq : (fun ζ : ValuesOn (Z.image SWIGNode.random) (swigΩ Ω) =>
-            valuesUnionMk ζ w₀ ⟨v, hv⟩) = (fun _ => w₀ ⟨v, hvW⟩) :=
-          funext fun _ => valuesUnionMk_apply_right _ _ hv hvZ
-        rw [h_eq]
-        exact measurable_const
+          valuesUnionMk ζ w₀) := by fun_prop
     have h_pre : ({ζ_s} : Set (ValuesOn (Z.image SWIGNode.random) (swigΩ Ω))) =
         (fun ζ => valuesUnionMk ζ w₀)⁻¹' ({valuesUnionMk ζ_s w₀} :
           Set (ValuesOn (Z.image SWIGNode.random ∪ W) (swigΩ Ω))) := by
@@ -553,16 +528,12 @@ theorem obsKernel_inter_Wset_Zrand_levelset_eq
       jointKernel_apply_eq M' (M'.fixSetProj Z hZ_obs hZ_fixed s')]
   have hf_M2_exp : Measurable
       (fun ℓ : (M'.fixSet Z hZ_obs hZ_fixed).LatentValues =>
-        (M'.fixSet Z hZ_obs hZ_fixed).evalMap s' ℓ) :=
-    (M'.fixSet Z hZ_obs hZ_fixed).evalMap_measurable.comp
-      (Measurable.prodMk measurable_const measurable_id)
+        (M'.fixSet Z hZ_obs hZ_fixed).evalMap s' ℓ) := by fun_prop
   have hf_M1_exp : Measurable
       (fun ℓ : M'.LatentValues =>
-        M'.evalMap (M'.fixSetProj Z hZ_obs hZ_fixed s') ℓ) :=
-    M'.evalMap_measurable.comp (Measurable.prodMk measurable_const measurable_id)
-  have hRTO_2 : Measurable (M'.fixSet Z hZ_obs hZ_fixed).randomToObserved :=
-    (M'.fixSet Z hZ_obs hZ_fixed).measurable_randomToObserved
-  have hRTO_1 : Measurable M'.randomToObserved := M'.measurable_randomToObserved
+        M'.evalMap (M'.fixSetProj Z hZ_obs hZ_fixed s') ℓ) := by fun_prop
+  have hRTO_2 : Measurable (M'.fixSet Z hZ_obs hZ_fixed).randomToObserved := by fun_prop
+  have hRTO_1 : Measurable M'.randomToObserved := by fun_prop
   have hpre_M2 : MeasurableSet
       ((M'.fixSet Z hZ_obs hZ_fixed).randomToObserved ⁻¹'
         (S ∩ (valuesProjection
@@ -720,10 +691,8 @@ theorem obsKernel_disintegrate_rect
       = ∫⁻ c in D, M.obsCondKernel Y CC hY hCC (s, c) B
                     ∂((M.obsKernel s).map (valuesProjection hCC)) := by
   classical
-  have hπCC : Measurable (valuesProjection (Ω := swigΩ Ω) hCC) :=
-    measurable_valuesProjection _
-  have hπY : Measurable (valuesProjection (Ω := swigΩ Ω) hY) :=
-    measurable_valuesProjection _
+  have hπCC : Measurable (valuesProjection (Ω := swigΩ Ω) hCC) := by fun_prop
+  have hπY : Measurable (valuesProjection (Ω := swigΩ Ω) hY) := by fun_prop
   -- κ := obsCondPairKernel.
   set κ : ProbabilityTheory.Kernel M.FixedValues
         (ValuesOn CC (swigΩ Ω) × ValuesOn Y (swigΩ Ω)) :=

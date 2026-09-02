@@ -79,20 +79,25 @@ noncomputable def factualY₁ : P.Ω → ℝ := S.y1Var.factual
 def dEvent (d : Bool) : Set P.Ω := S.dVar.event d
 
 /-- The pre-period potential outcome under a fixed treatment arm is measurable. -/
+@[fun_prop]
 lemma measurable_Y0ofD (d : Bool) : Measurable (S.Y0ofD d) :=
   S.y0Var.measurable_cfUnder S.dVar d
 
 /-- The post-period potential outcome under a fixed treatment arm is measurable. -/
+@[fun_prop]
 lemma measurable_Y1ofD (d : Bool) : Measurable (S.Y1ofD d) :=
   S.y1Var.measurable_cfUnder S.dVar d
 
 /-- The observed treatment is measurable. -/
+@[fun_prop]
 lemma measurable_factualD : Measurable S.factualD := S.dVar.measurable_factual
 
 /-- The observed pre-period outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY₀ : Measurable S.factualY₀ := S.y0Var.measurable_factual
 
 /-- The observed post-period outcome is measurable. -/
+@[fun_prop]
 lemma measurable_factualY₁ : Measurable S.factualY₁ := S.y1Var.measurable_factual
 
 /-- Each observed treatment-arm event is measurable. -/

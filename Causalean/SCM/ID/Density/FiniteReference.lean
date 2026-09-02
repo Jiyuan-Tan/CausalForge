@@ -130,6 +130,7 @@ lemma absolutelyContinuous_jointRef_of_faithful [∀ n, MeasurableSingletonClass
 measure `ρ` on `β`](hyp:ρ), and [a Markov kernel `κ` from `α` to `β`](hyp:κ), [the fibre
 Radon-Nikodym derivative selector `(κ p.1).rnDeriv ρ p.2` is almost-everywhere measurable with
 respect to `μ`](goal). -/
+@[fun_prop]
 lemma aemeasurable_fiber_rnDeriv_of_finite
     {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
     [Finite α] [Finite β] [MeasurableSingletonClass α] [MeasurableSingletonClass β]

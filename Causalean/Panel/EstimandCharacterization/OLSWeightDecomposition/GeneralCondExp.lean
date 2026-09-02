@@ -48,6 +48,7 @@ general, not less faithful.
 
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic
+import Causalean.Tactic.CondexpLinearity
 /-! # Słoczyński General Conditional Expectation
 
 This file proves the continuous-covariate saturated ordinary least squares
@@ -72,14 +73,7 @@ variable {Ω : Type*} {m mΩ : MeasurableSpace Ω} (μ : Measure Ω) [IsFiniteMe
 sub-σ-algebra, equals one minus that variable's conditional expectation almost surely. -/
 lemma condExp_one_sub (hm : m ≤ mΩ) {D : Ω → ℝ} (hD_int : Integrable D μ) :
     μ[(fun ω => 1 - D ω) | m] =ᵐ[μ] fun ω => 1 - (μ[D | m]) ω := by
-  have hone : (fun ω : Ω => 1 - D ω) = (fun _ : Ω => (1 : ℝ)) - D := by
-    funext ω; simp [Pi.sub_apply]
-  rw [hone]
-  have hsub := condExp_sub (μ := μ) (integrable_const (1 : ℝ)) hD_int m
-  refine hsub.trans ?_
-  have hc : μ[(fun _ : Ω => (1 : ℝ)) | m] = fun _ => (1 : ℝ) := condExp_const hm (1 : ℝ)
-  filter_upwards [] with ω
-  simp [Pi.sub_apply, hc]
+  condexp_linearity
 
 /-- A real-valued variable that is zero or one almost surely has conditional expectation,
 given a sub-σ-algebra, between zero and one almost surely. -/

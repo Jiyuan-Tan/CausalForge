@@ -19,6 +19,7 @@ of covariance, the variance of a finite linear combination, and the indicator fa
 `E[1_A] = Pr A`, `Var[1_A] = π(1−π)`, `Cov[1_A, 1_B] = Pr(A∩B) − Pr A · Pr B`.
 -/
 
+import Causalean.Tactic.Attr
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -231,7 +232,8 @@ lemma Var_linear_comb {ι : Type*} (s : Finset ι) (c : ι → ℝ) (X : ι → 
 
 /-- **Expectation of an indicator.** For [any event `A`](hyp:A), [the design expectation of
 its indicator equals the design probability of `A`](goal). -/
-@[simp] lemma E_ind (A : Ω → Prop) [DecidablePred A] : D.E (ind A) = D.Pr A := rfl
+@[simp, indicator_simps]
+lemma E_ind (A : Ω → Prop) [DecidablePred A] : D.E (ind A) = D.Pr A := rfl
 
 omit [Fintype Ω] in
 /-- `1_A ^ 2 = 1_A`, the idempotence of an indicator. -/

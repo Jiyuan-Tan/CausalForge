@@ -48,6 +48,7 @@ noncomputable def ipwWeight_false (S : TreatedEstimationSystem P γ) (x : γ) :
   S.e_val x / (1 - S.e_val x)
 
 /-- Measurability of the value-space IPW weight `e/(1−e)`. -/
+@[fun_prop]
 lemma measurable_ipwWeight_false (S : TreatedEstimationSystem P γ) :
     Measurable S.ipwWeight_false :=
   S.e_meas.div (measurable_const.sub S.e_meas)

@@ -64,6 +64,7 @@ lemma stdNormalCdf_neg (t : ℝ) : stdNormalCdf (-t) = 1 - stdNormalCdf t := by
 
 /-- **Continuity of the standard normal CDF.** [The standard normal cumulative distribution
 function `Φ` is continuous](goal). -/
+@[fun_prop]
 lemma continuous_stdNormalCdf : Continuous stdNormalCdf := by
   rw [show stdNormalCdf = Causalean.Mathlib.stdNormalCDF from funext stdNormalCdf_eq]
   exact Causalean.Mathlib.stdNormalCDF_continuous

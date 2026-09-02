@@ -147,8 +147,8 @@ theorem sampleCov_entry_tendsto_inProb
       (S.sampleMean (fun x => φ (ψ x) * φ' (ψ x)))
       (fun _ => ∫ x, φ (ψ x) * φ' (ψ x) ∂P) μ := by
   -- coordinate measurability
-  have hφ : Measurable (fun x => φ (ψ x)) := φ.continuous.measurable.comp hψ_meas
-  have hφ' : Measurable (fun x => φ' (ψ x)) := φ'.continuous.measurable.comp hψ_meas
+  have hφ : Measurable (fun x => φ (ψ x)) := by fun_prop
+  have hφ' : Measurable (fun x => φ' (ψ x)) := by fun_prop
   -- entrywise integrability of the product, dominated by (‖φ‖‖φ'‖)·‖ψ‖²
   have hprod_int :
       Integrable (fun ω => φ (ψ (S.Z 0 ω)) * φ' (ψ (S.Z 0 ω))) μ := by

@@ -126,7 +126,8 @@ export function runPlanGate(planInput: unknown, core: Core, opts: PlanGateOption
       kind === "assumption" ? ["assumption", "lemma", "theorem"]
       : kind === "definition-class" ? ["structure"]
       : kind === "definition-construction" ? ["def"]
-      : coreStmt && node.gate ? ["assumption"]
+      : coreStmt && node.gate
+        ? node.gate_class === "cited" ? ["assumption", "def"] : ["assumption"]
       : coreStmt?.kind === "openendedquestion" ? ["def"] // solved OEQs are replaced by thm: nodes at D0; only unresolved OEQs can reach F1.
       : ["theorem", "lemma"]; // statement
     if (!want.includes(node.lean_kind)) {
@@ -278,17 +279,55 @@ export function runPlanGate(planInput: unknown, core: Core, opts: PlanGateOption
     violations.push({ code: "P8", where: "<root>", message: `feasibility '${plan.feasibility}' disagrees with derived '${deriveFeasibility(plan)}'` });
   }
 
-  // P9: cited mapping. A D0 `status:"cited"` statement is BORROWED (D0 chose not to prove
-  // it); F1 must PROPAGATE it as a `gate_class:"cited"` node — never silently re-launder it
-  // into a crux/build lemma — and must not INVENT a citation for a non-cited statement.
-  // Every node `source` must resolve to a declared `citations[]` entry.
+  // P9: cited mapping. A D0 `status:"cited"` statement starts BORROWED (D0 chose not to
+  // prove it). Its normal representation is therefore a `gate_class:"cited"` Prop
+  // assumption, or a source-reviewed non-Prop `def` when the cited node records
+  // bibliographic scope rather than a logical premise.
+  // The supported discharge path may later replace that gate with an exact proved
+  // lemma/theorem while retaining `source` as provenance. Do not force such a proved node
+  // back into an assumption: gate.ts --discharge deliberately removes the gate keys and
+  // reopens every consumer for F2.5/F4 review. Conversely, a non-gate `assumption` is not a
+  // discharge and remains forbidden. Only the two discharge channels (bin/gate.ts --discharge
+  // and the substrate-built application in stage1.ts) stamp `citation_discharged:true`, so a
+  // fresh F1 plan cannot present the discharged shape. Every node `source` must resolve to citations[].
   const citationIds = new Set(plan.citations.map((c) => c.id));
   for (const s of core.statements) {
     const node = plan.nodes[s.id];
     if (!node) continue; // P1 already flagged
     if (s.status === "cited") {
-      if (!node.gate || node.gate_class !== "cited") {
-        violations.push({ code: "P9", where: s.id, message: `core status:"cited" must map to a gate_class:"cited" plan node (got gate=${!!node.gate}, gate_class=${node.gate_class ?? "none"}) — re-laundering a citation` });
+      const deferredCitation =
+        node.gate && node.gate_class === "cited" &&
+        (node.lean_kind === "assumption" || node.lean_kind === "def");
+      const provedCitation =
+        !node.gate && node.gate_class === undefined && node.citation_discharged === true &&
+        (node.lean_kind === "lemma" || node.lean_kind === "theorem");
+      if (!deferredCitation && !provedCitation) {
+        violations.push({
+          code: "P9",
+          where: s.id,
+          message:
+            `core status:"cited" must map either to a gate_class:"cited" assumption/metadata def or to its ` +
+            `discharged lemma/theorem form stamped citation_discharged:true by gate.ts --discharge ` +
+            `(got lean_kind=${node.lean_kind}, gate=${!!node.gate}, gate_class=${node.gate_class ?? "none"}, ` +
+            `citation_discharged=${node.citation_discharged === true}) — re-laundering a citation`,
+        });
+      }
+      // A `reuse` discharge points at a library decl and emits nothing locally.
+      if (provedCitation && opts.annotatedDecls && node.disposition !== "reuse") {
+        const decls = opts.annotatedDecls.filter((decl) => decl.nodeId === s.id);
+        const expectedName = node.lean_name.split(".").at(-1) ?? node.lean_name;
+        const exact = decls.length === 1 ? decls[0] : undefined;
+        const exactName = exact && (exact.declName.split(".").at(-1) ?? exact.declName) === expectedName;
+        const exactKind = exact && exact.declKind === node.lean_kind;
+        if (!exact || !exactName || !exactKind || exact.hasSorry) {
+          violations.push({
+            code: "P9",
+            where: s.id,
+            message:
+              `discharged citation must map to exactly one sorry-free emitted ${node.lean_kind} ` +
+              `'${node.lean_name}' (found ${decls.length}${exact ? `; decl=${exact.declName}, kind=${exact.declKind}, sorry=${exact.hasSorry}` : ""})`,
+          });
+        }
       }
       if (!node.source) {
         violations.push({ code: "P9", where: s.id, message: `cited node must set 'source' to a cite: id` });

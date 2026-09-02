@@ -193,4 +193,47 @@ describe("identical-claim re-proof of a settled node is a no-op discharge", () =
     expect(lem?.status).toBe("proved");
     expect(lem?.proof_tex).toBe("Canonical proof, round 1.");
   }, 30000);
+
+  it("does not hide a changed citation on a frozen/source-backed node", async () => {
+    const ctx = makeCtx();
+    const frozen = {
+      id: "lem:frozen-source",
+      kind: "lemma",
+      statement: "the frozen cited helper claim",
+      depends_on: [],
+      status: "cited",
+      source: {
+        cite: "Rosenbaum1983",
+        locator: "Section 1",
+        verbatim_statement: "The published helper claim.",
+      },
+    };
+    const proto = structuredClone(PROTO) as any;
+    proto.statements.push(frozen);
+    await writeFile(protoCoreJsonPath(ctx), JSON.stringify(proto), "utf8");
+
+    const deps: StageDeps = {
+      runCodex: async ({ prompt }: { prompt: string }) => {
+        const outPath = /SOLVE_OUTPUT_PATH:\s*(\S+)/.exec(prompt)![1];
+        const seg = (prompt.split("TARGET STATEMENT(S) TO SOLVE")[1] ?? "[]").split("SOLVE_OUTPUT_PATH")[0];
+        const targets = JSON.parse(seg.slice(seg.indexOf("["), seg.lastIndexOf("]") + 1)) as Array<{ id: string }>;
+        await writeFile(outPath, JSON.stringify({
+          proofs: targets.map((target) => ({ id: target.id, proof_tex: `QED ${target.id}.` })),
+          added_lemmas: [{
+            ...frozen,
+            source: { ...frozen.source, locator: "Section 2" },
+          }],
+        }), "utf8");
+        return { stdout: JSON.stringify({ status: "completed", artifacts: [outPath] }), stderr: "" };
+      },
+      runClaude: async () => { throw new Error("unused"); },
+      lean: undefined as never,
+    };
+
+    const result = await runStage0Solve({ ctx, state: makeState(), deps });
+    expect(result).toHaveProperty("status", "checkpoint");
+    const core = JSON.parse(await readFile(coreJsonPath(ctx), "utf8"));
+    expect(core.statements.find((statement: { id: string }) => statement.id === frozen.id)?.source)
+      .toEqual(frozen.source);
+  }, 30000);
 });

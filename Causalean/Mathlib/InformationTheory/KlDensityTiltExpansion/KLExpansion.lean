@@ -155,9 +155,8 @@ lemma abs_klRemainder_le {μ : Measure Z} [IsProbabilityMeasure μ] {s : Z → �
     · refine .of_forall fun y => ?_
       have hsq : |s y| ^ 2 ≤ C ^ 2 := pow_le_pow_left₀ (abs_nonneg _) (hsC y) 2
       simpa [abs_pow, Real.norm_eq_abs] using hsq
-  have hlin_int : Integrable (fun y => h * s y) μ := hs_int.const_mul h
-  have hquad_int : Integrable (fun y => (h ^ 2 / 2) * s y ^ 2) μ :=
-    hs2_int.const_mul (h ^ 2 / 2)
+  have hlin_int : Integrable (fun y => h * s y) μ := by fun_prop
+  have hquad_int : Integrable (fun y => (h ^ 2 / 2) * s y ^ 2) μ := by fun_prop
   have hR_meas : Measurable R := by
     dsimp [R]
     fun_prop

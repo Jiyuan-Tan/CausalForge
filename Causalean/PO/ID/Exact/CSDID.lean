@@ -84,10 +84,12 @@ noncomputable def factualY (s : Fin S.T) : P.Ω → ℝ := (S.yVar s).factual
 def dEvent (s : Fin S.T) (b : Bool) : Set P.Ω := (S.dVar s).event b
 
 /-- The observed treatment at each period is measurable. -/
+@[fun_prop]
 lemma measurable_factualD (s : Fin S.T) : Measurable (S.factualD s) :=
   (S.dVar s).measurable_factual
 
 /-- The observed outcome at each period is measurable. -/
+@[fun_prop]
 lemma measurable_factualY (s : Fin S.T) : Measurable (S.factualY s) :=
   (S.yVar s).measurable_factual
 
@@ -217,10 +219,12 @@ noncomputable def YofNT (t : Fin S.T) : P.Ω → ℝ :=
   (S.yVar t).cf S.regNT
 
 /-- Cohort potential outcomes are measurable. -/
+@[fun_prop]
 lemma measurable_YofCohort (t g : Fin S.T) : Measurable (S.YofCohort t g) :=
   (S.yVar t).measurable_cf _
 
 /-- Never-treated potential outcomes are measurable. -/
+@[fun_prop]
 lemma measurable_YofNT (t : Fin S.T) : Measurable (S.YofNT t) :=
   (S.yVar t).measurable_cf _
 

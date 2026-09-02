@@ -108,6 +108,12 @@ structure DegenKernel (P : Measure X) (g : X → X → ℝ) : Prop where
   deg  : ∀ x, ∫ y, g x y ∂P = 0
   sq   : Integrable (fun p : X × X => (g p.1 p.2) ^ 2) (P.prod P)
 
+-- Square-integrability of a doubly degenerate order-2 kernel is exposed to the
+-- function-property tactics.  The companion `meas` field is deliberately NOT tagged: its
+-- statement is measurability of `fun p => g p.1 p.2`, a shape `fun_prop` rejects outright,
+-- so measurability of an order-2 kernel stays name-called.
+attribute [fun_prop] DegenKernel.sq
+
 namespace DegenKernel
 
 variable [IsProbabilityMeasure P] {g : X → X → ℝ}

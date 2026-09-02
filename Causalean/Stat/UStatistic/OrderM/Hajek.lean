@@ -78,6 +78,11 @@ structure OrderDegenKernel (P : Measure X) {m : ℕ} [NeZero m]
     ∫ x, g (insertCoord j x tail) ∂P = 0
   sq : Integrable (fun z => (g z) ^ 2) (Measure.pi fun _ : Fin m => P)
 
+-- Measurability and square-integrability of a fully degenerate order-`m` kernel are exposed
+-- to the function-property tactics, so a proof holding an `OrderDegenKernel` hypothesis need
+-- not name these fields.
+attribute [fun_prop] OrderDegenKernel.meas OrderDegenKernel.sq
+
 /-! ## Hájek decomposition -/
 
 /-- The higher-order order-`m` Hájek remainder is negligible at the `√n` scale.

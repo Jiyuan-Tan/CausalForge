@@ -53,6 +53,7 @@ as lemmas:
 omit [IsProbabilityMeasure μ] [IsProbabilityMeasure P] in
 /-- Measurability of `empProcess(·,y)` (a constant times a measurable sample
 mean minus a constant). -/
+@[fun_prop]
 lemma IIDSample.measurable_empProcess (S : IIDSample Ω ℝ μ P) (n : ℕ) (y : ℝ) :
     Measurable (fun ω => S.empProcess n ω y) := by
   unfold IIDSample.empProcess IIDSample.empiricalCDF IIDSample.sampleMean

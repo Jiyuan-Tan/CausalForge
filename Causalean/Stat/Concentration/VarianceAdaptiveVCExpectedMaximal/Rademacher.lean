@@ -4,6 +4,7 @@ import Causalean.Stat.Concentration.Covering.SqrtLogIntegral
 import Causalean.Stat.Concentration.Covering.VCLocalizedRegime
 import Causalean.Stat.Concentration.Rademacher.Contraction
 import Causalean.Stat.Concentration.Rademacher.Symmetrization
+import Causalean.Tactic.IntegralLinearity
 import Causalean.Mathlib.Analysis.ClipInterval
 
 /-!
@@ -92,7 +93,7 @@ private lemma empiricalNorm_le_of_envelope
     (F : ι → 𝒳 → ℝ) {U : ℝ} (hU : 0 ≤ U)
     (henvelope : ∀ i x, |F i x| ≤ U)
     {n : ℕ} (S : Fin n → 𝒳) (i : ι) : empiricalNorm S (F i) ≤ U := by
-  unfold empiricalNorm
+  simp only [causal_defs_simps]
   rw [Real.sqrt_le_iff]
   constructor
   · exact hU
@@ -393,10 +394,10 @@ private lemma constantClass_empiricalRademacher_le
     · simp only [Finset.card_univ, Fintype.card_unit, Nat.cast_one, mul_one]
       nlinarith [Real.log_le_sub_one_of_pos (show (0 : ℝ) < 2 by norm_num)]
   have hnonneg : 0 ≤ empiricalNorm S g / Real.sqrt (n : ℝ) :=
-    div_nonneg (by unfold empiricalNorm; positivity) (Real.sqrt_nonneg _)
+    div_nonneg (by simp only [causal_defs_simps]; positivity) (Real.sqrt_nonneg _)
   have hunit : empiricalRademacherComplexity n H S =
       empiricalRademacherComplexity n (fun _i : ι => g) S := by
-    unfold empiricalRademacherComplexity
+    simp only [causal_defs_simps]
     congr 1
     refine Finset.sum_congr rfl fun τ _ => ?_
     simp [H, hn.ne']
@@ -548,10 +549,13 @@ private lemma empiricalRademacher_conditional_le
       field_simp
       nlinarith [Real.sqrt_nonneg (p * vcMaximalLog A U σ)]
 
-private lemma empiricalRademacherComplexity_measurable_countable
+/-- For a countably indexed family of measurable functions, the empirical Rademacher
+complexity of the family is a measurable function of the sample. -/
+@[fun_prop]
+lemma empiricalRademacherComplexity_measurable_countable
     [Countable ι] (F : ι → 𝒳 → ℝ) (hmeas : ∀ i, Measurable (F i)) (n : ℕ) :
     Measurable (fun S : Fin n → 𝒳 => empiricalRademacherComplexity n F S) := by
-  unfold empiricalRademacherComplexity
+  simp only [causal_defs_simps]
   fun_prop
 
 private lemma empiricalRademacherComplexity_mem_Icc
@@ -561,7 +565,7 @@ private lemma empiricalRademacherComplexity_mem_Icc
     empiricalRademacherComplexity n F S ∈ Set.Icc 0 M := by
   classical
   letI : Nonempty (Signs n) := ⟨fun _ => ⟨1, by simp⟩⟩
-  unfold empiricalRademacherComplexity
+  simp only [causal_defs_simps]
   constructor
   · exact mul_nonneg (by positivity) (Finset.sum_nonneg fun τ _ => by
       let i₀ : ι := Classical.choice inferInstance
@@ -582,7 +586,10 @@ private noncomputable def empiricalL2Radius
     (F : ι → 𝒳 → ℝ) {n : ℕ} (S : Fin n → 𝒳) : ℝ :=
   ⨆ i, empiricalNorm S (F i)
 
-private lemma empiricalL2Radius_measurable
+/-- For a countably indexed family of measurable functions, the largest empirical L²
+norm attained over the family is a measurable function of the sample. -/
+@[fun_prop]
+lemma empiricalL2Radius_measurable
     [Countable ι] (F : ι → 𝒳 → ℝ) (hmeas : ∀ i, Measurable (F i)) (n : ℕ) :
     Measurable (fun S : Fin n → 𝒳 => empiricalL2Radius F S) := by
   unfold empiricalL2Radius empiricalNorm
@@ -596,7 +603,7 @@ private lemma empiricalL2Radius_mem_Icc
     ⟨U, by rintro _ ⟨i, rfl⟩; exact empiricalNorm_le_of_envelope F hU0 henvelope S i⟩
   constructor
   · let i₀ : ι := Classical.choice inferInstance
-    exact (by unfold empiricalNorm; positivity : 0 ≤ empiricalNorm S (F i₀)) |>.trans
+    exact (by simp only [causal_defs_simps]; positivity : 0 ≤ empiricalNorm S (F i₀)) |>.trans
       (le_ciSup hbdd i₀)
   · exact ciSup_le fun i => empiricalNorm_le_of_envelope F hU0 henvelope S i
 
@@ -676,7 +683,7 @@ private lemma empiricalL2Radius_sq_le_uniformDeviation
       le_ciSup hdevBdd i
     have heq : empiricalNorm S (F i) ^ 2 =
         (n : ℝ)⁻¹ * ∑ k : Fin n, F i (S k) ^ 2 := by
-      unfold empiricalNorm
+      simp only [causal_defs_simps]
       simpa [one_div] using Real.sq_sqrt (havg i |>.1)
     rw [heq]
     linarith [le_abs_self ((n : ℝ)⁻¹ * ∑ k : Fin n, F i (S k) ^ 2 -
@@ -687,7 +694,7 @@ private lemma empiricalL2Radius_sq_le_uniformDeviation
     unfold empiricalL2Radius
     refine ciSup_le fun i => ?_
     have hs := Real.sqrt_le_sqrt (hnormsq i)
-    have hnorm0 : 0 ≤ empiricalNorm S (F i) := by unfold empiricalNorm; positivity
+    have hnorm0 : 0 ≤ empiricalNorm S (F i) := by simp only [causal_defs_simps]; positivity
     rw [Real.sqrt_sq hnorm0] at hs
     exact hs
   change empiricalL2Radius F S ^ 2 ≤ σ ^ 2 + D
@@ -809,14 +816,13 @@ theorem varianceAdaptiveRademacherComplexity_le
     (hradius'Int.add (integrable_const σ)).const_mul _
   have hxchain : rademacherComplexity n F P id ≤
       26 * q * ((∫ S, radius' S ∂μn) + σ) := by
-    unfold rademacherComplexity
+    simp only [causal_defs_simps]
     change (∫ S, rad S ∂μn) ≤ _
     calc
       (∫ S, rad S ∂μn) ≤ ∫ S, 26 * q * (radius' S + σ) ∂μn :=
         integral_mono hradInt hrhsInt hconditional
       _ = 26 * q * ((∫ S, radius' S ∂μn) + σ) := by
-        rw [integral_const_mul]
-        rw [integral_add hradius'Int (integrable_const σ)]
+        integral_linearity
         simp [μn, smul_eq_mul]
   have hradius'Expectation : (∫ S, radius' S ∂μn) ≤
       (∫ S, radius S ∂μn) + floorRadius := by
@@ -827,7 +833,7 @@ theorem varianceAdaptiveRademacherComplexity_le
         intro S
         exact max_le_add_of_nonneg (hradiusMem S).1 hfloor0.le
       _ = (∫ S, radius S ∂μn) + floorRadius := by
-        rw [integral_add hradiusInt (integrable_const floorRadius)]
+        integral_linearity
         simp [μn]
   let sqF : ι → 𝒳 → ℝ := fun i x => F i x ^ 2
   have hsqMeas : ∀ i, Measurable (sqF i) := fun i => (hmeas i).pow_const 2
@@ -863,7 +869,7 @@ theorem varianceAdaptiveRademacherComplexity_le
         simpa [Real.norm_eq_abs, abs_of_nonneg hm.1] using hm.2)
   have hcontractPop : rademacherComplexity n sqF P id ≤
       4 * U * rademacherComplexity n F P id := by
-    unfold rademacherComplexity
+    simp only [causal_defs_simps]
     change (∫ S, empiricalRademacherComplexity n sqF S ∂μn) ≤
       4 * U * ∫ S, rad S ∂μn
     rw [← integral_const_mul]
@@ -946,7 +952,7 @@ theorem varianceAdaptiveRademacherComplexity_le
       (∫ S, radius S ^ 2 ∂μn) ≤ ∫ S, σ ^ 2 + uniformDeviation n sqF P id S ∂μn := by
         exact integral_mono hradiusSqInt ((integrable_const (σ ^ 2)).add hdevInt) hpoint
       _ = σ ^ 2 + ∫ S, uniformDeviation n sqF P id S ∂μn := by
-        rw [integral_add (integrable_const (σ ^ 2)) hdevInt]
+        integral_linearity
         simp [μn]
       _ ≤ _ := by linarith
   have hradiusExpectationNonneg : 0 ≤ ∫ S, radius S ∂μn :=
@@ -970,12 +976,9 @@ theorem varianceAdaptiveRademacherComplexity_le
               filter_upwards
               intro S
               ring
-        _ = (∫ S, radius S ^ 2 - (2 * c) * radius S ∂μn) +
-              ∫ _S, c ^ 2 ∂μn := integral_add hsubInt (integrable_const _)
-        _ = ((∫ S, radius S ^ 2 ∂μn) - ∫ S, (2 * c) * radius S ∂μn) +
-              ∫ _S, c ^ 2 ∂μn := by rw [integral_sub hradiusSqInt hlinearInt]
         _ = (∫ S, radius S ^ 2 ∂μn) - c ^ 2 := by
-              rw [integral_const_mul]
+              integral_linearity
+              rw [integral_const]
               simp [μn]
               ring
     rw [hexpand] at hcenter0
@@ -986,7 +989,7 @@ theorem varianceAdaptiveRademacherComplexity_le
     rw [Real.sqrt_sq hradiusExpectationNonneg] at hs
     exact hs
   have hxNonneg : 0 ≤ rademacherComplexity n F P id := by
-    unfold rademacherComplexity
+    simp only [causal_defs_simps]
     exact integral_nonneg fun S => (hradMem S).1
   have hself : rademacherComplexity n F P id ≤
       26 * q * (Real.sqrt (σ ^ 2 + 8 * U * rademacherComplexity n F P id) + σ + floorRadius) := by

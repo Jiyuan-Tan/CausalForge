@@ -22,10 +22,16 @@
 // claim moving. The three legal views remain distinguishable through `status`
 // (pre-bundle open vs settled overlay) and `statement` (post-claim).
 import { createHash } from "node:crypto";
-import type { CoreDefinition, CoreStatement } from "./schema.js";
+import { CoreSchema, DefinitionSchema, type Core, type CoreDefinition, type CoreStatement } from "./schema.js";
 
 export const REVISION_PREFIX = "rev:";
 export const REVISION_PATTERN = /^rev:[a-f0-9]{64}$/;
+
+/** Exact revision of a validated assembled core. Used to ensure a surfaced
+ * proposal is applied to the same durable round state that was adjudicated. */
+export function coreRevision(core: Core): string {
+  return REVISION_PREFIX + createHash("sha256").update(JSON.stringify(CoreSchema.parse(core))).digest("hex");
+}
 
 /** The revision of one statement view. Pure and total: any object carrying the
  *  statement fields hashes, whether it came from the packet render, a dispatch
@@ -52,18 +58,26 @@ export function stampRevision<T extends Parameters<typeof statementRevision>[0]>
   return { ...view, revision: statementRevision(view) };
 }
 
-/** Revision of the construction-text view used by `proposed_definition_changes`.
- * The proposal channel owns only `construction`; structural definition changes
- * use the typed core-edit channel instead. */
-export function definitionRevision(view: Pick<CoreDefinition, "id" | "construction">): string {
-  const payload = JSON.stringify({ id: view.id, construction: view.construction });
+/** Revision of the complete semantic definition view used by a construction
+ * correction and its exact typed post-image.  The construction-only channel
+ * still changes only `construction`, but the shared revision prevents its
+ * paired whole-node replacement from overwriting intervening metadata. */
+type DefinitionRevisionView = Pick<CoreDefinition, "id" | "construction"> &
+  Partial<Omit<CoreDefinition, "id" | "construction">>;
+
+export function definitionRevision(view: DefinitionRevisionView, frozenBasis?: Core): string {
+  const payload = JSON.stringify({
+    definition: DefinitionSchema.parse(view),
+    frozen_core: frozenBasis === undefined ? null : CoreSchema.parse(frozenBasis),
+  });
   return REVISION_PREFIX + createHash("sha256").update(payload).digest("hex");
 }
 
-export function stampDefinitionRevision<T extends Pick<CoreDefinition, "id" | "construction">>(
+export function stampDefinitionRevision<T extends DefinitionRevisionView>(
   view: T,
+  frozenBasis?: Core,
 ): T & { revision: string } {
-  return { ...view, revision: definitionRevision(view) };
+  return { ...view, revision: definitionRevision(view, frozenBasis) };
 }
 
 /** Stamp every statement of a core COPY for an outward-facing rendering (the

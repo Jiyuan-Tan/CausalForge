@@ -80,7 +80,7 @@ theorem map_graph_prod_eq_compProd
   set η : ProbabilityTheory.Kernel β (β × γ) :=
     (ProbabilityTheory.Kernel.id : ProbabilityTheory.Kernel β β).prod
       (ProbabilityTheory.Kernel.const β νₗ) with hη
-  have hΦ' : Measurable (fun p : β × γ => (p.1, Φ p)) := measurable_fst.prodMk hΦ
+  have hΦ' : Measurable (fun p : β × γ => (p.1, Φ p)) := by fun_prop
   -- Step 1: `α.compProd (η.map Φ) = map (Prod.map id Φ) (α.compProd η)`.
   have h1 : α.compProd (mechanismKernel νₗ Φ)
       = Measure.map (Prod.map id Φ) (α.compProd η) := by

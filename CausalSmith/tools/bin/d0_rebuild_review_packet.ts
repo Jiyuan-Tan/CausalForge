@@ -7,9 +7,10 @@
  * a normalized `d0_working.json:proposals` (the sole proposal carrier). It does
  * NOT touch proto_core, core.json, solved proofs, or the escalation journal.
  *
- * Usage: npx tsx tools/bin/d0_rebuild_review_packet.ts <qid> <spec> [--solve-json <path>]
+ * Usage: npx tsx tools/bin/d0_rebuild_review_packet.ts <qid> <spec>
+ *   [--solve-json <path> --augment-live-proposals]
  */
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import type { PipelineContext } from "../src/types.js";
@@ -29,23 +30,43 @@ import {
   saveWorkingState,
 } from "../src/discovery/stages/d0_working.js";
 import { findCausalSmithRoot } from "../src/shared/repo_root.js";
-import { SolveUnitOutputSchema } from "../src/discovery/solve/schemas.js";
-import { parseRepairedModelJson } from "../src/discovery/core/core_io.js";
+import {
+  assertClaimChangingStatementReplacementsArePaired,
+  readSolveUnitOutput,
+} from "../src/discovery/solve/dispatch.js";
 import { reusableOeqAnswerMatches } from "../src/discovery/solve/merge.js";
 import { openSolveTarget } from "../src/discovery/solve/context.js";
-import { definitionRevision, statementRevision } from "../src/discovery/core/revision.js";
+import { coreRevision, definitionRevision, statementRevision } from "../src/discovery/core/revision.js";
 import { coreEditTarget } from "../src/discovery/stages/d0_apply.js";
 import { resolveRequiredCoreEditMandates } from "../src/discovery/solve/mandates.js";
 import { loadState } from "../src/state.js";
 
+const canonicalBag = (items: readonly unknown[]): string[] =>
+  items.map((item) => JSON.stringify(item)).sort();
 
+function exactBagMatches(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return JSON.stringify(canonicalBag(a)) === JSON.stringify(canonicalBag(b));
+}
 
 async function main(): Promise<void> {
   const [qid, spec] = process.argv.slice(2);
   const solveArg = process.argv.indexOf("--solve-json");
   const solveJsonPath = solveArg === -1 ? undefined : process.argv[solveArg + 1];
+  const repairUnpairedClaimEdits = process.argv.includes("--repair-unpaired-claim-edits");
+  const augmentLiveProposals = process.argv.includes("--augment-live-proposals");
+  const includeDurableProofIds = process.argv.flatMap((arg, index, args) =>
+    arg === "--include-durable-proof" && typeof args[index + 1] === "string" ? [args[index + 1]] : []);
   if (!qid || !spec || (solveArg !== -1 && !solveJsonPath)) {
-    throw new Error("Usage: d0_rebuild_review_packet.ts <qid> <spec> [--solve-json <path>]");
+    throw new Error(
+      "Usage: d0_rebuild_review_packet.ts <qid> <spec> [--solve-json <path>] " +
+      "[--augment-live-proposals]",
+    );
+  }
+  if (includeDurableProofIds.length > 0) {
+    throw new Error(
+      "--include-durable-proof is retired: a preimage proof cannot certify a carrier's semantic postimage; " +
+      "rerun the normal D0 solve/merge path",
+    );
   }
   const ctx: PipelineContext = {
     repoRoot: findCausalSmithRoot(process.cwd()), qid, specialization: spec, dryRun: false, resume: true,
@@ -76,6 +97,7 @@ async function main(): Promise<void> {
   // Recovery becomes the durable carrier if the live solve was interrupted before
   // commitRound copied an unconsumed journal mandate onto the working cursor.
   working.required_core_edit_mandates = mandates;
+  const mandatedTargets = new Set(mandates.map((mandate) => coreEditTarget(mandate.edit)));
   // A structural-gate failure can prevent core.json publication after a valid
   // proposal apply. Reconstruct the adjudication view through the SAME pure
   // render the solve commit uses (Phase 1 of the store consolidation — the old
@@ -112,15 +134,60 @@ async function main(): Promise<void> {
   // Sole carrier: the proposals payload on the working cursor (the per-kind
   // mirror files are retired 2026-07-20).
   let roundProposals = await readRoundProposals(ctx, working);
+  const currentBasisRevision = coreRevision(core);
+  // Capture the original live carrier before any recovery-side evidence addition.
+  // Final evidence checks below compare against this exact structural authority.
+  const carriedMandateEdits = roundProposals.coreEdits
+    .filter((edit) => mandatedTargets.has(coreEditTarget(edit)));
+  const resolvedMandateEdits = mandates.map((mandate) => mandate.edit);
   let recoveredSolveSource: string | undefined;
   if (solveJsonPath) {
     const absoluteSolvePath = path.resolve(solveJsonPath);
+    const canonicalSolvePath = await realpath(absoluteSolvePath);
+    const discoveryDir = path.dirname(proposalReviewPacketPath(ctx));
+    const liveProposalCount =
+      roundProposals.statements.length + roundProposals.definitions.length +
+      roundProposals.assumptions.length + roundProposals.coreEdits.length;
+    if (!augmentLiveProposals || liveProposalCount === 0) {
+      throw new Error(
+        "--solve-json may only augment an existing capability-projected live bundle; " +
+        "pass --augment-live-proposals. Lost-bundle reconstruction from an unauthenticated solve file is retired",
+      );
+    }
+    if (process.argv.includes("--replace-live-proposals")) {
+      throw new Error("--replace-live-proposals is retired; recovery must preserve the authenticated live bundle");
+    }
+    if (repairUnpairedClaimEdits) {
+      throw new Error(
+        "--repair-unpaired-claim-edits is retired for raw solve files; live ingest now rejects incomplete claim transactions",
+      );
+    }
+    if (
+      canonicalSolvePath !== absoluteSolvePath ||
+      path.dirname(canonicalSolvePath) !== discoveryDir ||
+      !/^solve_[A-Za-z0-9_]+\.json$/.test(path.basename(canonicalSolvePath))
+    ) {
+      throw new Error("--solve-json must name a non-symlink canonical solve_*.json artifact in this run's discovery directory");
+    }
     // The agent's solve output is dense TeX (statements + proof_tex). Read it through
     // the same defense as the live solve boundary in `solve/dispatch.ts`; a raw parse
     // here would fail the recovery on the very escape class it exists to recover from.
-    const recoveredOutput = SolveUnitOutputSchema.parse(
-      parseRepairedModelJson(await readFile(absoluteSolvePath, "utf8"), absoluteSolvePath),
-    );
+    // Use the production reader so TeX companion references are resolved exactly
+    // as they were in the live solve. Recovery previously parsed the JSON carrier
+    // directly, making every valid companion-backed artifact unrecoverable.
+    const recoveredOutput = await readSolveUnitOutput(absoluteSolvePath, path.basename(absoluteSolvePath));
+    assertClaimChangingStatementReplacementsArePaired(recoveredOutput, core.statements);
+    const proofIdCounts = new Map<string, number>();
+    for (const proof of recoveredOutput.proofs) {
+      proofIdCounts.set(proof.id, (proofIdCounts.get(proof.id) ?? 0) + 1);
+    }
+    const duplicateProofIds = [...proofIdCounts].filter(([, count]) => count > 1).map(([id]) => id);
+    if (duplicateProofIds.length > 0) {
+      throw new Error(
+        `--solve-json contains duplicate proof id(s): ${duplicateProofIds.join(", ")}; ` +
+        "recovery never merges proof payloads or intent bits",
+      );
+    }
     if (recoveredOutput.open_obligations.length > 0) {
       throw new Error(
         "--solve-json recovery supports proposal checkpoints only; open obligations require a normal merge",
@@ -128,16 +195,13 @@ async function main(): Promise<void> {
     }
     for (const statement of recoveredOutput.added_lemmas) {
       const durable = working.solved[statement.id];
-      const durableStatement = durable?.node
-        ? { ...durable.node, proof_tex: durable.proof_tex }
+      const canonical = proto.statements.find((candidate) => candidate.id === statement.id) ?? durable?.node;
+      const durableStatement = canonical
+        ? { ...canonical, proof_tex: durable?.proof_tex ?? canonical.proof_tex }
         : null;
-      if (
-        durable?.partial === true ||
-        !durableStatement ||
-        !reusableOeqAnswerMatches(durableStatement, statement)
-      ) {
+      if (!durableStatement || !reusableOeqAnswerMatches(durableStatement, statement)) {
         throw new Error(
-          `--solve-json added statement ${statement.id} is not an exact settled durable re-emission; ` +
+          `--solve-json added statement ${statement.id} is not an exact durable re-emission; ` +
           "a normal merge is required",
         );
       }
@@ -199,69 +263,110 @@ async function main(): Promise<void> {
         }
       }
     }
-    // OWNERSHIP. Every guard above validates `added_lemmas` / `resolved_oeqs` /
-    // `prose_updates` against this run's durable cursor — but the payload actually
-    // INSTALLED below was validated against nothing, and `SolveUnitOutputSchema` carries
-    // no qid. A solve file recovered from a DIFFERENT run whose proposals happen to touch
-    // none of those three sections passes every check, replaces this run's live bundle
-    // wholesale, and its proposal proofs are archived as `proposal-cleared`. Require each
-    // proposed id to name an object this run actually has.
-    const knownIds = new Set<string>([
-      ...core.statements.map((s) => s.id),
-      ...core.definitions.map((d) => d.id),
-      ...core.assumptions.map((a) => a.id),
-      ...Object.keys(working.solved ?? {}),
-    ]);
-    const foreign = [
-      ...recoveredOutput.proposed_statement_changes.map((c) => c.id),
-      ...recoveredOutput.proposed_definition_changes.map((c) => c.id),
-      ...recoveredOutput.proposed_assumptions.map((c) => c.id),
-    ].filter((id) => !knownIds.has(id));
-    if (foreign.length > 0) {
-      throw new Error(
-        `--solve-json proposes changes to ids this run does not define (${[...new Set(foreign)].join(", ")}); ` +
-        "the file almost certainly belongs to a different qid — refusing to replace this run's proposal bundle",
-      );
-    }
-    // A live bundle is adjudicated state. Recovery is for a bundle that was LOST, so
-    // silently overwriting a present one destroys decisions that were already made.
-    const liveProposalCount =
-      (working.proposals?.statements?.length ?? 0) +
-      (working.proposals?.definitions?.length ?? 0) +
-      (working.proposals?.assumptions?.length ?? 0) +
-      (working.proposals?.coreEdits?.length ?? 0);
-    if (liveProposalCount > 0 && !process.argv.includes("--replace-live-proposals")) {
-      throw new Error(
-        `--solve-json would replace ${liveProposalCount} live proposal(s) already on the working cursor. ` +
-        "Recovery is for a LOST bundle; pass --replace-live-proposals to overwrite deliberately",
-      );
-    }
-    const changedStatementIds = new Set(
-      recoveredOutput.proposed_statement_changes.map((change) => change.id),
-    );
-    roundProposals = {
-      statements: recoveredOutput.proposed_statement_changes,
-      definitions: recoveredOutput.proposed_definition_changes,
-      assumptions: recoveredOutput.proposed_assumptions,
-      coreEdits: recoveredOutput.proposed_core_edits,
-      proofs: recoveredOutput.proofs.filter((proof) =>
-        proof.argues_proposed === true && changedStatementIds.has(proof.id)),
+    // The live carrier is the ownership- and capability-projected authority. A raw
+    // artifact may supply a lost cited receipt only if its COMPLETE proposal/proof
+    // bundle is byte-identical to that authority (apart from exact orchestrator
+    // mandates, which never came from the worker). One overlapping proof is not an
+    // authentication token: a stale/foreign unit must not smuggle a receipt into an
+    // unrelated current postimage.
+    const requireExactBag = (label: string, raw: readonly unknown[], live: readonly unknown[]): void => {
+      if (!exactBagMatches(raw, live)) {
+        throw new Error(
+          `--solve-json ${label} does not exactly match the complete capability-projected live bundle`,
+        );
+      }
     };
-    // The filter mirrors apply's `claimChangedIds`, which is correct — but every OTHER
-    // proof in the recovered file is real new mathematics the failed merge produced, and
-    // dropping it silently leaves the node open to be re-solved at full cost with no
-    // record that a proof existed. Name them.
-    const droppedProofIds = recoveredOutput.proofs
-      .filter((proof) => !(proof.argues_proposed === true && changedStatementIds.has(proof.id)))
-      .map((proof) => proof.id);
-    if (droppedProofIds.length > 0) {
-      console.warn(
-        `[causalsmith] --solve-json recovery kept only proposal-arguing proofs; ` +
-        `${droppedProofIds.length} other proof(s) in the file were NOT installed: ${droppedProofIds.join(", ")}. ` +
-        "Re-run a normal merge if those proofs are needed.",
+    requireExactBag("proof set", recoveredOutput.proofs, roundProposals.proofs);
+    requireExactBag(
+      "statement-change set",
+      recoveredOutput.proposed_statement_changes,
+      roundProposals.statements,
+    );
+    requireExactBag(
+      "definition-change set",
+      recoveredOutput.proposed_definition_changes,
+      roundProposals.definitions,
+    );
+    requireExactBag("assumption set", recoveredOutput.proposed_assumptions, roundProposals.assumptions);
+    requireExactBag(
+      "core-edit set",
+      recoveredOutput.proposed_core_edits,
+      roundProposals.coreEdits.filter((edit) => !mandatedTargets.has(coreEditTarget(edit))),
+    );
+    if (recoveredOutput.proofs.length === 0) {
+      throw new Error("--solve-json augmentation requires a nonempty exact live-bundle proof set");
+    }
+    const recoveredCitations = recoveredOutput.added_lemmas.filter((statement) => statement.status === "cited");
+    if (recoveredCitations.length > 0) {
+      throw new Error(
+        "--solve-json cannot recover cited-source receipts: raw worker artifacts carry no durable " +
+        "capability-projected receipt manifest; rerun the normal D0 solve/merge path",
       );
     }
     recoveredSolveSource = absoluteSolvePath;
+  }
+  // Run these guards against the FINAL candidate evidence set. In particular,
+  // --include-durable-proof must not turn a previously proofless, unsealed carrier
+  // into evidence for a newly recovered symbol/definition mandate.
+  const hasEvidence = roundProposals.proofs
+    .some((proof) => !mandatedTargets.has(proof.id)) ||
+    (roundProposals.citationRevalidations?.length ?? 0) > 0;
+  // The basis guard covers EVERY nonempty live bundle, not just evidence-bearing
+  // ones (audit 2026-08-30, blocker 2): the reseal below stamps a fresh
+  // `basis_revision` and rebinds definition `based_on_revision` to the CURRENT
+  // core, so recovering a proposal-only bundle across an intervening store change
+  // would forge freshness for a postimage authored against a different basis —
+  // apply would then overwrite the intervening change with stale metadata.
+  const hasLiveProposalContent = hasEvidence ||
+    roundProposals.statements.length > 0 ||
+    roundProposals.definitions.length > 0 ||
+    roundProposals.assumptions.length > 0 ||
+    roundProposals.coreEdits.some((edit) => !mandatedTargets.has(coreEditTarget(edit)));
+  // A MISSING basis is the legacy pre-seal cursor this CLI exists to recover —
+  // but ONLY for a bundle of plain proposed-statement changes, the one channel
+  // whose staleness is a complete PER-CHANGE guard (pinCurrent + apply's exact
+  // current/revision checks; see the repin test). Every other channel lacks an
+  // apply-side preimage guard covering all fields it may overwrite (assumption/
+  // symbol/bibliography/comparator edits, definition-delete; statementRevision
+  // hashes only id/kind/statement/status, so even statement-replace metadata
+  // postimages are unguarded), and the reseal below stamps a fresh
+  // basis_revision — recovering such an unsealed bundle would forge freshness
+  // for content authored against an unknown basis (audit 2026-08-30, blocker 2
+  // and its two delta iterations). Evidence-bearing bundles keep the strict
+  // rule: missing counts as mismatch.
+  const beyondStatementLane =
+    roundProposals.definitions.length > 0 ||
+    roundProposals.assumptions.length > 0 ||
+    roundProposals.coreEdits.some((edit) => !mandatedTargets.has(coreEditTarget(edit)));
+  const staleBasis = hasEvidence
+    ? roundProposals.basis_revision !== currentBasisRevision
+    : roundProposals.basis_revision !== undefined
+      ? roundProposals.basis_revision !== currentBasisRevision
+      : beyondStatementLane;
+  if (hasLiveProposalContent && staleBasis) {
+    throw new Error(
+      `Refusing to reseal D0 proposals: live proposal basis ${roundProposals.basis_revision ?? "(missing)"} ` +
+      `does not match current assembled basis ${currentBasisRevision}; rerun normal D0 solve/merge`,
+    );
+  }
+  // Recovery reads the cursor STRUCTURALLY (readRoundProposals re-attaches types
+  // without a schema pass), so a corrupt or hand-edited record could omit the
+  // mandatory `current`/`proposed` echoes — exactly the fields the statement
+  // lane's per-change staleness guards key on. Refuse rather than reseal.
+  for (const change of roundProposals.statements) {
+    if (typeof change.current !== "string" || change.current.trim().length === 0 ||
+        typeof change.proposed !== "string" || change.proposed.trim().length === 0) {
+      throw new Error(
+        `Refusing to reseal D0 proposals: statement change ${change.id} lacks the mandatory ` +
+        `current/proposed echo; rerun normal D0 solve/merge`,
+      );
+    }
+  }
+  if (hasEvidence && !exactBagMatches(carriedMandateEdits, resolvedMandateEdits)) {
+    throw new Error(
+      "Refusing to enlarge or change an evidence-bearing D0 bundle with recovered mandates; " +
+      "rerun normal D0 solve/merge so proofs and citations are authored against the complete mandate set",
+    );
   }
   const normalizedCurrentEchoIds: string[] = [];
   const pinCurrent = <T extends { id: string; current?: string; based_on_revision?: string }>(
@@ -285,25 +390,32 @@ async function main(): Promise<void> {
     }),
     definitions: roundProposals.definitions.map((change) => {
       const target = durableDefinitionById.get(change.id);
-      return pinCurrent(
+      const pinned = pinCurrent(
         change,
         durableDefinitionCurrentById.get(change.id),
-        target ? [definitionRevision(target)] : [],
+        target ? [change.based_on_revision ?? definitionRevision(target, core)] : [],
       );
+      // Mirror live merge's pipeline-owned complete-definition revision binding.
+      // A companion-backed recovery may carry the worker-visible local revision,
+      // but apply authorizes the pair against the current assembled semantic basis.
+      return target ? { ...pinned, based_on_revision: definitionRevision(target, core) } : pinned;
+    }),
+    coreEdits: roundProposals.coreEdits.map((edit) => {
+      if (edit.kind !== "definition-replace") return edit;
+      const target = durableDefinitionById.get(edit.id);
+      return target ? { ...edit, based_on_revision: definitionRevision(target, core) } : edit;
     }),
   };
-  const mandatedTargets = new Set(mandates.map((mandate) => coreEditTarget(mandate.edit)));
   const existingProofs = roundProposals.proofs as Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>;
   const proofById = new Map<string, { proof_tex: string; argues_proposed?: boolean }>();
   const addProof = (id: string, proofTex: string, source: string, arguesProposed = false): void => {
     if (!id || !proofTex.trim()) return;
-    const prior = proofById.get(id);
-    if (prior !== undefined && prior.proof_tex !== proofTex) {
-      throw new Error(`Conflicting ${source} proof for ${id}; refusing to choose one payload`);
+    if (proofById.has(id)) {
+      throw new Error(`Duplicate ${source} proof for ${id}; recovery never merges payloads or intent bits`);
     }
     proofById.set(id, {
       proof_tex: proofTex,
-      ...((prior?.argues_proposed || arguesProposed) ? { argues_proposed: true } : {}),
+      ...(arguesProposed ? { argues_proposed: true } : {}),
     });
   };
   for (const proof of existingProofs) {
@@ -323,9 +435,10 @@ async function main(): Promise<void> {
       openQuestionPartialResults.push({ id, partial_result: record.proof_tex });
       continue;
     }
+    // An arbitrary partial_result is solver context, not completed proof evidence.
+    // Only the capability-projected live carrier or an explicitly selected,
+    // preimage-valid durable proof may enter proposals.proofs for apply promotion.
     durablePartialProofIdsIncluded.push(id);
-    if (!proofById.has(id)) recovered.push(id);
-    addProof(id, record.proof_tex, "durable-working-state");
   }
   // Defence in depth: the collection loops above already skip mandated targets, but
   // quarantine again at the serialization boundary so a future recovery source cannot
@@ -333,6 +446,10 @@ async function main(): Promise<void> {
   const provisionalProofs = [...proofById]
     .filter(([id]) => !mandatedTargets.has(id))
     .map(([id, proof]) => ({ id, ...proof }));
+  // Preserve the original settled record and snapshot as provenance. Rebuilding a
+  // packet is not an apply transaction: rejection/discard must leave reusable support
+  // reusable. Atomic apply will reopen it if selected edits invalidate its basis and
+  // then promote these reviewed bytes against the selected postimage.
 
   const proposedStatementChanges = roundProposals.statements
     .filter((change) => !mandatedTargets.has(change.id)) as unknown[];
@@ -386,18 +503,24 @@ async function main(): Promise<void> {
 
   const packetPath = proposalReviewPacketPath(ctx);
   // Persist the normalized payload back onto the sole carrier.
+  const recoveredCore = CoreSchema.parse(assembleCore(proto, working));
   working.proposals = {
+    // A rebuilt packet is a newly sealed adjudication view. Preserve the same
+    // stale-write guard as a normal solve commit; dropping it makes every
+    // definition-containing recovery bundle mechanically unapplyable.
+    basis_revision: coreRevision(recoveredCore),
     statements: proposedStatementChanges,
     definitions: proposedDefinitionChanges,
     assumptions: proposedAssumptions,
     coreEdits: proposedCoreEdits,
     proofs: provisionalProofs,
+    citationRevalidations: roundProposals.citationRevalidations ?? [],
   };
   await saveWorkingState(ctx, working);
   await writeJsonAtomic(
     packetPath,
     buildReviewPacket({
-      core,
+      core: recoveredCore,
       working,
       proposedStatementChanges,
       proposedDefinitionChanges,
@@ -405,12 +528,14 @@ async function main(): Promise<void> {
       proposedCoreEdits,
       requiredCoreEditMandates: working.required_core_edit_mandates,
       provisionalProofs,
+      citationRevalidations: roundProposals.citationRevalidations ?? [],
       recovery: {
         mode: "mechanical-no-solver",
         ...(recoveredSolveSource ? { recovered_solve_source: recoveredSolveSource } : {}),
         current_core_source: "current-proto-plus-durable-working-state",
         recovered_partial_proof_ids: recovered,
         durable_partial_proof_ids_included: durablePartialProofIdsIncluded,
+        explicitly_included_durable_proof_ids: [],
         normalized_current_echo_ids: normalizedCurrentEchoIds,
         normalized_statement_replace_proof_ids: normalizedStatementReplaceProofIds,
         proto_statement_ids: proto.statements.map((statement) => statement.id),

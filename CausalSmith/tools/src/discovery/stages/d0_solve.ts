@@ -9,8 +9,11 @@
 // MUST be solved by the same agent so shared objects (a definition's envelope, a
 // rate functional) are reconciled coherently: when one statement narrows such an
 // object, every statement that depends on it has to move with it, which only
-// happens inside one unit. Independent results land in separate components and
-// still solve in parallel. Each agent:
+// happens inside one unit. Independent components and immutable shared reads stay
+// parallel. Only a purely shared exact directive bundle is staged: one existing
+// component runs alone as the shared writer, its postimage must be accepted, and
+// deferred components re-enter on a later D0 pass against that accepted basis.
+// Broad or mixed directives keep parallel dispatch plus conflict withholding. Each agent:
 //   - writes `proof_tex` for its target statement(s),
 //   - ADDS the lemmas its proof needs (with their own proofs, inline),
 //   - may PROPOSE a statement change when a target is too strong to prove as
@@ -20,6 +23,9 @@
 // statement changes as a checkpoint (no silent change), or (b) run the structural
 // gate with `requireDischarged:true` and write the solved core. D0-RENDER renders
 // the .tex from it. Spec: D0_CORE_REDESIGN.md §4 (simplified).
+import { appendFile } from "node:fs/promises";
+import path from "node:path";
+import { coreJsonPath } from "./d0_core.js";
 import type { StageDeps } from "../../pipeline_support.js";
 import type { PipelineContext, StageResult, StateJson } from "../../types.js";
 import { assembleSolveContext } from "../solve/context.js";
@@ -38,7 +44,13 @@ import {
 // so existing importers (tests, bin/) are unaffected.
 export * from "../solve/schemas.js";
 export * from "../solve/ownership.js";
-export { groupToProveByComponent, repairSolveUnitLatexSerialization } from "../solve/dispatch.js";
+export {
+  assertClaimChangingStatementReplacementsArePaired,
+  groupToProveByComponent,
+  normalizeEmptySolveUnitContainers,
+  planStagedSolveDispatch,
+  repairSolveUnitLatexSerialization,
+} from "../solve/dispatch.js";
 export { partitionProofsByTarget } from "../solve/merge.js";
 export type { Stage0SolveResult } from "../solve/commit.js";
 
@@ -51,15 +63,28 @@ export async function runStage0Solve(args: {
   // Step 1/5 — assembleContext: proto→core clone, incremental carry, resolved-OEQ
   // re-application, escalation/directive assembly.
   const sctx = await assembleSolveContext({ ctx, state });
-  // Step 2/5 — dispatchAgents: WCC partitioning, ownership selection, one solver
-  // agent per open component.
+  // Step 2/5 — dispatchAgents: WCC partitioning and parallel independent units;
+  // a purely shared exact bundle instead dispatches one upstream-only pass and
+  // defers downstream units until that postimage has been accepted.
   const dr = await dispatchSolveUnits({ ctx, state, deps, sctx });
   // Step 3/5 — parseOutputs/merge: capability projection, conflict withholding,
   // proof/lemma merge, OEQ resolution, prose, id heal, self-containment.
-  const mr = mergeSolveOutputs({ sctx, dr });
-  // Step 4/5 — runGates: prune + derived metadata + manifest validation. (The
-  // commit-time coherence checks and the structural gate run inside step 5.)
-  runFinalAssemblyGates(sctx);
+  let mr: ReturnType<typeof mergeSolveOutputs>;
+  try {
+    mr = mergeSolveOutputs({ sctx, dr });
+    // Step 4/5 — runGates: prune + derived metadata + manifest validation. (The
+    // commit-time coherence checks and the structural gate run inside step 5.)
+    runFinalAssemblyGates(sctx);
+  } catch (err) {
+    // A merge/gate abort discards the round before the checkpoint path can write
+    // its withheld receipts; leave one durable line so the refusal is auditable.
+    await appendFile(
+      path.join(path.dirname(coreJsonPath(ctx)), "withheld_log.jsonl"),
+      `${JSON.stringify({ at: new Date().toISOString(), round: sctx.next.round, aborted: true, error: err instanceof Error ? err.message : String(err) })}\n`,
+      "utf8",
+    ).catch(() => {});
+    throw err;
+  }
   // Step 5/5 — persist: checkpoint when the round surfaced proposals/withheld
   // content; otherwise open-gap / incomplete-round / clean discharge.
   const commitRound = makeCommitRound({

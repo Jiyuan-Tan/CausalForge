@@ -85,6 +85,7 @@ Proof outline: a finite sum over `Bool` of products / quotients of
 measurable functions; build it from `η.e_meas`, `η₀.e_meas`,
 `η.μ_meas`, `η₀.μ_meas` via `Finset.measurable_sum`,
 `Measurable.div`, `Measurable.mul`, `Measurable.sub`. -/
+@[fun_prop]
 lemma measurable_condBias (η η₀ : NuisanceVec γ) :
     Measurable (fun x : γ => condBias η η₀ x) := by
   unfold condBias

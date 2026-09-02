@@ -160,8 +160,8 @@ theorem invMomentI_ge_shell [IsProbabilityMeasure P] (h : PolyTail P U κ t₀ c
     linarith
   -- pointwise: `(ρ/λ)·𝟙_S ≤ integrand`
   have hsmeas_int : Integrable
-      (fun ω => (ρ / lam) * Set.indicator S (fun _ => (1 : ℝ)) ω) P :=
-    ((integrable_const (1 : ℝ)).indicator hSmeas).const_mul _
+      (fun ω => (ρ / lam) * Set.indicator S (fun _ => (1 : ℝ)) ω) P := by
+    fun_prop
   have hpt : ∀ᵐ ω ∂P,
       (ρ / lam) * Set.indicator S (fun _ => (1 : ℝ)) ω ≤ U ω / (max (U ω) lam) ^ 2 := by
     filter_upwards [hsetup.pos] with ω hUpos

@@ -68,8 +68,12 @@ export function findAuthoredNodeReferences(
     add(`${statement.id}.justification`, statement.justification);
     add(`${statement.id}.gap`, statement.gap);
     add(`${statement.id}.consumer`, statement.consumer);
-    add(`${statement.id}.source.verbatim_statement`, statement.source?.verbatim_statement);
-    add(`${statement.id}.source.attestation.note`, statement.source?.attestation?.note);
+    // Citation metadata is authored content too. Locators and upstream/custom
+    // source fields can name catalog ids even when the conventional excerpt and
+    // attestation fields do not, so scan the complete frozen source object.
+    if (statement.source !== undefined) {
+      add(`${statement.id}.source`, JSON.stringify(statement.source));
+    }
   }
   return out;
 }

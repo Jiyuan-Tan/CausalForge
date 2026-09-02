@@ -82,6 +82,15 @@ describe("D-1 proto-core prompt ↔ CoreSchema persistence contract", () => {
 });
 
 describe("D0 solve carried-node prompt contract", () => {
+  it("requires atomic coherence closure across formal metadata and narrative channels", async () => {
+    const prompt = await readFile(D0_SOLVE_PROMPT_URL, "utf8");
+    expect(prompt).toContain("COHERENCE CLOSURE IS ATOMIC");
+    expect(prompt).toContain("exactly one `definition-replace`");
+    expect(prompt).toContain("whose `depends_on` and `free_symbols`");
+    expect(prompt).toContain("Audit `estimand_functional`");
+    expect(prompt).toContain("Emit all such edits in the same bundle");
+  });
+
   it("consistently permits citation without re-emission for established nodes", async () => {
     const prompt = await readFile(D0_SOLVE_PROMPT_URL, "utf8");
     expect(prompt).toContain("Cite ALREADY-ESTABLISHED nodes for reuse and do NOT re-emit them");

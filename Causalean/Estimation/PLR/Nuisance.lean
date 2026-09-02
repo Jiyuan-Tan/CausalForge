@@ -44,6 +44,8 @@ structure PLRNuisance (γ : Type*) [MeasurableSpace γ] where
   lMeas : Measurable lFn
   mMeas : Measurable mFn
 
+attribute [fun_prop] PLRNuisance.lMeas PLRNuisance.mMeas
+
 namespace PLRNuisance
 
 variable {γ : Type*} [MeasurableSpace γ]

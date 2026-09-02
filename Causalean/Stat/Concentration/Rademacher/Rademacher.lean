@@ -17,6 +17,7 @@ for provenance and license terms.
 
 import FoML.Defs
 import FoML.BoundedDifference
+import Causalean.Tactic.Attr
 
 /-!
 Re-exports FoML Rademacher-complexity primitives and adds congruence lemmas for empirical and
@@ -48,6 +49,27 @@ namespace Concentration
 
 open MeasureTheory
 
+/-- The empirical Rademacher complexity of a function family on a fixed sample is the average,
+over all sign vectors of the sample length, of the largest absolute sign-weighted sample average
+attained across the family. -/
+@[causal_defs_simps]
+lemma empiricalRademacherComplexity_eq {𝒳 ι : Type*}
+    (n : ℕ) (f : ι → 𝒳 → ℝ) (S : Fin n → 𝒳) :
+    empiricalRademacherComplexity n f S =
+      (Fintype.card (Signs n) : ℝ)⁻¹ *
+        ∑ σ : Signs n, ⨆ i, |(n : ℝ)⁻¹ * ∑ k : Fin n, (σ k : ℝ) * f i (S k)| :=
+  rfl
+
+/-- The population Rademacher complexity of a function family is the mean, over samples of
+independent draws, of the empirical Rademacher complexity of that family on the drawn sample. -/
+@[causal_defs_simps]
+lemma rademacherComplexity_eq {Ω 𝒳 ι : Type*} [MeasurableSpace Ω]
+    (n : ℕ) (f : ι → 𝒳 → ℝ) (μ : MeasureTheory.Measure Ω) (X : Ω → 𝒳) :
+    rademacherComplexity n f μ X =
+      ∫ ω : Fin n → Ω, empiricalRademacherComplexity n f (X ∘ ω)
+        ∂(MeasureTheory.Measure.pi fun _ => μ) :=
+  rfl
+
 /-- The empirical Rademacher complexity sees the function family only through its
 values on the observed sample: two families that agree at every sample point have
 equal empirical Rademacher complexity. -/
@@ -56,7 +78,7 @@ lemma empiricalRademacherComplexity_congr_sample
     (h : ∀ i k, f i (sample k) = f' i (sample k)) :
     empiricalRademacherComplexity n f sample =
       empiricalRademacherComplexity n f' sample := by
-  dsimp [empiricalRademacherComplexity]
+  simp only [causal_defs_simps]
   congr 1
   apply Finset.sum_congr rfl
   intro σ _hσ
@@ -81,7 +103,7 @@ lemma rademacherComplexity_congr_ae
       fun ω => f' i (sample ω)) :
     rademacherComplexity n f μ sample =
       rademacherComplexity n f' μ sample := by
-  dsimp [rademacherComplexity]
+  simp only [causal_defs_simps]
   apply integral_congr_ae
   have hall : ∀ᵐ ω ∂μ, ∀ i : ι,
       f i (sample ω) = f' i (sample ω) := ae_all_iff.2 h
@@ -111,7 +133,7 @@ lemma rademacherComplexity_congr_ae_all
     (h : ∀ᵐ ω ∂μ, ∀ i : ι, f i (sample ω) = f' i (sample ω)) :
     rademacherComplexity n f μ sample =
       rademacherComplexity n f' μ sample := by
-  dsimp [rademacherComplexity]
+  simp only [causal_defs_simps]
   apply integral_congr_ae
   have hprod : ∀ᵐ s : Fin n → Ω ∂Measure.pi (fun _ : Fin n => μ),
       ∀ i : ι, ∀ k : Fin n,

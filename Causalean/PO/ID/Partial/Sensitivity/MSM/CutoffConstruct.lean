@@ -27,6 +27,7 @@ Scope: the upper bound (treated). The lower bound and the ATE specialization mir
 import Causalean.PO.ID.Partial.Sensitivity.MSM.CutoffSelection
 import Causalean.PO.ID.Partial.Sensitivity.MSM.QuantileBalance
 import Causalean.Mathlib.Probability.MeasurableCondQuantile
+import Causalean.Tactic.Attr
 
 /-! # Construction of treated-arm calibrated cutoff weights
 
@@ -66,6 +67,15 @@ def treatedSet : Set P.Ω := S.factualD ⁻¹' {true}
 outcome on the sub-population of treated units, `(μ restricted to {D=1}) ∘ (X, Y)⁻¹`. -/
 noncomputable def treatedXYLaw : Measure (γ × ℝ) :=
   (P.μ.restrict S.treatedSet).map (fun ω => (S.factualX ω, S.factualY ω))
+
+/-- The treated push-forward law of the covariate and outcome is the image, under the map
+recording the factual covariate and factual outcome, of the population measure restricted to the
+treated set. -/
+@[causal_defs_simps]
+lemma treatedXYLaw_eq :
+    S.treatedXYLaw =
+      (P.μ.restrict S.treatedSet).map (fun ω => (S.factualX ω, S.factualY ω)) :=
+  rfl
 
 /-- The **treated conditional CDF** of `Y` given `X`, evaluated along the factual covariate:
 `F(t | X(ω)) = P(Y ≤ t | X = X(ω), D = 1)`. -/
@@ -108,18 +118,27 @@ private lemma integrable_treated_le_indicator (t : ℝ) :
   exact (integrable_const (α := P.Ω) (μ := P.μ) (c := (1 : ℝ))).indicator
     ((S.measurableSet_treatedSet).inter (S.measurableSet_factualY_le t))
 
-private lemma measurable_treatedCondCDF_const (t : ℝ) :
+/-- At a fixed outcome level, the treated conditional CDF depends on the unit only through the
+observed covariate, so it is measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_treatedCondCDF_const (t : ℝ) :
     Measurable[S.sigmaX] (fun ω => S.treatedCondCDF ω t) := by
   rw [POBackdoorSystem.sigmaX]
   unfold POBackdoorSystem.treatedCondCDF
   exact (ProbabilityTheory.measurable_condCDF S.treatedXYLaw t).comp
     (comap_measurable S.factualX)
 
-private lemma stronglyMeasurable_treatedCondCDF_const (t : ℝ) :
+/-- The strongly-measurable form, for the covariate σ-algebra, of the treated conditional CDF at a
+fixed outcome level. -/
+@[fun_prop]
+lemma stronglyMeasurable_treatedCondCDF_const (t : ℝ) :
     StronglyMeasurable[S.sigmaX] (fun ω => S.treatedCondCDF ω t) :=
   (S.measurable_treatedCondCDF_const t).stronglyMeasurable
 
-private lemma measurable_treatedCondCDF_const_ambient (t : ℝ) :
+/-- The treated conditional CDF at a fixed outcome level is measurable for the ambient σ-algebra as
+well as for the covariate one. -/
+@[fun_prop]
+lemma measurable_treatedCondCDF_const_ambient (t : ℝ) :
     Measurable (fun ω => S.treatedCondCDF ω t) :=
   (S.measurable_treatedCondCDF_const t).mono S.sigmaX_le le_rfl
 
@@ -348,6 +367,7 @@ private lemma exists_factor_through_factualX_private {f : P.Ω → ℝ}
   exact ⟨g, hg, by simpa [Function.comp_def] using hfg⟩
 
 /-- The conditional CDF remains measurable when evaluated at a measurable cutoff. -/
+@[fun_prop]
 lemma measurable_condCDF_variable (ρ : Measure (γ × ℝ)) [IsFiniteMeasure ρ]
     {q : γ → ℝ} (hq : Measurable q) :
     Measurable (fun a => condCDF ρ a (q a)) := by
@@ -375,6 +395,7 @@ lemma measurable_condCDF_variable (ρ : Measure (γ × ℝ)) [IsFiniteMeasure ρ
 
 /-- The conditional CDF evaluated at a measurable cutoff is integrable under
 the first marginal. -/
+@[fun_prop]
 lemma integrable_condCDF_variable (ρ : Measure (γ × ℝ)) [IsFiniteMeasure ρ]
     {q : γ → ℝ} (hq : Measurable q) :
     Integrable (fun a => condCDF ρ a (q a)) ρ.fst := by
@@ -462,7 +483,10 @@ private lemma integrable_treated_le_indicator_variable (c : P.Ω → ℝ)
   exact (integrable_const (α := P.Ω) (μ := P.μ) (c := (1 : ℝ))).indicator
     ((S.measurableSet_treatedSet).inter (S.measurableSet_factualY_le_cutoff c hc))
 
-private lemma measurable_treatedCondCDF_variable (c : P.Ω → ℝ)
+/-- Evaluated at a cutoff that itself depends on the unit only through the observed covariate, the
+treated conditional CDF is still measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_treatedCondCDF_variable (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     Measurable[S.sigmaX] (fun ω => S.treatedCondCDF ω (c ω)) := by
   obtain ⟨q, hq, hc_eq⟩ := S.exists_factor_through_factualX_private hc
@@ -474,12 +498,18 @@ private lemma measurable_treatedCondCDF_variable (c : P.Ω → ℝ)
   exact (measurable_condCDF_variable S.treatedXYLaw hq).comp
     (comap_measurable S.factualX)
 
-private lemma stronglyMeasurable_treatedCondCDF_variable (c : P.Ω → ℝ)
+/-- The strongly-measurable form, for the covariate σ-algebra, of the treated conditional CDF at a
+covariate-measurable cutoff. -/
+@[fun_prop]
+lemma stronglyMeasurable_treatedCondCDF_variable (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     StronglyMeasurable[S.sigmaX] (fun ω => S.treatedCondCDF ω (c ω)) :=
   (S.measurable_treatedCondCDF_variable c hc).stronglyMeasurable
 
-private lemma measurable_treatedCondCDF_variable_ambient (c : P.Ω → ℝ)
+/-- The treated conditional CDF at a covariate-measurable cutoff is measurable for the ambient
+σ-algebra as well as for the covariate one. -/
+@[fun_prop]
+lemma measurable_treatedCondCDF_variable_ambient (c : P.Ω → ℝ)
     (hc : Measurable[S.sigmaX] c) :
     Measurable (fun ω => S.treatedCondCDF ω (c ω)) :=
   (S.measurable_treatedCondCDF_variable c hc).mono S.sigmaX_le le_rfl

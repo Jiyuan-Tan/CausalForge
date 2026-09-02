@@ -55,6 +55,7 @@ noncomputable def kernelMean (K : Kernel X Y) (T : Y → ℝ) : X → ℝ :=
 
 /-- [Measurability of a real-valued estimator](hyp:hT) ensures that [its expectation under each
 kernel output distribution varies measurably with the kernel input](goal). -/
+@[fun_prop]
 theorem measurable_kernelMean (K : Kernel X Y) {T : Y → ℝ} (hT : Measurable T) :
     Measurable (kernelMean K T) := by
   exact hT.stronglyMeasurable.integral_kernel.measurable
@@ -87,6 +88,7 @@ noncomputable def kernelAffinePullback (K : Kernel X Y) (a b : ℝ)
 
 /-- [Measurability of a target estimator](hyp:htarget) ensures that [its affine kernel
 pullback is measurable on the source experiment](goal). -/
+@[fun_prop]
 theorem measurable_kernelAffinePullback (K : Kernel X Y) {a b : ℝ}
     {targetEst : Y → ℝ} (htarget : Measurable targetEst) :
     Measurable (kernelAffinePullback K a b targetEst) := by

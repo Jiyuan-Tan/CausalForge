@@ -81,3 +81,27 @@ describe("statement ids must be unique", () => {
     expect(CoreSchema.safeParse(core([stmt({ id: "lem:a" }), stmt({ id: "lem:b" })])).success).toBe(true);
   });
 });
+
+describe("symbol names must be unique", () => {
+  const core = (symbols: unknown[]) => ({
+    qid: "q", symbols, assumptions: [], definitions: [], statements: [],
+    target_estimand: "tau", bibliography: [],
+  });
+
+  it("rejects a duplicate that could hide a dependency cycle from declaration ordering", () => {
+    const r = CoreSchema.safeParse(core([
+      { name: "a", type: "scalar" },
+      { name: "b", type: "scalar", refs: ["a"] },
+      { name: "a", type: "scalar", refs: ["b"] },
+    ]));
+    expect(r.success).toBe(false);
+    if (!r.success) expect(JSON.stringify(r.error.issues)).toMatch(/duplicate symbol name\(s\): a/);
+  });
+
+  it("accepts distinct symbol names", () => {
+    expect(CoreSchema.safeParse(core([
+      { name: "a", type: "scalar" },
+      { name: "b", type: "scalar", refs: ["a"] },
+    ])).success).toBe(true);
+  });
+});

@@ -10,6 +10,7 @@ names a finite target set of variables together with an assignment of
 values on that set.  No graph and no SCM structure is assumed.
 -/
 
+import Causalean.Tactic.Attr
 import Causalean.Mathlib.MeasureTheory.FinsetValues
 
 /-! # Intervention Regimes
@@ -72,16 +73,46 @@ noncomputable def sqcup (r₁ r₂ : Regime V X) (_h : r₁.Disjoint r₂) :
     Regime V X :=
   leftBiasedUnion r₁ r₂
 
+/-- Two intervention regimes are disjoint exactly when their target sets are
+disjoint as finite sets.
+
+This is the simp-shaped form of the definition of regime disjointness:
+rewriting with it replaces the project predicate by disjointness of the target
+sets, after which the finite-set API applies. -/
+@[causal_defs_simps]
+lemma disjoint_iff (r₁ r₂ : Regime V X) :
+    r₁.Disjoint r₂ ↔ _root_.Disjoint r₁.target r₂.target :=
+  Iff.rfl
+
+/-- The left-biased union of two regimes targets the union of their target
+sets.
+
+This is the simp-shaped form of the target field of the left-biased union. -/
+@[causal_defs_simps]
+lemma leftBiasedUnion_target (r₁ r₂ : Regime V X) :
+    (r₁.leftBiasedUnion r₂).target = r₁.target ∪ r₂.target :=
+  rfl
+
+/-- The disjoint union of two compatible regimes is their left-biased union;
+disjointness makes the left bias immaterial.
+
+This is the simp-shaped form of the definition of the disjoint union, and it
+carries disjoint-union goals into the left-biased-union normal form. -/
+@[causal_defs_simps]
+lemma sqcup_eq_leftBiasedUnion (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂) :
+    r₁.sqcup r₂ h = r₁.leftBiasedUnion r₂ :=
+  rfl
+
 /-- The empty intervention regime has no target variables. -/
-@[simp] lemma empty_target : (empty : Regime V X).target = ∅ := rfl
+@[simp, causal_defs_simps] lemma empty_target : (empty : Regime V X).target = ∅ := rfl
 
 /-- The empty intervention regime is disjoint from every regime on its right. -/
 lemma empty_disjoint_right (r : Regime V X) : (empty : Regime V X).Disjoint r := by
-  simp [Disjoint, empty]
+  simp [causal_defs_simps]
 
 /-- Every regime is disjoint from the empty intervention regime on its right. -/
 lemma empty_disjoint_left (r : Regime V X) : r.Disjoint (empty : Regime V X) := by
-  simp [Disjoint, empty]
+  simp [causal_defs_simps]
 
 /-- The target of the disjoint union of two regimes is the union of their target sets. -/
 @[simp] lemma sqcup_target (r₁ r₂ : Regime V X) (h : r₁.Disjoint r₂) :
@@ -121,7 +152,7 @@ def single (v : V) (x : X v) : Regime V X where
   assign := fun _ hw => (Finset.mem_singleton.mp hw).symm ▸ x
 
 /-- The singleton intervention regime targets exactly the one variable it fixes. -/
-@[simp] theorem single_target (v : V) (x : X v) :
+@[simp, causal_defs_simps] theorem single_target (v : V) (x : X v) :
     (single v x : Regime V X).target = {v} := rfl
 
 /-- Evaluating the singleton intervention assignment at its target returns the supplied value. -/
@@ -131,19 +162,19 @@ theorem single_assign_self (v : V) (x : X v) :
 /-- Singleton intervention regimes on two distinct variables are disjoint. -/
 theorem single_disjoint_single {v w : V} (hvw : v ≠ w) (x : X v) (y : X w) :
     (single v x : Regime V X).Disjoint (single w y) := by
-  simp [Disjoint, single, hvw]
+  simp [causal_defs_simps, hvw]
 
 /-- A singleton intervention regime is disjoint from any regime that does not
 target its variable. -/
 theorem single_disjoint_of_not_mem {v : V} (x : X v) (r : Regime V X)
     (h : v ∉ r.target) : (single v x : Regime V X).Disjoint r := by
-  simp [Disjoint, single, Finset.disjoint_singleton_left, h]
+  simp [causal_defs_simps, Finset.disjoint_singleton_left, h]
 
 /-- Any regime that does not target a variable is disjoint from the singleton
 intervention on that variable. -/
 theorem disjoint_single_of_not_mem {v : V} (x : X v) (r : Regime V X)
     (h : v ∉ r.target) : r.Disjoint (single v x : Regime V X) := by
-  simp [Disjoint, single, Finset.disjoint_singleton_right, h]
+  simp [causal_defs_simps, Finset.disjoint_singleton_right, h]
 
 /-! ### Multi-stage regimes from a list of assignments -/
 
@@ -171,12 +202,34 @@ def ofListLeftBiased (l : List ((v : V) × X v)) :
   target := (l.map Sigma.fst).toFinset
   assign := fun v hv => listLookup l v (List.mem_toFinset.mp hv)
 
+/-- The regime built from a list of assignments by taking the first listed
+value for each variable targets exactly the finite set of listed variables.
+
+This is the simp-shaped form of the target field of the left-biased
+list-built regime. -/
+@[causal_defs_simps]
+lemma ofListLeftBiased_target (l : List ((v : V) × X v)) :
+    (ofListLeftBiased l : Regime V X).target = (l.map Sigma.fst).toFinset :=
+  rfl
+
 /-- A duplicate-free list of variable-value assignments determines the
 intervention regime that targets exactly the listed variables and assigns each
 target its listed value. -/
 def ofList (l : List ((v : V) × X v)) (_h : (l.map Sigma.fst).Nodup) :
     Regime V X :=
   ofListLeftBiased l
+
+/-- On a duplicate-free list of assignments, the regime it determines is the
+left-biased list-built regime; the duplicate-freeness makes the left bias
+immaterial.
+
+This is the simp-shaped form of the definition of the list-built regime, and it
+carries list-built-regime goals into the left-biased normal form. -/
+@[causal_defs_simps]
+lemma ofList_eq_ofListLeftBiased (l : List ((v : V) × X v))
+    (h : (l.map Sigma.fst).Nodup) :
+    (ofList l h : Regime V X) = ofListLeftBiased l :=
+  rfl
 
 /-- For [a duplicate-free list of variable-value assignments `l`](hyp:l,h),
 [the target of the regime it determines is exactly the finite set of variables
@@ -197,7 +250,7 @@ into the target from the tail. -/
     (h : ((⟨v, x⟩ :: rest : List ((v : V) × X v)).map Sigma.fst).Nodup) :
     (ofList (⟨v, x⟩ :: rest) h).target =
       insert v (rest.map Sigma.fst).toFinset := by
-  simp [ofList, ofListLeftBiased]
+  simp [causal_defs_simps]
 
 /-- Looking up the head variable of a dependent assignment list returns the head value. -/
 theorem listLookup_cons_self {v : V} {x : X v}

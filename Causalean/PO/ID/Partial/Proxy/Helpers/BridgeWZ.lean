@@ -8,6 +8,7 @@ import Causalean.PO.ID.Partial.Proxy.Helpers.Common
 import Causalean.PO.ID.Exact.Proximal.Helpers
 import Causalean.Mathlib.LikelihoodRatioSwap
 import Causalean.Mathlib.CondIndep
+import Causalean.Tactic.CondexpLinearity
 
 /-! # Two-Proxy Bridge Substitution
 
@@ -176,7 +177,7 @@ lemma condIntYofA_eq_hq_armSwap_twoProxy
   have hCEsub : μ[fun ω => S.Y ω - HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]
       =ᵐ[μ] μ[S.Y | S.σ_AUX]
             - μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX] :=
-    MeasureTheory.condExp_sub (m := S.σ_AUX) hYInt hhAInt
+    by condexp_linearity
   have hBridge_AUX : μ[S.Y | S.σ_AUX]
       =ᵐ[μ] μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX] := by
     have h1 := hCEsub.symm.trans HA.bridge_h
@@ -208,7 +209,7 @@ lemma condIntYofA_eq_hq_armSwap_twoProxy
     have hCE_dsub : μ[d | S.σ_AUX]
         =ᵐ[μ] μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]
               - μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX] :=
-      MeasureTheory.condExp_sub (m := S.σ_AUX) hhAInt hhArmInt
+      by condexp_linearity
     have hCE_dsub_restrict : μ[d | S.σ_AUX]
         =ᵐ[μ.restrict s]
         μ[fun ω => HA.h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]

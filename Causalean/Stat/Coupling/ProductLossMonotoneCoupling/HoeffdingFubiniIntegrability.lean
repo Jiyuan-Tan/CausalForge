@@ -25,6 +25,7 @@ variable {π : Measure (ℝ × ℝ)} {μ ν : Measure ℝ}
 /-- The single-coordinate tail kernel is integrable on `volume ⊗ π`. Domination:
 `∫ s, |signedTail p.1 s| ds = |p.1|`, which is `π`-integrable since `X ∈ L²(π)`
 and `π` is finite. -/
+@[fun_prop]
 lemma integrable_tail_fst_prod (h : IsCoupling π μ ν) (hμ : MemLp (fun x : ℝ => x) 2 μ) :
     Integrable (fun z : ℝ × (ℝ × ℝ) => signedTail z.2.1 z.1) (volume.prod π) := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure
@@ -41,6 +42,7 @@ lemma integrable_tail_fst_prod (h : IsCoupling π μ ν) (hμ : MemLp (fun x : �
 
 /-- The single-coordinate tail kernel is integrable on `volume ⊗ π` (second
 coordinate). -/
+@[fun_prop]
 lemma integrable_tail_snd_prod (h : IsCoupling π μ ν) (hν : MemLp (fun y : ℝ => y) 2 ν) :
     Integrable (fun z : ℝ × (ℝ × ℝ) => signedTail z.2.2 z.1) (volume.prod π) := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure
@@ -65,6 +67,7 @@ Domination: for fixed `p`,
 `p ↦ |p.1| * |p.2|` is `π`-integrable by Cauchy–Schwarz on the `L²` marginals.
 Formally: apply `MeasureTheory.integrable_prod_iff'` with the joint measurability
 supplied by `measurable_signedTail_uncurry`. -/
+@[fun_prop]
 lemma integrable_bigPhi (h : IsCoupling π μ ν)
     (hμ : MemLp (fun x : ℝ => x) 2 μ) (hν : MemLp (fun y : ℝ => y) 2 ν) :
     Integrable (fun z : (ℝ × ℝ) × (ℝ × ℝ) =>
@@ -155,6 +158,7 @@ lemma mean_snd_tail (h : IsCoupling π μ ν) (hν : MemLp (fun y : ℝ => y) 2 
 /-- The centred marginal survival function `s ↦ SX s - 𝟙{s<0}` is Lebesgue
 integrable (it is `E[signedTail X ·]`, integrable by
 `Integrable.integral_prod_left` on `integrable_tail_fst_prod`). -/
+@[fun_prop]
 lemma integrable_survFst_sub (h : IsCoupling π μ ν) (hμ : MemLp (fun x : ℝ => x) 2 μ) :
     Integrable (fun s : ℝ => survFst π s - tailInd 0 s) volume := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure
@@ -163,6 +167,7 @@ lemma integrable_survFst_sub (h : IsCoupling π μ ν) (hμ : MemLp (fun x : ℝ
 
 /-- The centred marginal survival function `t ↦ SY t - 𝟙{t<0}` is Lebesgue
 integrable. -/
+@[fun_prop]
 lemma integrable_survSnd_sub (h : IsCoupling π μ ν) (hν : MemLp (fun y : ℝ => y) 2 ν) :
     Integrable (fun t : ℝ => survSnd π t - tailInd 0 t) volume := by
   letI : IsProbabilityMeasure π := h.isProbabilityMeasure
@@ -171,6 +176,7 @@ lemma integrable_survSnd_sub (h : IsCoupling π μ ν) (hν : MemLp (fun y : ℝ
 
 /-- The fibre `q ↦ ∫ p, Φ q p ∂π` is integrable on `ℝ × ℝ`, by
 `Integrable.integral_prod_left` applied to `integrable_bigPhi`. -/
+@[fun_prop]
 lemma integrable_fiber (h : IsCoupling π μ ν)
     (hμ : MemLp (fun x : ℝ => x) 2 μ) (hν : MemLp (fun y : ℝ => y) 2 ν) :
     Integrable (fun q : ℝ × ℝ =>

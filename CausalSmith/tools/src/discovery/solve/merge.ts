@@ -7,6 +7,8 @@
 // collection, OEQ resolution application, prose application, LaTeX repair, id
 // auto-heal, citation wiring, and the self-containment repair + dangling-edge
 // check at the merge boundary.
+import { retargetDeletedDependency } from "../core/oeq_edges.js";
+import { remapResolvedDependencies } from "../core/oeq_edges.js";
 import { ProjectJustificationSchema, type Core, type CoreStatement } from "../core/schema.js";
 import {
   proofContentClosureIntersects,
@@ -14,7 +16,7 @@ import {
   } from "../core/dependencies.js";
 
 import { assertCanonicalAlignedRowTerminators, repairLatexStringsDeep } from "../core/latex_serialization.js";
-import { healStatementId } from "../core/node_ids.js";
+import { extractCitationRefs, healStatementId } from "../core/node_ids.js";
 import { mergeProseOverlay, assembleCore } from "../core/assemble.js";
 import { isUnfinishedCarriedRecord } from "../core/status.js";
 import { type ProofToArchive } from "../proof_archive.js";
@@ -37,6 +39,7 @@ import type {
 } from "./schemas.js";
 import {
   projectOutputsToWriteCapabilities,
+  selectLiveDurableProofOwners,
   collectConflictingSolveEmissions,
   dropConflictingSolveEmissions,
   type SolveEmissionConflict,
@@ -47,6 +50,13 @@ import { coreEditOperationKey } from "./mandates.js";
 import { pinWhitespaceEquivalentCurrent } from "./proposals.js";
 import { normalizeTexWhitespace } from "../../shared/tex_text.js";
 import { definitionRevision, statementRevision } from "../core/revision.js";
+import type { WorkingState } from "../stages/d0_working.js";
+import { computeValidNodes, symbolBasis } from "../stages/d0_working.js";
+import {
+  agentOeqSourceFromFingerprint,
+  authoritativeStatementCatalog,
+  resolvedStatementReplacementEndpoint,
+} from "./oeq_source.js";
 
 // (Records only: `applyProseUpdates` is gone. The prose channel's ONE durable
 // carrier is `working.prose_overlay` (merged below via `mergeProseOverlay`);
@@ -79,9 +89,24 @@ export function partitionProofsByTarget<T extends { id: string }>(
   return { matched, unmatched };
 }
 
-/** Whether an already-carried theorem is exactly the same mathematical answer an
- * OEQ solver just emitted. Motivation/provenance prose may move independently; the
- * theorem identity, claim, proof interface, proof state and proof body may not. */
+/** Remove resolved-OEQ edges whose source or answer is deleted in one reviewed
+ * statement transaction.  The apply path removes the same edge; merge previews
+ * must do so too or stale source→answer metadata makes an atomic deletion bundle
+ * look inapplicable. */
+export function removeAtomicallyDeletedOeqResolutionEdges(
+  resolved: Record<string, string | { theorem_id: string }> | undefined,
+  deletedIds: ReadonlySet<string>,
+): void {
+  if (resolved === undefined) return;
+  for (const [sourceId, resolution] of Object.entries(resolved)) {
+    const theoremId = typeof resolution === "string" ? resolution : resolution.theorem_id;
+    if (deletedIds.has(sourceId) || deletedIds.has(theoremId)) delete resolved[sourceId];
+  }
+}
+
+/** Whether an already-carried theorem is the same proof-relevant OEQ answer an
+ * OEQ solver just emitted. Motivation prose may differ because recovery always
+ * keeps the prior durable node; changing it requires the statement-note channel. */
 /** Dependencies are a SET for claim identity (depsKey, computeValidNodes,
  *  oeqSourceFingerprint); LLM re-emission order is not stable, so the duplicate-
  *  discharge check canonicalizes order/duplicates. NOT used by
@@ -100,7 +125,10 @@ export function reusableOeqAnswerMatches(existing: CoreStatement, emitted: CoreS
     JSON.stringify(existing.depends_on ?? []) === JSON.stringify(emitted.depends_on ?? []) &&
     existing.status === emitted.status &&
     (existing.proof_tex ?? "") === (emitted.proof_tex ?? "") &&
-    JSON.stringify(existing.source ?? null) === JSON.stringify(emitted.source ?? null);
+    JSON.stringify(existing.source ?? null) === JSON.stringify(emitted.source ?? null) &&
+    JSON.stringify(existing.free_symbols) === JSON.stringify(emitted.free_symbols) &&
+    existing.route === emitted.route &&
+    JSON.stringify(existing.external_refs) === JSON.stringify(emitted.external_refs);
 }
 
 // Moved to core/dependencies.ts so d0_apply can use it for paired-proof promotion
@@ -110,24 +138,101 @@ export { proofContentClosureIntersects };
 
 export interface SolveMergeResult {
   emissionConflicts: SolveEmissionConflict[];
+  /** Same-round statements/proofs withheld because their emitted dependency closure
+   *  reaches an emission-conflicted id. Quarantining the closure lets unrelated
+   *  units commit without publishing consumers of content that was withheld. */
+  withheldConflictConsumers: string[];
+  /** Ownership/capability-rejected payloads. They are auditable checkpoint content,
+   *  not a reason to discard unrelated units from the round. */
+  withheldCapabilityEmissions: string[];
+  /** Complete raw bytes for every withheld structured carrier. The diagnostic
+   *  summaries above are intentionally compact; this is the durable adjudication
+   *  record before per-round solve files may be overwritten. */
+  withheldPayloads: Array<{
+    category: string;
+    target: string;
+    unit: string;
+    reason: string;
+    payload: unknown;
+  }>;
+  /** Exact directive targets for which no substantive accepted carrier survived
+   * normalization.  Commit uses this explicit postimage result instead of
+   * mistaking quarantined sibling noise for failure of a canonical mandate. */
+  unfulfilledExactTargets: string[];
+  /** The round consumed a STRUCTURED CORE CHANGES REQUIRED directive but no
+   * substantive structured change landed. Commit must keep the directive pending
+   * (rewind the escalation cursor) even when the directive names no exact target. */
+  structuredDirectiveUnfulfilled: boolean;
   addedLemmaCollisions: Array<{ id: string; owner: string }>;
   oeqAnswerCollisions: string[];
+  /** Resolutions withheld because their source is not a live OEQ in the frozen
+   *  core ("source→theorem"). Paid output was discarded (bytes archived), so the
+   *  proposal checkpoint must surface these — a console warning alone lets the
+   *  round advance as if nothing was dropped. */
+  withheldInvalidResolutions: string[];
   /** Identical-claim re-emissions of settled nodes, skipped as no-op discharges. */
   duplicateReproofIds: string[];
+  /** `statement-replace` edits whose post-image equalled the node the worker was shown,
+   *  dropped before capability projection so an echo cannot seed quarantine/closure. */
+  duplicateEchoEditIds: string[];
   /** Proof bytes refused by this merge (withheld/unmatched/duplicate) — installed
    *  nowhere in hot state, so commitRound must copy them to the cold archive before
    *  the next dispatch can overwrite the raw solve files that hold them. */
   withheldProofBytes: ProofToArchive[];
   unmatchedProofIds: string[];
+  /** Proofs withheld because the emitter lacked ownership of an EXISTING id. */
+  quarantinedProofs: Array<{ id: string; unit: string; owner: string }>;
   proposedChanges: ProposedStatementChange[];
   defChanges: ProposedDefinitionChange[];
   proposedAssumptions: ProposedAssumption[];
   proposedCoreEdits: RawCoreEdit[];
   deferredProofs: Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>;
+  deferredCitationRevalidations: CoreStatement[];
   openObligations: OpenObligation[];
   illegalDefTargets: string[];
   solved: number;
   addedLemmas: number;
+}
+
+/** Remove note-overlay entries that no longer decorate any durable statement.
+ *
+ * The published render is intentionally not the catalog: resolved OEQ sources
+ * and partial+shelved agent nodes can be absent from it while remaining
+ * reversible authoritative records.  Frozen proto statements and agent-node
+ * records are therefore the two liveness stores. */
+export function pruneOrphanStatementNotes(
+  proto: Pick<Core, "statements">,
+  working: Pick<WorkingState, "solved" | "resolved_oeqs" | "prose_overlay">,
+): string[] {
+  const notes = working.prose_overlay?.statement_notes;
+  if (notes === undefined) return [];
+
+  const durableStatementIds = new Set(authoritativeStatementCatalog(proto.statements, working).keys());
+  const orphanNoteIds = Object.keys(notes)
+    .filter((id) => !durableStatementIds.has(id))
+    .sort();
+  for (const id of orphanNoteIds) delete notes[id];
+  if (Object.keys(notes).length === 0) delete working.prose_overlay!.statement_notes;
+  return orphanNoteIds;
+}
+
+/** Withheld-record reasons that never carry the directive's mathematics. */
+export const NOISE_WITHHELD_REASONS: ReadonlySet<string> = new Set([
+  "unsolicited-prose",
+  "unauthorized-prose-owner",
+  "unmatched-id",
+  "duplicate-reproof",
+  "mandate-shadowed",
+  "dropped-nonexistent-obligation",
+  "proof-on-resolved-oeq",
+]);
+
+/** Completion identity of a statement carrier: every field except `status` and
+ *  `proof_tex`, with the dependency set order-normalized. Two carriers with equal
+ *  identity are the same completion, never competing versions. */
+function completionIdentity(statement: CoreStatement): string {
+  const { status: _status, proof_tex: _proofTex, ...identity } = statement;
+  return JSON.stringify({ ...identity, depends_on: [...new Set(statement.depends_on)].sort() });
 }
 
 export function mergeSolveOutputs(args: {
@@ -147,7 +252,14 @@ export function mergeSolveOutputs(args: {
     requiredCoreTargets,
     requiredCoreEdits: requiredCoreEditsSealed,
     semanticManifest,
+    validIds,
+    droppedCarryIds,
   } = sctx;
+  // `next` already contains this round's validity/shelving decisions. Proof merge
+  // mutates it below, so correction revocation must restore this exact basis rather
+  // than `prev`, whose formerly full record may have just been invalidated.
+  const preMergeSolved = structuredClone(next.solved);
+  const preMergeProseOverlay = structuredClone(next.prose_overlay);
   // Work with mandate payloads under the SAME LaTeX repair the proposal store
   // gets on every load. Mandates keep their sealed bytes (opaque on load), so an
   // operation on which `repairSerializedLatex` is not a no-op would otherwise
@@ -155,12 +267,16 @@ export function mergeSolveOutputs(args: {
   // cross-store asymmetry fixed at the d0_apply mandate echo check.
   const requiredCoreEdits = structuredClone(requiredCoreEditsSealed);
   repairLatexStringsDeep(requiredCoreEdits);
+  // Exact sealed mandates are already content-addressed and basis-checked. Keep
+  // their object identity so only the canonical seeded operation (never a
+  // same-target worker substitute) may use the narrow mandate exception below.
+  const isRequiredCoreEdit = (edit: RawCoreEdit): boolean => requiredCoreEdits.includes(edit);
   const { dispatch, rawOutputs, proseOwnerIndex, directiveOwnerLabel, semanticTargetOwners } = dr;
   // Revision provenance is a pipeline fact, not a prompt-compliance burden.
-  // Attach the exact view stamped into each unit's target block and the shared
-  // frozen-definition context whenever the worker omitted it. A worker-supplied
-  // revision is preserved and validated normally, so a false/stale value still
-  // fails closed instead of being overwritten.
+  // Statement revisions preserve a worker-supplied stamp and validate it. A
+  // definition correction instead binds both pair members to this round's exact
+  // frozen semantic basis here, so a whole-node post-image cannot carry a
+  // construction-only or otherwise incomplete worker stamp into apply.
   const contextDefinitionById = new Map(core.definitions.map((definition) => [definition.id, definition] as const));
   const contextStatementById = new Map(core.statements.map((statement) => [statement.id, statement] as const));
   const revisionBoundRawOutputs = rawOutputs.map((output, index) => {
@@ -177,11 +293,17 @@ export function mergeSolveOutputs(args: {
       }),
       proposed_definition_changes: output.proposed_definition_changes.map((change) => {
         const target = contextDefinitionById.get(change.id);
-        return change.based_on_revision === undefined && target
-          ? { ...change, based_on_revision: definitionRevision(target) }
+        return target
+          ? { ...change, based_on_revision: definitionRevision(target, core) }
           : change;
       }),
       proposed_core_edits: output.proposed_core_edits.map((edit) => {
+        if (edit.kind === "definition-replace") {
+          const authoredView = contextDefinitionById.get(edit.id);
+          return authoredView
+            ? { ...edit, based_on_revision: definitionRevision(authoredView, core) }
+            : edit;
+        }
         if (edit.kind !== "statement-replace" || edit.based_on_revision !== undefined) return edit;
         // A local statement edit was authored against its stamped target block.
         // A directive-owner metadata edit may instead address a non-target node
@@ -194,20 +316,127 @@ export function mergeSolveOutputs(args: {
       }),
     };
   });
-  const {
-    outputs: projectedOutputs,
-    quarantined: capabilityQuarantines,
-  } = projectOutputsToWriteCapabilities({
-    outputs: revisionBoundRawOutputs,
-    dispatch,
-    semanticTargetOwners,
-    directiveOwnerLabel,
-    requiredCoreTargets,
-    existingStatementIds: new Set([
-      ...proto.statements.map((statement) => statement.id),
-      ...core.statements.map((statement) => statement.id),
-      ...Object.keys(prev?.solved ?? {}),
-    ]),
+  // A settled AGENT-AUTHORED node may be redundantly re-emitted through
+  // `added_lemmas` by a consumer that merely cites it. This is not a competing
+  // write: merge already treats the exact same completion as a no-op and archives
+  // the alternative proof. Frozen/source-backed nodes deliberately stay on the
+  // stricter collision/revalidation path: an apparent re-proof can also alter a
+  // citation, status, symbol declaration, route, or other source metadata.
+  // Remove that harmless carrier before capability quarantine/conflict discovery,
+  // otherwise ownership turns duplicate work into an avoidable checkpoint before
+  // the existing no-op discharge can run. Keep every payload in rounds carrying a
+  // semantic edit/resolution, and every exact required target, because those may be
+  // post-image proof or citation-revalidation receipts rather than duplicates.
+  const hasReviewCarrier = requiredCoreEdits.length > 0 || pendingSupersessionEdits.length > 0 ||
+    revisionBoundRawOutputs.some((output) =>
+      output.resolved_oeqs.length > 0 ||
+      output.proposed_statement_changes.length > 0 ||
+      output.proposed_definition_changes.length > 0 ||
+      output.proposed_assumptions.length > 0 ||
+      output.proposed_core_edits.length > 0
+    );
+  const preCapabilityDuplicateReproofs: Array<{ id: string; proofTex: string }> = [];
+  const isSettledBeforeMerge = (id: string, statement: CoreStatement): boolean => {
+    const record = next.solved[id];
+    if (record !== undefined) {
+      return record.partial !== true && (record.proof_tex ?? "").trim().length > 0;
+    }
+    return statement.status === "cited" ||
+      (statement.status === "proved" && (statement.proof_tex ?? "").trim().length > 0);
+  };
+  // A `statement-replace` whose post-image is byte-identical to the node the worker
+  // was shown is a pure echo: it cannot be a competing version, whoever emitted it.
+  // Left in, an echo on a non-owned node is capability-quarantined and the conflict
+  // closure then withholds the emitter's OWN target work as a dependency consumer
+  // (a single-unit round lost its target proof this way). Drop echoes here, before
+  // capability projection and conflict discovery. Kept: an exact required target
+  // (a deliberate receipt), a sealed/carried mandate, and the structural half of a
+  // same-unit claim-only correction pair (its claim field differs by contract).
+  const preCapabilityEchoEdits: Array<{ id: string; unit: string }> = [];
+  const echoIdentity = (statement: CoreStatement): string => JSON.stringify({
+    kind: statement.kind,
+    statement: statement.statement,
+    status: statement.status,
+    depends_on: [...new Set(statement.depends_on)].sort(),
+    free_symbols: statement.free_symbols === undefined ? null : [...new Set(statement.free_symbols)].sort(),
+    source: statement.source ?? null,
+    route: statement.route ?? null,
+    justification: statement.justification ?? null,
+    gap: statement.gap ?? null,
+    consumer: statement.consumer ?? null,
+    // Provenance and adjudication context are identity-bearing too: an edit that
+    // only adds a cross-run reference is a real change, not an echo.
+    external_refs: statement.external_refs === undefined ? null : [...new Set(statement.external_refs)].sort(),
+    partial_result: (statement as { partial_result?: string }).partial_result ?? null,
+  });
+  const sealedOperationKeys = new Set(
+    [...requiredCoreEdits, ...pendingSupersessionEdits].map((edit) => coreEditOperationKey(edit)),
+  );
+  // A same-unit claim change whose proposed text equals the shown claim is the
+  // no-op half of a no-op correction pair (merge already discards it late); with
+  // it gone, its paired statement-replace is an ordinary echo and both halves drop.
+  const isNoOpStatementChange = (change: { id: string; proposed: string }): boolean => {
+    if (requiredCoreTargets.has(change.id)) return false;
+    const current = contextStatementById.get(change.id);
+    return current !== undefined && change.proposed === current.statement;
+  };
+  const isStatementReplaceEcho = (
+    edit: RawCoreEdit,
+    liveStatementChanges: ReadonlyArray<{ id: string }>,
+  ): edit is Extract<RawCoreEdit, { kind: "statement-replace" }> => {
+    if (edit.kind !== "statement-replace") return false;
+    if (requiredCoreTargets.has(edit.id)) return false;
+    if (sealedOperationKeys.has(coreEditOperationKey(edit))) return false;
+    if (liveStatementChanges.some((change) => change.id === edit.id)) return false;
+    const current = contextStatementById.get(edit.id);
+    if (current === undefined) return false;
+    return echoIdentity(current) === echoIdentity(edit.proposed as CoreStatement);
+  };
+  // A statement note that changes no field is not a write; drop it before the
+  // ownership census so it can neither be quarantined nor contest a real note.
+  const noteChangesNothing = (note: { id: string; justification?: string; gap?: string; consumer?: string }): boolean => {
+    const target = contextStatementById.get(note.id);
+    if (target === undefined) return false;
+    return !((note.justification !== undefined && note.justification !== target.justification) ||
+      (note.gap !== undefined && note.gap !== target.gap) ||
+      (note.consumer !== undefined && note.consumer !== target.consumer));
+  };
+  const capabilityInputOutputs = revisionBoundRawOutputs.map((output, index) => {
+    const unitLabel = dispatch[index]?.label ?? String(index);
+    const liveStatementChanges = output.proposed_statement_changes.filter((change) => {
+      if (!isNoOpStatementChange(change)) return true;
+      preCapabilityEchoEdits.push({ id: change.id, unit: unitLabel });
+      return false;
+    });
+    let proseUpdates = output.prose_updates;
+    if (proseUpdates?.statement_notes !== undefined) {
+      const liveNotes = proseUpdates.statement_notes.filter((note) => !noteChangesNothing(note));
+      if (liveNotes.length !== proseUpdates.statement_notes.length) {
+        const { statement_notes: _dropped, ...rest } = proseUpdates;
+        proseUpdates = liveNotes.length > 0 || Object.keys(rest).length > 0
+          ? { ...rest, statement_notes: liveNotes }
+          : undefined;
+      }
+    }
+    return {
+      ...output,
+      prose_updates: proseUpdates,
+      added_lemmas: output.added_lemmas.filter((emitted) => {
+        if (hasReviewCarrier || requiredCoreTargets.has(emitted.id)) return true;
+        const existing = contextStatementById.get(emitted.id);
+        if (existing === undefined || sourceById.has(emitted.id) ||
+            !isSettledBeforeMerge(emitted.id, existing)) return true;
+        if (completionIdentity(existing) !== completionIdentity(emitted)) return true;
+        preCapabilityDuplicateReproofs.push({ id: emitted.id, proofTex: emitted.proof_tex ?? "" });
+        return false;
+      }),
+      proposed_statement_changes: liveStatementChanges,
+      proposed_core_edits: output.proposed_core_edits.filter((edit) => {
+        if (!isStatementReplaceEcho(edit, liveStatementChanges)) return true;
+        preCapabilityEchoEdits.push({ id: edit.id, unit: unitLabel });
+        return false;
+      }),
+    };
   });
   const mandatedStatementIds = new Set(
     requiredCoreEdits
@@ -227,8 +456,353 @@ export function mergeSolveOutputs(args: {
       .filter((edit) => edit.kind.startsWith("assumption-"))
       .map((edit) => coreEditTarget(edit)),
   );
+  const mandatedTargetOperations = new Map(
+    requiredCoreEdits.map((edit) => [coreEditTarget(edit), coreEditOperationKey(edit)]),
+  );
+  type TerminalDispositionReceipt = {
+    index: number;
+    category: "proof" | "oeq-resolution" | "added-node" | "statement-mutation" |
+      "statement-delete" | "open-obligation";
+    payload: unknown;
+  };
+  const hasTerminalContradiction = (receipts: TerminalDispositionReceipt[]): boolean => {
+    const categories = new Set(receipts.map((receipt) => receipt.category));
+    const settled = ["proof", "oeq-resolution", "added-node"]
+      .some((category) => categories.has(category as TerminalDispositionReceipt["category"]));
+    return (categories.has("open-obligation") && settled) ||
+      (categories.has("statement-delete") &&
+        [...categories].some((category) => category !== "statement-delete"));
+  };
+  const preProjectionDispositionReceipts = new Map<string, TerminalDispositionReceipt[]>();
+  const addPreProjectionDisposition = (
+    id: string,
+    receipt: TerminalDispositionReceipt,
+  ): void => {
+    if (mandatedStatementIds.has(id)) return;
+    const receipts = preProjectionDispositionReceipts.get(id) ?? [];
+    receipts.push(receipt);
+    preProjectionDispositionReceipts.set(id, receipts);
+  };
+  // Reject a worker that asserts mutually exclusive terminal states before
+  // capability projection can erase its unauthorized sibling-target carriers.
+  // A sealed mandate is the sole exception: every worker disposition on that
+  // target is intentionally shadowed by the authoritative operation below.
+  capabilityInputOutputs.forEach((output, index) => {
+    for (const payload of output.proofs) {
+      addPreProjectionDisposition(payload.id, { index, category: "proof", payload });
+    }
+    for (const payload of output.resolved_oeqs) {
+      // Mandating either endpoint shadows the whole atomic Q→T transaction.
+      if (mandatedStatementIds.has(payload.source_id) ||
+          mandatedStatementIds.has(payload.theorem.id)) continue;
+      addPreProjectionDisposition(payload.source_id, { index, category: "oeq-resolution", payload });
+      addPreProjectionDisposition(payload.theorem.id, { index, category: "oeq-resolution", payload });
+    }
+    for (const payload of output.added_lemmas) {
+      const settled = payload.status === "cited" ||
+        (payload.status === "proved" && (payload.proof_tex ?? "").trim().length > 0);
+      if (settled && contextStatementById.get(payload.id)?.kind !== "openendedquestion") {
+        addPreProjectionDisposition(payload.id, { index, category: "added-node", payload });
+      }
+    }
+    for (const payload of output.proposed_core_edits) {
+      if (payload.kind === "statement-delete") {
+        addPreProjectionDisposition(payload.id, { index, category: "statement-delete", payload });
+      } else if (payload.kind === "statement-replace") {
+        addPreProjectionDisposition(payload.id, { index, category: "statement-mutation", payload });
+      }
+    }
+    for (const payload of output.proposed_statement_changes) {
+      addPreProjectionDisposition(payload.id, { index, category: "statement-mutation", payload });
+    }
+    for (const payload of output.open_obligations) {
+      addPreProjectionDisposition(payload.node_id, { index, category: "open-obligation", payload });
+    }
+    // INVARIANT: this raw, pre-projection check is the ONLY self-contradiction gate.
+    // Every later projection stage must stay filter-only (and exclude mandated ids),
+    // so a contradiction visible after projection was already visible here.
+    for (const [id, receipts] of preProjectionDispositionReceipts) {
+      const local = receipts.filter((receipt) => receipt.index === index);
+      if (hasTerminalContradiction(local)) {
+        throw new Error(
+          `Stage 0-SOLVE emitted mutually exclusive terminal dispositions for ${id}: ` +
+            [...new Set(local.map((receipt) => receipt.category))].sort().join(", "),
+        );
+      }
+    }
+  });
+  // Conflict discovery must see incompatible mathematical versions before
+  // capability projection erases unauthorized sibling carriers.  Apply only the
+  // authoritative mandate shadow here; every other raw carrier remains evidence.
+  const preCapabilityConflictOutputs = capabilityInputOutputs.map((output) => ({
+    ...output,
+    proofs: output.proofs.filter((payload) => !mandatedStatementIds.has(payload.id)),
+    added_lemmas: output.added_lemmas.filter((payload) => !mandatedStatementIds.has(payload.id)),
+    resolved_oeqs: output.resolved_oeqs.filter((payload) =>
+      !mandatedStatementIds.has(payload.source_id) && !mandatedStatementIds.has(payload.theorem.id)
+    ),
+    proposed_statement_changes: output.proposed_statement_changes.filter(
+      (payload) => !mandatedStatementIds.has(payload.id),
+    ),
+    proposed_definition_changes: output.proposed_definition_changes.filter(
+      (payload) => !mandatedDefinitionIds.has(payload.id),
+    ),
+    proposed_assumptions: output.proposed_assumptions.filter(
+      (payload) => !mandatedAssumptionIds.has(payload.id),
+    ),
+    proposed_core_edits: output.proposed_core_edits.filter(
+      (payload) => !mandatedTargetOperations.has(coreEditTarget(payload)),
+    ),
+    open_obligations: output.open_obligations.filter(
+      (payload) => !mandatedStatementIds.has(payload.node_id),
+    ),
+    ...(output.prose_updates ? {
+      prose_updates: {
+        ...output.prose_updates,
+        statement_notes: (output.prose_updates.statement_notes ?? [])
+          .filter((payload) => !mandatedStatementIds.has(payload.id)),
+      },
+    } : {}),
+  }));
+  const {
+    outputs: projectedOutputs,
+    quarantined: capabilityQuarantines,
+    durableCorrectionTargetOwners,
+    postimageProofOwners,
+    ownershipPostimages,
+    ownershipDurableRecords,
+    ownershipRequiredIds,
+    ownershipWritableIds,
+  } = (() => {
+    // A solver may need to refresh a proof on an agent-authored node that it owns
+    // even when that node is not an open dispatch target: a settled node can need a
+    // syntax-only proof refresh, and a shelved partial can carry the statement being
+    // narrowed in this same bundle. Limit the fallback to current published nodes,
+    // exact targets, and same-round statement-edit targets so unrelated shelved debt
+    // remains unwritable.
+    const durableCorrectionTargetOwners = new Map<string, string>();
+    const durableRecords = new Map<string, { owner: string; node: CoreStatement; proofDependencies?: string[] }>();
+    const publishedNodeById = new Map([
+      ...proto.statements.map((statement) => [statement.id, statement] as const),
+      ...core.statements.map((statement) => [statement.id, statement] as const),
+    ]);
+    for (const records of [prev?.solved ?? {}, next.solved]) {
+      for (const [id, record] of Object.entries(records)) {
+        const node = record.node ?? publishedNodeById.get(id);
+        if (node === undefined || typeof record.owner !== "string" || record.owner.trim().length === 0) continue;
+        durableRecords.set(id, {
+          owner: record.owner,
+          node,
+          ...(record.snapshot.depends_on !== undefined ? { proofDependencies: record.snapshot.depends_on } : {}),
+        });
+      }
+    }
+    const recoveryTargetIds = new Set(requiredCoreTargets);
+    const writableDurableIds = new Set<string>([
+      ...pendingSupersessionEdits.map(coreEditTarget),
+      ...requiredCoreEdits.map(coreEditTarget),
+    ]);
+    for (const output of capabilityInputOutputs) {
+      for (const proof of output.proofs) writableDurableIds.add(proof.id);
+      for (const statement of output.added_lemmas) {
+        writableDurableIds.add(statement.id);
+        // Narrow exception for a same-round completion of an existing durable
+        // node. Its recorded owner still controls the channel; unrelated shelved
+        // records are not added to the writable set.
+        if (durableRecords.has(statement.id)) recoveryTargetIds.add(statement.id);
+      }
+      for (const change of output.proposed_statement_changes) writableDurableIds.add(change.id);
+      for (const edit of output.proposed_core_edits) writableDurableIds.add(coreEditTarget(edit));
+      for (const resolution of output.resolved_oeqs) {
+        writableDurableIds.add(resolution.source_id);
+        writableDurableIds.add(resolution.theorem.id);
+      }
+    }
+    const pairedCandidates = new Map<string, Array<{ emitter: string; postimage: CoreStatement; complete: boolean }>>();
+    for (let index = 0; index < capabilityInputOutputs.length; index += 1) {
+      const unit = dispatch[index];
+      const output = capabilityInputOutputs[index];
+      for (const edit of output.proposed_core_edits) {
+        const paired = edit.kind === "statement-replace" && output.proposed_statement_changes.some((change) =>
+          change.id === edit.id && change.proposed === edit.proposed.statement
+        );
+        const completeProofTransaction =
+          paired &&
+          output.proofs.some((proof) => proof.id === edit.id && proof.argues_proposed === true);
+        if (!paired || edit.kind !== "statement-replace") continue;
+        const candidates = pairedCandidates.get(edit.id) ?? [];
+        if (!candidates.some((candidate) => candidate.emitter === unit.label)) {
+          candidates.push({ emitter: unit.label, postimage: edit.proposed, complete: completeProofTransaction });
+          pairedCandidates.set(edit.id, candidates);
+        }
+      }
+    }
+    const deniedCorrectionTargets = new Set<string>();
+    const postimageCandidates = new Map<string, { emitter: string; postimage: CoreStatement }>();
+    for (const [id, candidates] of pairedCandidates) {
+      const complete = candidates.filter((candidate) => candidate.complete);
+      if (complete.length > 1) {
+        deniedCorrectionTargets.add(id);
+        continue;
+      }
+      // A statement postimage is proof-authorizing state, so even the semantic
+      // owner must supply the complete argues_proposed transaction before it can
+      // participate in reachability.
+      const candidate = complete[0];
+      if (candidate) postimageCandidates.set(id, candidate);
+    }
+    // Candidate postimages affect ownership, but ownership must also authorize the
+    // candidate's emitter. Recompute to a fixed point after deleting every mismatch;
+    // this prevents a rejected sibling postimage from minting reachability for a
+    // downstream proof.
+    const statementPostimages = new Map(
+      [...postimageCandidates].map(([id, candidate]) => [id, candidate.postimage] as const),
+    );
+    const assignSharedUpstreamOwners = (owners: Map<string, string>): Map<string, string> => {
+      if (dr.sharedUpstreamLabel === null || dr.sharedUpstreamLabel === undefined) return owners;
+      for (const id of dr.sharedTargetIds ?? []) {
+        // Only explicit cross-cutting directive targets acquire the staged owner.
+        // Shared immutable reads and unpredictable local helpers do not.
+        if (writableDurableIds.has(id)) owners.set(id, dr.sharedUpstreamLabel);
+      }
+      return owners;
+    };
+    let durableTargetOwners: Map<string, string>;
+    while (true) {
+      durableTargetOwners = assignSharedUpstreamOwners(selectLiveDurableProofOwners({
+        coreStatements: core.statements,
+        requiredIds: recoveryTargetIds,
+        durableRecords,
+        activeTargetOwners: semanticTargetOwners,
+        statementPostimages,
+        writableIds: writableDurableIds,
+      }));
+      const rejected = [...postimageCandidates].filter(([id, candidate]) =>
+        statementPostimages.has(id) &&
+        (semanticTargetOwners.get(id) ?? durableTargetOwners.get(id)) !== candidate.emitter
+      );
+      if (rejected.length === 0) break;
+      for (const [id] of rejected) statementPostimages.delete(id);
+    }
+    const baselineDurableTargetOwners = assignSharedUpstreamOwners(selectLiveDurableProofOwners({
+      coreStatements: core.statements,
+      requiredIds: recoveryTargetIds,
+      durableRecords,
+      activeTargetOwners: semanticTargetOwners,
+      writableIds: writableDurableIds,
+    }));
+    const postimageProofOwners = new Map(
+      [...durableTargetOwners].filter(([id, owner]) => baselineDurableTargetOwners.get(id) !== owner),
+    );
+    // A shelved node may join the proof fallback only through a complete correction
+    // pair emitted by its own recorded owner. A sibling's raw, later-quarantined edit
+    // cannot bootstrap the proof into scope.
+    for (let index = 0; index < capabilityInputOutputs.length; index += 1) {
+      const output = capabilityInputOutputs[index];
+      const unit = dispatch[index];
+      for (const change of output.proposed_statement_changes) {
+        const record = durableRecords.get(change.id);
+        if (record === undefined) continue;
+        const effectiveOwner = durableTargetOwners.get(change.id) ?? record.owner;
+        if (change.current !== record.node.statement || change.proposed === record.node.statement) continue;
+        const paired = output.proposed_core_edits.some((edit) =>
+          edit.kind === "statement-replace" && edit.id === change.id &&
+          edit.proposed.statement === change.proposed
+        );
+        if (!paired) continue;
+        durableCorrectionTargetOwners.set(change.id, effectiveOwner);
+        if (effectiveOwner === unit.label) durableTargetOwners.set(change.id, unit.label);
+      }
+    }
+    return {
+      ...projectOutputsToWriteCapabilities({
+        outputs: capabilityInputOutputs,
+        dispatch,
+        semanticTargetOwners,
+        durableTargetOwners,
+        durableCorrectionTargetOwners,
+        deniedCorrectionTargets,
+        directiveOwnerLabel,
+        strictSharedOwner: dr.sharedUpstreamLabel !== null && dr.sharedUpstreamLabel !== undefined,
+        requiredCoreTargets,
+        sharedTargetIds: new Set(dr.sharedTargetIds ?? []),
+        existingStatementIds: new Set([
+          ...proto.statements.map((statement) => statement.id),
+          ...core.statements.map((statement) => statement.id),
+          ...Object.keys(prev?.solved ?? {}),
+        ]),
+      }),
+      durableCorrectionTargetOwners,
+      postimageProofOwners,
+      ownershipPostimages: statementPostimages,
+      ownershipDurableRecords: durableRecords,
+      ownershipRequiredIds: recoveryTargetIds,
+      ownershipWritableIds: writableDurableIds,
+    };
+  })();
   const mandateWithheldProofBytes: ProofToArchive[] = [];
-  const mandatedTargetOperations = new Map(requiredCoreEdits.map((edit) => [coreEditTarget(edit), coreEditOperationKey(edit)]));
+  const withheldPayloads: SolveMergeResult["withheldPayloads"] = [];
+  const mandateRejectedOeqEndpoints = new Set<string>();
+  const capabilityRejectedOeqEndpoints = new Set<string>();
+  for (const receipt of capabilityQuarantines) {
+    if (receipt.category !== "oeq-resolution") continue;
+    const index = dispatch.findIndex((unit) => unit.label === receipt.unit);
+    if (index < 0) continue;
+    for (const resolution of revisionBoundRawOutputs[index].resolved_oeqs) {
+      if (resolution.source_id !== receipt.target) continue;
+      capabilityRejectedOeqEndpoints.add(resolution.source_id);
+      capabilityRejectedOeqEndpoints.add(resolution.theorem.id);
+      withheldPayloads.push({
+        category: "oeq-resolution", target: resolution.theorem.id, unit: receipt.unit,
+        reason: "capability-quarantine", payload: structuredClone(resolution),
+      });
+    }
+  }
+  const dispatchUnitsByTarget = new Map<string, Set<string>>();
+  for (const unit of dispatch) for (const target of unit.targets) {
+    const labels = dispatchUnitsByTarget.get(target.id) ?? new Set<string>();
+    labels.add(unit.label);
+    dispatchUnitsByTarget.set(target.id, labels);
+  }
+  const contestedDispatchTargets = new Set(
+    [...dispatchUnitsByTarget].filter(([, labels]) => labels.size > 1).map(([id]) => id),
+  );
+  for (let index = 0; index < dispatch.length; index += 1) {
+    for (const target of dispatch[index].targets) {
+      if (!contestedDispatchTargets.has(target.id)) continue;
+      withheldPayloads.push({
+        category: "dispatch-ownership", target: target.id, unit: dispatch[index].label,
+        reason: "contested-dispatch-ownership", payload: structuredClone(target),
+      });
+    }
+  }
+  const recordMandateShadow = (output: typeof projectedOutputs[number], unit: string): void => {
+    const add = (category: string, target: string, payload: unknown): void => {
+      withheldPayloads.push({
+        category, target, unit, reason: "mandate-shadowed", payload: structuredClone(payload),
+      });
+    };
+    for (const payload of output.proofs) if (mandatedStatementIds.has(payload.id)) add("proof", payload.id, payload);
+    for (const payload of output.added_lemmas) if (mandatedStatementIds.has(payload.id)) add("statement", payload.id, payload);
+    for (const payload of output.resolved_oeqs) {
+      if (mandatedStatementIds.has(payload.source_id) || mandatedStatementIds.has(payload.theorem.id)) {
+        add("oeq-resolution", payload.source_id, payload);
+        add("oeq-resolution", payload.theorem.id, payload);
+        mandateRejectedOeqEndpoints.add(payload.source_id);
+        mandateRejectedOeqEndpoints.add(payload.theorem.id);
+      }
+    }
+    for (const payload of output.proposed_statement_changes) if (mandatedStatementIds.has(payload.id)) add("statement-change", payload.id, payload);
+    for (const payload of output.proposed_definition_changes) if (mandatedDefinitionIds.has(payload.id)) add("definition-change", payload.id, payload);
+    for (const payload of output.proposed_assumptions) if (mandatedAssumptionIds.has(payload.id)) add("assumption", payload.id, payload);
+    for (const payload of output.open_obligations) if (mandatedStatementIds.has(payload.node_id)) add("open-obligation", payload.node_id, payload);
+    for (const payload of output.prose_updates?.statement_notes ?? []) if (mandatedStatementIds.has(payload.id)) add("statement-note", payload.id, payload);
+    for (const payload of output.proposed_core_edits) {
+      const target = coreEditTarget(payload);
+      if (mandatedTargetOperations.has(target)) add("core-edit", target, payload);
+    }
+  };
+  projectedOutputs.forEach((output, index) => recordMandateShadow(output, dispatch[index].label));
   // Orchestrator mandates outrank solver output. Quarantine all same-target worker
   // mutations (including semantically identical copies with different rationale), and
   // archive any proof bytes for a node that is already mandated for deletion.
@@ -280,24 +854,765 @@ export function mergeSolveOutputs(args: {
       return false; // identical or conflicting: mandate remains canonical either way.
     }),
   }));
+  // If multiple OEQ transactions claim the same answer theorem id, none is
+  // canonical: first-wins would make dispatch order observable. Quarantine every
+  // endpoint before any transaction mutates the core, while preserving unrelated
+  // work and the complete bytes for adjudication.
+  const oeqSourcesByAnswer = new Map<string, Set<string>>();
+  for (const output of mandateProjectedOutputs) for (const resolution of output.resolved_oeqs) {
+    const sources = oeqSourcesByAnswer.get(resolution.theorem.id) ?? new Set<string>();
+    sources.add(resolution.source_id);
+    oeqSourcesByAnswer.set(resolution.theorem.id, sources);
+  }
+  const contestedOeqAnswerIds = new Set(
+    [...oeqSourcesByAnswer].filter(([, sources]) => sources.size > 1).map(([id]) => id),
+  );
+  const contestedOeqSourceIds = new Set<string>();
+  const contestedOeqWithheld: ProofToArchive[] = [];
+  const oeqAnswerCollisions: string[] = [];
+  mandateProjectedOutputs.forEach((output, index) => {
+    for (const resolution of output.resolved_oeqs) {
+      if (!contestedOeqAnswerIds.has(resolution.theorem.id)) continue;
+      contestedOeqSourceIds.add(resolution.source_id);
+      oeqAnswerCollisions.push(`${resolution.source_id}->${resolution.theorem.id}`);
+      contestedOeqWithheld.push({
+        nodeId: resolution.theorem.id, proofTex: resolution.theorem.proof_tex ?? "", reason: "oeq-answer-id-collision",
+      });
+      for (const target of [resolution.source_id, resolution.theorem.id]) {
+        withheldPayloads.push({
+          category: "oeq-resolution", target, unit: dispatch[index].label,
+          reason: "oeq-answer-id-collision", payload: structuredClone(resolution),
+        });
+      }
+    }
+  });
+  const oeqProjectedOutputs = mandateProjectedOutputs.map((output) => ({
+    ...output,
+    resolved_oeqs: output.resolved_oeqs.filter((resolution) =>
+      !contestedOeqAnswerIds.has(resolution.theorem.id)
+    ),
+  }));
+  const crossDispositionTargets = (receiptsById: Map<string, TerminalDispositionReceipt[]>): string[] =>
+    [...receiptsById].filter(([, receipts]) => {
+      return receipts.some((left, index) => receipts.slice(index + 1).some((right) =>
+        left.index !== right.index && hasTerminalContradiction([left, right])
+      ));
+    }).map(([id]) => id);
+  const crossDispositionConflictIds = new Set([
+    ...crossDispositionTargets(preProjectionDispositionReceipts),
+  ]);
+  // An OEQ resolution is one source→answer transaction. If open(Q) conflicts
+  // with Q→T, blocking Q alone strands every same-round consumer of T after the
+  // resolution is removed. Seed both endpoints so ordinary semantic closure
+  // quarantines T-targeted companions and downstream consumers too.
+  for (const id of [...crossDispositionConflictIds]) {
+    const endpointReceipts = preProjectionDispositionReceipts.get(id) ?? [];
+    for (const receipt of endpointReceipts) {
+      if (receipt.category !== "oeq-resolution") continue;
+      const resolution = receipt.payload as { source_id: string; theorem: { id: string } };
+      crossDispositionConflictIds.add(resolution.source_id);
+      crossDispositionConflictIds.add(resolution.theorem.id);
+    }
+  }
+  const crossDispositionWithheld: ProofToArchive[] = [];
+  for (const id of crossDispositionConflictIds) {
+    for (const receipt of preProjectionDispositionReceipts.get(id) ?? []) {
+      withheldPayloads.push({
+        category: receipt.category,
+        target: id,
+        unit: dispatch[receipt.index].label,
+        reason: "cross-unit-terminal-disposition",
+        payload: structuredClone(receipt.payload),
+      });
+      const proofTex = receipt.category === "proof"
+        ? (receipt.payload as { proof_tex?: string }).proof_tex
+        : receipt.category === "added-node"
+          ? (receipt.payload as { proof_tex?: string }).proof_tex
+          : receipt.category === "oeq-resolution"
+            ? (receipt.payload as { theorem?: { proof_tex?: string } }).theorem?.proof_tex
+            : receipt.category === "open-obligation"
+              ? (receipt.payload as { partial_result?: string }).partial_result
+              : undefined;
+      if ((proofTex ?? "").trim().length > 0) {
+        crossDispositionWithheld.push({
+          nodeId: receipt.category === "oeq-resolution"
+            ? (receipt.payload as { theorem: { id: string } }).theorem.id
+            : id,
+          proofTex: proofTex!, reason: "cross-unit-terminal-disposition",
+        });
+      }
+    }
+  }
+  const terminalProjectedOutputs = oeqProjectedOutputs.map((output) => ({
+    ...output,
+    proofs: output.proofs.filter((payload) => !crossDispositionConflictIds.has(payload.id)),
+    resolved_oeqs: output.resolved_oeqs.filter((payload) =>
+      !crossDispositionConflictIds.has(payload.source_id) &&
+      !crossDispositionConflictIds.has(payload.theorem.id)),
+    added_lemmas: output.added_lemmas.filter((payload) => !crossDispositionConflictIds.has(payload.id)),
+    proposed_core_edits: output.proposed_core_edits.filter((payload) =>
+      payload.kind !== "statement-delete" || !crossDispositionConflictIds.has(payload.id)),
+    open_obligations: output.open_obligations.filter((payload) =>
+      !crossDispositionConflictIds.has(payload.node_id)),
+  }));
+  const invalidProjectedOeqEndpoints = new Set<string>();
+  const precomputedInvalidResolutionReceipts: string[] = [];
+  mandateProjectedOutputs.forEach((output, index) => {
+    for (const resolution of output.resolved_oeqs) {
+      if (contextStatementById.get(resolution.source_id)?.kind === "openendedquestion") continue;
+      invalidProjectedOeqEndpoints.add(resolution.source_id);
+      invalidProjectedOeqEndpoints.add(resolution.theorem.id);
+      precomputedInvalidResolutionReceipts.push(`${resolution.source_id}→${resolution.theorem.id}`);
+      for (const target of [resolution.source_id, resolution.theorem.id]) {
+        withheldPayloads.push({
+          category: "oeq-resolution", target, unit: dispatch[index].label,
+          reason: "invalid-oeq-source", payload: structuredClone(resolution),
+        });
+      }
+    }
+  });
   // A cross-unit id collision withholds ONLY the colliding payloads. Dropping every
   // variant (never picking one) keeps the assembled core independent of dispatch
   // order, which is what the previous hard abort was protecting — but the rest of
   // the round now survives instead of being discarded wholesale.
-  const emissionConflicts = collectConflictingSolveEmissions(mandateProjectedOutputs, dispatch.map((u) => u.label));
-  const outputs = dropConflictingSolveEmissions(mandateProjectedOutputs, emissionConflicts);
+  const emissionConflicts = collectConflictingSolveEmissions(
+    terminalProjectedOutputs,
+    dispatch.map((u) => u.label),
+  );
+  const conflictProjectedOutputs = dropConflictingSolveEmissions(terminalProjectedOutputs, emissionConflicts);
+  const crossCategoryResolutionConflictSources = new Set<string>();
+  const statementConflictIds = new Set(
+    emissionConflicts.filter((conflict) => conflict.category === "statement").map((conflict) => conflict.id),
+  );
+  terminalProjectedOutputs.forEach((output, index) => {
+    for (const resolution of output.resolved_oeqs) {
+      if (!statementConflictIds.has(resolution.theorem.id)) continue;
+      crossCategoryResolutionConflictSources.add(resolution.source_id);
+      for (const target of [resolution.source_id, resolution.theorem.id]) {
+        withheldPayloads.push({
+          category: "oeq-resolution", target, unit: dispatch[index].label,
+          reason: "cross-unit-conflict-transaction", payload: structuredClone(resolution),
+        });
+      }
+    }
+  });
+  const preexistingCollisionIds = new Set<string>();
+  const preexistingOeqCollisionSources = new Set<string>();
+  // `preCapabilityConflictOutputs` is a superset of the projected view; ids collect into a Set.
+  for (const output of preCapabilityConflictOutputs) {
+    for (const statement of output.added_lemmas) {
+      const existing = contextStatementById.get(statement.id);
+      if (existing === undefined) continue;
+      const sameMathematicalClaim = existing.kind === statement.kind &&
+        existing.statement === statement.statement &&
+        sameDependencySet(existing.depends_on, statement.depends_on);
+      const sameAgentCompletion = !sourceById.has(statement.id) &&
+        completionIdentity(existing) === completionIdentity(statement);
+      const sameFrozenCitation = sourceById.has(statement.id) && sameMathematicalClaim &&
+        existing.status === "cited" && statement.status === "cited" &&
+        JSON.stringify(existing.source ?? null) === JSON.stringify(statement.source ?? null);
+      const frozenCitedReceipt = sameFrozenCitation && requiredCoreTargets.has(statement.id);
+      // A byte-identical re-emission of a SETTLED frozen citation is the same no-op
+      // discharge the install pass below records as a duplicate re-proof; it is not
+      // a competing version and must not quarantine the consumers citing it.
+      const frozenCitedNoOp = sameFrozenCitation && !requiredCoreTargets.has(statement.id) &&
+        next.solved[statement.id]?.partial !== true;
+      if (!sameAgentCompletion && !frozenCitedReceipt && !frozenCitedNoOp) preexistingCollisionIds.add(statement.id);
+    }
+  }
+  const projectedResolutions = conflictProjectedOutputs.flatMap((output) => output.resolved_oeqs);
+  const liveProjectedResolutionSources = new Set(
+    projectedResolutions
+      .filter((resolution) => contextStatementById.get(resolution.source_id)?.kind === "openendedquestion")
+      .map((resolution) => resolution.source_id),
+  );
+  for (const resolution of projectedResolutions) {
+    const existing = contextStatementById.get(resolution.theorem.id);
+    if (existing === undefined || liveProjectedResolutionSources.has(existing.id)) continue;
+    const durable = prev?.solved[resolution.theorem.id]?.node;
+    const statementChange = conflictProjectedOutputs.flatMap((output) => output.proposed_statement_changes)
+      .find((change) => change.id === resolution.theorem.id && change.proposed === resolution.theorem.statement);
+    const proposalBacked = durable !== undefined && statementChange !== undefined &&
+      reusableOeqAnswerMatches(durable, { ...resolution.theorem, statement: durable.statement });
+    if (!reusableOeqAnswerMatches(existing, resolution.theorem) &&
+        !(durable !== undefined && reusableOeqAnswerMatches(durable, resolution.theorem)) &&
+        !proposalBacked) {
+      preexistingCollisionIds.add(resolution.theorem.id);
+      preexistingOeqCollisionSources.add(resolution.source_id);
+    }
+  }
+  // Withholding a newly emitted helper/definition must also withhold every same-round
+  // consumer whose carrier would otherwise become dangling. Do this to a fixpoint so
+  // a consumer-of-a-consumer cannot leak through, but leave unrelated units intact.
+  // Proof text is included because dependency auto-wiring happens later in merge.
+  const transactionBlockedIds = new Set([
+    ...emissionConflicts.map((conflict) => conflict.id),
+    ...contestedOeqAnswerIds,
+    ...contestedOeqSourceIds,
+    ...contestedDispatchTargets,
+    ...preexistingCollisionIds,
+    ...preexistingOeqCollisionSources,
+    ...capabilityRejectedOeqEndpoints,
+    ...crossCategoryResolutionConflictSources,
+    ...mandateRejectedOeqEndpoints,
+    ...invalidProjectedOeqEndpoints,
+    ...crossDispositionConflictIds,
+  ]);
+  const conflictConsumerIds = new Set<string>(transactionBlockedIds);
+  // An open obligation is an attestation, not a mutation: a quarantined non-owned
+  // obligation keeps its receipt but must not withhold the emitter's own proofs.
+  const blockedConflictIds = new Set([
+    ...transactionBlockedIds,
+    ...capabilityQuarantines
+      .filter((receipt) => receipt.category !== "open-obligation")
+      .map((receipt) => receipt.target),
+  ]);
+  // Closure propagation scope. A withheld carrier for an id with NO surviving
+  // canonical version (a same-round helper/answer/definition) leaves every
+  // consumer dangling, so it propagates to every unit. A withheld edit/echo of an
+  // EXISTING canonical node (a frozen `def:`/`sym:`/`bib:` a unit merely re-emitted
+  // without authorization, or a contested existing statement) leaves the canonical
+  // node intact: only the emitting unit's own dependents on it are in doubt.
+  // Propagating those globally emptied rounds on one stray echo of a central def.
+  const canonicalDeclarationIds = new Set<string>([
+    ...core.statements.map((value) => value.id),
+    ...core.definitions.map((value) => value.id),
+    ...core.assumptions.map((value) => value.id),
+    ...core.symbols.map((value) => `sym:${value.name}`),
+    ...core.bibliography.map((value) => `bib:${value.key}`),
+    ...ownershipDurableRecords.keys(),
+  ]);
+  const rawCarrierTargets = (output: typeof capabilityInputOutputs[number]): Set<string> => new Set<string>([
+    ...output.proofs.map((payload) => payload.id),
+    ...output.added_lemmas.map((payload) => payload.id),
+    ...output.resolved_oeqs.flatMap((payload) => [payload.source_id, payload.theorem.id]),
+    ...output.proposed_statement_changes.map((payload) => payload.id),
+    ...output.proposed_definition_changes.map((payload) => payload.id),
+    ...output.proposed_assumptions.map((payload) => payload.id),
+    ...output.proposed_core_edits.map(coreEditTarget),
+    ...output.open_obligations.map((payload) => payload.node_id),
+    ...(output.prose_updates?.statement_notes ?? []).map((payload) => payload.id),
+  ]);
+  const rawTargetsByUnit = capabilityInputOutputs.map(rawCarrierTargets);
+  const propagatingBlockedIds = new Set<string>();
+  const blockedEmitters = new Map<string, Set<number>>();
+  const noteBlocked = (id: string, index: number | null): void => {
+    if (!canonicalDeclarationIds.has(id)) {
+      propagatingBlockedIds.add(id);
+      return;
+    }
+    const emitters = blockedEmitters.get(id) ?? new Set<number>();
+    if (index !== null) emitters.add(index);
+    else rawTargetsByUnit.forEach((targets, unitIndex) => { if (targets.has(id)) emitters.add(unitIndex); });
+    blockedEmitters.set(id, emitters);
+  };
+  for (const id of blockedConflictIds) noteBlocked(id, null);
+  const blockedIdsForUnit = (index: number): ReadonlySet<string> => new Set<string>([
+    ...propagatingBlockedIds,
+    ...[...blockedEmitters].filter(([, emitters]) => emitters.has(index)).map(([id]) => id),
+  ]);
+  const referencesBlocked = (payload: unknown, blockedIds: ReadonlySet<string>): boolean => {
+    const text = JSON.stringify(payload);
+    if (extractCitationRefs(text).some((id) => blockedIds.has(id))) return true;
+    const structuredValues = new Set<string>();
+    const authoredStrings = new Set<string>();
+    const visit = (value: unknown, key = ""): void => {
+      if (Array.isArray(value)) {
+        if (["free_symbols", "inputs", "depends_on", "refs"].includes(key)) {
+          for (const item of value) if (typeof item === "string") structuredValues.add(item);
+        }
+        for (const item of value) visit(item, key);
+      } else if (value !== null && typeof value === "object") {
+        for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
+      } else if (typeof value === "string") {
+        authoredStrings.add(value);
+        if (["cite", "ref", "key"].includes(key)) structuredValues.add(value);
+      }
+    };
+    visit(payload);
+    return [...blockedIds].some((blocked) => {
+      if (blocked.startsWith("sym:")) return structuredValues.has(blocked.slice(4));
+      if (blocked.startsWith("bib:")) {
+        const key = blocked.slice(4);
+        if (structuredValues.has(key)) return true;
+        for (const authored of authoredStrings) {
+          for (const match of authored.matchAll(/\\cite\w*(?:\[[^\]]*\])*\{([^}]*)\}/g)) {
+            if (match[1].split(",").map((part) => part.trim()).includes(key)) return true;
+          }
+        }
+        return false;
+      }
+      return structuredValues.has(blocked);
+    });
+  };
+  const sameRoundStatementById = new Map<string, CoreStatement>();
+  for (const candidate of conflictProjectedOutputs) {
+    for (const statement of candidate.added_lemmas) sameRoundStatementById.set(statement.id, statement);
+    for (const resolution of candidate.resolved_oeqs) sameRoundStatementById.set(resolution.theorem.id, resolution.theorem);
+  }
+  const semanticDeclarationById = new Map<string, unknown>([
+    ...core.statements.map((value) => [value.id, value] as const),
+    ...sameRoundStatementById,
+    ...core.definitions.map((value) => [value.id, value] as const),
+    ...core.assumptions.map((value) => [value.id, value] as const),
+    ...core.symbols.map((value) => [`sym:${value.name}`, value] as const),
+    ...core.bibliography.map((value) => [`bib:${value.key}`, value] as const),
+  ]);
+  const semanticRefs = (payload: unknown): Set<string> => {
+    const refs = new Set(extractCitationRefs(JSON.stringify(payload) ?? ""));
+    const visit = (value: unknown, key = ""): void => {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === "string") {
+            if (key === "free_symbols" || key === "refs") refs.add(`sym:${item}`);
+            if (key === "depends_on" || key === "inputs") refs.add(item);
+          }
+          visit(item, key);
+        }
+      } else if (value !== null && typeof value === "object") {
+        for (const [childKey, child] of Object.entries(value)) visit(child, childKey);
+      } else if (typeof value === "string") {
+        if (key === "cite" || key === "key") refs.add(`bib:${value}`);
+        if (key === "ref") refs.add(value.includes(":") ? value : `sym:${value}`);
+      }
+    };
+    visit(payload);
+    return refs;
+  };
+  const enrichedSemanticCarrier = (targetId: string, payload: unknown): unknown => {
+    const target = sameRoundStatementById.get(targetId) ??
+      contextStatementById.get(targetId) ?? ownershipDurableRecords.get(targetId)?.node ??
+      semanticDeclarationById.get(targetId);
+    const closure: unknown[] = [];
+    const queued = [...new Set([...semanticRefs(payload), ...semanticRefs(target)])];
+    const seen = new Set<string>();
+    while (queued.length > 0) {
+      const id = queued.shift()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const declaration = semanticDeclarationById.get(id);
+      if (declaration === undefined) continue;
+      closure.push(declaration);
+      for (const ref of semanticRefs(declaration)) if (!seen.has(ref)) queued.push(ref);
+    }
+    return { carrier: payload, target_declaration: target, semantic_closure: closure };
+  };
+  for (;;) {
+    let changed = false;
+    for (let outputIndex = 0; outputIndex < conflictProjectedOutputs.length; outputIndex += 1) {
+      const output = conflictProjectedOutputs[outputIndex];
+      const unitBlockedIds = blockedIdsForUnit(outputIndex);
+      const carriers: Array<{ target: string; payload: unknown }> = [
+        ...output.proofs.map((payload) => ({
+          target: payload.id,
+          payload: enrichedSemanticCarrier(payload.id, payload),
+        })),
+        ...output.added_lemmas.map((payload) => ({
+          target: payload.id, payload: enrichedSemanticCarrier(payload.id, payload),
+        })),
+        ...output.resolved_oeqs.map((payload) => ({
+          target: payload.theorem.id,
+          payload: enrichedSemanticCarrier(payload.theorem.id, payload),
+        })),
+        ...output.proposed_statement_changes.map((payload) => ({
+          target: payload.id, payload: enrichedSemanticCarrier(payload.id, payload),
+        })),
+        ...output.proposed_definition_changes.map((payload) => ({
+          target: payload.id, payload: enrichedSemanticCarrier(payload.id, payload),
+        })),
+        ...output.proposed_assumptions.map((payload) => ({
+          target: payload.id, payload: enrichedSemanticCarrier(payload.id, payload),
+        })),
+        ...output.proposed_core_edits.map((payload) => {
+          const target = coreEditTarget(payload);
+          return { target, payload: enrichedSemanticCarrier(target, payload) };
+        }),
+        ...output.open_obligations.map((payload) => ({
+          target: payload.node_id, payload: enrichedSemanticCarrier(payload.node_id, payload),
+        })),
+        ...(output.prose_updates ? [{
+          target: "prose:paper-wide",
+          payload: enrichedSemanticCarrier("prose:paper-wide", output.prose_updates),
+        }] : []),
+        ...(output.prose_updates?.statement_notes ?? []).map((payload) => ({
+          target: payload.id, payload: enrichedSemanticCarrier(payload.id, payload),
+        })),
+      ];
+      for (const carrier of carriers) {
+        if (!blockedConflictIds.has(carrier.target) && referencesBlocked(carrier.payload, unitBlockedIds)) {
+          blockedConflictIds.add(carrier.target);
+          conflictConsumerIds.add(carrier.target);
+          noteBlocked(carrier.target, outputIndex);
+          changed = true;
+        }
+      }
+      // Q→T is one semantic transaction.  The generic carrier above is rooted at
+      // T so that T's theorem/dependency closure is inspected, but once either
+      // endpoint is blocked the other endpoint must be quarantined too.  Otherwise
+      // filtering removes the resolution while an exact Q directive still looks
+      // unaccounted-for and aborts unrelated accepted work.
+      for (const resolution of output.resolved_oeqs) {
+        if (!blockedConflictIds.has(resolution.source_id) &&
+            !blockedConflictIds.has(resolution.theorem.id)) continue;
+        for (const endpoint of [resolution.source_id, resolution.theorem.id]) {
+          if (!blockedConflictIds.has(endpoint)) {
+            blockedConflictIds.add(endpoint);
+            noteBlocked(endpoint, outputIndex);
+            changed = true;
+          }
+          conflictConsumerIds.add(endpoint);
+        }
+      }
+    }
+    if (!changed) break;
+  }
+  const conflictConsumerWithheld: ProofToArchive[] = [];
+  const outputsAfterConflictClosure = conflictProjectedOutputs.map((output) => {
+    for (const proof of output.proofs) {
+      if (conflictConsumerIds.has(proof.id)) conflictConsumerWithheld.push({
+        nodeId: proof.id,
+        proofTex: proof.proof_tex ?? "",
+        reason: "conflicted-dependency-consumer",
+      });
+    }
+    for (const statement of output.added_lemmas) {
+      if (conflictConsumerIds.has(statement.id)) conflictConsumerWithheld.push({
+        nodeId: statement.id,
+        proofTex: statement.proof_tex ?? "",
+        reason: "conflicted-dependency-consumer",
+      });
+    }
+    for (const resolution of output.resolved_oeqs) {
+      if (conflictConsumerIds.has(resolution.theorem.id)) conflictConsumerWithheld.push({
+        nodeId: resolution.theorem.id,
+        proofTex: resolution.theorem.proof_tex ?? "",
+        reason: "conflicted-dependency-consumer",
+      });
+    }
+    return {
+      ...output,
+      proofs: output.proofs.filter((proof) => !conflictConsumerIds.has(proof.id)),
+      added_lemmas: output.added_lemmas.filter((statement) => !conflictConsumerIds.has(statement.id)),
+      resolved_oeqs: output.resolved_oeqs.filter((resolution) =>
+        !conflictConsumerIds.has(resolution.source_id) && !conflictConsumerIds.has(resolution.theorem.id)
+      ),
+      proposed_statement_changes: output.proposed_statement_changes.filter((change) => !conflictConsumerIds.has(change.id)),
+      proposed_definition_changes: output.proposed_definition_changes.filter((change) => !conflictConsumerIds.has(change.id)),
+      proposed_assumptions: output.proposed_assumptions.filter((assumption) => !conflictConsumerIds.has(assumption.id)),
+      proposed_core_edits: output.proposed_core_edits.filter((edit) => !conflictConsumerIds.has(coreEditTarget(edit))),
+      open_obligations: output.open_obligations.filter((obligation) => !conflictConsumerIds.has(obligation.node_id)),
+      prose_updates: output.prose_updates && !conflictConsumerIds.has("prose:paper-wide")
+        ? {
+          ...output.prose_updates,
+          statement_notes: (output.prose_updates.statement_notes ?? [])
+            .filter((note) => !conflictConsumerIds.has(note.id)),
+        }
+        : undefined,
+    };
+  });
+  const withheldCapabilityEmissions = capabilityQuarantines.map((receipt) =>
+    `${receipt.category}:${receipt.target}@${receipt.unit}`
+  );
+  const payloadsFor = (output: typeof revisionBoundRawOutputs[number], category: string, target: string): unknown[] => {
+    if (category === "proof") return output.proofs.filter((payload) => payload.id === target);
+    if (category === "statement") {
+      return [
+        ...output.added_lemmas.filter((payload) => payload.id === target),
+        ...output.resolved_oeqs.filter((payload) => payload.theorem.id === target).map((payload) => payload.theorem),
+      ];
+    }
+    if (category === "added-node" || category === "cited-added-node") {
+      return output.added_lemmas.filter((payload) => payload.id === target);
+    }
+    if (category === "oeq-resolution") {
+      // Preserve the complete atomic resolution receipt under either endpoint.
+      // This is intentionally broader than the source-keyed durable map: a
+      // transitive conflict discovered through theorem T must retain Q→T bytes.
+      return output.resolved_oeqs.filter((payload) =>
+        payload.source_id === target || payload.theorem.id === target
+      );
+    }
+    if (category === "statement-change") return output.proposed_statement_changes.filter((payload) => payload.id === target);
+    if (category === "definition-change") return output.proposed_definition_changes.filter((payload) => payload.id === target);
+    if (category === "assumption") return output.proposed_assumptions.filter((payload) => payload.id === target);
+    if (category === "core-edit") return output.proposed_core_edits.filter((payload) => coreEditTarget(payload) === target);
+    if (category === "open-obligation") return output.open_obligations.filter((payload) => payload.node_id === target);
+    if (category === "statement-note") return (output.prose_updates?.statement_notes ?? []).filter((payload) => payload.id === target);
+    if (category === "prose-updates") {
+      return target === "prose:paper-wide" && output.prose_updates ? [output.prose_updates] : [];
+    }
+    return [];
+  };
+  for (const conflict of emissionConflicts) {
+    for (let index = 0; index < mandateProjectedOutputs.length; index += 1) {
+      for (const payload of payloadsFor(mandateProjectedOutputs[index], conflict.category, conflict.id)) {
+        withheldPayloads.push({
+          category: conflict.category,
+          target: conflict.id,
+          unit: dispatch[index].label,
+          reason: "cross-unit-conflict",
+          payload: structuredClone(payload),
+        });
+      }
+    }
+  }
+  for (const receipt of capabilityQuarantines) {
+    const index = dispatch.findIndex((unit) => unit.label === receipt.unit);
+    if (index < 0) continue;
+    for (const payload of payloadsFor(revisionBoundRawOutputs[index], receipt.category, receipt.target)) {
+      withheldPayloads.push({
+        category: receipt.category,
+        target: receipt.target,
+        unit: receipt.unit,
+        reason: "capability-quarantine",
+        payload: structuredClone(payload),
+      });
+    }
+  }
+  for (let index = 0; index < conflictProjectedOutputs.length; index += 1) {
+    for (const target of conflictConsumerIds) {
+      for (const category of [
+        "proof", "statement", "oeq-resolution", "statement-change", "definition-change",
+        "assumption", "core-edit", "open-obligation", "statement-note", "prose-updates",
+      ]) {
+        for (const payload of payloadsFor(conflictProjectedOutputs[index], category, target)) {
+          withheldPayloads.push({
+            category,
+            target,
+            unit: dispatch[index].label,
+            reason: "conflicted-dependency-consumer",
+            payload: structuredClone(
+              category === "proof" ? enrichedSemanticCarrier(target, payload) : payload,
+            ),
+          });
+        }
+      }
+    }
+  }
+  const capabilityWithheldProofBytes: ProofToArchive[] = [];
+  const capabilityInvalidResolutions: string[] = [];
+  const liveOeqIdsBeforeProjection = new Set(
+    core.statements.filter((statement) => statement.kind === "openendedquestion").map((statement) => statement.id),
+  );
+  for (const receipt of capabilityQuarantines) {
+    const unitIndex = dispatch.findIndex((unit) => unit.label === receipt.unit);
+    if (unitIndex < 0) continue;
+    const raw = revisionBoundRawOutputs[unitIndex];
+    if (receipt.category === "proof") {
+      for (const proof of raw.proofs.filter((candidate) => candidate.id === receipt.target)) {
+        capabilityWithheldProofBytes.push({
+          nodeId: proof.id,
+          proofTex: proof.proof_tex ?? "",
+          reason: "unauthorized-target",
+        });
+      }
+    }
+    if (receipt.category === "added-node" || receipt.category === "cited-added-node") {
+      for (const statement of raw.added_lemmas.filter((candidate) => candidate.id === receipt.target)) {
+        capabilityWithheldProofBytes.push({
+          nodeId: statement.id,
+          proofTex: statement.proof_tex ?? "",
+          reason: "unauthorized-target",
+        });
+      }
+    }
+    if (receipt.category === "oeq-resolution") {
+      for (const resolution of raw.resolved_oeqs.filter((candidate) => candidate.source_id === receipt.target)) {
+        capabilityWithheldProofBytes.push({
+          nodeId: resolution.theorem.id,
+          proofTex: resolution.theorem.proof_tex ?? "",
+          reason: "unauthorized-target",
+        });
+        if (!liveOeqIdsBeforeProjection.has(resolution.source_id)) {
+          capabilityInvalidResolutions.push(`${resolution.source_id}→${resolution.theorem.id}`);
+        }
+      }
+    }
+  }
+  // A proof that declares it argues proposed claim bytes is one member of an atomic
+  // transaction. Capability/mandate/conflict filtering may remove a different member
+  // after the raw unit passed validation, so recheck the transaction here. The same
+  // rule also preserves the narrower durable-owner recovery invariant below.
+  const revokedDurableProofs: ProofToArchive[] = [];
+  const outputs = outputsAfterConflictClosure.map((output, outputIndex) => ({
+    ...output,
+    proofs: output.proofs.filter((proof) => {
+      const currentClaim = contextStatementById.get(proof.id) ??
+        ownershipDurableRecords.get(proof.id)?.node;
+      const rawChangedClaimEdit = currentClaim !== undefined &&
+        revisionBoundRawOutputs[outputIndex].proposed_core_edits.some((edit) =>
+          edit.kind === "statement-replace" && edit.id === proof.id &&
+          edit.proposed.statement !== currentClaim.statement
+        );
+      if (rawChangedClaimEdit) {
+        const changes = output.proposed_statement_changes.filter((candidate) => candidate.id === proof.id);
+        const completePairs = changes.filter((change) => output.proposed_core_edits.some((edit) =>
+          edit.kind === "statement-replace" && edit.id === proof.id &&
+          edit.proposed.statement === change.proposed
+        ));
+        if (completePairs.length !== 1) {
+          revokedDurableProofs.push({
+            nodeId: proof.id,
+            proofTex: proof.proof_tex ?? "",
+            reason: "claim-transaction-revoked",
+          });
+          withheldPayloads.push({
+            category: "proof", target: proof.id, unit: dispatch[outputIndex].label,
+            reason: "claim-transaction-revoked", payload: structuredClone(proof),
+          });
+          return false;
+        }
+      }
+      if (proof.argues_proposed === true) {
+        const changes = output.proposed_statement_changes.filter((candidate) => candidate.id === proof.id);
+        const completePairs = changes.filter((change) => output.proposed_core_edits.some((edit) =>
+          edit.kind === "statement-replace" && edit.id === proof.id &&
+          edit.proposed.statement === change.proposed
+        ));
+        if (completePairs.length === 1) return true;
+        revokedDurableProofs.push({
+          nodeId: proof.id,
+          proofTex: proof.proof_tex ?? "",
+          reason: "proposed-claim-transaction-revoked",
+        });
+        withheldPayloads.push({
+          category: "proof", target: proof.id, unit: dispatch[outputIndex].label,
+          reason: "proposed-claim-transaction-revoked", payload: structuredClone(proof),
+        });
+        return false;
+      }
+      if (!durableCorrectionTargetOwners.has(proof.id) ||
+          core.statements.some((statement) => statement.id === proof.id) ||
+          requiredCoreTargets.has(proof.id)) return true;
+      const change = output.proposed_statement_changes.find((candidate) => candidate.id === proof.id);
+      const pairSurvives = change !== undefined && output.proposed_core_edits.some((edit) =>
+        edit.kind === "statement-replace" && edit.id === proof.id &&
+        edit.proposed.statement === change.proposed
+      );
+      if (pairSurvives) return true;
+      revokedDurableProofs.push({
+        nodeId: proof.id,
+        proofTex: proof.proof_tex ?? "",
+        reason: "durable-correction-pair-revoked",
+      });
+      withheldPayloads.push({
+        category: "proof", target: proof.id, unit: dispatch[outputIndex].label,
+        reason: "durable-correction-pair-revoked", payload: structuredClone(proof),
+      });
+      return false;
+    }),
+  }));
+  // A resolution whose source is not a live open-ended question in the frozen core
+  // cannot transition anything: the source may be sealed as an acknowledged residual,
+  // already resolved, or plain mis-addressed. This used to abort the WHOLE round
+  // (eid_periodic 2026-08-30), discarding every unit's paid work over one
+  // mis-addressed entry. Withhold just that resolution (its replacement theorem with
+  // it, archived below) and any stray proof attached to a resolved source, and keep
+  // the round.
+  const invalidResolutionWithheld: ProofToArchive[] = [];
+  const withheldInvalidResolutions: string[] = [
+    ...capabilityInvalidResolutions,
+    ...precomputedInvalidResolutionReceipts,
+  ];
+  {
+    const liveOeqIds = new Set(
+      core.statements.filter((s) => s.kind === "openendedquestion").map((s) => s.id),
+    );
+    const acceptedResolutionSources = new Set<string>();
+    for (const output of outputs) {
+      const kept: typeof output.resolved_oeqs = [];
+      for (const resolution of output.resolved_oeqs) {
+        if (!liveOeqIds.has(resolution.source_id)) {
+          console.warn(
+            `[D0-SOLVE] withheld resolution for '${resolution.source_id}': not an open-ended question ` +
+              `in the frozen core; its replacement theorem '${resolution.theorem.id}' was withheld with it.`,
+          );
+          invalidResolutionWithheld.push({
+            nodeId: resolution.theorem.id,
+            proofTex: resolution.theorem.proof_tex ?? "",
+            reason: "invalid-resolution-source",
+          });
+          withheldInvalidResolutions.push(`${resolution.source_id}→${resolution.theorem.id}`);
+          withheldPayloads.push({
+            category: "oeq-resolution",
+            target: resolution.source_id,
+            unit: dispatch[outputs.indexOf(output)]?.label ?? "unknown",
+            reason: "invalid-resolution-source",
+            payload: structuredClone(resolution),
+          });
+          continue;
+        }
+        if (acceptedResolutionSources.has(resolution.source_id)) {
+          // A differing duplicate was already dropped by the cross-unit conflict
+          // guard; a survivor here is byte-identical and harmless — keep one.
+          console.warn(
+            `[D0-SOLVE] deduplicated identical resolution for '${resolution.source_id}'.`,
+          );
+          continue;
+        }
+        acceptedResolutionSources.add(resolution.source_id);
+        kept.push(resolution);
+      }
+      output.resolved_oeqs = kept;
+    }
+    for (const output of outputs) {
+      output.proofs = output.proofs.filter((proof) => {
+        if (!acceptedResolutionSources.has(proof.id)) return true;
+        console.warn(
+          `[D0-SOLVE] withheld stray proof attached to resolved OEQ '${proof.id}'; ` +
+            `the resolution's replacement theorem is the only sanctioned carrier.`,
+        );
+        invalidResolutionWithheld.push({
+          nodeId: proof.id,
+          proofTex: proof.proof_tex ?? "",
+          reason: "proof-on-resolved-oeq",
+        });
+        return false;
+      });
+    }
+  }
   // Helper ids the solver re-used for a DIFFERENT claim than the core already holds, and
   // OEQ answers that collide on one theorem id. Both are withheld rather than guessed.
   const addedLemmaCollisions: Array<{ id: string; owner: string }> = [];
-  const oeqAnswerCollisions: string[] = [];
   // Identical-claim re-emissions of settled nodes, skipped as no-ops (canonical kept).
   // Reported informationally so emitted-vs-persisted reconciliation stays possible.
-  const duplicateReproofIds: string[] = [];
+  const duplicateReproofIds: string[] = preCapabilityDuplicateReproofs.map(({ id }) => id);
+  // Shared tail for every directive abort: a required target that is ALREADY
+  // settled cannot yield a structural change (its re-emitted proof/metadata is
+  // discharged as a duplicate), so re-dispatching the same directive only burns
+  // rounds — the correct move is to cancel the mandate.
+  const settledRequiredTargetsHint = (): string => {
+    const settled = [...requiredCoreTargets].filter((id) => {
+      const record = next.solved[id];
+      const shown = contextStatementById.get(id);
+      return (record !== undefined && record.partial !== true && (record.proof_tex ?? "").trim().length > 0) ||
+        shown?.status === "proved" || shown?.status === "cited";
+    });
+    if (settled.length === 0) return "";
+    const discharged = [...new Set([...duplicateReproofIds, ...preCapabilityEchoEdits.map(({ id }) => id)])]
+      .filter((id) => requiredCoreTargets.has(id));
+    return `. Required target(s) already settled in the rendered core: ${settled.join(", ")}` +
+      (discharged.length > 0 ? ` (this round's re-emissions on ${discharged.join(", ")} were discharged as duplicates)` : "") +
+      ". A settled node cannot satisfy a structured-change directive; cancel the mandate (d0_cancel_mandate) instead of re-dispatching.";
+  };
   // Proof bytes this merge refuses to install ANYWHERE in hot state (withheld
   // collisions, unmatched ids, duplicate re-proofs, cross-unit conflict variants).
   // They exist only in this round's raw solve files, which the NEXT dispatch may
   // overwrite without a sweep — so commitRound copies these to the cold archive.
-  const withheldProofBytes: ProofToArchive[] = [...mandateWithheldProofBytes];
+  const withheldProofBytes: ProofToArchive[] = [
+    ...preCapabilityDuplicateReproofs.map(({ id, proofTex }) => ({
+      nodeId: id,
+      proofTex,
+      reason: "duplicate-reproof",
+    })),
+    ...mandateWithheldProofBytes,
+    ...revokedDurableProofs,
+    ...invalidResolutionWithheld,
+    ...conflictConsumerWithheld,
+    ...capabilityWithheldProofBytes,
+    ...contestedOeqWithheld,
+    ...crossDispositionWithheld,
+  ];
   // Conflict withholding is CATEGORY-specific (`dropConflictingSolveEmissions` keys on
   // category:id) — collect exactly what that drop removes, or a live payload sharing an
   // id with a conflicted OTHER-category emission would be falsely archived as withheld.
@@ -318,7 +1633,7 @@ export function mergeSolveOutputs(args: {
       }
     }
   }
-  const emittedStatementNoteChanges = outputs.some((output) =>
+  let emittedStatementNoteChanges = outputs.some((output) =>
     (output.prose_updates?.statement_notes ?? []).some((note) => {
       const target = core.statements.find((statement) => statement.id === note.id);
       return target !== undefined &&
@@ -342,6 +1657,25 @@ export function mergeSolveOutputs(args: {
   const statementById = new Map(
     core.statements.map((statement) => [statement.id, structuredClone(statement)] as const),
   );
+  // Capability projection above has already established that only the durable owner
+  // may emit these bytes. Make its carried statement definition available to the
+  // ordinary proof/provisional-proof merge even when a shelved partial is absent from
+  // the assembled current core. Without this second half of the repair, ownership
+  // accepts the proof but the id matcher still reports the same false PLUMBING FAULT.
+  const authorizedExistingNodeIds = new Set(outputs.flatMap((output) => [
+    ...output.proofs.map((proof) => proof.id),
+    ...output.added_lemmas.map((statement) => statement.id),
+  ]));
+  for (const records of [prev?.solved ?? {}, next.solved]) {
+    for (const [id, record] of Object.entries(records)) {
+      if (authorizedExistingNodeIds.has(id) && record.node !== undefined && !statementById.has(id)) {
+        statementById.set(id, structuredClone(record.node));
+      }
+    }
+  }
+  for (const [id, statement] of authoritativeStatementCatalog(proto.statements, next)) {
+    if (!statementById.has(id)) statementById.set(id, structuredClone(statement));
+  }
   // An open obligation may legitimately attest a node introduced in this same
   // solve transaction. Keep the pre-merge map above for applicability decisions,
   // but include same-round additions for the obligation identity/kind check.
@@ -367,17 +1701,6 @@ export function mergeSolveOutputs(args: {
       .map((statement) => [statement.id, statement.proof_tex!] as const),
   );
   const initialResolvedOeqs = structuredClone(next.resolved_oeqs ?? {});
-  const preMandateObligations = projectedOutputs.flatMap((output) => output.open_obligations);
-  for (const edit of [...pendingSupersessionEdits, ...requiredCoreEdits]) {
-    if (
-      edit.kind === "statement-delete" &&
-      preMandateObligations.some((obligation) => obligation.node_id === edit.id)
-    ) {
-      throw new Error(
-        `Stage 0-SOLVE transaction both deletes and leaves open ${edit.id}`,
-      );
-    }
-  }
   for (const output of outputs) {
     output.open_obligations = output.open_obligations.filter((obligation) => {
       const target = obligationStatementById.get(obligation.node_id);
@@ -504,35 +1827,62 @@ export function mergeSolveOutputs(args: {
     // consume several requested targets without emitting those targets themselves.
     // If dependency-first work is needed, the orchestrator keeps the original
     // targets pending and issues a separate directive after that edit commits.
-    const missing = [...requiredCoreTargets].filter((target) => !emittedTargets.has(target));
+    const withheldTargets = new Set([
+      ...emissionConflicts.map((conflict) => conflict.id),
+      ...conflictConsumerIds,
+      ...capabilityQuarantines.map((receipt) => receipt.target),
+      ...contestedOeqSourceIds,
+      ...contestedOeqAnswerIds,
+      ...contestedDispatchTargets,
+    ]);
+    const missing = [...requiredCoreTargets].filter((target) =>
+      !emittedTargets.has(target) && !withheldTargets.has(target)
+    );
     if (missing.length > 0) {
       throw new Error(
         `Stage 0-SOLVE directive required exact structured target(s) ${[...requiredCoreTargets].join(", ")}, ` +
-          `but the solver omitted ${missing.join(", ")}; unrelated proposals cannot satisfy this directive`,
+          `but the solver omitted ${missing.join(", ")}; unrelated proposals cannot satisfy this directive` +
+          settledRequiredTargetsHint(),
       );
     }
   }
-  if (requiresCoreChanges && !emittedStructuredChanges) {
+  if (requiresCoreChanges && !emittedStructuredChanges &&
+      emissionConflicts.length === 0 && conflictConsumerIds.size === 0 && capabilityQuarantines.length === 0) {
     throw new Error(
       "Stage 0-SOLVE consumed a STRUCTURED CORE CHANGES REQUIRED directive but emitted no proposed changes; " +
-        "refusing to persist proofs/prose around stale frozen nodes",
+        "refusing to persist proofs/prose around stale frozen nodes" + settledRequiredTargetsHint(),
     );
   }
-  const unauthorizedProseIndex = outputs.findIndex(
-    (output, i) => output.prose_updates !== undefined && i !== proseOwnerIndex,
-  );
-  if (unauthorizedProseIndex !== -1) {
-    throw new Error(
-      `Stage 0-SOLVE unit ${dispatch[unauthorizedProseIndex].label} emitted prose_updates but ` +
-        `the canonical prose owner is ${proseOwnerIndex === null ? "none" : dispatch[proseOwnerIndex].label}`,
-    );
+  // Prose is a narrative overlay, never load-bearing mathematics. Non-owner or
+  // unsolicited prose used to abort the whole round (exp_mixed 2026-08-09: "the
+  // canonical prose owner is none" discarded every unit's proofs over a stray
+  // tldr). Withhold the prose, keep the round.
+  for (let i = 0; i < outputs.length; i += 1) {
+    const output = outputs[i];
+    if (output.prose_updates === undefined) continue;
+    if (i !== proseOwnerIndex) {
+      console.warn(
+        `[D0-SOLVE] withheld prose_updates from unit '${dispatch[i].label}': canonical prose owner is ` +
+          `${proseOwnerIndex === null ? "none" : `'${dispatch[proseOwnerIndex].label}'`}.`,
+      );
+      withheldPayloads.push({
+        category: "prose-updates", target: "prose:paper-wide", unit: dispatch[i].label,
+        reason: "unauthorized-prose-owner", payload: structuredClone(output.prose_updates),
+      });
+      output.prose_updates = undefined;
+    } else if (!hasPendingDirective) {
+      console.warn(
+        `[D0-SOLVE] withheld prose_updates from unit '${dispatch[i].label}': no pending orchestrator ` +
+          `directive solicited narrative changes.`,
+      );
+      withheldPayloads.push({
+        category: "prose-updates", target: "prose:paper-wide", unit: dispatch[i].label,
+        reason: "unsolicited-prose", payload: structuredClone(output.prose_updates),
+      });
+      output.prose_updates = undefined;
+    }
   }
   const proseUpdates = outputs.flatMap((o) => o.prose_updates ? [o.prose_updates] : []);
-  if (proseUpdates.length > 0 && !hasPendingDirective) {
-    throw new Error(
-      "Stage 0-SOLVE emitted prose_updates without a pending orchestrator directive; refusing unsolicited narrative drift",
-    );
-  }
   // Fail before assembly/persistence if a run-scoped semantic contract detects a
   // forbidden replacement theorem or a regressed emitted proof interface.
   validateSolveManifest(semanticManifest, outputs);
@@ -548,14 +1898,6 @@ export function mergeSolveOutputs(args: {
   );
   if (duplicateResolution) {
     throw new Error(`Stage 0-SOLVE emitted multiple resolutions for ${duplicateResolution.source_id}`);
-  }
-  const duplicateResolutionTarget = resolvedOeqEntries.find(
-    (r, i) => resolvedOeqEntries.findIndex((x) => x.theorem.id === r.theorem.id) !== i,
-  );
-  if (duplicateResolutionTarget) {
-    throw new Error(
-      `Stage 0-SOLVE emitted multiple OEQ resolutions claiming theorem id ${duplicateResolutionTarget.theorem.id}`,
-    );
   }
   for (const r of resolvedOeqEntries) {
     const source = core.statements.find((s) => s.id === r.source_id);
@@ -577,11 +1919,13 @@ export function mergeSolveOutputs(args: {
   // settled re-emission: the projection must be REPLACED by the proved answer, or the
   // core keeps the unproved placeholder and the emitted proof is persisted nowhere.
   const projectionResolutionSources = new Set<string>();
+  const projectionDurableAnswers = new Map<string, CoreStatement>();
   const staleAgentTargetIds = new Set(sctx.staleAgentTargets.map((statement) => statement.id));
   for (const r of resolvedOeqEntries) {
     const emitted = {
       ...r.theorem,
-      depends_on: r.theorem.depends_on.map((d) => resolvedOeqReplacement.get(d) ?? d),
+      depends_on: remapResolvedDependencies(r.theorem.id, r.theorem.depends_on, resolvedOeqReplacement,
+        (id) => core.statements.find((s) => s.id === id)?.depends_on),
     };
     const existing = core.statements.find((s) => s.id === emitted.id && !resolvedOeqSources.has(s.id));
     if (!existing) continue;
@@ -637,6 +1981,7 @@ export function mergeSolveOutputs(args: {
     // which apply owns. Such a source keeps the old no-op behaviour.
     if (!existingIsExact && existingIsOpenProjection && durable !== null && reusableOeqAnswerMatches(durable, emitted)) {
       projectionResolutionSources.add(r.source_id);
+      projectionDurableAnswers.set(r.source_id, durable);
     }
   }
   const unnormalizedOeqProof = outputs
@@ -677,7 +2022,10 @@ export function mergeSolveOutputs(args: {
   for (const output of outputs) {
     for (const change of output.proposed_statement_changes) {
       const current = core.statements.find((statement) => statement.id === change.id);
-      if (current && normalizedProposalText(current.statement) !== normalizedProposalText(change.proposed)) {
+      // Claim identity is byte-exact. TeX comments and literal environments make
+      // ordinary whitespace normalization semantic, and a false no-op classification
+      // can attach a proof of the proposed claim to the old frozen bytes.
+      if (current && current.statement !== change.proposed) {
         proofInvalidatingIds.add(change.id);
       }
     }
@@ -739,6 +2087,14 @@ export function mergeSolveOutputs(args: {
     });
   };
   const deferredProofs: Array<{ id: string; proof_tex: string; argues_proposed?: boolean }> = [];
+  const deferredCitationRevalidations: CoreStatement[] = [];
+  const deferCitationRevalidation = (statement: CoreStatement): void => {
+    const prior = deferredCitationRevalidations.find((candidate) => candidate.id === statement.id);
+    if (prior !== undefined && !reusableOeqAnswerMatches(prior, statement)) {
+      throw new Error(`Stage 0-SOLVE emitted conflicting cited revalidation receipts for ${statement.id}`);
+    }
+    if (prior === undefined) deferredCitationRevalidations.push(structuredClone(statement));
+  };
   const deferProof = (id: string, proofTex: string, arguesProposed?: boolean): void => {
     const prior = deferredProofs.find((proof) => proof.id === id);
     if (prior && prior.proof_tex !== proofTex) {
@@ -752,13 +2108,16 @@ export function mergeSolveOutputs(args: {
   // report an id-mapping fault AS an id-mapping fault, instead of silently dropping
   // the proof and then blaming the solver for making no progress.
   const unmatchedProofIds: string[] = [];
+  const quarantinedProofs: Array<{ id: string; unit: string; owner: string }> = [];
   for (const receipt of capabilityQuarantines.filter((item) => item.category === "proof")) {
     const unitIndex = dispatch.findIndex((unit) => unit.label === receipt.unit);
     const proof = unitIndex < 0
       ? undefined
       : rawOutputs[unitIndex].proofs.find((candidate) => candidate.id === receipt.target);
     if (!proof) continue;
-    unmatchedProofIds.push(proof.id);
+    // The id exists; the emitter lacked ownership. Report it as such, never as an
+    // id-mapping fault (which told operators to reconcile ids that were fine).
+    quarantinedProofs.push({ id: proof.id, unit: receipt.unit, owner: receipt.owner });
     withheldProofBytes.push({
       nodeId: proof.id,
       proofTex: proof.proof_tex ?? "",
@@ -789,6 +2148,13 @@ export function mergeSolveOutputs(args: {
   const pendingSameRoundProofs: Array<{
     proof: { id: string; proof_tex?: string; argues_proposed?: boolean }; ownerLabel: string;
   }> = [];
+  const roundHasReviewBundle = outputs.some((output) =>
+    output.proposed_statement_changes.length > 0 ||
+    output.proposed_definition_changes.length > 0 ||
+    output.proposed_assumptions.length > 0 ||
+    output.proposed_core_edits.length > 0
+  );
+  const reviewDeferredRecoveredPartials = new Map<string, { statement: CoreStatement; owner: string }>();
   for (let i = 0; i < outputs.length; i++) {
     const o = outputs[i];
     const ownerLabel = dispatch[i].label;
@@ -866,26 +2232,58 @@ export function mergeSolveOutputs(args: {
       }
     }
     for (const lem of o.added_lemmas) {
+      const existing = currentStatement(lem.id);
+      const sameMathematicalClaim = existing !== undefined &&
+        existing.kind === lem.kind &&
+        existing.statement === lem.statement &&
+        sameDependencySet(existing.depends_on, lem.depends_on);
+      const sameClaim = existing !== undefined &&
+        (sourceById.has(lem.id)
+          ? sameMathematicalClaim
+          : completionIdentity(existing) === completionIdentity(lem));
+      const recoveredPartial = preMergeSolved[lem.id];
+      const mustReviewRecoveredPartial =
+        roundHasReviewBundle &&
+        sameClaim &&
+        recoveredPartial?.node !== undefined &&
+        recoveredPartial.partial === true &&
+        lem.status === "proved" &&
+        (lem.proof_tex ?? "").trim().length > 0;
       const needsPostEditRevalidation =
         proofNeedsPostEditRevalidation(lem, lem.proof_tex ?? "") && lem.status === "proved";
-      if (needsPostEditRevalidation) {
+      if ((needsPostEditRevalidation || mustReviewRecoveredPartial) && (existing === undefined || sameClaim)) {
         if ((lem.proof_tex ?? "").trim().length > 0) deferProof(lem.id, lem.proof_tex!);
+        if (mustReviewRecoveredPartial) {
+          reviewDeferredRecoveredPartials.set(lem.id, {
+            statement: structuredClone(lem),
+            owner: ownerLabel,
+          });
+        }
         // Proved agent-added results whose content closure touches a proposed edit
         // wait for the post-apply re-solve. Their exact proof is also part of the
         // proposal-review artifact; otherwise an emitted prerequisite can exist
         // only in core/working and disappear from adjudication.
+        // The same rule applies to a live partial helper recovered through
+        // `added_lemmas`: settling it immediately would bypass the atomic review
+        // bundle and leave apply with no provisional proof to promote.
         lem.status = "to-prove";
       }
       if (lem.status === "proved" && (lem.proof_tex ?? "").trim().length === 0) {
         // why: a proofless proved lemma is undischarged at the solve boundary, not reusable proof debt.
         lem.status = "to-prove";
       }
-      const existing = currentStatement(lem.id);
       if (existing !== undefined) {
-        const sameClaim =
-          existing.kind === lem.kind &&
-          existing.statement === lem.statement &&
-          sameDependencySet(existing.depends_on, lem.depends_on);
+        // Preserve an exact cited receipt before the ordinary settled-node no-op
+        // branch. The preimage may still be settled here even though a same-round
+        // symbol/catalog edit will reopen it during apply.
+        const bundledCitedReceipt =
+          roundHasReviewBundle &&
+          sourceById.has(lem.id) &&
+          requiredCoreTargets.has(lem.id) &&
+          existing.status === "cited" &&
+          lem.status === "cited" &&
+          reusableOeqAnswerMatches(existing, lem);
+        if (bundledCitedReceipt) deferCitationRevalidation(lem);
         // Proof prose is not part of a node's identity — only the claim is. A re-emission
         // whose claim is byte-identical to an already-SETTLED node is a no-op discharge:
         // keep the canonical proof/citation, skip the emission. Before this branch, a
@@ -938,8 +2336,20 @@ export function mergeSolveOutputs(args: {
           // collision is handled.
           addedLemmaCollisions.push({ id: lem.id, owner: ownerLabel });
           withheldProofBytes.push({ nodeId: lem.id, proofTex: lem.proof_tex ?? "", reason: "collision-withheld" });
+          withheldPayloads.push({
+            category: "added-node", target: lem.id, unit: ownerLabel,
+            reason: "existing-node-collision", payload: structuredClone(lem),
+          });
           continue;
         }
+        // A cited receipt emitted beside a proposal must survive until the proposal's
+        // postimage exists. Consuming it only against the preimage loses the explicit
+        // solver assertion when a symbol/definition edit reopens this leaf during
+        // apply, stranding every reviewed consumer behind an apparently stale citation.
+        if (
+          !bundledCitedReceipt &&
+          roundHasReviewBundle && lem.status === "cited" && existing.status === "cited"
+        ) deferCitationRevalidation(lem);
 
         if (sourceById.has(lem.id)) {
           // FROZEN cited member revalidated: the proto copy stays canonical (the
@@ -1003,7 +2413,7 @@ export function mergeSolveOutputs(args: {
         ? pinWhitespaceEquivalentCurrent(
             change,
             target?.construction,
-            target ? [definitionRevision(target)] : [],
+            target ? [definitionRevision(target, core)] : [],
           )
         : change;
     }));
@@ -1042,6 +2452,10 @@ export function mergeSolveOutputs(args: {
           pendingSameRoundProofs.splice(i, 1);
           unmatchedProofIds.push(proof.id);
           withheldProofBytes.push({ nodeId: proof.id, proofTex: proof.proof_tex ?? "", reason: "unmatched-id" });
+          withheldPayloads.push({
+            category: "proof", target: proof.id, unit: ownerLabel,
+            reason: "unmatched-id", payload: structuredClone(proof),
+          });
         }
         continue;
       }
@@ -1096,13 +2510,13 @@ export function mergeSolveOutputs(args: {
   const norm = (s: string) => normalizeTexWhitespace(s); // paragraph breaks (\par) stay significant
   {
     const stmtNow = new Map([
-      ...[...statementById.values()].map((s) => [s.id, norm(s.statement)] as const),
-      ...[...installedNodes.values()].map((s) => [s.id, norm(s.statement)] as const),
+      ...[...statementById.values()].map((s) => [s.id, s.statement] as const),
+      ...[...installedNodes.values()].map((s) => [s.id, s.statement] as const),
     ]);
     const defNow = new Map(core.definitions.map((d) => [d.id, norm(d.construction)]));
     const beforeS = proposedChanges.length, beforeD = proposedDefChanges.length;
     for (let i = proposedChanges.length - 1; i >= 0; i--) {
-      if (stmtNow.get(proposedChanges[i].id) === norm(proposedChanges[i].proposed)) proposedChanges.splice(i, 1);
+      if (stmtNow.get(proposedChanges[i].id) === proposedChanges[i].proposed) proposedChanges.splice(i, 1);
     }
     for (let i = proposedDefChanges.length - 1; i >= 0; i--) {
       if (defNow.get(proposedDefChanges[i].id) === norm(proposedDefChanges[i].proposed)) proposedDefChanges.splice(i, 1);
@@ -1246,6 +2660,66 @@ export function mergeSolveOutputs(args: {
     }
     defChanges.push(c);
   }
+  if (illegalDefTargets.length > 0) {
+    const illegal = new Set(illegalDefTargets);
+    for (let i = proposedCoreEdits.length - 1; i >= 0; i--) {
+      const edit = proposedCoreEdits[i];
+      if (edit.kind === "definition-replace" && illegal.has(edit.id)) proposedCoreEdits.splice(i, 1);
+    }
+  }
+  // Conflict filtering can discard one member of a definition correction pair.
+  // Recheck the surviving post-image here so merge never publishes an orphaned
+  // construction change or a different replacement for the same target.
+  for (let i = defChanges.length - 1; i >= 0; i--) {
+    const change = defChanges[i];
+    const pairs = proposedCoreEdits.filter(
+      (edit) => edit.kind === "definition-replace" && edit.id === change.id &&
+        edit.proposed.construction === change.proposed,
+    );
+    if (pairs.length === 1) continue;
+    defChanges.splice(i, 1);
+    for (let j = proposedCoreEdits.length - 1; j >= 0; j--) {
+      const edit = proposedCoreEdits[j];
+      if (edit.kind === "definition-replace" && edit.id === change.id) proposedCoreEdits.splice(j, 1);
+    }
+  }
+  for (let i = proposedCoreEdits.length - 1; i >= 0; i--) {
+    const edit = proposedCoreEdits[i];
+    if (edit.kind !== "definition-replace") continue;
+    if (isRequiredCoreEdit(edit)) continue;
+    const authored = definitionById.get(edit.id);
+    if (authored === undefined || edit.proposed.construction === authored.construction) continue;
+    const paired = defChanges.some(
+      (change) => change.id === edit.id && change.proposed === edit.proposed.construction &&
+        change.based_on_revision === edit.based_on_revision,
+    );
+    if (!paired) proposedCoreEdits.splice(i, 1);
+  }
+  for (let i = proposedChanges.length - 1; i >= 0; i--) {
+    const change = proposedChanges[i];
+    const pairs = proposedCoreEdits.filter(
+      (edit) => edit.kind === "statement-replace" && edit.id === change.id &&
+        edit.proposed.statement === change.proposed,
+    );
+    if (pairs.length === 1) continue;
+    proposedChanges.splice(i, 1);
+    for (let j = proposedCoreEdits.length - 1; j >= 0; j--) {
+      const edit = proposedCoreEdits[j];
+      if (edit.kind === "statement-replace" && edit.id === change.id) proposedCoreEdits.splice(j, 1);
+    }
+  }
+  for (let i = proposedCoreEdits.length - 1; i >= 0; i--) {
+    const edit = proposedCoreEdits[i];
+    if (edit.kind !== "statement-replace") continue;
+    const authored = statementById.get(edit.id);
+    if (authored === undefined || edit.proposed.statement === authored.statement) continue;
+    const paired = proposedChanges.some(
+      (change) => change.id === edit.id && change.proposed === edit.proposed.statement &&
+        (change.based_on_revision === undefined || edit.based_on_revision === undefined ||
+          change.based_on_revision === edit.based_on_revision),
+    );
+    if (!paired) proposedCoreEdits.splice(i, 1);
+  }
 
   // (Records only: the silent-alteration guard is unrepresentable. A frozen
   // member has no record `node`, so no channel can alter its claim/kind/prose —
@@ -1284,21 +2758,26 @@ export function mergeSolveOutputs(args: {
     // dangling-edge check threw AFTER a full paid dispatch, every round, with the source
     // record already deleted so self-containment could not repair it. An id remap is NOT
     // a basis retarget: it must reach partials too.
-    for (const rec of Object.values(next.solved)) {
+    // Shared Q→T rule (oeq_edges.ts): the answer's own citation of its question
+    // inherits the question's upstream edges; a self-edge would fail G4 at the
+    // post-solve gate and discard the whole paid round.
+    const questionDepsOf = (id: string): readonly string[] | undefined =>
+      core.statements.find((s) => s.id === id)?.depends_on;
+    for (const [recId, rec] of Object.entries(next.solved)) {
       if (rec.node && Array.isArray(rec.node.depends_on)) {
-        rec.node.depends_on = [...new Set(rec.node.depends_on.map((d) => replacement.get(d) ?? d))];
+        rec.node.depends_on = remapResolvedDependencies(recId, rec.node.depends_on, replacement, questionDepsOf);
       }
       if (Array.isArray(rec.snapshot?.depends_on)) {
         // Sorted-unique: a proof citing BOTH the question and its answer would
         // otherwise remap to a duplicate entry, and the canonical recomputation
         // in the snapshot-basis check would flag a clean resolution (audit R2BB3).
-        rec.snapshot.depends_on = [...new Set(rec.snapshot.depends_on.map((d) => replacement.get(d) ?? d))].sort();
+        rec.snapshot.depends_on = remapResolvedDependencies(recId, rec.snapshot.depends_on, replacement, questionDepsOf).sort();
       }
     }
     for (const r of resolvedOeqEntries) {
       const theorem = {
         ...r.theorem,
-        depends_on: r.theorem.depends_on.map((d) => replacement.get(d) ?? d),
+        depends_on: remapResolvedDependencies(r.theorem.id, r.theorem.depends_on, replacement, questionDepsOf),
       };
       // Two resolutions may name the SAME answer theorem id. Pushing both puts duplicate
       // statement ids in the core, where every consumer keys by id and silently resolves
@@ -1308,6 +2787,14 @@ export function mergeSolveOutputs(args: {
         if (!reusableResolutionSources.has(r.source_id)) {
           oeqAnswerCollisions.push(`${r.source_id}->${theorem.id}`);
           withheldProofBytes.push({ nodeId: theorem.id, proofTex: theorem.proof_tex ?? "", reason: "collision-withheld" });
+          withheldPayloads.push({
+            category: "oeq-resolution", target: theorem.id, unit: r.source_id,
+            reason: "oeq-answer-id-collision", payload: structuredClone(r),
+          });
+          withheldPayloads.push({
+            category: "oeq-resolution", target: r.source_id, unit: r.source_id,
+            reason: "oeq-answer-id-collision", payload: structuredClone(r),
+          });
           continue;
         }
         // The id is present as the OPEN PROJECTION, not as a settled answer. Skipping here
@@ -1316,13 +2803,14 @@ export function mergeSolveOutputs(args: {
         // the archive nor `withheldProofBytes` — the round then reports the node still open
         // even though the solver proved it, and re-running reproduces the same state.
         if (projectionResolutionSources.has(r.source_id)) {
-          installedNodes.set(theorem.id, theorem);
+          const canonical = projectionDurableAnswers.get(r.source_id) ?? theorem;
+          installedNodes.set(theorem.id, canonical);
           solved += 1;
           recordProof(next, proto, {
-            id: theorem.id,
-            snapshotOf: theorem,
-            proofTex: theorem.proof_tex ?? "",
-            node: theorem,
+            id: canonical.id,
+            snapshotOf: canonical,
+            proofTex: canonical.proof_tex ?? "",
+            node: canonical,
             owner: r.source_id,
           });
         }
@@ -1350,6 +2838,22 @@ export function mergeSolveOutputs(args: {
         theorem_id: theorem.id,
         source_fingerprint: oeqSourceFingerprint(source),
       };
+    }
+    const effectiveSymbolBasis = symbolBasis(
+      proto,
+      Object.values(next.solved).flatMap((record) => record.node ? [record.node] : []),
+      next.resolved_oeqs,
+    );
+    if (JSON.stringify(effectiveSymbolBasis) !== JSON.stringify(next.symbol_basis ?? {})) {
+      // The source→answer transition can change a symbol's semantic referent
+      // without changing its raw proto row. Reopen the declared free-symbol
+      // closure before adopting the new basis; otherwise those proofs become
+      // falsely current under the answer endpoint.
+      const validUnderEffectiveBasis = computeValidNodes(next, proto);
+      for (const [id, record] of Object.entries(next.solved)) {
+        if (!validUnderEffectiveBasis.has(id)) record.partial = true;
+      }
+      next.symbol_basis = effectiveSymbolBasis;
     }
   }
   // (Records only: the "answered source must not remain a live node" sweep is
@@ -1494,6 +2998,7 @@ export function mergeSolveOutputs(args: {
   // FIXPOINT — a recovered node may itself reference further recoverable nodes,
   // and each recovery changes the render (audit BB2) — then judge dangling
   // edges against the FINAL render.
+  const selfContainmentRecoveredIds = new Set<string>();
   let finalRendered = assembleCore(proto, next);
   {
     // A sealed statement deletion is part of this round's reviewed postimage even
@@ -1528,13 +3033,17 @@ export function mergeSolveOutputs(args: {
       for (const st of finalRendered.statements) {
         if (preValidationDeleteIds.has(st.id)) continue;
         for (const dep of st.depends_on ?? []) {
-          if (!known.has(dep) && prev?.solved[dep]?.node && next.solved[dep] === undefined) {
+          if (!known.has(dep) && !droppedCarryIds.has(dep) &&
+              prev?.solved[dep]?.node && next.solved[dep] === undefined) {
             const rec = prev.solved[dep];
             // Recover it HONESTLY: an unfinished record (partial / empty
             // non-cited proof — see isUnfinishedCarriedRecord) re-enters as an
             // open partial, never as an established result; the render derives
             // the status.
-            next.solved[dep] = isUnfinishedCarriedRecord(rec) ? { ...rec, partial: true } : rec;
+            next.solved[dep] = !validIds.has(dep) || isUnfinishedCarriedRecord(rec)
+              ? { ...rec, partial: true }
+              : rec;
+            selfContainmentRecoveredIds.add(dep);
             repaired = true;
             console.warn(
               `[D0-SOLVE] self-containment repair: carried reused node '${dep}' (referenced but not re-emitted this round).`,
@@ -1572,18 +3081,18 @@ export function mergeSolveOutputs(args: {
   // emitted-shape diagnostic; it must not let a payload that is later discarded
   // consume a durable exact-target directive.
   const normalizedText = (value: string): string => normalizeTexWhitespace(value); // paragraph breaks stay significant
-  const applicableAnyStatementChanges = proposedChanges.filter((change) => {
+  let applicableAnyStatementChanges = proposedChanges.filter((change) => {
     const target = statementById.get(change.id);
     return target !== undefined &&
       change.current === target.statement &&
-      normalizedText(change.proposed) !== normalizedText(target.statement);
+      change.proposed !== target.statement;
   });
   // OEQ claim narrowings are supported apply-time detach transitions, but only
   // the obligation/resolution channel may consume an exact OEQ directive.
-  const applicableStatementChanges = applicableAnyStatementChanges.filter(
+  let applicableStatementChanges = applicableAnyStatementChanges.filter(
     (change) => statementById.get(change.id)?.kind !== "openendedquestion",
   );
-  const applicableDefinitionChanges = defChanges.filter((change) => {
+  let applicableDefinitionChanges = defChanges.filter((change) => {
     const target = definitionById.get(change.id);
     return target !== undefined &&
       target.by_member_properties === undefined &&
@@ -1635,13 +3144,16 @@ export function mergeSolveOutputs(args: {
     edit: Extract<RawCoreEdit, { kind: "definition-replace" }>,
     current: Core["definitions"][number],
   ): Core["definitions"][number] => {
-    if (current.construction !== edit.proposed.construction ||
-        !declarationNarrowed(current, edit.proposed)) return edit.proposed;
-    const proposedNames = new Set((edit.proposed.free_symbols ?? []).map(normalizeSymbol));
-    const retained = (current.free_symbols ?? []).filter((name) => !proposedNames.has(normalizeSymbol(name)));
+    const original = definitionById.get(edit.id) ?? current;
+    const completed = { ...current, ...edit.proposed };
+    completed.free_symbols = edit.proposed.free_symbols;
+    if (original.construction !== completed.construction ||
+        !declarationNarrowed(original, completed)) return completed;
+    const proposedNames = new Set((completed.free_symbols ?? []).map(normalizeSymbol));
+    const retained = (original.free_symbols ?? []).filter((name) => !proposedNames.has(normalizeSymbol(name)));
     return retained.length === 0
-      ? edit.proposed
-      : { ...edit.proposed, free_symbols: [...(edit.proposed.free_symbols ?? []), ...retained] };
+      ? completed
+      : { ...completed, free_symbols: [...(completed.free_symbols ?? []), ...retained] };
   };
   const coreEditsInApplyOrder = [...new Map([
     ...pendingSupersessionEdits,
@@ -1656,16 +3168,73 @@ export function mergeSolveOutputs(args: {
       edit.kind === "rebuild-reverse-dependencies" ? 5 : 2;
     return rank(a) - rank(b);
   });
+  const atomicSymbolPostimage = (symbols: Core["symbols"]): Core["symbols"] => {
+    const projected = structuredClone(symbols);
+    for (const edit of coreEditsInApplyOrder) {
+      if (edit.kind === "symbol-add") {
+        if (!projected.some((symbol) => symbol.name === edit.name) &&
+            edit.proposed.name === edit.name) projected.push(structuredClone(edit.proposed));
+      } else if (edit.kind === "symbol-replace") {
+        const index = projected.findIndex((symbol) => symbol.name === edit.name);
+        if (index >= 0 && edit.proposed.name === edit.name) {
+          projected[index] = structuredClone(edit.proposed);
+        }
+      } else if (edit.kind === "symbol-delete") {
+        const index = projected.findIndex((symbol) => symbol.name === edit.name);
+        if (index >= 0) projected.splice(index, 1);
+      }
+    }
+    return projected;
+  };
   const receiptCore = structuredClone(proto);
   // Apply runs only after this round commits `next`; replay against that exact
   // durable cursor, not the pre-round `prev`, so same-round nodes/edges participate
   // in delete/replacement applicability exactly as they will transactionally.
   const receiptWorking = structuredClone(next);
+  const transactionStatementCatalog = authoritativeStatementCatalog(
+    receiptCore.statements,
+    receiptWorking,
+  );
   const atomicStatementDeleteIds = new Set(
     coreEditsInApplyOrder
       .filter((edit) => edit.kind === "statement-delete")
       .map((edit) => edit.id),
   );
+  const atomicDefinitionDeleteIds = new Set(
+    coreEditsInApplyOrder
+      .filter((edit) => edit.kind === "definition-delete")
+      .map((edit) => edit.id),
+  );
+  // A mutation of a recovered agent-authored OEQ must first detach the old
+  // source→answer resolution and install the question as a real partial working
+  // node. Otherwise claim/dependency edits mutate only a detached catalog object
+  // and APPLY cannot reproduce the receipt postimage.
+  const recoveredMutationIds = new Set([
+    ...applicableAnyStatementChanges.map((change) => change.id),
+    ...coreEditsInApplyOrder
+      .filter((edit) => edit.kind === "statement-replace")
+      .map((edit) => edit.id),
+  ]);
+  for (const id of recoveredMutationIds) {
+    if (receiptCore.statements.some((statement) => statement.id === id) || receiptWorking.solved[id]?.node) continue;
+    const recovered = transactionStatementCatalog.get(id);
+    const resolution = receiptWorking.resolved_oeqs?.[id];
+    if (recovered?.kind !== "openendedquestion" || resolution === undefined || typeof resolution === "string") continue;
+    recordProof(receiptWorking, receiptCore, {
+      id,
+      snapshotOf: recovered,
+      proofTex: "",
+      node: structuredClone(recovered),
+      owner: id,
+      partial: true,
+    });
+    delete receiptWorking.resolved_oeqs![id];
+    if (Object.keys(receiptWorking.resolved_oeqs!).length === 0) delete receiptWorking.resolved_oeqs;
+    if (receiptWorking.sealed_open_oeqs !== undefined) {
+      delete receiptWorking.sealed_open_oeqs[id];
+      if (Object.keys(receiptWorking.sealed_open_oeqs).length === 0) delete receiptWorking.sealed_open_oeqs;
+    }
+  }
   // Claim/definition proposal channels apply before structural core edits.
   for (const change of applicableAnyStatementChanges) {
     const frozen = receiptCore.statements.find((statement) => statement.id === change.id);
@@ -1686,20 +3255,29 @@ export function mergeSolveOutputs(args: {
     working: typeof receiptWorking,
     id: string,
   ): CoreStatement | undefined =>
-    preview.statements.find((statement) => statement.id === id) ?? working?.solved[id]?.node;
+    authoritativeStatementCatalog(preview.statements, working).get(id);
   const statementDeleteApplicable = (
     edit: Extract<RawCoreEdit, { kind: "statement-delete" }>,
     preview: Core,
     working: typeof receiptWorking,
   ): boolean => {
-    if (!receiptStatement(preview, working, edit.id) || edit.replacement_id === edit.id) return false;
+    // Deletion existence is judged against the stable reviewed transaction
+    // preimage, so answer-first deletion cannot erase the only recovery carrier
+    // before a later source deletion is evaluated. Replacement endpoints, by
+    // contrast, must still exist in the current sequential preview.
+    if (!transactionStatementCatalog.has(edit.id) || edit.replacement_id === edit.id) return false;
     if (edit.replacement_id !== undefined &&
-        !receiptStatement(preview, working, edit.replacement_id)) return false;
+        (!receiptStatement(preview, working, edit.replacement_id) ||
+          atomicStatementDeleteIds.has(edit.replacement_id))) return false;
     // Judge a reviewed deletion bundle against its atomic postimage.  A helper's
     // only consumer may itself be deleted later in apply order; treating that
     // consumer as live here drops the helper edit before the bundle can land.
     const validationCore = {
       ...preview,
+      // Structural edits are one reviewed transaction.  A selected symbol
+      // delete/replacement can retire the only inbound ref or authored symbol
+      // prose even though statement deletions execute first operationally.
+      symbols: atomicSymbolPostimage(preview.symbols),
       statements: preview.statements.filter(
         (statement) => statement.id === edit.id || !atomicStatementDeleteIds.has(statement.id),
       ),
@@ -1707,6 +3285,15 @@ export function mergeSolveOutputs(args: {
     const validationWorking = working === null ? null : structuredClone(working);
     if (validationWorking) {
       for (const id of atomicStatementDeleteIds) if (id !== edit.id) delete validationWorking.solved[id];
+      // A resolved OEQ is one atomic source→answer transaction.  When both ends
+      // are selected for deletion, the apply step removes the resolution mapping;
+      // leaving that stale mapping in this preview makes the answer deletion look
+      // text-referenced and then makes every downstream definition deletion look
+      // live.  Judge the reviewed bundle against the same atomic post-image.
+      removeAtomicallyDeletedOeqResolutionEdges(
+        validationWorking.resolved_oeqs,
+        atomicStatementDeleteIds,
+      );
     }
     if (findUnsafeDeleteTextReferences(validationCore, validationWorking, edit.id).length > 0) return false;
     if (edit.replacement_id !== undefined) return true;
@@ -1716,7 +3303,7 @@ export function mergeSolveOutputs(args: {
     const carriedInbound = Object.entries(validationWorking?.solved ?? {}).some(
       ([id, record]) => id !== edit.id && record.node?.depends_on.includes(edit.id),
     );
-    const symbolInbound = preview.symbols.some((symbol) => symbol.ref === edit.id);
+    const symbolInbound = validationCore.symbols.some((symbol) => symbol.ref === edit.id);
     return !structuredInbound && !carriedInbound && !symbolInbound;
   };
   // Build the same ordered post-image views that d0_apply exposes to each later
@@ -1731,26 +3318,71 @@ export function mergeSolveOutputs(args: {
     if (edit.kind === "statement-delete" &&
         statementDeleteApplicable(edit, receiptCore, receiptWorking)) {
       const replacement = edit.replacement_id;
+      const durableReplacement = resolvedStatementReplacementEndpoint(
+        replacement,
+        receiptWorking,
+        atomicStatementDeleteIds,
+      );
       receiptCore.statements = receiptCore.statements
         .filter((statement) => statement.id !== edit.id)
         .map((statement) => ({
           ...statement,
-          depends_on: replacement === undefined
-            ? statement.depends_on.filter((dep) => dep !== edit.id)
-            : statement.depends_on.map((dep) => dep === edit.id ? replacement : dep),
+          depends_on: retargetDeletedDependency(statement.id, statement.depends_on, edit.id, durableReplacement),
         }));
       for (const symbol of receiptCore.symbols) {
         if (symbol.ref !== edit.id) continue;
-        if (replacement === undefined) delete symbol.ref;
-        else symbol.ref = replacement;
+        if (durableReplacement === undefined) delete symbol.ref;
+        else symbol.ref = durableReplacement;
       }
       if (receiptWorking) {
         delete receiptWorking.solved[edit.id];
+        if (receiptWorking.prose_overlay?.statement_notes !== undefined) {
+          delete receiptWorking.prose_overlay.statement_notes[edit.id];
+          if (Object.keys(receiptWorking.prose_overlay.statement_notes).length === 0) {
+            delete receiptWorking.prose_overlay.statement_notes;
+          }
+        }
+        if (receiptWorking.sealed_open_oeqs !== undefined) {
+          delete receiptWorking.sealed_open_oeqs[edit.id];
+          if (Object.keys(receiptWorking.sealed_open_oeqs).length === 0) {
+            delete receiptWorking.sealed_open_oeqs;
+          }
+        }
         for (const record of Object.values(receiptWorking.solved)) {
           if (!record.node) continue;
-          record.node.depends_on = replacement === undefined
-            ? record.node.depends_on.filter((dep) => dep !== edit.id)
-            : record.node.depends_on.map((dep) => dep === edit.id ? replacement : dep);
+          record.node.depends_on = retargetDeletedDependency(record.node.id, record.node.depends_on, edit.id, durableReplacement);
+        }
+        // Match APPLY's answer-retirement transition before judging later edits:
+        // deleting a resolved answer reopens an agent-authored source from its
+        // fingerprint unless the same atomic bundle also deletes that source.
+        for (const [sourceId, resolution] of Object.entries(receiptWorking.resolved_oeqs ?? {})) {
+          const theoremId = typeof resolution === "string" ? resolution : resolution.theorem_id;
+          if (sourceId === edit.id || theoremId !== edit.id || atomicStatementDeleteIds.has(sourceId)) continue;
+          if (!receiptCore.statements.some((statement) => statement.id === sourceId) &&
+              receiptWorking.solved[sourceId] === undefined && typeof resolution !== "string") {
+            const restored = agentOeqSourceFromFingerprint(sourceId, resolution.source_fingerprint);
+            if (restored !== null) {
+              recordProof(receiptWorking, receiptCore, {
+                id: sourceId,
+                snapshotOf: restored,
+                proofTex: "",
+                node: restored,
+                owner: sourceId,
+                partial: true,
+              });
+            }
+          }
+          const reopened = receiptCore.statements.find((statement) => statement.id === sourceId) ??
+            receiptWorking.solved[sourceId]?.node;
+          if (reopened?.kind === "openendedquestion") {
+            receiptWorking.sealed_open_oeqs ??= {};
+            receiptWorking.sealed_open_oeqs[sourceId] = oeqSourceFingerprint(reopened);
+          }
+        }
+        removeAtomicallyDeletedOeqResolutionEdges(receiptWorking.resolved_oeqs, new Set([edit.id]));
+        if (receiptWorking.resolved_oeqs !== undefined &&
+            Object.keys(receiptWorking.resolved_oeqs).length === 0) {
+          delete receiptWorking.resolved_oeqs;
         }
       }
       rebuildAssumptionUsedBy(
@@ -1766,9 +3398,11 @@ export function mergeSolveOutputs(args: {
       if (target && edit.proposed.id === edit.id) {
         const { partial_result: _partial, ...proposed } = edit.proposed;
         const composed = {
+          ...target,
           ...proposed,
           statement: target.statement,
           status: target.status,
+          free_symbols: proposed.free_symbols,
           proof_tex: target.proof_tex,
         };
         if (frozen) Object.assign(frozen, composed);
@@ -1796,15 +3430,24 @@ export function mergeSolveOutputs(args: {
         receiptCore.definitions[index] = effectiveDefinitionReplacement(edit, receiptCore.definitions[index]);
       }
     } else if (edit.kind === "definition-delete") {
+      // Judge a reviewed deletion bundle against its atomic postimage. A deleted
+      // definition may be referenced only by another definition deleted later in
+      // emitter order; that transient edge must not make the first deletion a no-op.
+      const validationCore = {
+        ...receiptCore,
+        definitions: receiptCore.definitions.filter(
+          (definition) => definition.id === edit.id || !atomicDefinitionDeleteIds.has(definition.id),
+        ),
+      };
       const safe =
         receiptCore.definitions.some((definition) => definition.id === edit.id) &&
-        findUnsafeDeleteTextReferences(receiptCore, receiptWorking, edit.id).length === 0;
+        findUnsafeDeleteTextReferences(validationCore, receiptWorking, edit.id).length === 0 &&
+        !validationCore.statements.some((statement) => statement.depends_on.includes(edit.id)) &&
+        !Object.values(receiptWorking?.solved ?? {})
+          .some((record) => record.node?.depends_on.includes(edit.id)) &&
+        !validationCore.symbols.some((symbol) => symbol.ref === edit.id);
       if (safe) {
         receiptCore.definitions = receiptCore.definitions.filter((definition) => definition.id !== edit.id);
-        for (const statement of receiptCore.statements) {
-          statement.depends_on = statement.depends_on.filter((dep) => dep !== edit.id);
-        }
-        for (const symbol of receiptCore.symbols) if (symbol.ref === edit.id) delete symbol.ref;
       }
     } else if (edit.kind === "bibliography-replace" && edit.proposed.key === edit.key) {
       const index = receiptCore.bibliography.findIndex((entry) => entry.key === edit.key);
@@ -1854,6 +3497,14 @@ export function mergeSolveOutputs(args: {
     if (edit.kind === "statement-replace") {
       const current = statementById.get(edit.id);
       if (!current || !statementReplacementEchoesApplyView(edit, current)) return false;
+      // A claim correction is an atomic two-channel transaction: the
+      // statement-change owns the new claim bytes and statement-replace is its
+      // mandatory typed postimage.  That postimage remains substantive even
+      // when every non-claim field is byte-identical.  Revision/echo validation
+      // above still rejects stale views, and the exact pair check below prevents
+      // an unrelated or incomplete replacement from using this exception.
+      const paired = applicableStatementChangeById.get(edit.id);
+      if (paired !== undefined && edit.proposed.statement === paired.proposed) return true;
       const {
         proof_tex: _proof,
         statement: _currentStatement,
@@ -1875,13 +3526,27 @@ export function mergeSolveOutputs(args: {
     }
     if (edit.kind === "definition-replace") {
       const current = preview.definitions.find((definition) => definition.id === edit.id);
+      const authored = definitionById.get(edit.id);
       return current !== undefined &&
+        authored !== undefined &&
+        (isRequiredCoreEdit(edit) || edit.based_on_revision === definitionRevision(authored, core)) &&
         edit.proposed.id === edit.id &&
         JSON.stringify(effectiveDefinitionReplacement(edit, current)) !== JSON.stringify(current);
     }
     if (edit.kind === "definition-delete") {
       const exists = preview.definitions.some((definition) => definition.id === edit.id);
-      return exists && findUnsafeDeleteTextReferences(preview, previewWorking, edit.id).length === 0;
+      const validationCore = {
+        ...preview,
+        definitions: preview.definitions.filter(
+          (definition) => definition.id === edit.id || !atomicDefinitionDeleteIds.has(definition.id),
+        ),
+      };
+      return exists &&
+        findUnsafeDeleteTextReferences(validationCore, previewWorking, edit.id).length === 0 &&
+        !validationCore.statements.some((statement) => statement.depends_on.includes(edit.id)) &&
+        !Object.values(previewWorking?.solved ?? {})
+          .some((record) => record.node?.depends_on.includes(edit.id)) &&
+        !validationCore.symbols.some((symbol) => symbol.ref === edit.id);
     }
     if (edit.kind === "bibliography-replace") {
       const current = preview.bibliography.find((entry) => entry.key === edit.key);
@@ -1909,7 +3574,333 @@ export function mergeSolveOutputs(args: {
     if (edit.kind === "symbol-delete") return symbols.has(edit.name);
     return false; // a reverse-dependency rebuild alone is derived metadata, not an exact repair.
   };
-  const applicableCoreEdits = proposedCoreEdits.filter(coreEditApplicable);
+  let applicableCoreEdits = proposedCoreEdits.filter(coreEditApplicable);
+  // Claim/construction corrections are atomic two-channel transactions.  The
+  // raw pair check above proves both halves were emitted, but revision and
+  // applicability normalization can still drop the structural postimage later.
+  // Record that as quarantined exact-target debt rather than surfacing an orphan
+  // that APPLY must reject after the journal cursor has advanced.
+  const inapplicableCorrectionTargets = new Set<string>();
+  for (const change of applicableAnyStatementChanges) {
+    const pairSurvives = applicableCoreEdits.some((edit) =>
+      edit.kind === "statement-replace" && edit.id === change.id &&
+      edit.proposed.statement === change.proposed
+    );
+    if (!pairSurvives) inapplicableCorrectionTargets.add(change.id);
+  }
+  for (const change of applicableDefinitionChanges) {
+    const pairSurvives = applicableCoreEdits.some((edit) =>
+      edit.kind === "definition-replace" && edit.id === change.id &&
+      edit.proposed.construction === change.proposed
+    );
+    if (!pairSurvives) inapplicableCorrectionTargets.add(change.id);
+  }
+  for (const id of inapplicableCorrectionTargets) {
+    for (let index = 0; index < revisionBoundRawOutputs.length; index += 1) {
+      const raw = revisionBoundRawOutputs[index];
+      for (const payload of raw.proposed_statement_changes.filter((candidate) => candidate.id === id)) {
+        withheldPayloads.push({
+          category: "statement-change", target: id, unit: dispatch[index].label,
+          reason: "correction-pair-inapplicable", payload: structuredClone(payload),
+        });
+      }
+      for (const payload of raw.proposed_definition_changes.filter((candidate) => candidate.id === id)) {
+        withheldPayloads.push({
+          category: "definition-change", target: id, unit: dispatch[index].label,
+          reason: "correction-pair-inapplicable", payload: structuredClone(payload),
+        });
+      }
+      for (const payload of raw.proposed_core_edits.filter((candidate) => coreEditTarget(candidate) === id)) {
+        withheldPayloads.push({
+          category: "core-edit", target: id, unit: dispatch[index].label,
+          reason: "correction-pair-inapplicable", payload: structuredClone(payload),
+        });
+      }
+      for (const payload of raw.proofs.filter((candidate) => candidate.id === id)) {
+        withheldPayloads.push({
+          category: "proof", target: id, unit: dispatch[index].label,
+          reason: "correction-pair-inapplicable", payload: structuredClone(payload),
+        });
+      }
+    }
+  }
+  // Definitions have no installed proof carrier to roll back here; remove both
+  // proposal halves immediately. Statement corrections use the full rollback
+  // helper below because their provisional proof may already be in `next`.
+  const inapplicableDefinitionCorrectionTargets = new Set(
+    [...inapplicableCorrectionTargets].filter((id) =>
+      applicableDefinitionChanges.some((change) => change.id === id)
+    ),
+  );
+  if (inapplicableDefinitionCorrectionTargets.size > 0) {
+    applicableDefinitionChanges = applicableDefinitionChanges.filter(
+      (change) => !inapplicableDefinitionCorrectionTargets.has(change.id),
+    );
+    for (let index = defChanges.length - 1; index >= 0; index -= 1) {
+      if (inapplicableDefinitionCorrectionTargets.has(defChanges[index].id)) defChanges.splice(index, 1);
+    }
+    for (let index = proposedCoreEdits.length - 1; index >= 0; index -= 1) {
+      const edit = proposedCoreEdits[index];
+      if (edit.kind === "definition-replace" && inapplicableDefinitionCorrectionTargets.has(edit.id)) {
+        proposedCoreEdits.splice(index, 1);
+      }
+    }
+    applicableCoreEdits = applicableCoreEdits.filter((edit) =>
+      !(edit.kind === "definition-replace" && inapplicableDefinitionCorrectionTargets.has(edit.id))
+    );
+  }
+  const survivingStructuredReviewBundle =
+    applicableAnyStatementChanges.length > 0 ||
+    applicableDefinitionChanges.length > 0 ||
+    applicableAssumptions.length > 0 ||
+    applicableCoreEdits.some((edit) => edit.kind !== "rebuild-reverse-dependencies");
+  if (!survivingStructuredReviewBundle) {
+    for (const [id, recovered] of reviewDeferredRecoveredPartials) {
+      for (let index = deferredProofs.length - 1; index >= 0; index -= 1) {
+        if (deferredProofs[index].id === id) deferredProofs.splice(index, 1);
+      }
+      recordProof(next, proto, {
+        id,
+        snapshotOf: recovered.statement,
+        proofTex: recovered.statement.proof_tex ?? "",
+        node: recovered.statement,
+        owner: recovered.owner,
+      });
+      for (const output of outputs) {
+        output.added_lemmas = output.added_lemmas.map((statement) =>
+          statement.id === id ? structuredClone(recovered.statement) : statement
+        );
+      }
+      solved += 1;
+    }
+    if (reviewDeferredRecoveredPartials.size > 0) finalRendered = assembleCore(proto, next);
+  }
+  const durableCorrectionPairSurvives = (id: string): boolean => {
+    if (!durableCorrectionTargetOwners.has(id)) return false;
+    const change = applicableAnyStatementChanges.find((candidate) => candidate.id === id);
+    return change !== undefined && applicableCoreEdits.some((edit) =>
+      edit.kind === "statement-replace" && edit.id === id && edit.proposed.statement === change.proposed
+    );
+  };
+  // A same-round root postimage may be the only edge that makes a shelved helper
+  // live. Projection must see that edge early enough to retain the helper bytes,
+  // but the root edit can still fail later applicability checks. Revoke every proof
+  // capability minted solely by rejected postimages before publishing the carrier.
+  const survivingOwnershipPostimages = new Map(
+    [...ownershipPostimages].filter(([id, postimage]) =>
+      applicableAnyStatementChanges.some((change) =>
+        change.id === id && change.proposed === postimage.statement
+      ) && applicableCoreEdits.some((edit) =>
+        edit.kind === "statement-replace" && edit.id === id &&
+        JSON.stringify(edit.proposed) === JSON.stringify(postimage)
+      )
+    ),
+  );
+  const survivingPostimageOwners = selectLiveDurableProofOwners({
+    coreStatements: core.statements,
+    requiredIds: ownershipRequiredIds,
+    durableRecords: ownershipDurableRecords,
+    activeTargetOwners: semanticTargetOwners,
+    statementPostimages: survivingOwnershipPostimages,
+    writableIds: ownershipWritableIds,
+  });
+  const revokePostimageMintedTarget = (id: string, reason: string): void => {
+    const currentRecord = next.solved[id];
+    const priorRecord = preMergeSolved[id];
+    const removedInstalledSettlement = currentRecord !== undefined &&
+      JSON.stringify(currentRecord) !== JSON.stringify(priorRecord);
+    let removedAddedNode = false;
+    const revokedResolutionSources = new Set<string>();
+    for (const output of outputs) {
+      for (const proof of output.proofs.filter((candidate) => candidate.id === id)) {
+        withheldProofBytes.push({ nodeId: id, proofTex: proof.proof_tex ?? "", reason });
+      }
+      removedAddedNode ||= output.added_lemmas.some((candidate) => candidate.id === id);
+      for (const resolution of output.resolved_oeqs) {
+        if (resolution.source_id === id || resolution.theorem.id === id) {
+          revokedResolutionSources.add(resolution.source_id);
+          removedAddedNode = true;
+        }
+      }
+      output.proofs = output.proofs.filter((candidate) => candidate.id !== id);
+      output.added_lemmas = output.added_lemmas.filter((candidate) => candidate.id !== id);
+      output.proposed_statement_changes = output.proposed_statement_changes.filter((candidate) => candidate.id !== id);
+      output.proposed_core_edits = output.proposed_core_edits.filter((candidate) => coreEditTarget(candidate) !== id);
+      output.resolved_oeqs = output.resolved_oeqs.filter((candidate) =>
+        candidate.source_id !== id && candidate.theorem.id !== id
+      );
+      output.open_obligations = output.open_obligations.filter((candidate) => candidate.node_id !== id);
+      if (output.prose_updates !== undefined) {
+        output.prose_updates = {
+          ...output.prose_updates,
+          statement_notes: output.prose_updates.statement_notes.filter((note) => note.id !== id),
+        };
+      }
+    }
+    for (let index = proposedChanges.length - 1; index >= 0; index -= 1) {
+      if (proposedChanges[index].id === id) proposedChanges.splice(index, 1);
+    }
+    for (let index = proposedCoreEdits.length - 1; index >= 0; index -= 1) {
+      if (coreEditTarget(proposedCoreEdits[index]) === id) proposedCoreEdits.splice(index, 1);
+    }
+    applicableAnyStatementChanges = applicableAnyStatementChanges.filter((candidate) => candidate.id !== id);
+    applicableStatementChanges = applicableStatementChanges.filter((candidate) => candidate.id !== id);
+    applicableCoreEdits = applicableCoreEdits.filter((candidate) => coreEditTarget(candidate) !== id);
+    applicableStatementChangeById.delete(id);
+    for (let index = resolvedOeqEntries.length - 1; index >= 0; index -= 1) {
+      const candidate = resolvedOeqEntries[index];
+      if (candidate.source_id === id || candidate.theorem.id === id) resolvedOeqEntries.splice(index, 1);
+    }
+    for (let index = openObligations.length - 1; index >= 0; index -= 1) {
+      if (openObligations[index].node_id === id) openObligations.splice(index, 1);
+    }
+    for (const sourceId of revokedResolutionSources) {
+      const prior = initialResolvedOeqs[sourceId];
+      if (prior === undefined) delete next.resolved_oeqs?.[sourceId];
+      else (next.resolved_oeqs ??= {})[sourceId] = structuredClone(prior);
+    }
+    const priorNote = preMergeProseOverlay?.statement_notes?.[id];
+    if (priorNote === undefined) {
+      if (next.prose_overlay?.statement_notes !== undefined) {
+        delete next.prose_overlay.statement_notes[id];
+      }
+    } else {
+      (next.prose_overlay ??= {}).statement_notes ??= {};
+      next.prose_overlay.statement_notes[id] = structuredClone(priorNote);
+    }
+    installedNodes.delete(id);
+    if (priorRecord === undefined) delete next.solved[id];
+    else next.solved[id] = structuredClone(priorRecord);
+    if (removedInstalledSettlement) solved = Math.max(0, solved - 1);
+    if (removedAddedNode) addedLemmas = Math.max(0, addedLemmas - 1);
+  };
+  const inapplicableStatementCorrectionTargets = [...inapplicableCorrectionTargets]
+    .filter((id) => applicableAnyStatementChanges.some((change) => change.id === id));
+  for (const id of inapplicableStatementCorrectionTargets) {
+    revokePostimageMintedTarget(id, "correction-pair-inapplicable");
+    for (let index = deferredProofs.length - 1; index >= 0; index -= 1) {
+      if (deferredProofs[index].id === id) deferredProofs.splice(index, 1);
+    }
+    finalRendered = assembleCore(proto, next);
+  }
+  let revokedPostimageProof = false;
+  for (const [id, expectedOwner] of postimageProofOwners) {
+    if (survivingPostimageOwners.get(id) === expectedOwner) continue;
+    revokedPostimageProof = true;
+    revokePostimageMintedTarget(id, "enabling-statement-postimage-inapplicable");
+    for (let index = deferredProofs.length - 1; index >= 0; index -= 1) {
+      if (deferredProofs[index].id === id) deferredProofs.splice(index, 1);
+    }
+    finalRendered = assembleCore(proto, next);
+  }
+  // Final fail-closed check for correction-only durable proofs. Eligibility was
+  // established before ordinary normalization so projection could authorize the
+  // pair, but a no-op/revision/applicability filter may still remove it later. Roll
+  // back the proof record and rendered node unless the exact pair remains applicable.
+  let revokedDurableCorrection = false;
+  for (const id of durableCorrectionTargetOwners.keys()) {
+    if (core.statements.some((statement) => statement.id === id) || requiredCoreTargets.has(id)) continue;
+    if (durableCorrectionPairSurvives(id)) continue;
+    revokedDurableCorrection = true;
+    revokePostimageMintedTarget(id, "durable-correction-pair-inapplicable");
+    for (let index = deferredProofs.length - 1; index >= 0; index -= 1) {
+      if (deferredProofs[index].id === id) deferredProofs.splice(index, 1);
+    }
+    finalRendered = assembleCore(proto, next);
+  }
+  if ((revokedDurableCorrection || revokedPostimageProof) && selfContainmentRecoveredIds.size > 0) {
+    // Some records may have been recovered solely because the now-revoked target
+    // transiently referenced them. Restore every such slot to the round-current
+    // pre-merge state, then rebuild the closure from the surviving graph only.
+    for (const id of selfContainmentRecoveredIds) {
+      const prior = preMergeSolved[id];
+      if (prior === undefined) delete next.solved[id];
+      else next.solved[id] = structuredClone(prior);
+    }
+    finalRendered = assembleCore(proto, next);
+    const deletedStatementIds = new Set(
+      [...pendingSupersessionEdits, ...requiredCoreEdits]
+        .filter((edit) => edit.kind === "statement-delete")
+        .map((edit) => edit.id),
+    );
+    for (let pass = 0; pass < 50; pass += 1) {
+      const known = new Set([
+        ...finalRendered.assumptions.map((assumption) => assumption.id),
+        ...finalRendered.definitions.map((definition) => definition.id),
+        ...finalRendered.statements.map((statement) => statement.id),
+      ]);
+      let repaired = false;
+      for (const statement of finalRendered.statements) {
+        if (deletedStatementIds.has(statement.id)) continue;
+        for (const dependency of statement.depends_on ?? []) {
+          const record = prev?.solved[dependency];
+          if (known.has(dependency) || droppedCarryIds.has(dependency) ||
+              record?.node === undefined || next.solved[dependency] !== undefined) continue;
+          next.solved[dependency] = !validIds.has(dependency) || isUnfinishedCarriedRecord(record)
+            ? { ...record, partial: true }
+            : record;
+          repaired = true;
+        }
+      }
+      if (!repaired) break;
+      finalRendered = assembleCore(proto, next);
+    }
+    const known = new Set([
+      ...finalRendered.assumptions.map((assumption) => assumption.id),
+      ...finalRendered.definitions.map((definition) => definition.id),
+      ...finalRendered.statements.map((statement) => statement.id),
+      ...proposedAssumptions.map((assumption) => assumption.id),
+      ...proposedCoreEdits
+        .filter((edit) => edit.kind === "definition-add")
+        .map((edit) => edit.id),
+    ]);
+    const dangling: string[] = [];
+    for (const statement of finalRendered.statements) {
+      if (deletedStatementIds.has(statement.id)) continue;
+      for (const dependency of statement.depends_on ?? []) {
+        if (!known.has(dependency)) dangling.push(`${statement.id}->${dependency}`);
+      }
+    }
+    if (dangling.length > 0) {
+      throw new Error(
+        `Stage 0-SOLVE unresolved dependency target(s) after durable-correction rollback: ${dangling.join(", ")}`,
+      );
+    }
+  }
+
+  // `statement_notes` decorates the durable statement catalog, not only the
+  // currently published render.  The overlay is cumulative, so a note can outlive
+  // a node removed in an earlier transaction (most notably legacy OEQ/answer ids
+  // whose statement deletion predated overlay cleanup).  Conversely, resolved OEQ
+  // sources and partial+shelved agent nodes are deliberately absent from
+  // `finalRendered` but remain revivable authoritative records.  Prune only keys
+  // absent from BOTH stores after the complete postimage/rollback closure is known:
+  // frozen proto statements (including resolved OEQs) and agent-authored catalog
+  // records (including shelved nodes).  Explicit statement deletion removes its
+  // proto/record and note transactionally in d0_apply.
+  const orphanNoteIds = pruneOrphanStatementNotes(proto, next);
+  if (orphanNoteIds.length > 0) {
+    console.warn(
+      `[D0-SOLVE] pruned ${orphanNoteIds.length} orphan statement-note key(s) from the final postimage: ` +
+        orphanNoteIds.join(", "),
+    );
+  }
+  const substantiveNoteIds = new Set<string>();
+  for (const output of outputs) {
+    for (const note of output.prose_updates?.statement_notes ?? []) {
+      const target = core.statements.find((statement) => statement.id === note.id);
+      if (target !== undefined &&
+        ((note.justification !== undefined && note.justification !== target.justification) ||
+          (note.gap !== undefined && note.gap !== target.gap) ||
+          (note.consumer !== undefined && note.consumer !== target.consumer))) {
+        substantiveNoteIds.add(note.id);
+      }
+    }
+  }
+  emittedStatementNoteChanges = substantiveNoteIds.size > 0;
+  // A structured directive forbids a prose-only response: a note counts toward it
+  // only when it edits metadata of one of the directive's EXACT targets.
+  const noteChangeOnRequiredTarget = [...substantiveNoteIds].some((id) => requiredCoreTargets.has(id));
   // A worker-proposed rebuild is derived metadata and cannot satisfy a mathematical
   // exact target. A sealed orchestrator mandate for that exact operation is different:
   // mandate integrity and basis checks have already adjudicated it, and apply supports
@@ -1947,7 +3938,11 @@ export function mergeSolveOutputs(args: {
       })
       .map((edit) => edit.id),
   );
-  for (const obligation of preMandateObligations) {
+  // Only dispositions that survived mandate/capability/conflict projection may
+  // constrain the final transaction. A worker obligation shadowed by an
+  // authoritative delete is already preserved in withheld content and must not
+  // resurrect the old whole-round abort here.
+  for (const obligation of outputs.flatMap((output) => output.open_obligations)) {
     const target = statementById.get(obligation.node_id);
     const durable = initialResolvedOeqs[obligation.node_id];
     const answerId = typeof durable === "string" ? durable : durable?.theorem_id;
@@ -2051,17 +4046,54 @@ export function mergeSolveOutputs(args: {
       if (accepted) {
         acceptedAddedNodeIds.add(statement.id);
         finalStructuredTargets.add(statement.id);
+      } else if (
+        record?.partial === true &&
+        record.node?.id === statement.id &&
+        deferredProofIds.has(statement.id) &&
+        !duplicateReproofSet.has(statement.id) &&
+        !addedLemmaCollisions.some((collision) => collision.id === statement.id)
+      ) {
+        // A new node whose proof depends on a same-round gated edit is deliberately
+        // staged as durable partial progress. Credit that concrete carrier for the
+        // exact-target emission check so the proposal checkpoint can persist both
+        // halves of the transaction. This does NOT accept the proof: apply reopens
+        // the dependency closure and the next D0 round must revalidate the node.
+        finalStructuredTargets.add(statement.id);
       }
     }
   }
+  // A cited-source receipt is intentionally deferred until apply has constructed
+  // the reviewed postimage. It is still a concrete structured payload for the
+  // exact-target and structured-change gates; otherwise a required cited target
+  // is paradoxically rejected precisely because it took the safe deferred path.
+  for (const receipt of deferredCitationRevalidations) {
+    finalStructuredTargets.add(receipt.id);
+  }
+  // Projection's first exact-target check sees raw authorized emissions.  A raw
+  // owner payload can still disappear here because it is stale, a no-op, or
+  // otherwise inapplicable.  Do not let that transient receipt mask a sibling's
+  // quarantined mathematical correction: the same capability must exist in the
+  // final accepted carrier.  Proof credit alone is intentionally insufficient.
+  const unfulfilledExactTargets = [...requiredCoreTargets]
+    .filter((target) => !finalStructuredTargets.has(target));
   if (requiredCoreTargets.size > 0) {
-    const missing = [...requiredCoreTargets].filter((target) => !finalStructuredTargets.has(target));
-    const collisionWithheld = new Set(addedLemmaCollisions.map((collision) => collision.id));
+    const missing = unfulfilledExactTargets;
+    const collisionWithheld = new Set([
+      ...addedLemmaCollisions.map((collision) => collision.id),
+      ...emissionConflicts.map((conflict) => conflict.id),
+      ...conflictConsumerIds,
+      ...capabilityQuarantines.map((receipt) => receipt.target),
+      ...contestedOeqSourceIds,
+      ...contestedOeqAnswerIds,
+      ...contestedDispatchTargets,
+      ...inapplicableCorrectionTargets,
+    ]);
     const hardMissing = missing.filter((target) => !collisionWithheld.has(target));
     if (hardMissing.length > 0) {
       throw new Error(
         `Stage 0-SOLVE directive required exact structured target(s) ${[...requiredCoreTargets].join(", ")}, ` +
-          `but no accepted substantive payload remained for ${hardMissing.join(", ")} after normalization`,
+          `but no accepted substantive payload remained for ${hardMissing.join(", ")} after normalization` +
+          settledRequiredTargetsHint(),
       );
     }
   }
@@ -2071,13 +4103,25 @@ export function mergeSolveOutputs(args: {
     applicableDefinitionChanges.length > 0 ||
     applicableAssumptions.length > 0 ||
     applicableCoreEdits.some((edit) => edit.kind !== "rebuild-reverse-dependencies") ||
-    emittedStatementNoteChanges ||
+    // A directive that REQUIRES core changes forbids a prose-only response, so
+    // statement-note edits count as structure only for ordinary rounds.
+    (requiresCoreChanges ? noteChangeOnRequiredTarget : emittedStatementNoteChanges) ||
     acceptedAddedNodeIds.size > 0 ||
+    deferredCitationRevalidations.length > 0 ||
     resolvedOeqEntries.some((resolution) => finalStructuredTargets.has(resolution.source_id));
-  if (requiresCoreChanges && !finalHasStructuredChanges) {
+  // Withheld records that carry no mathematics for the directive (stray prose, an
+  // unmatched id, a duplicate re-proof, a shadowed mandate echo) must not disarm
+  // this abort: a directive would otherwise be consumed by a round that changed
+  // nothing, and commit would advance the cursor past it.
+  const structuredDirectiveDisarmed = withheldPayloads.some((record) =>
+    requiredCoreTargets.has(record.target) || !NOISE_WITHHELD_REASONS.has(record.reason));
+  const structuredDirectiveUnfulfilled = requiresCoreChanges && !finalHasStructuredChanges;
+  if (structuredDirectiveUnfulfilled &&
+      emissionConflicts.length === 0 && conflictConsumerIds.size === 0 && capabilityQuarantines.length === 0 &&
+      !structuredDirectiveDisarmed) {
     throw new Error(
       "Stage 0-SOLVE consumed a STRUCTURED CORE CHANGES REQUIRED directive but no accepted substantive " +
-        "structured change remained after normalization",
+        "structured change remained after normalization" + settledRequiredTargetsHint(),
     );
   }
 
@@ -2086,23 +4130,51 @@ export function mergeSolveOutputs(args: {
   // accepted bundle. Preserve only a sealed orchestrator-required rebuild, whose
   // mandate/basis has already been verified and must remain explicitly auditable.
   const requiredCoreEditOperations = new Set(requiredCoreEdits.map(coreEditOperationKey));
+  const applicableDeleteEdits = new Set(applicableCoreEdits.filter(
+    (edit) => edit.kind === "statement-delete" || edit.kind === "definition-delete" ||
+      edit.kind === "assumption-delete" || edit.kind === "symbol-delete",
+  ));
+  // A carried supersession delete (or a sealed mandate) is the gated half of an
+  // already-installed A→A' replacement. It is routinely inapplicable on the retry
+  // round that still names A, yet dropping it here erases the only record of that
+  // relation and lets a later clean round publish both chains as proved. Keep it
+  // surfaced; apply revalidates applicability transactionally.
+  const carriedDeleteOperations = new Set(
+    [...pendingSupersessionEdits, ...requiredCoreEdits].map(coreEditOperationKey),
+  );
   const surfacedCoreEdits = proposedCoreEdits.filter(
-    (edit) => edit.kind !== "rebuild-reverse-dependencies" ||
-      requiredCoreEditOperations.has(coreEditOperationKey(edit)),
+    (edit) =>
+      (!(edit.kind === "statement-delete" || edit.kind === "definition-delete" ||
+          edit.kind === "assumption-delete" || edit.kind === "symbol-delete") ||
+        applicableDeleteEdits.has(edit) ||
+        carriedDeleteOperations.has(coreEditOperationKey(edit))) &&
+      (edit.kind !== "rebuild-reverse-dependencies" ||
+        requiredCoreEditOperations.has(coreEditOperationKey(edit))),
   );
 
   return {
     emissionConflicts,
+    withheldConflictConsumers: [...conflictConsumerIds]
+      .filter((id) => !transactionBlockedIds.has(id))
+      .sort(),
+    withheldCapabilityEmissions: [...new Set(withheldCapabilityEmissions)].sort(),
+    withheldPayloads,
+    unfulfilledExactTargets,
+    structuredDirectiveUnfulfilled,
     addedLemmaCollisions,
     oeqAnswerCollisions,
+    withheldInvalidResolutions,
     duplicateReproofIds,
+    duplicateEchoEditIds: preCapabilityEchoEdits.map(({ id }) => id),
     withheldProofBytes,
     unmatchedProofIds,
+    quarantinedProofs,
     proposedChanges,
     defChanges,
     proposedAssumptions,
     proposedCoreEdits: surfacedCoreEdits,
     deferredProofs,
+    deferredCitationRevalidations,
     openObligations,
     illegalDefTargets,
     solved,

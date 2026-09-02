@@ -1,0 +1,2792 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,bbm}
+\usepackage{graphicx,booktabs,array,multirow,tabularx,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{algorithm,algpseudocode}
+\usepackage{subcaption,tikz}
+\usepackage{siunitx,cancel,accents}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{openendedquestion}{Open-ended Question}
+\newtheorem{conjecture}{Conjecture}
+\newcommand{\coreref}[1]{\ref{#1}}
+
+\begin{document}
+
+\sloppy
+
+\section*{stat\_\allowbreak{}ssc\_\allowbreak{}rank\_\allowbreak{}normalization\_\allowbreak{}band\_\allowbreak{}frontier}
+
+\noindent\textit{Specialization:} v1\par
+
+\paragraph{TL;DR.} The project studies the missing post-control survival trajectory for a treated unit in a right-censored exact-factor panel. The canonical target coordinate follows from target-pre factor compatibility and is unique because the pre-period contrast Gram is positive. Exact rank one eliminates target-loading uncertainty and gives \(W_1^*\asymp(N_0K_D)^{-1/2}\). For every fixed \(r\ge2\), the unrestricted result is the honest bracket \(c\rho_r\le W_r^*\le C\{\rho_r+\eta_D(K_D)\}\); it reduces to \(W_r^*\asymp\rho_r\) only when \(\eta_D(K_D)=O(\rho_r)\), and no unrestricted tightness is claimed. A censoring-aware patient-level functional-PCR martingale-multiplier band supplies the upper envelope, with a fixed-margin treatment of its hard regular/fallback switch and a singular-covariance-safe random quantile. Without a uniform positive pre-period Gram, minimax honest width is of order one even on a donor-visible known-rank-two subclass. This is a generic information-theoretic boundary: donor-rank visibility alone does not imply a shrinking or rank-adaptive honest band.
+
+\section{Project justification}
+
+\paragraph{Gap.} Han and Shah give the survival-factor and donor-span structure used for Synthetic Survival Control and later impose finite-grid conditioning and latent-span assumptions for their consistency theorem, but they do not provide uniformly honest continuous-time patient-level bands or minimax width converses. Existing PCR, functional principal-component, and martingale-multiplier results separately cover pieces of the problem, not their data-dependent composition under right censoring and weak target-pre identification.
+
+\paragraph{Niche.} Survival normalization separates a homogeneous rank-one regime from positive contrast rank, while target identifiability depends on pre-period factor strength rather than donor contrast visibility alone. This creates a donor-only rank-one rate within the strong exact-rank class and an order-one weak-pre-Gram obstruction even when rank two is known from donors.
+
+\paragraph{Fill.} The project derives canonical coordinates from target-compatible factorization and a positive pre-period Gram, constructs a total measurable censoring-aware functional-PCR multiplier band, validates its branchwise coefficients through an exponentially likely fixed-margin event, proves grid-uniform random-quantile validity and interpolation control, establishes the exact rank-one frontier and honest higher-rank bracket, and gives normalization-preserving Le Cam witnesses for the fixed-rank converse and the generic weak-pre-Gram boundary.
+
+\section{Related work}
+
+Han and Shah's Theorem~1 supplies finite-dimensional survival factorization and treated-unit donor-span inclusion; their Theorem~2 adds finite-grid conditioning and latent time-period span restrictions that the explicit weak-pre-Gram pair is shown not to satisfy, so the order-one lower bound does not contradict that theorem. Agarwal, Shah, and Shen supply minimum-norm PCR, PCR/HSVT retained-rank preprocessing, rank-selection workflows, and fixed-design prediction geometry that inform the functional-PCR map. They make no honest-band claim, and the present lower bound is not a refutation of their method; it is a generic information-theoretic statement that donor-only retained rank cannot by itself certify target-relevant pre-period strength. Dobler, Pauly, and Scheike establish martingale-multiplier survival inference for classical survival functionals; the present result additionally propagates patient-level increments through an estimated projector, matrix square root, inverse pre-Gram, interpolation, and a hard branch with an explicit margin event. Cattaneo, Feng, and Titiunik separate pre-fit and post-prediction uncertainty for scalar synthetic controls, whereas the present survival pairs quantify donor and target-pre channels and yield minimax converses. Imbens and Viviano analyze stochastic channels in a different random-factor synthetic-control model. Chen, Fan, Ma, and Yan study uncertainty quantification for noisy low-rank matrix completion, not a right-censored continuous-time missing survival curve. Athey, Bayati, Doudchenko, Imbens, and Khosravi provide matrix-completion prediction methods rather than this target-loading and band-width frontier. Curth, Poon, Nori, and González motivate caution in survival synthetic-control analysis; the present note supplies an exact-rank construction and a weak-target-pre minimax witness. Robins and Finkelstein mark the dependent-censoring extension deliberately excluded here. Chernozhukov, Wüthrich, and Zhu provide conformal counterfactual synthetic-control inference as a robust alternative, not the censored factor-model continuous-time frontier studied here. Goldsmith, Greven, and Crainiceanu account for decomposition uncertainty in functional principal-component bands but not right censoring or a causal missing curve. Carpentier, Klopp, L\"offler, and Nickl connect honest adaptation to composite testing; the present negative conclusion is instead certified directly by a donor-visible rank-two survival pair. Chernozhukov, Chetverikov, and Kato's coupling theorem and the Powers--Størmer inequality are used only as cited classical substrate for the singular-covariance-safe comparison.
+
+\section{Setup}
+
+Target (estimand / structural parameter): \(\theta(t)=S^0_{1,\star}(t),\ t\in\mathcal I\).
+Primary functional / estimator / diagnostic: The observed-data functional is the random-quantile pair \((\widehat\theta_r,\widehat B_r)\), with \(c_r^\xi=\widetilde c_r^\xi+\tau_{r,n}\). Its minimax guarantees are
+\[
+ W_1^*(N_0,K_T,K_D;\alpha)\asymp(N_0K_D)^{-1/2}
+\]
+and, for every fixed \(r\ge2\),
+\[
+ c\rho_r(N_0,K_T,K_D)\le W_r^*(N_0,K_T,K_D;\alpha)
+ \le C\{\rho_r(N_0,K_T,K_D)+\eta_D(K_D)\}.
+\]
+The higher-rank width is of order \(\rho_r\) only on subregimes with \(\eta_D(K_D)=O(\rho_r)\). Moreover,
+\[
+ \inf_{B:\ \inf_{Q\in\mathfrak Q_{2,\mathrm{vis}}}Q\{\theta_Q\in B\}\ge1-\alpha-\varepsilon_{N_0,K_T,K_D}(\alpha)}
+ \sup_{Q\in\mathfrak Q_{2,\mathrm{vis}}}E_Qw(B)\asymp1.
+\].
+\begin{itemize}
+  \item \texttt{alpha} --- \texttt{fixed scalar}; \(\alpha\in(0,1/2)\); \texttt{coverage parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Miscoverage level for a simultaneous band.}
+  \item \texttt{beta} --- \texttt{fixed scalar}; \(\beta\in(1/2,\infty)\); \texttt{smoothness parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Hölder exponent for the event hazards and the interpolation rule.}
+  \item \texttt{L} --- \texttt{fixed scalar}; \(L\in(0,\infty)\); \texttt{smoothness radius}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Uniform Hölder radius for the event hazards.}
+  \item \texttt{taubar} --- \texttt{fixed scalar}; \(\bar\tau\in(0,\infty)\); \texttt{time horizon}
+  \par\smallskip\noindent\emph{Definition.} \texttt{End of the clinically relevant follow-\allowbreak{}up horizon.}
+  \item \texttt{I} --- \texttt{compact interval}; \(\mathcal I=[0,\bar\tau]\); \texttt{functional domain}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Continuous follow-\allowbreak{}up interval on which the target band is required to be honest.}
+  \item \texttt{t} --- \texttt{follow-\allowbreak{}up time}; \(t\in\mathcal I\); \texttt{functional index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic continuous follow-\allowbreak{}up time.}
+  \item \texttt{psiPair} --- \texttt{fixed smooth perturbation curve}; \(\psi_\circ\in C^\infty(\mathcal I)\); \texttt{rank-\allowbreak{}two lower-\allowbreak{}pair direction}
+  \par\smallskip\noindent\emph{Definition.} \(\psi_\circ(t)=\exp\{-1/[t(\bar\tau-t)]\}\mathbf 1\{0<t<\bar\tau\}\), with its smooth zero extension outside \(\mathcal I\).
+  \item \texttt{aPair} --- \texttt{fixed two-\allowbreak{}period amplitude array}; \((a_{\circ,0},a_{\circ,1})\in(\mathbb R\setminus\{0\})^2\); \texttt{rank-\allowbreak{}two lower-\allowbreak{}pair amplitude}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Interior contrast amplitudes used in the explicit rank-\allowbreak{}two subexperiment.}
+  \item \texttt{lambdaPair} --- \texttt{fixed positive scalar}; \(\lambda_\circ>0\); \texttt{rank-\allowbreak{}two lower-\allowbreak{}pair baseline}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Exponential baseline rate in the explicit rank-\allowbreak{}two subexperiment.}
+  \item \texttt{hPair} --- \texttt{fixed positive scalar}; \(h_\circ>0\); \texttt{rank-\allowbreak{}two local separation}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Target-\allowbreak{}loading separation amplitude in the explicit rank-\allowbreak{}two subexperiment.}
+  \item \texttt{cFloor} --- \texttt{fixed positive scalar}; \(c_f>0\); \texttt{likelihood-\allowbreak{}divergence constant}
+  \par\smallskip\noindent\emph{Definition.} Failure-density floor on the support of \(\psi_\circ'\) in the explicit rank-two subexperiment.
+  \item \texttt{p} --- \texttt{period index}; \(p\in\{0,1\}\); \texttt{panel index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Index with zero denoting the pre-\allowbreak{}intervention period and one denoting the post-\allowbreak{}intervention period.}
+  \item \texttt{N0} --- \texttt{positive integer}; \(N_0\in\mathbb N\); \texttt{donor dimension}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Number of donor units observed under control in both periods.}
+  \item \texttt{D} --- \texttt{donor index set}; \(\mathcal D=\{1,\ldots,N_0\}\); \texttt{unit index set}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Set of donor units.}
+  \item \texttt{star} --- \texttt{distinguished unit label}; \(\star\notin\mathcal D\); \texttt{target unit}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Target unit treated in the post-\allowbreak{}intervention period.}
+  \item \texttt{M} --- \texttt{unit index set}; \(\mathcal M=\mathcal D\cup\{\star\}\); \texttt{panel index set}
+  \par\smallskip\noindent\emph{Definition.} \texttt{All donor and target units.}
+  \item \texttt{m} --- \texttt{unit index}; \(m\in\mathcal M\); \texttt{panel index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic donor or target unit.}
+  \item \texttt{r} --- \texttt{fixed positive integer}; \(r\in\mathbb N\); \texttt{structural regime}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Exact total rank of the normalized control-\allowbreak{}survival panel;\allowbreak{} it is fixed as the sample sizes diverge.}
+  \item \texttt{d} --- \texttt{nonnegative integer}; \(d=r-1\in\mathbb N_0\); \texttt{contrast rank}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Number of heterogeneous loading coordinates left after separating the normalization direction.}
+  \item \texttt{KT} --- \texttt{positive integer}; \(K_T\in\mathbb N\); \texttt{target-\allowbreak{}pre sample size}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Number of target-\allowbreak{}unit patients observed under control before intervention.}
+  \item \texttt{KD} --- \texttt{positive integer}; \(K_D\in\mathbb N\); \texttt{donor-\allowbreak{}cell sample size}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Number of patients in each donor-\allowbreak{}period cell.}
+  \item \texttt{epscov} --- \texttt{deterministic coverage-\allowbreak{}error schedule}; \(\varepsilon_{N_0,K_T,K_D}(\alpha)\in(0,1/2-\alpha)\); \texttt{finite-\allowbreak{}triple honesty tolerance}
+  \par\smallskip\noindent\emph{Definition.} \(\varepsilon_{N_0,K_T,K_D}(\alpha)=\min\{(1/2-\alpha)/4,[\log\log(e^e+\min\{N_0,K_T,K_D\})]^{-1}\}\). In particular, \(\sup_{\min\{N_0,K_T,K_D\}\ge a}\varepsilon_{N_0,K_T,K_D}(\alpha)\to0\) as \(a\to\infty\).
+  \item \texttt{Kpm} --- \texttt{deterministic cell-\allowbreak{}size array}; \(K_{p,m}\in\mathbb N\); \texttt{sampling index}
+  \par\smallskip\noindent\emph{Definition.} \(K_{0,\star}=K_T\) and \(K_{p,m}=K_D\) for \(p\in\{0,1\}\) and \(m\in\mathcal D\).
+  \item \texttt{j} --- \texttt{patient index}; \(j\in\{1,\ldots,K_{p,m}\}\); \texttt{sampling index}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Patient index within an observed unit-\allowbreak{}period cell.}
+  \item \texttt{T0} --- \texttt{potential failure time}; \(T^0_{p,m,j}\in[0,\infty]\); \texttt{potential outcome}
+  \par\smallskip\noindent\emph{Definition.} Patient failure time under control in unit \(m\) and period \(p\).
+  \item \texttt{C} --- \texttt{censoring time}; \(C_{p,m,j}\in[0,\infty]\); \texttt{censoring variable}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Right-\allowbreak{}censoring time for a patient in an observed control cell.}
+  \item \texttt{X} --- \texttt{observed follow-\allowbreak{}up time}; \(X_{p,m,j}\in[0,\infty]\); \texttt{observed data}
+  \par\smallskip\noindent\emph{Definition.} \(X_{p,m,j}=T^0_{p,m,j}\wedge C_{p,m,j}\).
+  \item \texttt{Delta} --- \texttt{event indicator}; \(\Delta_{p,m,j}\in\{0,1\}\); \texttt{observed data}
+  \par\smallskip\noindent\emph{Definition.} \(\Delta_{p,m,j}=\mathbf 1\{T^0_{p,m,j}\le C_{p,m,j}\}\).
+  \item \texttt{O} --- \texttt{observed patient record}; \texttt{sampling unit}
+  \par\smallskip\noindent\emph{Definition.} \(O_{p,m,j}=(X_{p,m,j},\Delta_{p,m,j})\) for donor cells and for the target-pre cell \((p,m)=(0,\star)\).
+  \item \texttt{S} --- \texttt{control potential survival function}; \(S^0_{p,m}\in C(\mathcal I;[0,1])\); \texttt{primitive functional}
+  \par\smallskip\noindent\emph{Definition.} Control potential survival curve, with \(S^0_{p,m}(0)=1\).
+  \item \texttt{Ccenter} --- \texttt{centered donor survival operator}; \(\mathcal C_D:\mathbf 1^\perp\subset\mathbb R^{N_0}\to L^2(\{0,1\}\times\mathcal I)\); \texttt{primitive rank operator}
+  \par\smallskip\noindent\emph{Definition.} \texttt{The primitive joint-\allowbreak{}period donor contrast operator whose nonzero directions determine heterogeneous survival rank.}
+  \item \texttt{G} --- \texttt{censoring survival function}; \(G_{p,m}\in C(\mathcal I;[0,1])\); \texttt{censoring nuisance}
+  \par\smallskip\noindent\emph{Definition.} \(G_{p,m}(t)=\Pr(C_{p,m,j}\ge t)\).
+  \item \texttt{lambda} --- \texttt{control event hazard}; \(\lambda^0_{p,m}:\mathcal I\to[0,\infty)\); \texttt{survival nuisance}
+  \par\smallskip\noindent\emph{Definition.} Hazard corresponding to \(S^0_{p,m}\) on \(\mathcal I\).
+  \item \texttt{s} --- \texttt{period baseline survival curve}; \(s_p\in C(\mathcal I)\); \texttt{common factor}
+  \par\smallskip\noindent\emph{Definition.} Donor-mean component in the canonical normalized factorization constructed in \(\mathrm{def:canonical-factorization}\).
+  \item \texttt{b} --- \texttt{period contrast-\allowbreak{}factor curve}; \(b_p\in C(\mathcal I;\mathbb R^d)\); \texttt{functional factor}
+  \par\smallskip\noindent\emph{Definition.} Contrast-factor component in the canonical normalized factorization constructed in \(\mathrm{def:canonical-factorization}\).
+  \item \texttt{z} --- \texttt{unit loading}; \(z_m\in\mathbb R^d\); \texttt{latent loading}
+  \par\smallskip\noindent\emph{Definition.} Canonical loading of unit \(m\), with donor centering \(N_0^{-1}\sum_{m\in\mathcal D}z_m=0\).
+  \item \texttt{theta} --- \texttt{causal survival curve}; \(\theta\in C(\mathcal I;[0,1])\); \texttt{causal estimand}
+  \par\smallskip\noindent\emph{Definition.} Target post-intervention control survival curve constructed in \(\mathrm{def:target-curve}\).
+  \item \texttt{Pr} --- \texttt{triangular-\allowbreak{}array law class}; \(\mathfrak P_r(N_0,K_T,K_D)\); \texttt{model class}
+  \par\smallskip\noindent\emph{Definition.} Exact-rank censored survival-factor class constructed in \(\mathrm{def:exact-rank-class}\).
+  \item \texttt{P} --- \texttt{triangular-\allowbreak{}array law}; \(P\in\mathfrak P_r(N_0,K_T,K_D)\); \texttt{data-\allowbreak{}generating law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic law in the exact-\allowbreak{}rank model class.}
+  \item \texttt{Ppair} --- \texttt{rank-\allowbreak{}two two-\allowbreak{}point subexperiment}; \((P_{-},P_{+})\in\mathfrak P_2(N_0,K_T,K_D)^2\); \texttt{least-\allowbreak{}favorable construction}
+  \par\smallskip\noindent\emph{Definition.} Normalization-preserving target-loading pair constructed in \(\mathrm{def:rank-two-lecam-pair}\).
+  \item \texttt{B} --- \texttt{random continuous-\allowbreak{}time band}; \(B=[B^{\mathrm{lo}},B^{\mathrm{up}}]\in C(\mathcal I)^2\); \texttt{confidence procedure}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Measurable lower and upper curves computed from the observed records.}
+  \item \texttt{Hband} --- \texttt{finite-\allowbreak{}triple admissible-\allowbreak{}band class}; \(\mathcal H_r(N_0,K_T,K_D;\alpha)\); \texttt{minimax action class}
+  \par\smallskip\noindent\emph{Definition.} Per-triple coverage-constrained class constructed in \(\mathrm{def:uniform-honesty}\).
+  \item \texttt{w} --- \texttt{band-\allowbreak{}width functional}; \(w(B)\in[0,\infty]\); \texttt{loss}
+  \par\smallskip\noindent\emph{Definition.} \(w(B)=\sup_{t\in\mathcal I}\{B^{\mathrm{up}}(t)-B^{\mathrm{lo}}(t)\}\).
+  \item \texttt{Wstar} --- \texttt{minimax expected width}; \(W_r^*(N_0,K_T,K_D;\alpha)\in[0,\infty]\); \texttt{frontier}
+  \par\smallskip\noindent\emph{Definition.} Minimax criterion constructed in \(\mathrm{def:minimax-width}\).
+  \item \texttt{rho} --- \texttt{rank-\allowbreak{}specific rate}; \(\rho_r(N_0,K_T,K_D)\in(0,\infty)\); \texttt{rate frontier}
+  \par\smallskip\noindent\emph{Definition.} \(\rho_1=(N_0K_D)^{-1/2}\) and \(\rho_r=K_T^{-1/2}+(N_0K_D)^{-1/2}\) for \(r\ge2\).
+  \item \texttt{phiT} --- \texttt{target-\allowbreak{}pre influence process}; \(\phi_{T,j}\in\ell^\infty(\mathcal I)\); \texttt{asymptotic linear term}
+  \par\smallskip\noindent\emph{Definition.} Mean-zero target-pre patient influence process characterized in \(\mathrm{lem:uniform-linearization}\).
+  \item \texttt{phiD} --- \texttt{donor-\allowbreak{}patient influence process}; \(\phi_{D,p,m,j}\in\ell^\infty(\mathcal I)\); \texttt{asymptotic linear term}
+  \par\smallskip\noindent\emph{Definition.} Mean-zero donor-patient influence process characterized in \(\mathrm{lem:uniform-linearization}\).
+  \item \texttt{Rrem} --- \texttt{remainder process}; \(R_r\in\ell^\infty(\mathcal I)\); \texttt{asymptotic remainder}
+  \par\smallskip\noindent\emph{Definition.} Remainder process characterized in \(\mathrm{lem:uniform-linearization}\).
+  \item \texttt{grid} --- \texttt{deterministic time grid}; \(\mathcal G_{N_0,K_T,K_D}\subset\mathcal I\); \texttt{computational discretization}
+  \par\smallskip\noindent\emph{Definition.} Grid constructed in \(\mathrm{def:inference-grid}\).
+  \item \texttt{h} --- \texttt{deterministic adjacent-\allowbreak{}knot mesh}; \(h_{N_0,K_T,K_D}\in(0,\bar\tau]\); \texttt{interpolation scale}
+  \par\smallskip\noindent\emph{Definition.} With \(q=\min\{\beta+1,2\}\) and \(J_r=\max\{1,\lceil\bar\tau\rho_r(N_0,K_T,K_D)^{-1/q}\rceil\}\), \(h_{N_0,K_T,K_D}=\bar\tau/J_r\) is the adjacent-knot mesh of the canonical quasi-uniform inference grid.
+  \item \texttt{KM} --- \texttt{cellwise Kaplan-\allowbreak{}-\allowbreak{}Meier estimator}; \(\widehat S_{p,m}^{\mathrm{KM}}\in D(\mathcal I)\); \texttt{first-\allowbreak{}stage estimator}
+  \par\smallskip\noindent\emph{Definition.} Product-limit estimator formed from \(\{O_{p,m,j}:1\le j\le K_{p,m}\}\).
+  \item \texttt{shat} --- \texttt{estimated period baseline curve}; \(\widehat s_p\in C(\mathcal I)\); \texttt{factor estimator}
+  \par\smallskip\noindent\emph{Definition.} Donor-mean component estimated in \(\mathrm{def:fpcr-multiplier-band}\).
+  \item \texttt{bhat} --- \texttt{estimated contrast-\allowbreak{}factor curve}; \(\widehat b_p\in C(\mathcal I;\mathbb R^d)\); \texttt{factor estimator}
+  \par\smallskip\noindent\emph{Definition.} Functional principal-contrast component estimated in \(\mathrm{def:fpcr-multiplier-band}\).
+  \item \texttt{zhat} --- \texttt{estimated target loading}; \(\widehat z_\star\in\mathbb R^d\); \texttt{loading estimator}
+  \par\smallskip\noindent\emph{Definition.} Target-pre minimum-norm loading estimated in \(\mathrm{def:fpcr-multiplier-band}\).
+  \item \texttt{thetahat} --- \texttt{functional-\allowbreak{}PCR estimator}; \(\widehat\theta_r\in C(\mathcal I)\); \texttt{point estimator}
+  \par\smallskip\noindent\emph{Definition.} Censoring-aware functional-PCR estimator constructed in \(\mathrm{def:fpcr-multiplier-band}\).
+  \item \texttt{xi} --- \texttt{patient multiplier array}; \(\xi_{p,m,j}\stackrel{\mathrm{iid}}{\sim}N(0,1)\); \texttt{resampling variable}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Multipliers independent of the observed data and attached to patient-\allowbreak{}level counting-\allowbreak{}process increments.}
+  \item \texttt{Bhat} --- \texttt{constructed continuous-\allowbreak{}time band}; \(\widehat B_r=[\widehat B_r^{\mathrm{lo}},\widehat B_r^{\mathrm{up}}]\in C(\mathcal I)^2\); \texttt{attaining procedure}
+  \par\smallskip\noindent\emph{Definition.} Martingale-multiplier functional-PCR band constructed in \(\mathrm{def:fpcr-multiplier-band}\).
+  \item \texttt{delta2} --- \texttt{rank-\allowbreak{}two separation}; \(\delta_2\in[0,\infty)\); \texttt{adaptation parameter}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Smallest nonzero singular value of the normalized centered contrast operator under a rank-\allowbreak{}two alternative.}
+  \item \texttt{Aadapt} --- \texttt{adaptive-\allowbreak{}band construction handle}; \texttt{open-\allowbreak{}question handle}
+  \par\smallskip\noindent\emph{Definition.} Rank-test-plus-oracle-band handle constructed in \(\mathrm{def:rank-adaptation-handle}\).
+  \item \texttt{etaD} --- \texttt{deterministic donor-\allowbreak{}cell risk-\allowbreak{}exhaustion envelope}; \(\eta_D(K_D)\in(0,\infty)\); \texttt{estimator-\allowbreak{}specific deterministic bias allowance}
+  \par\smallskip\noindent\emph{Definition.} \(\eta_D(K_D)=C_\eta\exp\{-c_0\lfloor K_D/2\rfloor\}\), where \(c_0=s_-g_-/3\) and the fixed \(C_\eta<\infty\) depends only on the model constants and dominates the functional-PCR derivative envelope times the cellwise product-limit bias constant.
+  \item \texttt{rhoBar} --- \texttt{estimator-\allowbreak{}specific upper rate}; \(\bar\rho_r(N_0,K_T,K_D)\in(0,\infty)\); \texttt{honest functional-\allowbreak{}PCR width envelope}
+  \par\smallskip\noindent\emph{Definition.} \(\bar\rho_r(N_0,K_T,K_D)=\rho_r(N_0,K_T,K_D)+\mathbf 1\{r\ge2\}\eta_D(K_D)\).
+  \item \texttt{omega} --- \texttt{deterministic finite-\allowbreak{}tail inference buffer}; \(\omega_r(N_0,K_T,K_D;\alpha)\in(0,\infty)\); \texttt{nonlinear-\allowbreak{}remainder and multiplier-\allowbreak{}transfer allowance}
+  \par\smallskip\noindent\emph{Definition.} Put \(n_D=N_0K_D\), \(h_0=s_-g_-\),
+\[
+ c_\dagger=2^{-24}r^{-4}h_0^4\gamma_-^8\kappa_-^4
+ \{1+\bar\tau+L+M_b+M_z+M_\star+\gamma_+\}^{-8},
+\]
+and
+\[
+ \upsilon_r=
+ \mathbf1\{r\ge2\}\left\{K_T^{-1}+N_0^{-1/2}K_D^{-1}
+ +\rho_r\eta_D(K_D)+e^{-c_\dagger K_T/2}
+ +e^{-c_\dagger n_D/2}\right\}
+ +n_D^{-1}+e^{-c_\dagger n_D/2}.
+\]
+Define
+\[
+ \omega_r(N_0,K_T,K_D;\alpha)
+ =C_\omega\varepsilon_{N_0,K_T,K_D}(\alpha)^{-1/2}\upsilon_r,
+\]
+where the fixed \(C_\omega<\infty\) depends only on the displayed model constants and is chosen sufficiently large to dominate the nonlinear Taylor remainder and aggregate fallback contributions.
+  \item \texttt{Qle2} --- \texttt{triangular-\allowbreak{}array rank-\allowbreak{}at-\allowbreak{}most-\allowbreak{}two closure}; \(\mathfrak Q_{\leq2}(N_0,K_T,K_D)\); \texttt{unknown-\allowbreak{}rank model closure}
+  \par\smallskip\noindent\emph{Definition.} No-common-pre-Gram rank-at-most-two survival-factor closure constructed in \(\mathrm{def:rank\mbox{-}at\mbox{-}most\mbox{-}two\mbox{-}closure}\).
+  \item \texttt{Q} --- \texttt{triangular-\allowbreak{}array closure law}; \(Q\in\mathfrak Q_{\leq2}(N_0,K_T,K_D)\); \texttt{unknown-\allowbreak{}rank data-\allowbreak{}generating law}
+  \par\smallskip\noindent\emph{Definition.} \texttt{Generic law in the separately normalized rank-\allowbreak{}at-\allowbreak{}most-\allowbreak{}two closure.}
+  \item \texttt{Q2vis} --- \texttt{triangular-\allowbreak{}array donor-\allowbreak{}visible known-\allowbreak{}rank-\allowbreak{}two law class}; \(\mathfrak Q_{2,\mathrm{vis}}(N_0,K_T,K_D)\); \texttt{weak-\allowbreak{}pre-\allowbreak{}Gram minimax model class}
+  \par\smallskip\noindent\emph{Definition.} The donor-visible rank-two subclass constructed in \(\mathrm{def:donor\mbox{-}visible\mbox{-}known\mbox{-}rank\mbox{-}two\mbox{-}class}\).
+  \item \texttt{Wpair} --- \texttt{weak-\allowbreak{}pre-\allowbreak{}Gram two-\allowbreak{}point law pair}; \(\mathbb W_2(N_0,K_T,K_D)=(Q_{2,-}^{\mathrm{wk}},Q_{2,+}^{\mathrm{wk}})\); \texttt{least-\allowbreak{}favorable donor-\allowbreak{}visible rank-\allowbreak{}two witness}
+  \par\smallskip\noindent\emph{Definition.} The normalization-preserving weak-pre-Gram pair constructed in \(\mathrm{def:weak\mbox{-}pre\mbox{-}gram\mbox{-}rank\mbox{-}two\mbox{-}pair}\).
+  \item \texttt{neff} --- \texttt{deterministic effective sample size}; \(n_{\mathrm{eff},r}(N_0,K_T,K_D)\in\mathbb N\); \texttt{Gaussian-\allowbreak{}approximation sample size}
+  \par\smallskip\noindent\emph{Definition.} \(n_{\mathrm{eff},1}=N_0K_D\) and \(n_{\mathrm{eff},r}=\min\{K_T,N_0K_D\}\) for \(r\ge2\).
+  \item \texttt{deltaN} --- \texttt{deterministic conditional-\allowbreak{}quantile inflation}; \(\delta_{r,n}(\alpha)\in(0,\alpha/2]\); \texttt{random-\allowbreak{}quantile probability slack}
+  \par\smallskip\noindent\emph{Definition.} \(\delta_{r,n}(\alpha)=\min\{\alpha/2,\varepsilon_{N_0,K_T,K_D}(\alpha)/2\}\).
+  \item \texttt{chiN} --- \texttt{deterministic Gaussian-\allowbreak{}comparison error schedule}; \(\chi_{r,n}(N_0,K_T,K_D)\in(0,\infty)\); \texttt{degeneracy-\allowbreak{}robust coupling error}
+  \par\smallskip\noindent\emph{Definition.} The explicit Yurinskii, covariance-transfer, entropy, and fallback error schedule constructed in \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\).
+  \item \texttt{tauN} --- \texttt{deterministic additive critical-\allowbreak{}value slack}; \(\tau_{r,n}(N_0,K_T,K_D)\in(0,\infty)\); \texttt{random-\allowbreak{}quantile additive allowance}
+  \par\smallskip\noindent\emph{Definition.} \(\tau_{r,n}=\rho_r(N_0,K_T,K_D)\chi_{r,n}\).
+  \item \texttt{cXiTilde} --- \texttt{conditional multiplier generalized-\allowbreak{}inverse quantile}; \(\widetilde c_r^\xi\in[0,\infty)\); \texttt{random multiplier critical quantile}
+  \par\smallskip\noindent\emph{Definition.} Left-continuous generalized-inverse conditional \(1-\alpha+\delta_{r,n}(\alpha)\) quantile of \(\max_{g\in\mathcal G}|\widehat Z_r^\xi(g)|\).
+  \item \texttt{cXi} --- \texttt{degeneracy-\allowbreak{}robust stochastic critical radius}; \(c_r^\xi\in[0,\infty)\); \texttt{band stochastic radius}
+  \par\smallskip\noindent\emph{Definition.} \(c_r^\xi=\widetilde c_r^\xi+\tau_{r,n}\).
+\end{itemize}
+
+\section{Assumptions}
+
+\begin{assumption}[ass:control-consistency]\label{ass:control-consistency}
+For every observed control cell, the observed failure time equals the control potential failure time \(T^0_{p,m,j}\).
+\par\smallskip\noindent\emph{Standard} (Consistency for observed control exposure, \cite{HanShah2025SSC}).
+\end{assumption}
+
+\begin{assumption}[ass:patient-independence]\label{ass:patient-independence}
+The records \(O_{p,m,j}\) are mutually independent across observed cells and patient indices.
+\par\smallskip\noindent\emph{Standard} (Independent patient sampling across survival cohorts, \cite{KaplanMeier1958}).
+\end{assumption}
+
+\begin{assumption}[ass:independent-censoring]\label{ass:independent-censoring}
+Within each observed control cell, \(T^0_{p,m,j}\perp C_{p,m,j}\).
+\par\smallskip\noindent\emph{Standard} (Independent right censoring, \cite{KaplanMeier1958}).
+\end{assumption}
+
+\begin{assumption}[ass:censor-overlap]\label{ass:censor-overlap}
+There is a fixed \(g_->0\) such that \(\inf_{p,m,t\in\mathcal I}G_{p,m}(t)\ge g_-\) over observed control cells.
+\par\smallskip\noindent\emph{Standard} (Uniform censoring overlap, \cite{DoblerPaulyScheike2019}).
+\end{assumption}
+
+\begin{assumption}[ass:event-overlap]\label{ass:event-overlap}
+There is a fixed \(s_->0\) such that \(\inf_{p,m,t\in\mathcal I}S^0_{p,m}(t)\ge s_-\).
+\par\smallskip\noindent\emph{Standard} (At-risk survival positivity on a truncated horizon, \cite{DoblerPaulyScheike2019}).
+\end{assumption}
+
+\begin{assumption}[ass:hazard-smoothness]\label{ass:hazard-smoothness}
+For fixed \(\beta>1/2\) and \(L<\infty\), \(\sup_{p,m}\|\lambda^0_{p,m}\|_{C^\beta(\mathcal I)}\le L\).
+\par\smallskip\noindent\emph{Standard} (Uniform Hölder hazard regularity, \cite{AndersenBorganGillKeiding1993}).
+\end{assumption}
+
+\begin{assumption}[ass:normalized-factor-model]\label{ass:normalized-factor-model}
+The control survival panel satisfies \(S^0_{p,m}(t)=s_p(t)+b_p(t)^\top z_m\) for every \(p\in\{0,1\}\), \(m\in\mathcal M\), and \(t\in\mathcal I\).
+\par\smallskip\noindent\emph{Standard} (Canonical affine form of the exact survival factor model, \cite{HanShah2025SSC}).
+\end{assumption}
+
+\begin{assumption}[ass:exact-centered-rank]\label{ass:exact-centered-rank}
+The primitive centered donor operator \(\mathcal C_D\) has exactly \(d=r-1\) nonzero singular directions, with rank zero interpreted literally when \(r=1\).
+\par\smallskip\noindent\emph{Novel.} novel: this is the project's canonical exact centered-donor rank restriction and is not attributed to the broader Han--Shah factor model
+\end{assumption}
+
+\begin{assumption}[ass:centered-contrast-spectrum]\label{ass:centered-contrast-spectrum}
+For fixed \(0<\gamma_-\le\gamma_+<\infty\), every nonzero singular value of \(\mathcal C_D\) lies in \([\gamma_-,\gamma_+]\) when \(d>0\).
+\par\smallskip\noindent\emph{Standard} (Uniform nonzero contrast-spectrum bounds, \cite{AgarwalShahShen2025PCR}).
+\end{assumption}
+
+\begin{assumption}[ass:pre-contrast-gram]\label{ass:pre-contrast-gram}
+For fixed \(0<\kappa_-\le\kappa_+<\infty\), every eigenvalue of \(\int_{\mathcal I}b_0(t)b_0(t)^\top\,dt\) lies in \([\kappa_-,\kappa_+]\) when \(d>0\).
+\par\smallskip\noindent\emph{Standard} (Functional factor-strength condition, \cite{AgarwalShahShen2025PCR}).
+\end{assumption}
+
+\begin{assumption}[ass:donor-incoherence]\label{ass:donor-incoherence}
+For a fixed \(M_z<\infty\), \(\max_{m\in\mathcal D}\|z_m\|_2\le M_z\).
+\par\smallskip\noindent\emph{Standard} (Bounded factor-loading incoherence, \cite{AgarwalShahShen2025PCR}).
+\end{assumption}
+
+\begin{assumption}[ass:target-loading-bound]\label{ass:target-loading-bound}
+For a fixed \(M_\star\in(0,\infty)\), \(\|z_\star\|_2\le M_\star\).
+\par\smallskip\noindent\emph{Standard} (Bounded out-of-sample loading, \cite{AgarwalShahShen2025PCR}).
+\end{assumption}
+
+\begin{assumption}[ass:factor-envelope]\label{ass:factor-envelope}
+For a fixed \(M_b<\infty\), \(\max_{p\in\{0,1\}}\sup_{t\in\mathcal I}\|b_p(t)\|_2\le M_b\).
+\par\smallskip\noindent\emph{Standard} (Bounded fixed-rank functional-factor envelope, \cite{GoldsmithGrevenCrainiceanu2013}).
+\end{assumption}
+
+\begin{assumption}[ass:explicit-witness-compatibility]\label{ass:explicit-witness-compatibility}
+For \(d=r-1\) and \(d\ge1\), let \(z_m^{(N,d)}\) be obtained, for each \(N\ge2d+1\), by empirical Gram--Schmidt from the explicitly centered columns
+\[
+ q_{k,m}^{(N)}=\{m-(N+1)/2\}^k-N^{-1}\sum_{\ell=1}^{N}\{\ell-(N+1)/2\}^k,
+ \qquad 1\le k\le d,
+\]
+and define \(R_d=\sup_{N\ge2d+1}\max_{1\le m\le N}\|z_m^{(N,d)}\|_2\), with \(R_0=0\), let \(\Phi_d\) be the deterministic \(L^2(\mathcal I)\)-orthonormalization of \(\psi_\circ,t\psi_\circ,\ldots,t^{d-1}\psi_\circ\), with first coordinate \(\psi_\circ/\|\psi_\circ\|_2\), and put \(A_{p,d}=a_{\circ,p}\|\psi_\circ\|_2\Phi_d\), and suppose the fixed primitive constants obey
+\[
+ g_-\le1,
+ \qquad
+ R_d\le M_z,
+ \qquad
+ \gamma_-^2\le(a_{\circ,0}^2+a_{\circ,1}^2)\|\psi_\circ\|_2^2\le\gamma_+^2,
+ \qquad
+ \kappa_-\le a_{\circ,0}^2\|\psi_\circ\|_2^2\le\kappa_+,
+\]
+\[
+ \max_{p\in\{0,1\}}\sup_{t\in\mathcal I}\|A_{p,d}(t)\|_2\le M_b,
+ \qquad
+ 2|a_{\circ,0}|h_\circ c_f^{-1/2}
+ \left\{\int_0^{\bar\tau}\{\psi_\circ'(t)\}^2dt\right\}^{1/2}
+ \le\frac34(1/2-\alpha),
+\]
+and, writing \(v_\circ=|a_{\circ,1}|/4\), for every \(p\in\{0,1\}\), every \(x\in\mathbb R^d\) with \(\|x\|_2\le R_d\), every \(|v|\le v_\circ\), and every \(t\in\mathcal I\), the curve
+\[
+ \ell_{p,x,v}(t)=e^{-\lambda_\circ t}+A_{p,d}(t)^\top x+\mathbf 1\{p=1\}v\psi_\circ(t)
+\]
+satisfies
+\[
+ s_-\le\ell_{p,x,v}(t)\le1,
+ \qquad
+ -\partial_t\ell_{p,x,v}(t)\ge0,
+ \qquad
+ \inf_{t\in\operatorname{supp}(\psi_\circ')}[-\partial_t\ell_{p,x,v}(t)]\ge c_f,
+ \qquad
+ \left\|-\frac{\partial_t\ell_{p,x,v}}{\ell_{p,x,v}}\right\|_{C^\beta(\mathcal I)}\le L;
+\]
+and for \(d=0\), the same four inequalities hold with the empty factor term, \(x=0\), and every \(|v|\le v_\circ\).
+\par\smallskip\noindent\emph{Novel.} novel: an explicit primitive numerical nonemptiness condition for this worked survival-factor subexperiment
+\end{assumption}
+
+\section{Definitions}
+
+\begin{definition}[def:canonical-factorization]\label{def:canonical-factorization}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Canonical normalized survival-\allowbreak{}factor coordinates}
+\par\smallskip\noindent\emph{Construction.} Set
+\[
+ s_p(t)=N_0^{-1}\sum_{m\in\mathcal D}S^0_{p,m}(t).
+\]
+Start from the model's target-compatible all-unit affine representation, center its donor loadings, covariance-normalize those loadings, and apply the inverse normalization to the factor curves. Write the singular-value decomposition of the resulting primitive centered operator as
+\[
+ \mathcal C_D=\sum_{k=1}^d\sigma_k u_k\otimes v_k,
+\]
+ordered by decreasing \(\sigma_k\) with deterministic sign and tie-breaking rules, and define
+\[
+ z_{m,k}=\sqrt{N_0}v_{k,m},
+ \qquad b_{p,k}(t)=\sigma_k u_{k,p}(t).
+\]
+Thus the construction uses the donor-centered normalization
+\[
+ N_0^{-1}\sum_{m\in\mathcal D}z_m=0,
+ \qquad N_0^{-1}\sum_{m\in\mathcal D}z_mz_m^\top=I_d.
+\]
+Let
+\[
+ H_0=\int_{\mathcal I}b_0(t)b_0(t)^\top\,dt.
+\]
+Conditional on the model's target-pre factor compatibility
+\(S^0_{0,\star}-s_0\in\operatorname{span}\{b_{0,1},\ldots,b_{0,d}\}\), define the shared target coordinate by
+\[
+ z_\star=H_0^{-1}\int_{\mathcal I}b_0(t)
+ \{S^0_{0,\star}(t)-s_0(t)\}\,dt.
+\]
+The positive canonical pre-period Gram makes this coordinate unique. Transporting the compatible all-unit representation through the same covariance normalization and orthogonal donor-SVD transform gives
+\[
+ S^0_{p,m}(t)=s_p(t)+b_p(t)^\top z_m
+\]
+for both periods and every donor or target unit. Survival normalization gives \(s_p(0)=1\) and \(b_p(0)=0\). When \(d=0\), compatibility forces every contrast to vanish and all vectors, sums, and Gram matrices use the zero-dimensional convention.
+\par\smallskip\noindent\emph{Inputs.} \texttt{S}; \texttt{r}; \texttt{N0}.
+\end{definition}
+
+\begin{definition}[def:exact-rank-class]\label{def:exact-rank-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Exact-\allowbreak{}rank censored Synthetic Survival Control class}
+\par\smallskip\noindent\emph{Construction.} \(\mathfrak P_r(N_0,K_T,K_D)=\{P_{N_0,K_T,K_D}: P_{N_0,K_T,K_D}\text{ satisfies }\mathrm{ass:control-consistency},\mathrm{ass:patient-independence},\mathrm{ass:independent-censoring},\mathrm{ass:censor-overlap},\mathrm{ass:event-overlap},\mathrm{ass:hazard-smoothness},\mathrm{ass:normalized-factor-model},\mathrm{ass:exact-centered-rank},\mathrm{ass:centered-contrast-spectrum},\mathrm{ass:pre-contrast-gram},\mathrm{ass:donor-incoherence},\mathrm{ass:target-loading-bound},\mathrm{ass:factor-envelope}\}\). Exact rank is imposed on the primitive operator \(\mathcal C_D\); for \(r=1\), its rank is zero and every contrast-space object uses the zero-dimensional convention.
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}control-\allowbreak{}consistency}; \texttt{ass:\allowbreak{}patient-\allowbreak{}independence}; \texttt{ass:\allowbreak{}independent-\allowbreak{}censoring}; \texttt{ass:\allowbreak{}censor-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}event-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}hazard-\allowbreak{}smoothness}; \texttt{ass:\allowbreak{}normalized-\allowbreak{}factor-\allowbreak{}model}; \texttt{ass:\allowbreak{}exact-\allowbreak{}centered-\allowbreak{}rank}; \texttt{ass:\allowbreak{}centered-\allowbreak{}contrast-\allowbreak{}spectrum}; \texttt{ass:\allowbreak{}pre-\allowbreak{}contrast-\allowbreak{}gram}; \texttt{ass:\allowbreak{}donor-\allowbreak{}incoherence}; \texttt{ass:\allowbreak{}target-\allowbreak{}loading-\allowbreak{}bound}; \texttt{ass:\allowbreak{}factor-\allowbreak{}envelope}.
+\end{definition}
+
+\begin{definition}[def:target-curve]\label{def:target-curve}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Target post-\allowbreak{}control survival curve}
+\par\smallskip\noindent\emph{Construction.} \(\theta(t)=S^0_{1,\star}(t)=s_1(t)+b_1(t)^\top z_\star,\quad t\in\mathcal I\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{S}; \texttt{s}; \texttt{b}; \texttt{z}.
+\end{definition}
+
+\begin{definition}[def:uniform-honesty]\label{def:uniform-honesty}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Per-\allowbreak{}triple uniform continuous-\allowbreak{}time honesty class}
+\par\smallskip\noindent\emph{Construction.} For each evaluated triple, define \(\mathcal H_r(N_0,K_T,K_D;\alpha)=\{B:\inf_{P\in\mathfrak P_r(N_0,K_T,K_D)}P\{B^{\mathrm{lo}}(t)\le\theta(t)\le B^{\mathrm{up}}(t)\text{ for every }t\in\mathcal I\}\ge1-\alpha-\varepsilon_{N_0,K_T,K_D}(\alpha)\}\). Thus admissibility is enforced at the same triple at which width is evaluated, while \(\varepsilon_{N_0,K_T,K_D}(\alpha)\) vanishes uniformly on every three-dimensional tail.
+\par\smallskip\noindent\emph{Inputs.} \texttt{B}; \texttt{Pr}; \texttt{theta}; \texttt{alpha}; \texttt{epscov}.
+\end{definition}
+
+\begin{definition}[def:minimax-width]\label{def:minimax-width}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Minimax expected supremum width}
+\par\smallskip\noindent\emph{Construction.} \(W_r^*(N_0,K_T,K_D;\alpha)=\inf_{B\in\mathcal H_r(N_0,K_T,K_D;\alpha)}\sup_{P\in\mathfrak P_r(N_0,K_T,K_D)}E_P[w(B)]\).
+\par\smallskip\noindent\emph{Inputs.} \texttt{B}; \texttt{Hband}; \texttt{Pr}; \texttt{w}; \texttt{alpha}.
+\end{definition}
+
+\begin{definition}[def:rank-two-lecam-pair]\label{def:rank-two-lecam-pair}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Explicit normalization-\allowbreak{}preserving fixed-\allowbreak{}rank target-\allowbreak{}loading pairs}
+\par\smallskip\noindent\emph{Construction.} Fix \(d=r-1\).  For every integer \(N_0\ge2d+1\) and \(1\le k\le d\), define the explicitly centered donor column
+\[
+ q_{k,m}=\{m-(N_0+1)/2\}^k-
+ N_0^{-1}\sum_{\ell=1}^{N_0}\{\ell-(N_0+1)/2\}^k,
+ \qquad 1\le m\le N_0.
+\]
+Apply deterministic empirical Gram--Schmidt to \(q_1,\ldots,q_d\) in the inner product \(N_0^{-1}\sum_m xy\), orienting each column to have positive leading polynomial coefficient, and denote the resulting row vectors by \(z_m^{(N_0,d)}\).  Thus every column is mean zero and \(N_0^{-1}\sum_m z_m^{(N_0,d)}z_m^{(N_0,d)\top}=I_d\); for \(d=1\), \(z_{m,1}^{(N_0,1)}=\{m-(N_0+1)/2\}/\sqrt{(N_0^2-1)/12}\).
+
+For \(d\ge1\), apply deterministic \(L^2(\mathcal I)\) Gram--Schmidt to \(\psi_\circ,t\psi_\circ,\ldots,t^{d-1}\psi_\circ\), orient the first function as \(\varphi_{1,d}=\psi_\circ/\|\psi_\circ\|_2\), write \(\Phi_d=(\varphi_{1,d},\ldots,\varphi_{d,d})^\top\), and set
+\[
+ A_{p,d}(t)=a_{\circ,p}\|\psi_\circ\|_2\Phi_d(t).
+\]
+For \(u\in\{-1,+1\}\), take \(s_p(t)=e^{-\lambda_\circ t}\), \(b_p=A_{p,d}\), donor loadings \(z_m=z_m^{(N_0,d)}\), and target loading \(z_\star^{(u)}=u h_\circ K_T^{-1/2}e_1\).  Put
+\[
+ S_{p,m}^{(r,u)}(t)=s_p(t)+A_{p,d}(t)^\top z_m,
+ \qquad
+ S_{p,\star}^{(r,u)}(t)=s_p(t)+A_{p,d}(t)^\top z_\star^{(u)}
+\]
+on \(\mathcal I\), continue every curve after \(\bar\tau\) by its value at \(\bar\tau\) times \(e^{-\lambda_\circ(t-\bar\tau)}\), take \(C_{p,m,j}=\infty\), and let \(P_{r,u}\) be the induced independent observed-data law.  For \(r=2\), define \(P_u=P_{2,u}\).  When \(d=0\), all score arrays and factor terms are empty and the same prescription defines the homogeneous backbone.  This construction only names the laws; centering, empirical Gram, class membership, rank, spectrum, separation, and divergence are properties to be proved.
+\par\smallskip\noindent\emph{Inputs.} \texttt{r}; \texttt{N0}; \texttt{KT}; \texttt{KD}; \texttt{psiPair}; \texttt{aPair}; \texttt{lambdaPair}; \texttt{hPair}.
+\end{definition}
+
+\begin{definition}[def:inference-grid]\label{def:inference-grid}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Rate-\allowbreak{}matched interpolation grid}
+\par\smallskip\noindent\emph{Construction.} Put \(q=\min\{\beta+1,2\}\) and
+\[
+ J_r=\max\left\{1,
+ \left\lceil\bar\tau\rho_r(N_0,K_T,K_D)^{-1/q}\right\rceil
+ \right\}.
+\]
+Define the canonical quasi-uniform grid and its adjacent-knot mesh by
+\[
+ \mathcal G_{N_0,K_T,K_D}
+ =\left\{\frac{\ell\bar\tau}{J_r}:0\le\ell\le J_r\right\},
+ \qquad h_{N_0,K_T,K_D}=\frac{\bar\tau}{J_r}.
+\]
+Use piecewise-linear interpolation between adjacent knots. Then
+\[
+ h_{N_0,K_T,K_D}^{q}\le\rho_r(N_0,K_T,K_D),
+ \qquad
+ |\mathcal G_{N_0,K_T,K_D}|
+ \le2+\bar\tau\rho_r(N_0,K_T,K_D)^{-1/q}.
+\]
+\par\smallskip\noindent\emph{Inputs.} \texttt{N0}; \texttt{KT}; \texttt{KD}; \texttt{r}; \texttt{I}.
+\end{definition}
+
+\begin{definition}[def:fpcr-multiplier-band]\label{def:fpcr-multiplier-band}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Censoring-\allowbreak{}aware functional-\allowbreak{}PCR martingale-\allowbreak{}multiplier band}
+\par\smallskip\noindent\emph{Construction.} Let \(\mathcal L_{\mathcal G}\) be piecewise-linear interpolation on the canonical grid. For the population comparison, define
+\[
+ \widetilde S^0_{p,m}=\mathcal L_{\mathcal G}S^0_{p,m},\qquad
+ \widetilde s_p=N_0^{-1}\sum_{m\in\mathcal D}\widetilde S^0_{p,m},
+\]
+\[
+ \widetilde Y_m=(\widetilde S^0_{0,m}-\widetilde s_0,
+                  \widetilde S^0_{1,m}-\widetilde s_1),\qquad
+ \widetilde\Gamma=N_0^{-1}\sum_{m\in\mathcal D}
+ \widetilde Y_m\otimes\widetilde Y_m.
+\]
+Apply the selected positive-square-root and pre-period least-squares prediction map below to this panel and call the result \(\theta^{\mathrm{pop}}_{r,\mathcal G}\); for \(r=1\), put \(\theta^{\mathrm{pop}}_{1,\mathcal G}=\widetilde s_1\). This is a proof comparison and does not redefine \(\theta\).
+
+Put \(h_0=s_-g_-\). For any cell or deterministic half-fold containing \(k\) patients, set
+\[
+ \ell_k=\max\{1,kh_0/8\},\qquad
+ Y_k^\dagger(u)=\max\{Y_k(u),\ell_k\}.
+\]
+Order tied observed failures lexicographically by failure time and patient index, updating the risk count after each ordered failure, and define
+\[
+ \widehat S_k^\dagger(t)=
+ \prod_{u\le t}\left\{1-\frac{dN_k(u)}{Y_k^\dagger(u)}\right\}.
+\]
+Every ordered increment is zero or one, so this measurable curve lies in \([0,1]\) on every dataset. Interpolate it by \(\mathcal L_{\mathcal G}\). For every \(r\ge2\), use these stabilized curves for the target-pre full cell, every donor full cell, and both odd--even donor half-folds. For \(r=1\), do not stabilize: pool all \(N_0K_D\) donor-post records first, form the ordinary aggregate-risk product-limit curve with its empty-risk convention, and interpolate it continuously.
+
+For \(r\ge2\), center the two sets of stabilized half-fold donor curves across donors to obtain \(\widehat Y_m^{(1)}\) and \(\widehat Y_m^{(2)}\), and form
+\[
+ \widehat\Gamma=\frac{1}{2N_0}\sum_{m\in\mathcal D}
+ \{\widehat Y_m^{(1)}\otimes\widehat Y_m^{(2)}+
+   \widehat Y_m^{(2)}\otimes\widehat Y_m^{(1)}\}.
+\]
+Select its largest \(d\) eigenvalues with deterministic lexicographic basis and sign rules, put \(\widehat\mu_k=\sqrt{\max\{\widehat\lambda_k,0\}}\), and set \(\widehat b_{p,k}=\widehat\mu_k\widehat u_{k,p}\). Let \(\widehat s_p\) be the donor average of the stabilized full-cell curves, and let \(\widehat H_0=\int_{\mathcal I}\widehat b_0\widehat b_0^\top\). On the aggregate regular event
+\[
+ \widehat\lambda_d\ge\gamma_-^2/4,\qquad
+ \widehat\lambda_d-\widehat\lambda_{d+1}\ge\gamma_-^2/4,
+ \qquad \lambda_{\min}(\widehat H_0)\ge\kappa_-/4,
+\]
+define
+\[
+ \widehat z_\star=\widehat H_0^{-1}\int_{\mathcal I}\widehat b_0(t)
+ \{\widehat S_{0,\star}^\dagger(t)-\widehat s_0(t)\}\,dt,
+ \qquad
+ \widehat\theta_r=\widehat s_1+\widehat b_1^\top\widehat z_\star.
+\]
+This is the rotation-invariant selected-projector, positive-square-root, and inverse-pre-Gram prediction map. If a fold is empty or an aggregate threshold fails, set the factor and loading estimates to zero and let \(\widehat\theta_r\) be the continuously interpolated ordinary pooled donor-post product-limit curve. The total hard-switched estimator is measurable and defined on every dataset, and every returned curve is continuous in physical time after interpolation. No continuity or differentiability in the data across a hard cutoff is claimed.
+
+Define the multiplier coefficients branchwise. On a dataset assigned to the regular branch, differentiate the coordinate-free regular prediction map and the stabilized product-limit inputs. The observed contribution of patient \(j\) in a stabilized \(k\)-patient input uses the weight
+\[
+ -\widehat S_k^\dagger(t-)
+ \int_0^t\{Y_k^\dagger(u)\}^{-1}\,dN_{k,j}(u).
+\]
+On a dataset assigned to the fallback branch, and on the rank-one branch, use instead the ordinary pooled aggregate-risk product-limit coefficients. These two arrays are explicitly defined local branch coefficients; they are not the derivative of the total hard-switched map across a cutoff. Attach independent standard Gaussian multipliers to the selected branch's patient coefficients and denote the resulting interpolated process by \(\widehat Z_r^\xi\). Define its conditional covariance by
+\[
+ \widehat\Sigma_r(g,g')
+ =E_\xi\{\widehat Z_r^\xi(g)\widehat Z_r^\xi(g')\mid O\}.
+\]
+
+Put \(n_D=N_0K_D\), \(p_{\mathcal G}=2|\mathcal G_{N_0,K_T,K_D}|\), and
+\[
+ n_{\mathrm{eff},r}=
+ \begin{cases}
+ n_D,&r=1,\\
+ \min\{K_T,n_D\},&r\ge2.
+ \end{cases}
+\]
+With \(c_0=s_-g_-/3\), define
+\[
+ a_{r,n}=n_D^{-1/2}+\mathbf1\{r\ge2\}
+ \left\{K_T^{-1/2}+K_D^{-1/2}+\eta_D(K_D)
+ +e^{-c_0K_T/2}+e^{-c_0n_D/2}\right\}.
+\]
+Let
+\[
+ k_{r,n}=\max\{2,\lceil n_{\mathrm{eff},r}^{1/9}\rceil\},
+ \qquad p_{\mathrm c,r,n}=2(k_{r,n}+1),
+\]
+and, for a sufficiently large fixed \(C_U<\infty\) depending only on the fixed model constants and \(r\), put
+\[
+ U_{r,n}=C_U p_{\mathrm c,r,n}^{5/2}n_{\mathrm{eff},r}^{-1/2},
+ \qquad
+ \zeta_{r,n}=U_{r,n}^{1/4}\{1+|\log U_{r,n}|\}.
+\]
+For a sufficiently large fixed \(C_\chi<\infty\), depending only on the same constants and \(r\), define
+\[
+ \chi_{r,n}=C_\chi\left[
+ \zeta_{r,n}+a_{r,n}^{1/48}\{1+|\log a_{r,n}|\}\right],
+ \qquad
+ \tau_{r,n}=\rho_r(N_0,K_T,K_D)\chi_{r,n},
+\]
+and
+\[
+ \delta_{r,n}(\alpha)=
+ \min\left\{\frac\alpha2,
+ \frac{\varepsilon_{N_0,K_T,K_D}(\alpha)}2\right\}.
+\]
+Set \(q_{N_0,K_T,K_D}=1-\alpha+\delta_{r,n}(\alpha)\), and define the left-continuous generalized-inverse conditional quantile by
+\[
+ \widetilde c_r^\xi=
+ \inf\left\{x\ge0:
+ P_\xi\left(\max_{g\in\mathcal G}|\widehat Z_r^\xi(g)|\le x
+ \mid O\right)\ge q_{N_0,K_T,K_D}\right\}.
+\]
+Define the stochastic critical radius by
+\[
+ c_r^\xi=\widetilde c_r^\xi+\tau_{r,n}.
+\]
+Thus the conditional random quantile is accompanied by an explicit degeneracy-robust additive comparison slack. The first component of \(\chi_{r,n}\) is the correctly dimensioned coarse-net Yurinskii and modulus allowance; the second covers empirical covariance, entropy, and fallback transfer. No coordinate-variance lower bound or deterministic moment guard is used.
+
+At every grid knot project \(\widehat\theta_r\) onto \([0,1]\), replace the zero-knot value by one, and piecewise-linearly interpolate these projected grid values; call the resulting continuous curve \(\widetilde\theta_r\). With \(q=\min\{\beta+1,2\}\), define
+\[
+ A_r=\widetilde c_r^\xi+\tau_{r,n}
+ +\mathbf1\{r\ge2\}\eta_D(K_D)
+ +\omega_r(N_0,K_T,K_D;\alpha)
+ +c_{\mathrm{int}}h_{N_0,K_T,K_D}^{q}.
+\]
+For every \(t\in\mathcal I\), set
+\[
+ \widehat B_r^{\mathrm{lo}}(t)=
+ \max\{0,\widetilde\theta_r(t)-A_r\},\qquad
+ \widehat B_r^{\mathrm{up}}(t)=
+ \min\{1,\widetilde\theta_r(t)+A_r\}.
+\]
+The pointwise clipping maps are continuous, so these endpoints form a measurable continuous-time band on every dataset. This pointwise endpoint construction avoids an additional interpolation-after-clipping error; interpolation is used only for the projected center, where the explicit \(c_{\mathrm{int}}h^q\) allowance applies.
+\par\smallskip\noindent\emph{Inputs.} \texttt{O}; \texttt{S}; \texttt{r}; \texttt{grid}; \texttt{xi}; \texttt{alpha}; \texttt{epscov}; \texttt{etaD}; \texttt{omega}; \texttt{rho}.
+\end{definition}
+
+\begin{definition}[def:rank-adaptation-handle]\label{def:rank-adaptation-handle}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Normalization-\allowbreak{}preserving rank-\allowbreak{}adaptation handle}
+\par\smallskip\noindent\emph{Construction.} Use a patient-martingale estimate of the second normalized contrast singular value to test exact rank one against separated rank-two alternatives, and invert that test to switch between the rank-one and rank-two oracle multiplier bands while preserving \(S(0)=1\). The threshold and the adaptive band are to be derived from the composite testing problem rather than fixed in advance.
+\par\smallskip\noindent\emph{Inputs.} \texttt{O}; \texttt{xi}; \texttt{Bhat}.
+\end{definition}
+
+\begin{definition}[def:rank-at-most-two-closure]\label{def:rank-at-most-two-closure}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Separately normalized rank-\allowbreak{}at-\allowbreak{}most-\allowbreak{}two closure}
+\par\smallskip\noindent\emph{Construction.} For each sample-size triple, define
+\[
+\mathfrak Q_{\leq 2}(N_0,K_T,K_D)
+=\left\{Q_{N_0,K_T,K_D}:Q_{N_0,K_T,K_D}
+\text{ has the properties below}\right\}.
+\]
+Every member satisfies
+\(\mathrm{ass:control\mbox{-}consistency}\),
+\(\mathrm{ass:patient\mbox{-}independence}\),
+\(\mathrm{ass:independent\mbox{-}censoring}\),
+\(\mathrm{ass:censor\mbox{-}overlap}\),
+\(\mathrm{ass:event\mbox{-}overlap}\), and
+\(\mathrm{ass:hazard\mbox{-}smoothness}\), with the common constants appearing in
+those assumptions.  Set, canonically,
+\[
+s_{p,Q}(t)=N_0^{-1}\sum_{m\in\mathcal D}S^0_{p,m}(t).
+\]
+There is a contrast indicator \(e_Q\in\{0,1\}\).  If \(e_Q=0\), then
+\[
+S^0_{p,m}(t)=s_{p,Q}(t)
+\quad\text{for all }p\in\{0,1\},\ m\in\mathcal M,\ t\in\mathcal I.
+\]
+If \(e_Q=1\), there are scalar continuous factor curves \(b_{p,Q}\) and scalar
+loadings \(\zeta_{m,Q}\) such that
+\[
+S^0_{p,m}(t)=s_{p,Q}(t)+b_{p,Q}(t)\zeta_{m,Q},
+\quad
+N_0^{-1}\sum_{m\in\mathcal D}\zeta_{m,Q}=0,
+\quad
+N_0^{-1}\sum_{m\in\mathcal D}\zeta_{m,Q}^2=1.
+\]
+The sign is selected canonically by requiring the first nonzero value in a fixed
+countable dense sequence of continuous linear probes of
+\((b_{0,Q},b_{1,Q})\) to be positive.  The invariant upper and loading bounds are
+\[
+0<\int_{\mathcal I}\{b_{0,Q}(t)^2+b_{1,Q}(t)^2\}\,dt\leq\gamma_+^2,
+\qquad
+0<\int_{\mathcal I}b_{0,Q}(t)^2\,dt\leq\kappa_+,
+\]
+\[
+\max_{p\in\{0,1\}}\sup_{t\in\mathcal I}|b_{p,Q}(t)|\leq M_b,
+\qquad
+\max_{m\in\mathcal D}|\zeta_{m,Q}|\leq M_z,
+\qquad
+|\zeta_{\star,Q}|\leq M_\star.
+\]
+Thus every heterogeneous member has a unique target-pre coefficient, but the
+definition imposes no common positive lower bound on its scalar pre-period Gram
+\(\int_{\mathcal I}b_{0,Q}^2\).  All rank labels in this definition refer to the
+separately normalized contrast indicator \(e_Q\), not to the fixed-rank law symbol
+\(\mathfrak P_r\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}control-\allowbreak{}consistency}; \texttt{ass:\allowbreak{}patient-\allowbreak{}independence}; \texttt{ass:\allowbreak{}independent-\allowbreak{}censoring}; \texttt{ass:\allowbreak{}censor-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}event-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}hazard-\allowbreak{}smoothness}.
+\end{definition}
+
+\begin{definition}[def:donor-visible-known-rank-two-class]\label{def:donor-visible-known-rank-two-class}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Donor-\allowbreak{}visible known-\allowbreak{}rank-\allowbreak{}two weak-\allowbreak{}pre-\allowbreak{}Gram class}
+\par\smallskip\noindent\emph{Construction.} For each sample-size triple, define
+\[
+ \mathfrak Q_{2,\mathrm{vis}}(N_0,K_T,K_D)
+ =\left\{Q\in\mathfrak Q_{\leq2}(N_0,K_T,K_D):
+ e_Q=1,\ 
+ \left[\int_{\mathcal I}\{b_{0,Q}(t)^2+b_{1,Q}(t)^2\}\,dt\right]^{1/2}
+ \ge \frac12|a_{\circ,1}|\|\psi_\circ\|_2\right\}.
+\]
+Here \(e_Q\), \(b_{0,Q}\), and \(b_{1,Q}\) are the separately normalized contrast indicator and factor curves in \(\mathrm{def:rank\mbox{-}at\mbox{-}most\mbox{-}two\mbox{-}closure}\).  Thus this is a law class, not the image of a particular witness: every member has known contrast indicator one and donor-visible invariant joint contrast energy, while no common positive lower bound is imposed on \(\int_{\mathcal I}b_{0,Q}^2\).
+\par\smallskip\noindent\emph{Member properties.} \texttt{ass:\allowbreak{}control-\allowbreak{}consistency}; \texttt{ass:\allowbreak{}patient-\allowbreak{}independence}; \texttt{ass:\allowbreak{}independent-\allowbreak{}censoring}; \texttt{ass:\allowbreak{}censor-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}event-\allowbreak{}overlap}; \texttt{ass:\allowbreak{}hazard-\allowbreak{}smoothness}.
+\end{definition}
+
+\begin{definition}[def:weak-pre-gram-rank-two-pair]\label{def:weak-pre-gram-rank-two-pair}
+\par\smallskip\noindent\emph{Defined object.} \texttt{Normalization-\allowbreak{}preserving weak-\allowbreak{}pre-\allowbreak{}Gram rank-\allowbreak{}two pair}
+\par\smallskip\noindent\emph{Construction.} For \(N_0\ge3\), put
+\[
+ \widetilde z_m=
+ \frac{m-(N_0+1)/2}{\sqrt{(N_0^2-1)/12}},
+ \qquad m\in\mathcal D,
+ \qquad
+ \bar h=\frac12\min\{h_\circ,R_1,M_\star\}>0,
+ \qquad c_T=K_T^{-1},
+\]
+where \(R_1\) and \(M_\star\) are the fixed constants in \(\mathrm{ass:explicit\mbox{-}witness\mbox{-}compatibility}\) and \(\mathrm{ass:target\mbox{-}loading\mbox{-}bound}\).  Define raw factors
+\[
+ \widetilde b_{0,T}(t)=c_Ta_{\circ,0}\psi_\circ(t),
+ \qquad
+ \widetilde b_{1,T}(t)=a_{\circ,1}\psi_\circ(t).
+\]
+Let \(\varsigma_T\in\{-1,+1\}\) be the sign which makes the first nonzero value in the fixed countable dense sequence of probes from \(\mathrm{def:rank\mbox{-}at\mbox{-}most\mbox{-}two\mbox{-}closure}\), applied to \((\varsigma_T\widetilde b_{0,T},\varsigma_T\widetilde b_{1,T})\), positive.  Set
+\[
+ s_{p,T}(t)=e^{-\lambda_\circ t},
+ \qquad b_{p,T}=\varsigma_T\widetilde b_{p,T},
+ \qquad z_m=\varsigma_T\widetilde z_m,
+ \qquad z_\star^{(u)}=\varsigma_Tu\bar h,
+ \qquad u\in\{-1,+1\}.
+\]
+On \(\mathcal I\), put
+\[
+ S_{p,m}^{(u)}(t)=s_{p,T}(t)+b_{p,T}(t)z_m,
+ \qquad
+ S_{p,\star}^{(u)}(t)=s_{p,T}(t)+b_{p,T}(t)z_\star^{(u)}.
+\]
+Continue every survival curve after \(\bar\tau\) by its value at \(\bar\tau\) times \(e^{-\lambda_\circ(t-\bar\tau)}\), set all censoring times equal to infinity, and sample all observed patients independently with the cell sizes \(K_{p,m}\).  Denote the induced laws by \(Q_{2,u}^{\mathrm{wk}}\), and set
+\[
+ \mathbb W_2(N_0,K_T,K_D)
+ =(Q_{2,-}^{\mathrm{wk}},Q_{2,+}^{\mathrm{wk}}).
+\]
+This construction only names the laws.  Survival validity, class membership, exact rank, donor visibility, donor-span inclusion, target separation, and likelihood distance are properties to be proved.
+\par\smallskip\noindent\emph{Inputs.} \texttt{N0}; \texttt{KT}; \texttt{KD}; \texttt{psiPair}; \texttt{aPair}; \texttt{lambdaPair}; \texttt{hPair}.
+\end{definition}
+
+\section{Main results}
+
+\begin{lemma}[lem:normalization-collapse]\label{lem:normalization-collapse}
+For every \(P\in\mathfrak P_1(N_0,K_T,K_D)\), the canonical contrast dimension is \(d=0\), so \(S^0_{p,m}(t)=s_p(t)\) for every unit and \(\theta(t)=s_1(t)\). Along every regular submodel whose target-pre marginal law is fixed and which perturbs \(\theta\) through the post-control law, the score contribution of the target-pre records is identically zero. For fixed \(r\ge2\), any normalization-preserving loading path \(z_{\star,\eta}=z_\star+\eta v\) that remains in \(\mathfrak P_r(N_0,K_T,K_D)\) has target derivative \(\left.\partial_\eta\theta_\eta(t)\right|_{\eta=0}=b_1(t)^\top v\), which is nonzero exactly when \(b_1^\top v\not\equiv0\) on \(\mathcal I\).
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Fix \(P\in\mathfrak P_1(N_0,K_T,K_D)\). Since \(d=r-1\), exact rank one gives \(d=0\). The zero-dimensional clause of the corrected canonical construction turns every factor-loading product into an empty sum. The normalized factor model therefore gives
+\[
+ S^0_{p,m}(t)=s_p(t),
+ \qquad p\in\{0,1\},\quad m\in\mathcal M,\quad t\in\mathcal I. \tag{1}
+\]
+The target definition yields \(\theta(t)=S^0_{1,\star}(t)=s_1(t)\).
+
+Let \(\{P_\eta:|\eta|<\eta_0\}\) be a regular submodel of the type quantified in the statement, and let \(q_{0,\star,\eta}\) be the density of one target-pre record with respect to a common dominating measure. Its target-pre marginal is fixed, so
+\[
+ q_{0,\star,\eta}=q_{0,\star,0},
+ \qquad
+ \left.\partial_\eta\log q_{0,\star,\eta}(O_{0,\star,j})
+ \right|_{\eta=0}=0.                                    \tag{2}
+\]
+Patient independence makes the target-pre sample score the sum of the zero terms in (2). This ancillarity conclusion is only for the fixed-target-pre paths stated in the lemma.
+
+Now fix \(r\ge2\) and a normalization-preserving loading path \(z_{\star,\eta}=z_\star+\eta v\) that remains in the class. Holding the factor curves fixed, the target formula gives
+\[
+ \left.\partial_\eta\theta_\eta(t)\right|_{\eta=0}
+ =\left.\partial_\eta
+ \{s_1(t)+b_1(t)^\top(z_\star+\eta v)\}\right|_{\eta=0}
+ =b_1(t)^\top v.                                        \tag{3}
+\]
+The derivative in (3) is a nonzero element of \(C(\mathcal I)\) exactly when \(b_1^\top v\) is not identically zero. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The zero-dimensional collapse and conditional loading derivative isolate the algebraic source of the rank transition. \textit{Gap.} HanShah2025SSC imposes a factor rank but does not state this normalization-induced score degeneracy. \textit{Consumer.} This identifies when target-pre sampling carries no information for the missing post-control curve.
+
+\begin{lemma}[lem:uniform-linearization]\label{lem:uniform-linearization}
+Put \(n_D=N_0K_D\), let \(\mathcal L_{\mathcal G}\) be piecewise-linear interpolation on \(\mathcal G_{N_0,K_T,K_D}\), and center the functional-PCR map at the interpolated population panel \(\widetilde S^0=\mathcal L_{\mathcal G}S^0\) defined in \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\). Uniformly over \(P\in\mathfrak P_r(N_0,K_T,K_D)\) and all sequences with \(\min\{N_0,K_T,K_D\}\to\infty\), there are independent mean-zero censoring-martingale influence processes \(\phi_{T,j}\) and \(\phi_{D,p,m,j}\), a deterministic grid function \(\mathfrak b_r\), and a remainder \(Q_r\) such that, simultaneously for \(g\in\mathcal G_{N_0,K_T,K_D}\),
+\[
+ \widehat\theta_r(g)-\theta(g)=Z_r(g)+\mathfrak b_r(g)+Q_r(g),
+ \qquad
+ Z_r=\mathbf 1\{r\ge2\}K_T^{-1}\sum_{j=1}^{K_T}\phi_{T,j}
+     +n_D^{-1}\sum_{p,m,j}\phi_{D,p,m,j},
+\]
+where \(\phi_{T,j}\equiv0\) when \(r=1\) and
+\[
+ \|\mathfrak b_r\|_{\infty,\mathcal G}
+ \le \mathbf 1\{r\ge2\}\eta_D(K_D).
+\]
+The interpolated population comparison equals \(\mathcal L_{\mathcal G}\theta\), and hence equals \(\theta\) at every grid point. For every sufficiently large evaluated triple, the finite-tail buffer and the conditional multiplier critical value in \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\) obey
+\[
+ \sup_{P\in\mathfrak P_r}P\{\|Q_r\|_{\infty,\mathcal G}>\omega_r/2\}
+ \le\varepsilon_{N_0,K_T,K_D}(\alpha)/4,
+\]
+\[
+ \sup_{P\in\mathfrak P_r}P\{\|Z_r\|_{\infty,\mathcal G}>c_r^\xi+\omega_r/2\}
+ \le\alpha-\varepsilon_{N_0,K_T,K_D}(\alpha)/4.
+\]
+Moreover \(\omega_r=o(\rho_r)\) uniformly on every three-dimensional tail without a restriction on the relative growth of \(K_T\) and \(N_0K_D\). The expansion and both tail inequalities are gridwise; the interpolation perturbation inside the \(L^2\) factor map is used to establish spectrum and Gram stability, while the discrepancy between \(S^0\) and \(\widetilde S^0\) away from the grid is carried only by \(c_{\mathrm{int}}h_{N_0,K_T,K_D}^{\min\{\beta+1,2\}}\) in the continuous-time band.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Put \(n_D=N_0K_D\).  If \(r=1\), normalization collapse makes the target-pre influence block identically zero.  Apply \(\mathrm{lem:pooled\mbox{-}noniid\mbox{-}km\mbox{-}linearization}\), set \(\mathfrak b_1=0\), and absorb its exponentially small deterministic product-limit bias into \(Q_1\).  If \(r\ge2\), apply \(\mathrm{lem:stabilized\mbox{-}gridwise\mbox{-}fpcr\mbox{-}transfer}\).  In both cases the patient blocks are independent and mean zero by patient independence and their censoring-martingale constructions, and we obtain, simultaneously on the grid,
+\[
+ \widehat\theta_r-\theta=Z_r+\mathfrak b_r+Q_r,
+ \qquad
+ \|\mathfrak b_r\|_{\infty,\mathcal G}
+ \le\mathbf1\{r\ge2\}\eta_D(K_D),                     \tag{1}
+\]
+with
+\[
+ E\|Q_r\|_{\infty,\mathcal G}^2\le C\upsilon_r^2.      \tag{2}
+\]
+The interpolated-population stability lemma proves
+\[
+ \theta^{\mathrm{pop}}_{r,\mathcal G}
+ =\mathcal L_{\mathcal G}\theta,
+ \qquad
+ \theta^{\mathrm{pop}}_{r,\mathcal G}(g)=\theta(g)
+ \quad(g\in\mathcal G).                                \tag{3}
+\]
+
+By definition, \(\omega_r=C_\omega\varepsilon^{-1/2}\upsilon_r\).  Markov's inequality and (2) give
+\[
+ \sup_{P\in\mathfrak P_r}P\{\|Q_r\|_{\infty,\mathcal G}>\omega_r/2\}
+ \le4C\upsilon_r^2/\omega_r^2
+ \le\varepsilon_{N_0,K_T,K_D}(\alpha)/4                \tag{4}
+\]
+once the fixed \(C_\omega\) is chosen sufficiently large.  The random-quantile theorem gives
+\[
+ \inf_{P\in\mathfrak P_r}P\{\|Z_r\|_{\infty,\mathcal G}\le c_r^\xi\}
+ \ge1-\alpha+\delta_{r,n}(\alpha)/2.                   \tag{5}
+\]
+For sufficiently large triples, \(\varepsilon_{N_0,K_T,K_D}(\alpha)<\alpha\), hence \(\delta_{r,n}(\alpha)=\varepsilon_{N_0,K_T,K_D}(\alpha)/2\).  Enlarging the threshold in (5) by \(\omega_r/2\) proves
+\[
+ \sup_{P\in\mathfrak P_r}P\{\|Z_r\|_{\infty,\mathcal G}>c_r^\xi+\omega_r/2\}
+ \le\alpha-\varepsilon_{N_0,K_T,K_D}(\alpha)/4.         \tag{6}
+\]
+
+It remains to check the buffer rate.  At rank one,
+\[
+ \frac{\upsilon_1}{\rho_1}
+ \le C\{n_D^{-1/2}+n_D^{1/2}e^{-c_\dagger n_D/2}\}.   \tag{7}
+\]
+For \(r\ge2\), using \(\rho_r\ge K_T^{-1/2}\) and \(\rho_r\ge n_D^{-1/2}\),
+\[
+ \frac{\upsilon_r}{\rho_r}
+ \le C\left\{K_T^{-1/2}+K_D^{-1/2}+\eta_D(K_D)
+ +n_D^{-1/2}+K_T^{1/2}e^{-c_\dagger K_T/2}
+ +n_D^{1/2}e^{-c_\dagger n_D/2}\right\}.               \tag{8}
+\]
+Multiplication by \(\varepsilon^{-1/2}\), which grows only as a square root of an iterated logarithm, preserves convergence to zero uniformly on every three-dimensional tail.  Thus \(\omega_r=o(\rho_r)\) without a relative-growth condition.  The expansion is gridwise by construction; \(\mathrm{prop:grid\mbox{-}interpolation}\) carries the only off-grid discrepancy through \(c_{\mathrm{int}}h^{\min\{\beta+1,2\}}\). \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The expansion combines the two patient influence blocks with the proved degeneracy-robust random-quantile tail inequality and the explicit nonlinear buffer. \textit{Gap.} Existing survival and PCR perturbation results do not jointly provide grid-uniform covariance estimation and a valid data-dependent critical-value transfer under singular coordinates. \textit{Consumer.} It is the finite-tail stochastic input for the continuous-time honest-band theorem.
+
+\begin{lemma}[lem:rank-two-pair]\label{lem:rank-two-pair}
+For all sufficiently large \(N_0\ge2\), \(K_T\), and \(K_D\), the two laws in \(\mathrm{def:rank-two-lecam-pair}\) belong to \(\mathfrak P_2(N_0,K_T,K_D)\), have \(S_{p,m}^{(u)}(0)=1\), and differ in observed law only through the \(K_T\) target-pre failure times. Their target curves obey \(\|\theta_+-\theta_-\|_\infty=2|a_{\circ,1}|h_\circ\|\psi_\circ\|_\infty K_T^{-1/2}\). Their likelihood divergence satisfies \[D_{\mathrm{KL}}(P_+\|P_-)\le K_T\int\frac{(f_{0,\star}^{(+)}-f_{0,\star}^{(-)})^2}{f_{0,\star}^{(-)}}\,dt\le\frac{4a_{\circ,0}^2h_\circ^2}{c_f}\int_0^{\bar\tau}\{\psi_\circ'(t)\}^2dt.\] A fixed sufficiently small \(h_\circ\) therefore yields uniformly bounded total variation while preserving exact total rank two, the donor contrast-spectrum bounds, the pre-contrast Gram bounds, and endpoint normalization.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Here \(r=2\) and \(d=1\).  Empirical Gram--Schmidt in
+\(\mathrm{def:rank\mbox{-}two\mbox{-}lecam\mbox{-}pair}\) gives
+\[
+ N_0^{-1}\sum_{m\in\mathcal D}z_m=0,
+ \qquad
+ N_0^{-1}\sum_{m\in\mathcal D}z_m^2=1,
+ \qquad
+ \max_m|z_m|<\sqrt3\le R_1\le M_z.                         \tag{1}
+\]
+Since \(A_{p,1}=a_{\circ,p}\psi_\circ\), the centered donor operator has
+exactly one nonzero singular value
+\[
+ \left\{(a_{\circ,0}^2+a_{\circ,1}^2)
+              \|\psi_\circ\|_2^2\right\}^{1/2},             \tag{2}
+\]
+and the pre-factor Gram is
+\[
+ a_{\circ,0}^2\|\psi_\circ\|_2^2.                          \tag{3}
+\]
+The numerical inequalities in
+\(\mathrm{ass:explicit\mbox{-}witness\mbox{-}compatibility}\) place (2)
+and (3) in the required spectrum and Gram intervals and verify the donor
+loading and factor-envelope bounds.
+
+Since \(M_\star>0\), for all sufficiently large \(K_T\),
+\[
+ h_\circ K_T^{-1/2}\le\min\{M_\star,R_1\}.                  \tag{4}
+\]
+Apply the four pointwise compatibility inequalities with \(x=z_m\) for
+donors and \(x=z_\star^{(u)}\) for the target.  They give valid
+nonincreasing survival curves, event overlap, the failure-density floor on
+\(\operatorname{supp}(\psi_\circ')\), and the \(C^\beta\) hazard bound.
+Every factor curve and \(\psi_\circ\) vanish at zero, so
+\(S_{p,m}^{(u)}(0)=1\).  Taking censoring identically infinite gives
+\(G=1\), independent censoring, and censor overlap.  The product construction
+gives patient independence and control consistency.  Equations (1)--(4)
+verify every remaining defining property of
+\(\mathfrak P_2(N_0,K_T,K_D)\).  Thus
+\(P_-,P_+\in\mathfrak P_2(N_0,K_T,K_D)\).
+
+Only the target loading changes with \(u\), and the target-post control
+cohort is not observed.  Hence the observed laws differ only through the
+\(K_T\) target-pre records.  The first factor coordinate gives
+\[
+ \theta_+(t)-\theta_-(t)
+ =2a_{\circ,1}h_\circ K_T^{-1/2}\psi_\circ(t),               \tag{5}
+\]
+and therefore
+\[
+ \|\theta_+-\theta_-\|_\infty
+ =2|a_{\circ,1}|h_\circ\|\psi_\circ\|_\infty K_T^{-1/2}.    \tag{6}
+\]
+The two target-pre densities satisfy
+\[
+ f_{0,\star}^{(+)}(t)-f_{0,\star}^{(-)}(t)
+ =-2a_{\circ,0}h_\circ K_T^{-1/2}\psi_\circ'(t).             \tag{7}
+\]
+They agree off \(\operatorname{supp}(\psi_\circ')\), and on that support
+\(f_{0,\star}^{(-)}\ge c_f\).  The identity
+\(D_{\mathrm{KL}}(f_+\|f_-)=\int f_+\log(f_+/f_-)\), the inequality
+\(\log x\le x-1\), and \(\int(f_+-f_-)=0\) imply
+\[
+ D_{\mathrm{KL}}(f_+\|f_-)
+ \le\int\frac{(f_+-f_-)^2}{f_-}.
+\]
+Patient independence and (7) consequently give
+\[
+ \begin{split}
+ D_{\mathrm{KL}}(P_+\|P_-)
+ &\le K_T\int\frac{(f_{0,\star}^{(+)}-f_{0,\star}^{(-)})^2}
+                         {f_{0,\star}^{(-)}}\,dt\\
+ &\le\frac{4a_{\circ,0}^2h_\circ^2}{c_f}
+       \int_0^{\bar\tau}\{\psi_\circ'(t)\}^2\,dt.
+ \end{split}                                                \tag{8}
+\]
+Moreover,
+\((\sqrt{x}-\sqrt y)^2\le(x-y)^2/y\) for \(x,y>0\).  Applying this
+pointwise in (7), multiplying the Hellinger affinities of the independent
+records, and using total variation bounded by the corresponding Hellinger
+distance yields
+\[
+ \|P_+-P_-\|_{\mathrm{TV}}
+ \le2|a_{\circ,0}|h_\circ c_f^{-1/2}
+       \left\{\int_0^{\bar\tau}(\psi_\circ')^2\right\}^{1/2}. \tag{9}
+\]
+The last inequality in the explicit compatibility assumption makes (9) a
+fixed constant strictly below the amount required in the two-point width
+argument.  Exact rank, spectrum, Gram, and normalization were established
+in (1)--(4) and do not depend on the sign of the target loading. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit centered-score and smooth-bump construction verifies the target-loading lower channel under primitive numerical compatibility inequalities. \textit{Gap.} Prior scalar synthetic-control lower bounds do not audit exact survival-law rank and endpoint normalization. \textit{Consumer.} The construction supplies the target-pre channel in the converse.
+
+\begin{proposition}[prop:grid-interpolation]\label{prop:grid-interpolation}
+There is a constant \(c_{\mathrm{int}}=c_{\mathrm{int}}(L,\bar\tau,\beta)<\infty\) such that, for the piecewise-linear interpolant \(\widehat\theta_r\) in \(\mathrm{def:fpcr-multiplier-band}\),
+\[
+ 0\le \|\widehat\theta_r-\theta\|_{\infty,\mathcal I}
+ -\max_{g\in\mathcal G_{N_0,K_T,K_D}}|\widehat\theta_r(g)-\theta(g)|
+ \le c_{\mathrm{int}}h_{N_0,K_T,K_D}^{\min\{\beta+1,2\}}
+\]
+uniformly over \(\mathfrak P_r(N_0,K_T,K_D)\). Consequently the interpolation allowance under the corrected grid definition is \(O(\rho_r)\), so continuous-time honesty is not obtained by replacing \(\mathcal I\) with a fixed finite grid.
+\end{proposition}
+\begin{proof}
+\textbf{Proof.}
+Fix \(P\in\mathfrak P_r(N_0,K_T,K_D)\), and set \(q=\min\{\beta+1,2\}\).  By the hazard identity and endpoint normalization,
+\[
+ \theta(t)=S^0_{1,\star}(t)
+ =\exp\left\{-\int_0^t\lambda^0_{1,\star}(u)\,du\right\}.
+\]
+The bound \(\|\lambda^0_{1,\star}\|_{C^\beta(\mathcal I)}\le L\), the fixed horizon, and the product Hölder inequality applied to \(\theta'=-\lambda^0_{1,\star}\theta\) imply
+\[
+ \|\theta\|_{C^{\beta+1}(\mathcal I)}\le C(L,\bar\tau,\beta).
+\]
+Let \(I_{\mathcal G}\theta\) be the piecewise-linear interpolant of the grid values of \(\theta\).  On a grid interval \([a,b]\) of length at most \(h=h_{N_0,K_T,K_D}\), the first-order Taylor formula with Hölder remainder when \(q<2\), and the ordinary second-order interpolation remainder when \(q=2\), give
+\[
+ \sup_{t\in[a,b]}|I_{\mathcal G}\theta(t)-\theta(t)|
+ \le C(L,\bar\tau,\beta)|b-a|^q.
+\]
+Taking the maximum over intervals yields
+\[
+ \|I_{\mathcal G}\theta-\theta\|_\infty\le c_{\mathrm{int}}h^q.
+\]
+
+By construction, \(\widehat\theta_r\) is linear between adjacent grid points.  Hence \(\widehat\theta_r-I_{\mathcal G}\theta\) is also linear there, and the maximum of its absolute value is attained at an endpoint.  Consequently
+\[
+ \|\widehat\theta_r-\theta\|_{\infty,\mathcal I}
+ \le \max_{g\in\mathcal G}|\widehat\theta_r(g)-\theta(g)|
+ +\|I_{\mathcal G}\theta-\theta\|_\infty.
+\]
+The reverse inequality between the grid maximum and the continuous supremum follows from \(\mathcal G\subset\mathcal I\).  Combining the last two displays proves the asserted two-sided interpolation inequality.  Finally, the corrected mesh condition is \(h^q\le\rho_r\), so the allowance is \(O(\rho_r)\). \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The corrected exponent \(\min\{\beta+1,2\}\) is the exact regularity available to linear interpolation. \textit{Gap.} Finite-grid SSC analyses do not price the whole-curve interpolation error. \textit{Consumer.} It prevents a gridwise band from being mislabeled continuous-time.
+
+\begin{theorem}[thm:attaining-band]\label{thm:attaining-band}
+For each fixed \(r\ge1\), there is \(a_0<\infty\) such that, at every evaluated triple with \(\min\{N_0,K_T,K_D\}\ge a_0\), the band \(\widehat B_r\) belongs to \(\mathcal H_r(N_0,K_T,K_D;\alpha)\). There is a constant \(c_{\mathrm{up}}<\infty\), independent of \(N_0\), \(K_T\), and \(K_D\), such that at every such triple,
+\[
+ \sup_{P\in\mathfrak P_r(N_0,K_T,K_D)}E_P[w(\widehat B_r)]
+ \le c_{\mathrm{up}}\bar\rho_r(N_0,K_T,K_D).
+\]
+Both assertions hold uniformly over every three-dimensional tail, with no balanced-growth or relative-rate restriction. In particular, \(\bar\rho_1=\rho_1=(N_0K_D)^{-1/2}\); for fixed \(r\ge2\), the displayed upper bound is \(O(\rho_r)\) on every subregime satisfying \(\eta_D(K_D)=O(\rho_r)\). No unrestricted higher-rank \(O(\rho_r)\) claim is made by this theorem.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Fix a sufficiently large evaluated triple and abbreviate \(q=\min\{\beta+1,2\}\).  Let
+\[
+ \mathcal A_Q=\{\|Q_r\|_{\infty,\mathcal G}\le\omega_r/2\},
+ \qquad
+ \mathcal A_Z=\{\|Z_r\|_{\infty,\mathcal G}\le c_r^\xi+\omega_r/2\}.
+\]
+The uniform-linearization lemma and a union bound give
+\[
+ \inf_{P\in\mathfrak P_r}P(\mathcal A_Q\cap\mathcal A_Z)
+ \ge1-\alpha.                                           \tag{1}
+\]
+On this event, at every grid knot,
+\[
+ |\widehat\theta_r(g)-\theta(g)|
+ \le \widetilde c_r^\xi+\tau_{r,n}
+ +\mathbf1\{r\ge2\}\eta_D(K_D)+\omega_r.              \tag{2}
+\]
+Projection onto \([0,1]\) is nonexpansive for the true survival value, and both the target and the corrected zero-knot center equal one at zero.  Hence (2) also holds with \(\widetilde\theta_r(g)\) in place of \(\widehat\theta_r(g)\).  Since \(\widetilde\theta_r\) is the piecewise-linear interpolant of these projected grid values, the interpolation argument in \(\mathrm{prop:grid\mbox{-}interpolation}\) yields
+\[
+ \|\widetilde\theta_r-\theta\|_{\infty,\mathcal I}
+ \le \widetilde c_r^\xi+\tau_{r,n}
+ +\mathbf1\{r\ge2\}\eta_D(K_D)+\omega_r
+ +c_{\mathrm{int}}h^q=A_r.                              \tag{3}
+\]
+The corrected definition takes pointwise continuous clipping of the interval \([\widetilde\theta_r-A_r,\widetilde\theta_r+A_r]\) to \([0,1]\).  Because \(0\le\theta\le1\), (3) implies simultaneous containment for every \(t\in\mathcal I\).  Equation (1) is stronger than the required \(1-\alpha-\varepsilon\) coverage, so \(\widehat B_r\in\mathcal H_r\).
+
+Pointwise clipping cannot increase width, whence
+\[
+ w(\widehat B_r)\le2A_r.                                \tag{4}
+\]
+The random-quantile theorem gives \(E\widetilde c_r^\xi\le C\rho_r\) and \(\tau_{r,n}=o(\rho_r)\).  The uniform-linearization lemma gives \(\omega_r=o(\rho_r)\), while the grid definition gives \(h^q\le\rho_r\).  Taking expectations in (4), uniformly over the class, therefore yields
+\[
+ \sup_{P\in\mathfrak P_r}E_Pw(\widehat B_r)
+ \le C\{\rho_r+\mathbf1\{r\ge2\}\eta_D(K_D)\}
+ =C\bar\rho_r.                                         \tag{5}
+\]
+All tail cutoffs and constants are uniform and no relative-growth comparison was used.  At rank one \(\bar\rho_1=\rho_1=(N_0K_D)^{-1/2}\); at higher rank (5) is \(O(\rho_r)\) precisely on the stated subregimes. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This theorem validates the explicit patient-level functional-PCR band using its conditional multiplier quantile plus an \(o(\rho_r)\) additive slack. \textit{Gap.} HanShah2025SSC does not supply continuous-time patient-martingale coverage for the estimated functional-PCR derivative or the minimax width envelope. \textit{Consumer.} Applied Synthetic Survival Control analyses can compute a simultaneous post-control survival band with a proved unrestricted width envelope.
+
+\begin{theorem}[thm:normalization-preserving-converse]\label{thm:normalization-preserving-converse}
+There are constants \(a_0<\infty\) and \(c_{\mathrm{low}}>0\) such that, at every evaluated triple with \(\min\{N_0,K_T,K_D\}\ge a_0\), every \(B\in\mathcal H_1(N_0,K_T,K_D;\alpha)\) satisfies \[\sup_{P\in\mathfrak P_1(N_0,K_T,K_D)}E_P[w(B)]\ge c_{\mathrm{low}}(N_0K_D)^{-1/2},\] and, for every fixed \(r\ge2\), every \(B\in\mathcal H_r(N_0,K_T,K_D;\alpha)\) satisfies \[\sup_{P\in\mathfrak P_r(N_0,K_T,K_D)}E_P[w(B)]\ge c_{\mathrm{low}}\{K_T^{-1/2}+(N_0K_D)^{-1/2}\}.\] The donor channel uses a normalization-preserving post-donor hazard pair of size \((N_0K_D)^{-1/2}\). The target channel embeds the explicit rank-two pair from \(\mathrm{lem:rank-two-pair}\) and adds fixed orthogonal contrast directions for \(r>2\). All pairs preserve valid survival laws, endpoint normalization, exact primitive rank, the nonzero contrast-spectrum and pre-contrast Gram bounds, and uniformly bounded total variation.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Put \(n_D=N_0K_D\). For the donor channel, keep the centered donor scores, factor curves, pre-period laws, and target loading fixed, and replace only the post baseline by
+\[
+ s_1^{(u)}(t)=e^{-\lambda_\circ t}+u c n_D^{-1/2}\psi_\circ(t),
+ \qquad u\in\{-1,+1\}.                                  \tag{1}
+\]
+For fixed sufficiently small \(c>0\) and all large triples, the explicit witness-compatibility inequalities verify survival validity, event overlap, the density floor, and hazard smoothness. Adding a common post curve leaves the centered operator, exact rank, contrast spectrum, pre-period Gram, loadings, factor envelope, and endpoint normalization unchanged. Take censoring identically infinite. The laws differ only in the \(n_D\) donor-post records, their target separation is
+\[
+ \Delta_D=2c\|\psi_\circ\|_\infty n_D^{-1/2},           \tag{2}
+\]
+and the density difference and floor give
+\[
+ D_{\mathrm{KL}}(Q_{D,+}\|Q_{D,-})
+ \le4c^2c_f^{-1}\int_0^{\bar\tau}(\psi_\circ')^2,
+ \qquad \operatorname{TV}(Q_{D,+},Q_{D,-})\le C_Dc.     \tag{3}
+\]
+Choose \(c\) so the last quantity is at most \(\tfrac34(1/2-\alpha)\). The construction applies at rank one under the zero-dimensional convention and at every higher fixed rank on the orthogonal witness backbone.
+
+For the target channel when \(r\ge2\), use \(P_{r,+}\) and \(P_{r,-}\) from the fixed-rank construction. Empirical Gram--Schmidt gives
+\[
+ N_0^{-1}\sum_mz_m=0,
+ \qquad N_0^{-1}\sum_mz_mz_m^\top=I_d.                  \tag{4}
+\]
+Its orthogonal factor columns give the required joint spectrum and
+\[
+ \int_{\mathcal I}A_{0,d}(t)A_{0,d}(t)^\top\,dt
+ =a_{\circ,0}^2\|\psi_\circ\|_2^2I_d.                   \tag{5}
+\]
+The compatibility inequalities verify all remaining class conditions. Only the first target-loading coordinate changes, so
+\[
+ \Delta_T=2|a_{\circ,1}|h_\circ\|\psi_\circ\|_\infty K_T^{-1/2}, \tag{6}
+\]
+and \(\mathrm{lem:rank\mbox{-}two\mbox{-}pair}\) gives
+\[
+ \operatorname{TV}(P_{r,+},P_{r,-})
+ \le2|a_{\circ,0}|h_\circ c_f^{-1/2}\|\psi_\circ'\|_2
+ \le\tfrac34(1/2-\alpha).                               \tag{7}
+\]
+
+Let \(Q_-,Q_+\) be either pair, with targets \(\theta_-,\theta_+\), and put \(\zeta=\alpha+\varepsilon_{N_0,K_T,K_D}(\alpha)\). Honesty gives \(Q_u\{\theta_u\in B\}\ge1-\zeta\). Total-variation transfer and a union bound yield
+\[
+ Q_-\{\theta_-,\theta_+\in B\}
+ \ge1-2\zeta-\operatorname{TV}(Q_-,Q_+).                 \tag{8}
+\]
+Because \(\varepsilon\le\tfrac14(1/2-\alpha)\), (3), (7), and (8) make this probability bounded below by a fixed positive constant. On the intersection, \(w(B)\ge\|\theta_+-\theta_-\|_\infty\). Thus
+\[
+ \sup_{P\in\mathfrak P_r}E_Pw(B)\ge c_Dn_D^{-1/2},
+ \qquad
+ \sup_{P\in\mathfrak P_r}E_Pw(B)\ge c_TK_T^{-1/2}
+ \quad(r\ge2).                                           \tag{9}
+\]
+For \(r\ge2\), \(\max\{a,b\}\ge(a+b)/2\) combines the two channels. No relative-growth condition was used. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Two valid survival-law channels show that donor-post and target-pre uncertainty are each unavoidable. \textit{Gap.} Existing scalar synthetic-control decompositions do not provide exact-rank, endpoint-normalized survival Le Cam pairs. \textit{Consumer.} This prevents reporting a donor-only rate once heterogeneous target loadings are present.
+
+\begin{theorem}[thm:sharp-rank-frontier]\label{thm:sharp-rank-frontier}
+For fixed \(\alpha\in(0,1/2)\) and every fixed exact rank \(r\), there are \(a_0<\infty\) and constants \(0<c<C<\infty\) such that, uniformly over every evaluated triple with \(\min\{N_0,K_T,K_D\}\ge a_0\), without relative-growth restrictions,
+\[
+ W_1^*(N_0,K_T,K_D;\alpha)\asymp(N_0K_D)^{-1/2},
+\]
+and, for \(r\ge2\),
+\[
+ c\rho_r(N_0,K_T,K_D)
+ \le W_r^*(N_0,K_T,K_D;\alpha)
+ \le C\bar\rho_r(N_0,K_T,K_D).
+\]
+Consequently \(W_r^*(N_0,K_T,K_D;\alpha)\asymp\rho_r(N_0,K_T,K_D)\) on every subregime satisfying \(\eta_D(K_D)=O(\rho_r(N_0,K_T,K_D))\).  Without that subregime condition, the displayed bracket is the proved unrestricted conclusion and its tightness is not asserted.  Each infimum is over bands satisfying the coverage constraint at that same evaluated triple.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Fix \(r\) and a sufficiently large evaluated triple.  The normalization-preserving converse implies for every admissible band
+\[
+ \sup_{P\in\mathfrak P_r}E_Pw(B)\ge c\rho_r.             \tag{1}
+\]
+Taking the infimum over the same per-triple honesty class gives \(W_r^*\ge c\rho_r\).  The attaining theorem supplies the single data-dependent witness \(\widehat B_r\in\mathcal H_r\) satisfying
+\[
+ \sup_{P\in\mathfrak P_r}E_Pw(\widehat B_r)\le C\bar\rho_r, \tag{2}
+\]
+so the minimax infimum is at most the right side of (2).  For \(r=1\), \(\bar\rho_1=\rho_1=(N_0K_D)^{-1/2}\), proving the sharp rank-one equivalence.  For \(r\ge2\) this gives exactly
+\[
+ c\{K_T^{-1/2}+(N_0K_D)^{-1/2}\}
+ \le W_r^*
+ \le C\{K_T^{-1/2}+(N_0K_D)^{-1/2}+\eta_D(K_D)\}.       \tag{3}
+\]
+If \(\eta_D(K_D)=O(\rho_r)\), the endpoints of (3) match.  Otherwise (3) is only the proved bracket.  Both input theorems are uniform on every three-dimensional tail and use the same evaluated-triple action class. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem combines the explicit attainable band and normalization-preserving converses to isolate the exact rank-one frontier and the honest higher-rank bracket. \textit{Gap.} No retained comparator proves the donor-only rank-one rate together with the two-channel higher-rank bracket and its risk-exhaustion qualification. \textit{Consumer.} It tells designers when the upper and lower rates match and when the residual \(\eta_D\) term prevents an unrestricted tightness claim.
+
+\begin{proposition}[prop:rank-one-reduction]\label{prop:rank-one-reduction}
+On the homogeneous normalized special case \(r=1\), \(\widehat\theta_1\) and \(\widehat B_1\) reduce, up to the stated interpolation allowance, to the pooled donor-post Kaplan--Meier estimator and its patient-level martingale-multiplier simultaneous band based on \(N_0K_D\) observations.
+\end{proposition}
+\begin{proof}
+\textbf{Proof.}
+At \(r=1\), normalization collapse gives \(d=0\) and \(\theta=s_1\).  The corrected construction explicitly bypasses stabilization and every factor, projector, loading, and pre-Gram operation: it pools the \(N_0K_D\) donor-post records, forms their ordinary aggregate-risk product-limit estimator, and interpolates its grid values.  Its branchwise multiplier coefficients are exactly the ordinary pooled patient martingale coefficients.  The deterministic risk-exhaustion bias and centered remainder, including non-identical donor censoring, are those proved in \(\mathrm{lem:pooled\mbox{-}noniid\mbox{-}km\mbox{-}linearization}\).  The pointwise continuous band uses the conditional quantile of this pooled multiplier plus the finite-tail and interpolation allowances validated in the attaining theorem and \(\mathrm{prop:grid\mbox{-}interpolation}\).  Thus both the estimator and band reduce to the stated pooled Kaplan--Meier construction, up to the displayed interpolation allowance. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The rank-one formula reduces the general algorithm to a pooled aggregate-risk product-limit estimator and a patient multiplier with the proved additive comparison slack. \textit{Gap.} Classical survival-band theory does not state the Synthetic Survival Control normalization reduction. \textit{Consumer.} This is a transparent software and modeling sanity check.
+
+\begin{lemma}[lem:ckln-testing-lower-bound]\label{lem:ckln-testing-lower-bound}
+In the general adaptation problem \(\mathcal A_0\subset\mathcal A\) with loss \(D\), Carpentier, Klopp, L\"offler, and Nickl define the minimax testing radius \(\rho_n\) by uniformly consistent tests of \(\mathcal A_0\) against \(\{f\in\mathcal A:D(f,\mathcal A_0)\ge L\rho_n\}\).  Their Theorem~2.1 states that if \(r_n(\mathcal A_0)=o(\rho_n)\), honest adaptation is impossible and every honest confidence set has expected \(D\)-diameter at least a constant multiple of \(\rho_n\) somewhere on \(\mathcal A_0\), under the displayed error-level restriction.
+\end{lemma}
+
+\begin{lemma}[lem:ckln-test-oracle-construction]\label{lem:ckln-test-oracle-construction}
+Carpentier, Klopp, L\"offler, and Nickl, Theorem~2.2 and Section~7.1, construct an honest adaptive confidence set when a uniformly consistent composite test has separation no larger than the small-model estimation rate and an estimator satisfies their two-model oracle inequality.  The construction centers at the oracle estimator and chooses the radius \(r_n(\mathcal A)\Psi_n+r_n(\mathcal A_0)(1-\Psi_n)\); its coverage proof separately treats the null, alternatives far from the null, and alternatives within the testing radius.
+\end{lemma}
+
+\begin{lemma}[lem:pinsker-kl-tv]\label{lem:pinsker-kl-tv}
+For any probability measures \(\mathbb P\) and \(\mathbb Q\) with
+\(\mathbb P\ll\mathbb Q\), total variation and relative entropy satisfy
+\[
+\operatorname{TV}(\mathbb P,\mathbb Q)
+\leq\left\{\frac12D_{\mathrm{KL}}(\mathbb P\|\mathbb Q)\right\}^{1/2}.
+\]
+\end{lemma}
+\par\smallskip\noindent \textit{Justification.} The corrected receipt locates the exact first Pinsker inequality at Lemma~2.5(i). \textit{Gap.} Equation~(2.25) is a different exponential inequality and is not the source of the square-root bound. \textit{Consumer.} It converts the weak-pair relative-entropy calculation into total-variation indistinguishability.
+
+\begin{lemma}[lem:powers-stormer-square-root]\label{lem:powers-stormer-square-root}
+For positive semidefinite matrices \(A\) and \(B\), \[\|A^{1/2}-B^{1/2}\|_{\mathrm F}^2\le\|A-B\|_*.\]
+\end{lemma}
+
+\begin{lemma}[lem:interpolated-population-fpcr-stability]\label{lem:interpolated-population-fpcr-stability}
+Let \(q_\beta=\min\{\beta+1,2\}\), let \(\mathcal L_{\mathcal G}\) be piecewise-linear interpolation on \(\mathcal G_{N_0,K_T,K_D}\), and define \(\widetilde S^0\), \(\widetilde s\), \(\widetilde Y_m\), and \(\widetilde\Gamma\) as in \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\). Put \(Y_m=(S^0_{0,m}-s_0,S^0_{1,m}-s_1)\) and \(\Gamma=N_0^{-1}\sum_{m\in\mathcal D}Y_m\otimes Y_m\). There is a constant \(C_*<\infty\), depending only on the fixed model constants and \(r\), such that
+\[
+ \widetilde S^0_{p,m}(g)=S^0_{p,m}(g)\quad(g\in\mathcal G_{N_0,K_T,K_D}),
+ \qquad
+ \max_{p,m}\|\widetilde S^0_{p,m}-S^0_{p,m}\|_\infty
+ \le C_*h_{N_0,K_T,K_D}^{q_\beta},
+\]
+and
+\[
+ \|\widetilde\Gamma-\Gamma\|_{\mathrm{op}}
+ \le C_*h_{N_0,K_T,K_D}^{q_\beta}.
+\]
+When \(d>0\), for every sufficiently fine grid the operator \(\widetilde\Gamma\) has exactly \(d\) positive eigenvalues, its \(d\)-th eigenvalue is at least \(\gamma_-^2/2\), and its selected projector \(\widetilde\Pi\) satisfies
+\[
+ \|\widetilde\Pi-\Pi\|_{\mathrm{op}}
+ \le C_*h_{N_0,K_T,K_D}^{q_\beta}.
+\]
+If \(\widetilde b_p\) denotes any selected positive-square-root factor coordinates of \(\widetilde\Gamma\), there is an orthogonal matrix \(R_{\mathcal G}\) such that
+\[
+ \max_{p\in\{0,1\}}\|\widetilde b_p-R_{\mathcal G}^{\top}b_p\|_{L^2}
+ \le C_*h_{N_0,K_T,K_D}^{q_\beta}.
+\]
+Consequently, with \(H_0=\int_{\mathcal I}b_0b_0^\top\) and \(\widetilde H_0=\int_{\mathcal I}\widetilde b_0\widetilde b_0^\top\),
+\[
+ \lambda_{\min}(\widetilde H_0)\ge\kappa_-/2,
+ \qquad
+ \|\widetilde H_0^{-1}-R_{\mathcal G}^{\top}H_0^{-1}R_{\mathcal G}\|_{\mathrm{op}}
+ \le C_*h_{N_0,K_T,K_D}^{q_\beta}.
+\]
+The population comparison curve is exact for the interpolated panel:
+\[
+ \theta^{\mathrm{pop}}_{r,\mathcal G}=\mathcal L_{\mathcal G}\theta
+ \quad\hbox{on }\mathcal I,
+ \qquad
+ \theta^{\mathrm{pop}}_{r,\mathcal G}(g)=\theta(g)
+ \quad(g\in\mathcal G_{N_0,K_T,K_D});
+\]
+and for \(d=0\), the factor, projector, and Gram assertions use the zero-dimensional convention and the last display holds with \(\theta^{\mathrm{pop}}_{1,\mathcal G}=\mathcal L_{\mathcal G}s_1\).
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Fix \(P\in\mathfrak P_r(N_0,K_T,K_D)\) and write \(h=h_{N_0,K_T,K_D}\). The hazard identity and endpoint normalization give
+\[
+ S^0_{p,m}(t)=\exp\left\{-\int_0^t\lambda^0_{p,m}(u)\,du\right\}.
+\]
+By \(\mathrm{ass:hazard\mbox{-}smoothness}\), the product rule applied to \((S^0_{p,m})'=-\lambda^0_{p,m}S^0_{p,m}\) gives a uniform \(C^{\beta+1}\) bound on every cell survival curve. The piecewise-linear interpolation remainder on each grid interval is therefore bounded by \(C_*h^{q_\beta}\), where \(q_\beta=\min\{\beta+1,2\}\). Interpolation reproduces its input at every knot, so
+\[
+ \widetilde S^0_{p,m}(g)=S^0_{p,m}(g),
+ \qquad
+ \|\widetilde S^0_{p,m}-S^0_{p,m}\|_\infty\le C_*h^{q_\beta}. \tag{1}
+\]
+Because averaging and centering are linear and every cell uses the same grid,
+\[
+ \widetilde s_p=\mathcal L_{\mathcal G}s_p,
+ \qquad
+ \widetilde Y_m=\mathcal L_{\mathcal G}Y_m. \tag{2}
+\]
+The donor incoherence and factor envelope assumptions give \(\sup_m\|Y_m\|_{L^2}\le C\). Equations (1)--(2), the fixed horizon, and the triangle inequality give
+\[
+ \sup_m\|\widetilde Y_m-Y_m\|_{L^2}\le C h^{q_\beta}. \tag{3}
+\]
+For rank-one operators, \(\|x\otimes y\|_{\mathrm{HS}}=\|x\|_2\|y\|_2\). Hence
+\[
+ \begin{split}
+ \|\widetilde\Gamma-\Gamma\|_{\mathrm{op}}
+ &\le \|\widetilde\Gamma-\Gamma\|_{\mathrm{HS}}\\
+ &\le N_0^{-1}\sum_m
+ \{\|\widetilde Y_m-Y_m\|_2\|Y_m\|_2
+   +\|\widetilde Y_m\|_2\|\widetilde Y_m-Y_m\|_2\}\\
+ &\le C_*h^{q_\beta}.
+ \end{split} \tag{4}
+\]
+
+Assume \(d>0\). The canonical donor normalization gives
+\[
+ \Gamma=N_0^{-1}\sum_mY_m\otimes Y_m
+       =\sum_{k=1}^d\sigma_k^2u_k\otimes u_k. \tag{5}
+\]
+Thus \(\lambda_d(\Gamma)\ge\gamma_-^2\) and \(\lambda_{d+1}(\Gamma)=0\). Also (2) and the normalized factor model show that \(\widetilde Y_m=(\mathcal L_{\mathcal G}b)^{\top}z_m\), so \(\operatorname{rank}(\widetilde\Gamma)\le d\). The variational characterization of ordered eigenvalues and (4) imply
+\[
+ |\lambda_k(\widetilde\Gamma)-\lambda_k(\Gamma)|
+ \le\|\widetilde\Gamma-\Gamma\|_{\mathrm{op}}. \tag{6}
+\]
+For all sufficiently fine grids, (4)--(6) give \(\lambda_d(\widetilde\Gamma)\ge\gamma_-^2/2\); together with the rank bound this proves that \(\widetilde\Gamma\) has exactly \(d\) positive eigenvalues.
+
+Let \(\mathscr C\) be a fixed contour separating \([\gamma_-^2/2,2\gamma_+^2]\) from a neighborhood of zero. Finite-rank spectral calculus and the resolvent identity give
+\[
+ \widetilde\Pi-\Pi
+ =\frac{1}{2\pi i}\int_{\mathscr C}
+ (z-\widetilde\Gamma)^{-1}(\widetilde\Gamma-\Gamma)(z-\Gamma)^{-1}\,dz. \tag{7}
+\]
+The two resolvents on \(\mathscr C\) are bounded only by the fixed spectral gap. Equations (4) and (7) yield
+\[
+ \|\widetilde\Pi-\Pi\|_{\mathrm{op}}\le C h^{q_\beta}. \tag{8}
+\]
+Applying the same contour identity with the analytic function \(z^{1/2}\) on the positive spectral component shows that the selected positive square roots differ by at most \(Ch^{q_\beta}\) in operator norm. Choose orthonormal coordinate frames for the two selected ranges and align them by the polar factor of their cross-Gram matrix. Equation (8) makes that cross-Gram matrix invertible, and the elementary polar identity then supplies an orthogonal \(R_{\mathcal G}\) for which
+\[
+ \max_p\|\widetilde b_p-R_{\mathcal G}^{\top}b_p\|_{L^2}
+ \le C h^{q_\beta}. \tag{9}
+\]
+This formulation is insensitive to internal eigenvalue ties.
+
+By the pre-contrast Gram assumption, \(\lambda_{\min}(H_0)\ge\kappa_-\). From (9), the factor envelope, and the identity \(xx^\top-yy^\top=(x-y)x^\top+y(x-y)^\top\),
+\[
+ \|\widetilde H_0-R_{\mathcal G}^{\top}H_0R_{\mathcal G}\|_{\mathrm{op}}
+ \le C h^{q_\beta}. \tag{10}
+\]
+For a sufficiently fine grid, the right side is at most \(\kappa_-/2\), so \(\lambda_{\min}(\widetilde H_0)\ge\kappa_-/2\). Finally,
+\[
+ A^{-1}-B^{-1}=A^{-1}(B-A)B^{-1} \tag{11}
+\]
+with \(A=\widetilde H_0\) and \(B=R_{\mathcal G}^{\top}H_0R_{\mathcal G}\) proves the inverse bound.
+
+It remains to identify the comparison curve. Linearity of \(\mathcal L_{\mathcal G}\) and the normalized factor model give, for the same target loading,
+\[
+ \widetilde S^0_{p,\star}-\widetilde s_p
+ =\mathcal L_{\mathcal G}(b_p^\top z_\star). \tag{12}
+\]
+The interpolated pre-factor Gram is nonsingular by (10), so the population least-squares step recovers the coordinates of \(z_\star\) in the rotated interpolated factor basis exactly. Substitution in the post-period factor map yields
+\[
+ \theta^{\mathrm{pop}}_{r,\mathcal G}
+ =\widetilde s_1+\mathcal L_{\mathcal G}(b_1^\top z_\star)
+ =\mathcal L_{\mathcal G}(s_1+b_1^\top z_\star)
+ =\mathcal L_{\mathcal G}\theta. \tag{13}
+\]
+Equation (1) at the knots proves the asserted grid equality. When \(d=0\), every factor calculation is an empty sum and (13) reduces to \(\theta^{\mathrm{pop}}_{1,\mathcal G}=\mathcal L_{\mathcal G}s_1\). \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} This is the root interpolation repair: it proves the population factor algorithm remains regular after the curves are interpolated. \textit{Gap.} The output-grid interpolation proposition alone does not control the internal \(L^2\) covariance, selected factor space, or pre-period inverse. \textit{Consumer.} It supplies the valid Taylor center for the censored functional-PCR expansion.
+
+\begin{lemma}[lem:canonical-target-coordinate]\label{lem:canonical-target-coordinate}
+Let \(P\in\mathfrak P_r(N_0,K_T,K_D)\), and let \((\bar b_p,\bar z_m)\) be any donor-centered compatible \(d\)-coordinate representation of the normalized factor model. After covariance normalization of its donor loadings, the donor-SVD factors and loadings in \(\mathrm{def:canonical\mbox{-}factorization}\) equal the compatible factors and loadings up to a common orthogonal transform. If \(d>0\), then \(S^0_{0,\star}-s_0\) belongs to the span of the canonical \(b_0\), the matrix \(H_0=\int_{\mathcal I}b_0b_0^\top\) is positive definite, and
+\[
+ z_\star=H_0^{-1}\int_{\mathcal I}b_0(t)
+ \{S^0_{0,\star}(t)-s_0(t)\}\,dt
+\]
+is the unique compatible target coordinate. For \(d=0\), compatibility forces \(S^0_{p,m}=s_p\) for all units.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Fix \(P\in\mathfrak P_r(N_0,K_T,K_D)\), suppress the sample-size indices,
+and put \(\mathcal H=L^2(\{0,1\}\times\mathcal I)\).  Let
+\((\bar b_p,\bar z_m)\) be the compatible representation in the statement.
+Thus
+\[
+ S^0_{p,m}(t)-s_p(t)=\bar b_p(t)^\top\bar z_m,
+ \qquad m\in\mathcal M.                                  \tag{1}
+\]
+Because \(s_p\) is the donor mean in
+\(\mathrm{def:canonical\mbox{-}factorization}\), averaging (1) over
+\(m\in\mathcal D\) and using donor centering gives the same centered donor
+curves in every compatible representation.
+
+Define \(\bar B:\mathbb R^d\to\mathcal H\) and
+\(\bar Z\in\mathbb R^{N_0\times d}\) by
+\[
+ (\bar Bx)_p(t)=\bar b_p(t)^\top x,
+ \qquad \bar Z_{m\cdot}=\bar z_m^\top.                  \tag{2}
+\]
+For every \(a\in\mathbf 1^\perp\), the definition of the centered donor
+operator and (1) give
+\[
+ \mathcal C_Da
+ =\bar B\left(N_0^{-1/2}\bar Z^\top a\right).           \tag{3}
+\]
+By exact centered rank, \(\operatorname{rank}(\mathcal C_D)=d\).  Since
+(3) factors \(\mathcal C_D\) through \(\mathbb R^d\),
+\[
+ d=\operatorname{rank}(\mathcal C_D)
+ \leq\min\{\operatorname{rank}(\bar B),
+             \operatorname{rank}(\bar Z)\}\leq d.       \tag{4}
+\]
+Thus \(\bar B\) and \(\bar Z\) both have rank \(d\).  This conclusion uses
+only compatibility and exact centered rank, not the pre-period Gram condition.
+
+The donor loading covariance
+\[
+ \Sigma=N_0^{-1}\bar Z^\top\bar Z                       \tag{5}
+\]
+is therefore positive definite.  Covariance-normalize by setting
+\[
+ \widetilde b_p=\Sigma^{1/2}\bar b_p,
+ \qquad \widetilde z_m=\Sigma^{-1/2}\bar z_m.           \tag{6}
+\]
+Then
+\[
+ \widetilde b_p(t)^\top\widetilde z_m
+ =\bar b_p(t)^\top\bar z_m,
+ \qquad
+ N_0^{-1}\sum_{m\in\mathcal D}
+ \widetilde z_m\widetilde z_m^\top=I_d.                 \tag{7}
+\]
+Let \(\widetilde Bx=(\widetilde b_0^\top x,
+\widetilde b_1^\top x)\), and put
+\(Y_m=(S^0_{0,m}-s_0,S^0_{1,m}-s_1)\in\mathcal H\).  Equation (7) yields
+\[
+ \Gamma:=N_0^{-1}\sum_{m\in\mathcal D}Y_m\otimes Y_m
+ =\widetilde B\widetilde B^*.                            \tag{8}
+\]
+
+Let \(B:\mathbb R^d\to\mathcal H\) be the canonical donor-SVD factor map,
+so \((Bx)_p=b_p^\top x\).  The singular-value construction gives
+\[
+ \mathcal C_D\mathcal C_D^*=BB^*.                        \tag{9}
+\]
+Donor centering also gives directly
+\[
+ \mathcal C_D\mathcal C_D^*
+ =N_0^{-1}\sum_{m\in\mathcal D}Y_m\otimes Y_m=\Gamma.   \tag{10}
+\]
+Indeed, for \(f\in\mathcal H\), the vector with entries
+\(N_0^{-1/2}\langle Y_m,f\rangle_{\mathcal H}\) lies in
+\(\mathbf 1^\perp\), and applying \(\mathcal C_D\) to that vector gives the
+middle operator in (10).  Combining (8)--(10),
+\[
+ BB^*=\widetilde B\widetilde B^*.                        \tag{11}
+\]
+Both maps have rank \(d\), so their ranges coincide.  Let
+\(B^\dagger=(B^*B)^{-1}B^*\) be the left inverse of \(B\), and define
+\[
+ R=B^\dagger\widetilde B.                                \tag{12}
+\]
+Range equality gives \(BR=\widetilde B\).  Moreover, (11) implies
+\[
+ RR^*=B^\dagger\widetilde B\widetilde B^*B^{\dagger *}
+     =B^\dagger BB^*B^{\dagger *}=I_d.                  \tag{13}
+\]
+Hence \(R\) is orthogonal and
+\[
+ b_p=R\widetilde b_p.                                    \tag{14}
+\]
+For a donor \(m\), injectivity of \(B\), (7), and
+\(BR=\widetilde B\) give
+\[
+ Bz_m=Y_m=\widetilde B\widetilde z_m=BR\widetilde z_m
+ \quad\Longrightarrow\quad z_m=R\widetilde z_m.        \tag{15}
+\]
+Thus the covariance-normalized compatible factors and loadings equal the
+canonical donor-SVD coordinates up to one common orthogonal transformation.
+The deterministic sign and tie-breaking rule merely chooses a representative
+within this orthogonal equivalence class.
+
+Assume \(d>0\).  Compatibility for the target unit and (6), (14) give
+\[
+ S^0_{0,\star}-s_0
+ =\widetilde b_0^\top\widetilde z_\star
+ =b_0^\top R\widetilde z_\star.                          \tag{16}
+\]
+Thus the target-pre contrast belongs to the span of the canonical pre-period
+factors.  Now, and only now, use the positive pre-contrast Gram assumption:
+\[
+ H_0:=\int_{\mathcal I}b_0(t)b_0(t)^\top\,dt,
+ \qquad \lambda_{\min}(H_0)\geq\kappa_->0.              \tag{17}
+\]
+Therefore \(H_0\) is invertible.  Multiplying (16) by \(b_0(t)\),
+integrating, and applying (17) yields
+\[
+ R\widetilde z_\star
+ =H_0^{-1}\int_{\mathcal I}b_0(t)
+ \{S^0_{0,\star}(t)-s_0(t)\}\,dt.                       \tag{18}
+\]
+If \(x\) and \(x'\) are two compatible canonical target coefficients, then
+\(b_0^\top(x-x')=0\) in \(L^2(\mathcal I)\), whence
+\[
+ 0=\int_{\mathcal I}\{b_0(t)^\top(x-x')\}^2\,dt
+  =(x-x')^\top H_0(x-x').                                \tag{19}
+\]
+Positive definiteness forces \(x=x'\).  Hence (18) is the unique compatible
+target coordinate and is exactly the \(z_\star\) selected in the canonical
+construction.
+
+If \(d=0\), a compatible \(d\)-coordinate representation has an empty factor
+term, so (1) reads \(S^0_{p,m}=s_p\) for every period and every unit.  This
+proves the zero-dimensional assertion and completes the proof. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Compatibility and positive canonical pre-Gram, in that order, deliver the unique target coordinate. \textit{Gap.} A coefficient equation cannot define a coordinate until target-pre span membership is established. \textit{Consumer.} It validates the canonical factorization used by every positive result.
+
+\begin{lemma}[lem:stabilized-product-limit-cell]\label{lem:stabilized-product-limit-cell}
+Fix an observed control cell or deterministic half-fold containing \(k\) patients, put \(h_0=s_-g_-\), \(\ell_k=\max\{1,kh_0/8\}\), and let \(\widehat S_k^\dagger\) be the stabilized product-limit curve in the corrected \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\). For all sufficiently large \(k\): (i) \(\widehat S_k^\dagger\) equals the ordinary Kaplan--Meier curve on \(\{Y_k(\bar\tau)\ge\ell_k\}\); (ii)
+\[
+ P\{Y_k(\bar\tau)<kh_0/8\}
+ \le \exp\{-49h_0k/128\}\le e^{-c_0k},
+ \qquad c_0=h_0/3;
+\]
+(iii) changing one patient record changes the entire interpolated stabilized curve by at most \(C/k\), deterministically on every dataset; (iv) every individual observed multiplier contribution has supremum norm at most \(C/k\), deterministically; and (v), with \(\widetilde S^0=\mathcal L_{\mathcal G}S^0\), there are independent mean-zero censoring-martingale influence processes \(\varphi_{k,j}\), a deterministic bias \(b_k^\dagger\), and a centered remainder \(q_k^\dagger\) such that
+\[
+ \widehat S_k^\dagger-\widetilde S^0
+ =k^{-1}\sum_{j=1}^k\varphi_{k,j}+b_k^\dagger+q_k^\dagger,
+ \qquad
+ \|b_k^\dagger\|_\infty\le Ce^{-c_0k},
+ \qquad
+ E\|q_k^\dagger\|_\infty^2\le Ck^{-2}.
+\]
+For independent donor cells, their centered rare-cell contributions average with second moment at most \(CN_0^{-1}e^{-c_0k}\le C(N_0k^2)^{-1}\). All assertions allow ties and all realized risk sets; no all-cells-good event is imposed.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+\emph{Postimage revalidation.}
+The corrected \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\) leaves unchanged every object used in this cell-local lemma: \(h_0\), \(\ell_k\), the clipped risk process \(Y^\dagger\), the lexicographically ordered stabilized product-limit curve, its piecewise-linear interpolation, and the displayed stabilized patient coefficient. The definition changes only the downstream interpretation of branchwise coefficients, the treatment of the hard regular/fallback switch, and the final band-endpoint construction. Neither that switch, its margin event, nor the pooled fallback enters any assertion or calculation below. Thus the following argument applies unchanged to the corrected definition, with assertion~(iv) understood as a bound for the explicitly defined local stabilized coefficient and not as a derivative of the total hard-switched map.
+
+Suppress the cell label.  For patient \(j\), define
+\[
+ N_j(u)=\mathbf 1\{X_j\leq u,\Delta_j=1\},\qquad
+ Y_j(u)=\mathbf 1\{X_j\geq u\},\qquad
+ M_j(u)=N_j(u)-\int_0^uY_j(v)\lambda^0(v)\,dv.             \tag{1}
+\]
+By \(\mathrm{ass:control\mbox{-}consistency}\) and
+\(\mathrm{ass:independent\mbox{-}censoring}\), the last integral is the
+compensator of \(N_j\).  By
+\(\mathrm{ass:patient\mbox{-}independence}\), the processes \(M_j\) are
+independent, mean-zero, square-integrable martingales.  Put
+\[
+ Y=\sum_{j=1}^kY_j,\qquad N=\sum_{j=1}^kN_j,
+ \qquad M=\sum_{j=1}^kM_j,
+ \qquad H(u)=E Y_j(u)=S^0(u)G(u).
+\]
+The event- and censor-overlap assumptions give the uniform risk lower bound
+\[
+ H(u)\geq h_0:=s_-g_->0,
+ \qquad u\in\mathcal I.                                  \tag{2}
+\]
+
+We first treat ties and clipping.  At a tied failure time, order failures by
+patient index and remove each earlier ordered failure from the risk set before
+processing the next.  If the pre-tie risk set is \(y\) and there are \(a\)
+failures, then
+\[
+ \prod_{q=0}^{a-1}\left(1-\frac{1}{y-q}\right)=1-\frac{a}{y}. \tag{3}
+\]
+Thus this measurable ordered convention agrees with the ordinary
+product-limit factor.  On the ordered event axis set
+\[
+ Y^\dagger(u)=\max\{Y(u),\ell_k\},
+ \qquad \ell_k=\max\{1,kh_0/8\}.
+\]
+Every stabilized product factor lies in \([0,1]\).  If
+\(Y(\bar\tau)\geq\ell_k\), monotonicity of the risk process gives
+\(Y(u)\geq\ell_k\) at every earlier event.  No denominator is then clipped,
+and (3) proves assertion (i).
+
+The variables \(Y_j(\bar\tau)\) are independent Bernoulli variables and
+\(\mu:=E Y(\bar\tau)\geq kh_0\).  For \(s>0\), independence gives
+\[
+ E e^{-sY(\bar\tau)}
+ \leq \exp\{(e^{-s}-1)\mu\}.
+\]
+Exponential Markov inequality, optimized at
+\(s=-\log(1-\delta)\), together with
+\((1-\delta)\log(1-\delta)+\delta\geq\delta^2/2\), yields
+\[
+ P\{Y(\bar\tau)\leq(1-\delta)\mu\}
+ \leq e^{-\delta^2\mu/2},
+ \qquad 0<\delta<1.                                      \tag{4}
+\]
+Because \(kh_0/8\leq\mu/8\), taking \(\delta=7/8\) proves
+\[
+ P\{Y(\bar\tau)<kh_0/8\}
+ \leq e^{-49h_0k/128}
+ \leq e^{-h_0k/3}=e^{-c_0k},
+ \qquad c_0=h_0/3.                                       \tag{5}
+\]
+
+We next prove the deterministic guards.  For
+\(f(y)=1-1/\max\{y,\ell_k\}\),
+\[
+ |f(y+e)-f(y)|\leq |e|\ell_k^{-2},
+ \qquad |e|\leq1.                                       \tag{6}
+\]
+Changing one patient record inserts or deletes at most two ordered failure
+factors and changes each remaining ordered risk count by at most one.  The
+telescoping identity for products of numbers in \([0,1]\), (6), and the fact
+that there are at most \(k\) failure factors give, for all sufficiently large
+\(k\),
+\[
+ \sup_{t\in\mathcal I}
+ |\widehat S_k^\dagger(t;O)-\widehat S_k^\dagger(t;O')|
+ \leq 2\ell_k^{-1}+k\ell_k^{-2}\leq C/k.                \tag{7}
+\]
+Piecewise-linear interpolation is a contraction in supremum norm.  A patient
+has at most one observed failure, so its observed product-limit multiplier
+contribution is bounded, on every dataset, by
+\[
+ \sup_{t\in\mathcal I}\widehat S_k^\dagger(t-)
+ \int_0^t\{Y^\dagger(u)\}^{-1}\,dN_j(u)
+ \leq\ell_k^{-1}\leq C/k.                               \tag{8}
+\]
+This proves assertions (iii) and (iv), including exhausted-risk datasets.
+
+For the stochastic expansion, put \(R=\widehat S_k^\dagger/S^0\) on the
+ordered event-time axis.  The product-integral equations, (1), and integration
+by parts give the exact clipped ratio identity
+\[
+ R(t)-1
+ =-\int_0^tR(u-)\{Y^\dagger(u)\}^{-1}\,dM(u)
+  +\int_0^tR(u-)\left\{1-\frac{Y(u)}{Y^\dagger(u)}\right\}
+             \lambda^0(u)\,du.                           \tag{9}
+\]
+This is an identity on every dataset, not an approximation on a good-risk-set
+event.  Since every stabilized product factor lies in \([0,1]\), event overlap
+implies \(0\leq R\leq s_-^{-1}\).  The drift in (9) is supported on
+\(\{Y(u)<\ell_k\}\), which by monotonicity is contained in
+\(\{Y(\bar\tau)<\ell_k\}\).  Hazard smoothness gives
+\(\int_0^{\bar\tau}\lambda^0(u)\,du\leq L\bar\tau\).
+If \(A_k\) denotes the drift in (9) after multiplication by \(S^0(t)\),
+then (5) yields
+\[
+ \|EA_k\|_\infty\leq Ce^{-c_0k},
+ \qquad
+ E\|A_k-EA_k\|_\infty^2\leq Ce^{-c_0k}.                \tag{10}
+\]
+
+Define the independent mean-zero influence processes
+\[
+ \varphi_{k,j}^{\circ}(t)
+ =-S^0(t)\int_0^tH(u)^{-1}\,dM_j(u).                    \tag{11}
+\]
+After subtracting \(k^{-1}\sum_j\varphi_{k,j}^{\circ}\) from (9), the
+remaining martingale component is
+\[
+ V_k(t)=-S^0(t)\int_0^tD_k(u)\,dM(u),
+ \qquad
+ D_k(u)=\frac{R(u-)}{Y^\dagger(u)}-\frac{1}{kH(u)}.      \tag{12}
+\]
+Let \(\mathcal E_k=\{Y(\bar\tau)\geq kh_0/2\}\).  On
+\(\mathcal E_k\), one has \(Y^\dagger=Y\), and the exact algebraic
+decomposition
+\[
+ D_k
+ =\frac{R-1}{Y}-\frac{Y-kH}{kHY}                       \tag{13}
+\]
+holds.  Stop (9) immediately before \(Y<kh_0/2\).  The predictable
+isometry, Doob's \(L^2\) inequality, (2), and patient independence give
+\[
+ E\{\mathbf 1_{\mathcal E_k}\|R-1\|_\infty^2\}
+ \leq Ck^{-1},
+ \qquad
+ E\{Y(u)-kH(u)\}^2\leq k.                               \tag{14}
+\]
+Substituting (13)--(14) into the predictable quadratic variation yields
+\[
+ E\left[\mathbf 1_{\mathcal E_k}
+ \int_0^{\bar\tau}D_k(u)^2Y(u)\lambda^0(u)\,du\right]
+ \leq Ck^{-2}.                                           \tag{15}
+\]
+On \(\mathcal E_k^c\), clipping and (2) give
+\(|D_k|\leq C/k\).  The fourth-moment martingale inequality followed by
+Cauchy--Schwarz and the Chernoff calculation in (4) gives
+\[
+ E\left[\mathbf 1_{\mathcal E_k^c}
+ \int_0^{\bar\tau}D_k(u)^2Y(u)\lambda^0(u)\,du\right]
+ \leq Ck^{-1}e^{-ck/2}\leq Ck^{-2}.                     \tag{16}
+\]
+Doob's inequality applied to (12) now proves
+\(E\|V_k\|_\infty^2\leq Ck^{-2}\).  Set
+\[
+ b_k^\dagger=EA_k,
+ \qquad q_k^{\dagger,\circ}=V_k+A_k-EA_k.               \tag{17}
+\]
+Equations (10), (15)--(17) prove the bias and centered-remainder bounds on
+the event-time axis.  Apply the deterministic operator
+\(\mathcal L_{\mathcal G}\) to (11) and (17), and denote the resulting
+processes by \(\varphi_{k,j}\) and \(q_k^\dagger\).  Interpolation preserves
+means and supremum bounds and changes the deterministic center to
+\(\widetilde S^0=\mathcal L_{\mathcal G}S^0\).  This proves assertion (v).
+
+It remains to prove the donor rare-cell assertion without a grid union.  We
+first record and prove the required ordered bounded-variation inequality.  If
+\(F_1,\ldots,F_N\) are independent random c\`adl\`ag functions with
+\(F_m(0)=0\), then
+\[
+ E\left\|N^{-1}\sum_{m=1}^N(F_m-EF_m)\right\|_\infty^2
+ \leq \frac{16}{N^2}\sum_{m=1}^N
+ E\{\operatorname{TV}(F_m)^2\}.                          \tag{18}
+\]
+To verify (18), condition first on deterministic bounded-variation paths and
+write their Jordan decompositions.  A positive variation component is
+\(F_m^+(t)=\mu_m^+([0,t])\), where \(\mu_m^+\) is a positive measure of
+mass \(a_m^+\).  Introduce an auxiliary time \(T_m^+\) with conditional law
+\(\mu_m^+/a_m^+\).  Conditional Jensen inequality gives
+\[
+ E_\epsilon\sup_t\left|\sum_m\epsilon_mF_m^+(t)\right|^2
+ \leq E_{\epsilon,T}\sup_t
+ \left|\sum_m\epsilon_ma_m^+\mathbf 1\{T_m^+\leq t\}\right|^2. \tag{19}
+\]
+Given the auxiliary times, ordering donors by \(T_m^+\) turns the process on
+the right into partial sums of independent mean-zero variables
+\(\epsilon_ma_m^+\).  Doob's scalar \(L^2\) inequality bounds (19) by
+\(4\sum_m(a_m^+)^2\).  The same argument applies to the negative variation
+components.  Conditional symmetrization with an independent copy and
+\(a_m^++a_m^-\leq\operatorname{TV}(F_m)\) proves (18), after enlarging the
+universal constant.  Step-function approximation in variation norm and Fatou's
+lemma remove continuity and atom restrictions.  This argument is ordered in
+time and uses a donor-index martingale; it does not involve the number of grid
+points.
+
+For donor cell \(m\), let \(A_{k,m}\) be the rare drift from (10).  The
+cumulative integral in (9) is increasing, \(S_m^0\) has total variation at
+most one, and the cumulative integral is uniformly bounded.  Therefore
+\[
+ \operatorname{TV}(A_{k,m})
+ \leq C\mathbf 1\{Y_m(\bar\tau)<\ell_k\}.                \tag{20}
+\]
+With \(U_m=A_{k,m}-EA_{k,m}\), one has
+\(EU_m(t)=0\) for every \(t\), and Jensen's inequality, (20), and (5) give
+\[
+ E\{\operatorname{TV}(U_m)^2\}\leq Ce^{-c_0k}.
+\]
+Apply (18) to the independent centered processes \(U_m\).  For all
+sufficiently large \(k\),
+\[
+ E\left\|N_0^{-1}\sum_{m\in\mathcal D}U_m\right\|_\infty^2
+ \leq CN_0^{-1}e^{-c_0k}
+ \leq C(N_0k^2)^{-1}.                                    \tag{21}
+\]
+This proves the last assertion without an all-cells-good event and completes
+the proof. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Observable clipping gives deterministic patient stability and exponentially small bias without an all-cells-good event. \textit{Gap.} Ordinary cellwise product-limit derivatives can be order one on rare exhausted-risk datasets. \textit{Consumer.} It supplies globally bounded higher-rank inputs.
+
+\begin{lemma}[lem:pooled-noniid-km-linearization]\label{lem:pooled-noniid-km-linearization}
+Suppose \(r=1\), put \(n_D=N_0K_D\),
+\[
+ \bar G_D(t)=N_0^{-1}\sum_{m\in\mathcal D}G_{1,m}(t),
+ \qquad H_D(t)=s_1(t)\bar G_D(t).
+\]
+For the continuously interpolated pooled donor-post product-limit estimator in the corrected \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\), there are independent mean-zero processes
+\[
+ \phi_{m,j}^{\mathrm{pool}}(t)
+ =-s_1(t)\int_0^tH_D(u)^{-1}\,dM_{m,j}(u)
+\]
+such that, on the inference grid,
+\[
+ \widehat\theta_1-\theta
+ =n_D^{-1}\sum_{m\in\mathcal D}\sum_{j=1}^{K_D}
+ \mathcal L_{\mathcal G}\phi_{m,j}^{\mathrm{pool}}
+ +b_{D,n_D}+q_{D,n_D},
+\]
+where
+\[
+ \|b_{D,n_D}\|_\infty\le Ce^{-cn_D},
+ \qquad Eq_{D,n_D}=0,
+ \qquad E\|q_{D,n_D}\|_\infty^2\le Cn_D^{-2},
+\]
+uniformly over the rank-one class although the censoring laws may differ across donors. If \(\widehat Z_1^\xi\) is the explicit pooled multiplier and \(\Sigma_1\) and \(\widehat\Sigma_1\) are respectively the covariance kernel of the first-order sum and the conditional covariance kernel of that multiplier, then
+\[
+ \sup_{P\in\mathfrak P_1}E_P
+ \left\|n_D^{-1}\sum_{m,j}
+ \mathcal L_{\mathcal G}\phi_{m,j}^{\mathrm{pool}}\right\|_
+ {\infty,\mathcal I}^2
+ +\sup_{P\in\mathfrak P_1}E_PE_\xi
+ \|\widehat Z_1^\xi\|_{\infty,\mathcal I}^2
+ \le Cn_D^{-1},
+\]
+and
+\[
+ n_D\|\widehat\Sigma_1-\Sigma_1\|_{\infty,\mathcal I^2}
+ \longrightarrow0
+\]
+in probability uniformly over \(\mathfrak P_1\). These assertions allow variance-zero coordinates, including time zero. No random-quantile coverage assertion is made.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Put \(n=n_D=N_0K_D\) and index donor-post patients by \(i=(m,j)\). By normalization collapse, all donor-post failure times have survival \(s_1\) and common hazard \(\lambda_1\), although \(G_{1,m}\) may vary. Define
+\[
+ N_i(u)=\mathbf1\{X_i\le u,\Delta_i=1\},\quad
+ Y_i(u)=\mathbf1\{X_i\ge u\},\quad
+ M_i(u)=N_i(u)-\int_0^uY_i(v)\lambda_1(v)\,dv.            \tag{1}
+\]
+Consistency and independent censoring give the compensator, and patient independence makes the \(M_i\) independent mean-zero martingales. With \(Y=\sum_iY_i\), \(N=\sum_iN_i\), and \(M=\sum_iM_i\),
+\[
+ EY(u)=nH_D(u),\qquad H_D(u)=s_1(u)\bar G_D(u)\ge h_0:=s_-g_->0. \tag{2}
+\]
+An exponential lower-tail bound for the independent risk indicators and a time-ordering symmetrization give
+\[
+ P\{Y(\bar\tau)<nh_0/2\}\le e^{-cn},qquad
+ E\sup_u|Y(u)/n-H_D(u)|^2\le Cn^{-1}.                    \tag{3}
+\]
+For the second display, conditional Rademacher sums indexed by \(u\) are reverse partial sums after ordering the observed times, so the scalar maximal inequality applies without identical censoring laws.
+
+Let \(\widehat S_D^{\mathrm{PL}}\) be the pooled product-limit curve, \(J_Y=\mathbf1\{Y>0\}\), and \(R=\widehat S_D^{\mathrm{PL}}/s_1\). Product integration gives the exact identity
+\[
+ R(t)-1=-\int_0^tR(u-)\frac{J_Y(u)}{Y(u)}\,dM(u)
+ +\int_0^tR(u-)\{1-J_Y(u)\}\lambda_1(u)\,du.             \tag{4}
+\]
+The convention \(J_Y/Y=0\) on an empty risk set avoids every boundary division. Stopping before \(Y<nh_0/2\), predictable isometry, \(0\le R\le s_-^{-1}\), and (3) give
+\[
+ E\sup_{t\le\bar\tau}|R(t)-1|^2\le Cn^{-1}+Ce^{-cn}.     \tag{5}
+\]
+
+Define
+\[
+ \phi_i^{\mathrm{pool}}(t)=-s_1(t)\int_0^tH_D(u)^{-1}\,dM_i(u). \tag{6}
+\]
+These processes are independent and mean zero. Subtracting \(n^{-1}\sum_i\phi_i^{\mathrm{pool}}\) from (4) leaves the martingale integrand
+\[
+ D_n(u)=R(u-)\frac{J_Y(u)}{Y(u)}-\frac1{nH_D(u)}.          \tag{7}
+\]
+On \(\{Y(\bar\tau)\ge nh_0/2\}\),
+\[
+ |D_n(u)|\le \frac{C}{n}|R(u-)-1|
+ +\frac{C}{n}|Y(u)/n-H_D(u)|.                             \tag{8}
+\]
+Equations (3), (5), (8), and predictable isometry yield an \(L^2\)-supremum bound \(Cn^{-2}\) for the resulting martingale remainder. On the complement, the ordered failure risks are distinct positive integers, so
+\[
+ \int J_Y/Y\,dN\le\sum_{k=1}^nk^{-1}\le1+\log n;         \tag{9}
+\]
+combining (9) with the exponential probability in (3) gives the same polynomial bound. The drift in (4) is uniformly bounded and vanishes unless \(Y(\bar\tau)=0\). Therefore, with its expectation denoted by \(b_{D,n}^{\mathrm{PL}}\) and the centered remainder by \(q_{D,n}^{\mathrm{PL}}\),
+\[
+ \widehat S_D^{\mathrm{PL}}-s_1
+ =n^{-1}\sum_i\phi_i^{\mathrm{pool}}
+ +b_{D,n}^{\mathrm{PL}}+q_{D,n}^{\mathrm{PL}},             \tag{10}
+\]
+\[
+ \|b_{D,n}^{\mathrm{PL}}\|_\infty\le Ce^{-cn},\qquad
+ Eq_{D,n}^{\mathrm{PL}}=0,\qquad
+ E\|q_{D,n}^{\mathrm{PL}}\|_\infty^2\le Cn^{-2}.         \tag{11}
+\]
+Applying the deterministic interpolation contraction \(\mathcal L_{\mathcal G}\) proves the asserted grid expansion.
+
+Predictable isometry applied to (6) gives
+\[
+ E\left\|n^{-1}\sum_i\phi_i^{\mathrm{pool}}\right\|_\infty^2
+ \le \frac4n\int_0^{\bar\tau}\frac{\lambda_1(u)}{H_D(u)}\,du
+ \le Cn^{-1}.                                             \tag{12}
+\]
+Conditionally on the observations, the multiplier is a Gaussian partial-sum process in failure-time order. Hence
+\[
+ E_\xi\|\widehat Z_1^\xi\|_\infty^2
+ \le4\int_0^{\bar\tau}\frac{J_Y(u)}{Y(u)^2}\,dN(u).     \tag{13}
+\]
+On the event in (3) this is \(O(n^{-1})\); on its complement it is bounded by \(4\sum_{k\ge1}k^{-2}\). Averaging and using (3) proves the second moment assertion.
+
+Finally, the oracle and empirical covariance kernels are
+\[
+ \Sigma_1(s,t)=\frac{s_1(s)s_1(t)}n
+ \int_0^{s\wedge t}\frac{\lambda_1(u)}{H_D(u)}\,du,
+\]
+\[
+ \widehat\Sigma_1(s,t)=\widehat S_D^{\mathrm{PL}}(s-)
+ \widehat S_D^{\mathrm{PL}}(t-)
+ \int_0^{s\wedge t}\frac{J_Y(u)}{Y(u)^2}\,dN(u).         \tag{14}
+\]
+Substitute \(dN=dM+Y\lambda_1du\). Equations (3), (5), and predictable isometry imply
+\[
+ \sup_v\left|\int_0^v\frac{nJ_Y}{Y^2}\,dN
+ -\int_0^v\frac{\lambda_1}{H_D}\,du\right|=o_P(1),
+ \qquad \|\widehat S_D^{\mathrm{PL}}-s_1\|_\infty=o_P(1), \tag{15}
+\]
+uniformly over the class. Multiplying (14) by \(n\) and using (15) proves
+\(n\|\widehat\Sigma_1-\Sigma_1\|_\infty\to0\) uniformly in probability. Bilinear interpolation is a covariance-kernel contraction. At time zero all integrals vanish, and no coordinate variance was inverted. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The rank-one branch pools donor-post records before product-limit estimation while allowing donor-specific censoring. \textit{Gap.} A one-cell identically distributed Kaplan--Meier expansion does not justify this pooled independent triangular array. \textit{Consumer.} This closes the sharp rank-one upper rate and implementation path.
+
+\begin{lemma}[lem:han-shah-theorem-one-scope]\label{lem:han-shah-theorem-one-scope}
+Han and Shah's Theorem~1 structural model requires a finite-dimensional survival factorization \(S^{(0)}_{p,m}(t)=\langle u_p(t),v_m\rangle\) and, separately, inclusion of each treated-unit factor \(v_\star\) in the linear span of the donor factors.  The well-conditioned finite-grid pre-period matrix and latent time-period span restrictions are introduced later as Assumptions~7 and~8 for their Theorem~2, not as conditions of their Theorem~1.
+\end{lemma}
+\par\smallskip\noindent \textit{Justification.} The cited scope node separates Theorem~1 factorization and donor-span identification from the additional finite-grid Assumptions~7 and~8 used for Theorem~2. \textit{Gap.} Without this separation, the project-specific exact centered-rank and pre-Gram conditions could be misattributed to the published structural theorem. \textit{Consumer.} It makes the comparator and the weak-pair grid audit interpretable without overstating either published theorem.
+
+\begin{proposition}[prop:han-shah-structural-embedding]\label{prop:han-shah-structural-embedding}
+Suppose an affine survival panel satisfies
+\[
+ S^0_{p,m}(t)=s_p(t)+b_p(t)^\top z_m,
+ \qquad
+ N_0^{-1}\sum_{m\in\mathcal D}z_m=0,
+ \qquad
+ N_0^{-1}\sum_{m\in\mathcal D}z_mz_m^\top=I_d,
+ \qquad d=r-1.
+\]
+Set \(u_p^{\mathrm{HS}}(t)=(s_p(t),b_p(t)^\top)^\top\in\mathbb R^r\) and \(v_m^{\mathrm{HS}}=(1,z_m^\top)^\top\in\mathbb R^r\).  Then \(S^0_{p,m}(t)=\langle u_p^{\mathrm{HS}}(t),v_m^{\mathrm{HS}}\rangle\), the donor loading matrix \(V_D=[v_m^{\mathrm{HS}}:m\in\mathcal D]\) has full row rank \(r\), and \(v_\star^{\mathrm{HS}}\in\operatorname{span}\{v_m^{\mathrm{HS}}:m\in\mathcal D\}\).  In particular, every \(P\in\mathfrak P_r(N_0,K_T,K_D)\) is a specialized subclass member of the Han--Shah Theorem~1 survival factor model with donor-span inclusion; this implication does not assert that Han and Shah impose the canonical normalization, exact centered rank, spectrum, pre-Gram, smoothness, or loading-envelope restrictions defining \(\mathfrak P_r\).
+\end{proposition}
+\begin{proof}
+\textbf{Proof.}
+For the algebraic assertion, the affine identity gives, for every period, unit, and follow-up time,
+\[
+ \left\langle u_p^{\mathrm{HS}}(t),v_m^{\mathrm{HS}}\right\rangle
+ =s_p(t)+b_p(t)^\top z_m
+ =S^0_{p,m}(t).                                           \tag{1}
+\]
+Let \(V_D=[v_m^{\mathrm{HS}}:m\in\mathcal D]\).  Donor centering and covariance normalization yield
+\[
+ \frac1{N_0}V_DV_D^\top
+ =\begin{pmatrix}
+  1&N_0^{-1}\sum_{m\in\mathcal D}z_m^\top\\
+  N_0^{-1}\sum_{m\in\mathcal D}z_m&
+  N_0^{-1}\sum_{m\in\mathcal D}z_mz_m^\top
+ \end{pmatrix}
+ =\begin{pmatrix}1&0\\0&I_d\end{pmatrix}
+ =I_r.                                                     \tag{2}
+\]
+Consequently \(V_DV_D^\top=N_0I_r\) is invertible, so \(V_D\) has row rank \(r\) and its columns span \(\mathbb R^r\).  In particular,
+\[
+ a_\star:=V_D^\top(V_DV_D^\top)^{-1}v_\star^{\mathrm{HS}}
+ \quad\text{satisfies}\quad
+ V_Da_\star=v_\star^{\mathrm{HS}},                       \tag{3}
+\]
+which proves donor-span inclusion.
+
+Now let \(P\in\mathfrak P_r(N_0,K_T,K_D)\).  The normalized factor-model assumption supplies an all-unit compatible affine representation, and exact centered rank fixes its contrast dimension at \(d=r-1\).  The canonical factorization centers and covariance-normalizes the donor loadings.  The canonical-target-coordinate lemma shows that target-pre compatibility is preserved by this normalization and that the positive pre-period Gram gives the unique shared target coordinate.  Thus the canonical coordinates satisfy all premises used in (1)--(3), including for \(m=\star\).  The cited Han--Shah scope lemma identifies finite-dimensional survival factorization and donor-span inclusion as the structural conditions used by their Theorem~1.  Hence every law in \(\mathfrak P_r\) is a specialization of that structural model.  This is only a one-way inclusion: none of the canonical normalization, exact-rank, spectrum, pre-Gram, smoothness, or loading-envelope restrictions has been attributed to Han and Shah. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The algebraic certificate embeds the normalized class into Han--Shah's factor-and-donor-span model without attributing this note's quantitative restrictions to that paper. \textit{Gap.} The published structural model does not use this centered covariance normalization or positive functional pre-Gram. \textit{Consumer.} This licenses upward transfer of the lower-bound witness while blocking transfer of the narrower upper theorem.
+
+\begin{lemma}[lem:yurinskii-degeneracy-robust-coupling]\label{lem:yurinskii-degeneracy-robust-coupling}
+Let \(X_1,\ldots,X_n\) be independent mean-zero random vectors in \(\mathbb R^p\) with finite third Euclidean moments, and let \(Y_i\) be independent centered Gaussian vectors with \(E(Y_iY_i^\top)=E(X_iX_i^\top)\). For every \(a>0\), there is a coupling of \(\sum_iX_i\) and \(\sum_iY_i\) such that, with
+\[
+ B_0=p a^{-3}\sum_iE\|X_i\|_2^3,
+\]
+\[
+ \Pr\left\{\left\|\sum_iX_i-\sum_iY_i\right\|_2>3a\right\}
+ \le C B_0\left\{1+\frac{|\log(1/B_0)|}{p}\right\},
+\]
+where \(C<\infty\) is universal. No nonsingularity or coordinate-variance lower bound is required.
+\end{lemma}
+
+\begin{theorem}[thm:donor-visible-known-rank-two-minimax-boundary]\label{thm:donor-visible-known-rank-two-minimax-boundary}
+Let \(\theta_Q(t)=S^0_{1,\star}(t)\) for \(Q\in\mathfrak Q_{2,\mathrm{vis}}(N_0,K_T,K_D)\).  There are constants \(a_0<\infty\) and \(c_\star>0\), independent of \(N_0,K_T,K_D\), such that, whenever \(\min\{N_0,K_T,K_D\}\ge a_0\),
+\[
+ c_\star\le
+ \inf_{B:\ \inf_{Q\in\mathfrak Q_{2,\mathrm{vis}}}
+ Q\{B^{\mathrm{lo}}(t)\le\theta_Q(t)\le B^{\mathrm{up}}(t)
+ \text{ for every }t\in\mathcal I\}
+ \ge1-\alpha-\varepsilon_{N_0,K_T,K_D}(\alpha)}
+ \ \sup_{Q\in\mathfrak Q_{2,\mathrm{vis}}}E_Q\{w(B)\}
+ \le1.
+\]
+Hence the minimax expected supremum width over the donor-visible known-rank-two class has sharp order one.  Every member of this class has normalized contrast indicator one, full-row-rank donor loadings, and target loading in the donor span; in the fixed-design experiment it is therefore inside the factorization-and-span model used by Han--Shah Theorem~1.
+
+The weak-pre-Gram pair \(\mathbb W_2(N_0,K_T,K_D)\) in \(\mathrm{def:weak\mbox{-}pre\mbox{-}gram\mbox{-}rank\mbox{-}two\mbox{-}pair}\) satisfies
+\[
+ \{Q_{2,-}^{\mathrm{wk}},Q_{2,+}^{\mathrm{wk}}\}
+ \subset\mathfrak Q_{2,\mathrm{vis}}(N_0,K_T,K_D),
+ \qquad
+ \sigma_T=\{K_T^{-2}a_{\circ,0}^2+a_{\circ,1}^2\}^{1/2}\|\psi_\circ\|_2,
+ \qquad
+ H_{0,T}=K_T^{-2}a_{\circ,0}^2\|\psi_\circ\|_2^2,
+\]
+so \(\sigma_T\ge|a_{\circ,1}|\|\psi_\circ\|_2>0\) while \(H_{0,T}\to0\).  Its target separation is a fixed positive constant and
+\(\operatorname{TV}(Q_{2,+}^{\mathrm{wk}},Q_{2,-}^{\mathrm{wk}})=O(K_T^{-1/2})\).
+
+For a finite pre-period grid \(\mathcal T=\{t_1,\ldots,t_{T_0}\}\), put \(a=(e^{-\lambda_\circ t_\ell})_\ell\) and \(q=(\psi_\circ(t_\ell))_\ell\).  If \(a\) and \(q\) are linearly independent, the pair's pre-period donor matrix has rank two and the ratio of its largest to smallest nonzero singular value is at least a fixed positive constant times \(K_T\), so Han--Shah Assumption~7 fails for all sufficiently large \(K_T\).  If \(q\ne0\) is collinear with \(a\), the pre-period latent-factor span is one-dimensional and Han--Shah Assumption~8 fails for all sufficiently large \(K_T\).  If \(q=0\) on the grid, Assumptions~7--8 may hold, but the grid observes none of the perturbation and Han--Shah Theorem~2 does not address the pair's nonzero continuous-time target separation between grid points.  Thus the lower bound does not contradict their Theorem~2, and the functional-PCR upper bound over \(\mathfrak P_2\) does not transfer to this larger weak-pre-Gram class.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Put
+\[
+ c_T=K_T^{-1},
+ \qquad \bar h=\frac12\min\{h_\circ,R_1,M_\star\}>0,
+ \qquad q_\alpha=\frac12-\alpha>0.                       \tag{1}
+\]
+For an arbitrary \(Q\in\mathfrak Q_{2,\mathrm{vis}}\), the scalar donor loadings satisfy
+\[
+ N_0^{-1}\sum_{m\in\mathcal D}\zeta_{m,Q}=0,
+ \qquad N_0^{-1}\sum_{m\in\mathcal D}\zeta_{m,Q}^2=1. \tag{2}
+\]
+Thus, for \(V_{D,Q}=[(1,\zeta_{m,Q})^\top:m\in\mathcal D]\),
+\[
+ N_0^{-1}V_{D,Q}V_{D,Q}^\top=I_2.                       \tag{3}
+\]
+The donor loading matrix has full row rank, its columns span \(\mathbb R^2\), and \((1,\zeta_{\star,Q})^\top\) belongs to that donor span.  The visibility lower bound makes the joint contrast nonzero.  By the cited Han--Shah scope lemma, every member therefore satisfies the factorization-and-span structure of their Theorem~1; no positive pre-period Gram is attributed to that theorem.
+
+For the weak pair, direct summation gives
+\[
+ \sum_{m=1}^{N_0}\left\{m-\frac{N_0+1}{2}\right\}=0,
+ \qquad
+ \sum_{m=1}^{N_0}\left\{m-\frac{N_0+1}{2}\right\}^2
+ =\frac{N_0(N_0^2-1)}{12},
+\]
+and hence
+\[
+ N_0^{-1}\sum_m\widetilde z_m=0,
+ \qquad N_0^{-1}\sum_m\widetilde z_m^2=1.              \tag{4}
+\]
+Multiplying both factors and loadings by \(\varsigma_T\) preserves their products and imposes the canonical sign.
+
+For a donor, the pre curve is the witness curve \(\ell_{0,x,0}\) with \(x=c_T\widetilde z_m\), and the post curve is \(\ell_{1,x,0}\) with \(x=\widetilde z_m\).  For the target the corresponding coordinates are \(c_Tu\bar h\) and \(u\bar h\).  Since \(c_T\le1\), \(\max_m|\widetilde z_m|\le R_1\), and \(\bar h\le R_1/2\wedge M_\star/2\), the explicit witness-compatibility assumption supplies survival normalization, values in \([s_-,1]\), monotonicity, the density floor, H\"older hazard regularity, and the factor envelope.  Infinite censoring gives \(G=1\ge g_-\); consistency, independent censoring, and mutual patient independence hold by construction.  Thus both laws belong to \(\mathfrak Q_{\le2}\).
+
+Using (4), their joint contrast energy and pre-period Gram are
+\[
+ \sigma_T=\{K_T^{-2}a_{\circ,0}^2+a_{\circ,1}^2\}^{1/2}
+ \|\psi_\circ\|_2,
+ \qquad
+ H_{0,T}=K_T^{-2}a_{\circ,0}^2\|\psi_\circ\|_2^2.      \tag{5}
+\]
+Therefore \(\sigma_T\ge|a_{\circ,1}|\|\psi_\circ\|_2>0\), while \(H_{0,T}\to0\), and the visibility threshold is satisfied.  Consequently
+\[
+ \{Q_{2,-}^{\mathrm{wk}},Q_{2,+}^{\mathrm{wk}}\}
+ \subset\mathfrak Q_{2,\mathrm{vis}}.                   \tag{6}
+\]
+
+For a fixed pre-period grid, put
+\[
+ a=(e^{-\lambda_\circ t_\ell})_{\ell=1}^{T_0},
+ \qquad q=(\psi_\circ(t_\ell))_{\ell=1}^{T_0}.
+\]
+The donor pre-period matrix is
+\[
+ M_{0,T}=a\mathbf1^\top+c_Ta_{\circ,0}q\widetilde z^\top. \tag{7}
+\]
+The right vectors are orthogonal by (4).  If \(a\) and \(q\) are linearly independent, (7) has rank two and
+\[
+ s_1(M_{0,T})\ge\sqrt{N_0}\|a\|_2,
+ \qquad
+ s_2(M_{0,T})\le c_T|a_{\circ,0}|\sqrt{N_0}\|q\|_2,
+\]
+so
+\[
+ \frac{s_1(M_{0,T})}{s_2(M_{0,T})}
+ \ge K_T\frac{\|a\|_2}{|a_{\circ,0}|\|q\|_2}.          \tag{8}
+\]
+The condition number diverges and Han--Shah Assumption~7 fails.  If \(q=\kappa a\ne0\), the pre latent time direction is \((1,\varsigma_Tc_Ta_{\circ,0}\kappa)^\top\), whereas the post direction is \((1,\varsigma_Ta_{\circ,1}\kappa)^\top\).  They differ for all large \(K_T\), so Assumption~8 fails.  If \(q=0\), the finite grid sees no perturbation although \(\psi_\circ\) is nonzero between grid points.  These exhaustive cases show that the lower pair does not contradict Han--Shah Theorem~2.
+
+All observed donor cells agree under the two signs and the target-post cell is unobserved.  The observed laws differ only through the \(K_T\) independent target-pre failures.  Their target curves satisfy
+\[
+ \Delta_\star=\|\theta_+-\theta_-\|_\infty
+ =2\bar h|a_{\circ,1}|\|\psi_\circ\|_\infty>0.        \tag{9}
+\]
+On \([0,\bar\tau]\), one target-pre density is
+\[
+ f_u(t)=\lambda_\circ e^{-\lambda_\circ t}
+ -u c_Ta_{\circ,0}\bar h\psi_\circ'(t).                \tag{10}
+\]
+The densities agree outside \(\operatorname{supp}(\psi_\circ')\), and the witness condition gives \(f_-\ge c_f\) on that support.  The inequality \(\log x\le x-1\) and equality of total masses give
+\[
+ D_{\mathrm{KL}}(f_+\|f_-)
+ \le\int\frac{(f_+-f_-)^2}{f_-}
+ \le\frac{4c_T^2a_{\circ,0}^2\bar h^2}{c_f}
+ \int_0^{\bar\tau}\{\psi_\circ'(t)\}^2dt.             \tag{11}
+\]
+Product additivity over the target-pre patients yields
+\[
+ D_{\mathrm{KL}}(Q_{2,+}^{\mathrm{wk}}\|Q_{2,-}^{\mathrm{wk}})
+ \le C_0/K_T.                                           \tag{12}
+\]
+The Pinsker inequality, correctly located at Tsybakov's Lemma~2.5(i), gives
+\[
+ \operatorname{TV}(Q_{2,+}^{\mathrm{wk}},Q_{2,-}^{\mathrm{wk}})
+ \le(C_0/(2K_T))^{1/2}=O(K_T^{-1/2}).                   \tag{13}
+\]
+
+Let \(B\) satisfy the theorem's honesty constraint, and let \(E_u\) be simultaneous containment of \(\theta_u\).  Honesty, total-variation transfer, and the union bound give
+\[
+ Q_{2,-}^{\mathrm{wk}}(E_-\cap E_+)
+ \ge1-2\alpha-2\varepsilon_{N_0,K_T,K_D}(\alpha)
+ -\operatorname{TV}(Q_{2,+}^{\mathrm{wk}},Q_{2,-}^{\mathrm{wk}}). \tag{14}
+\]
+Because \(\varepsilon\le q_\alpha/4\), (13)--(14) are at least \(q_\alpha\) for every sufficiently large triple.  On \(E_-\cap E_+\), \(w(B)\ge\Delta_\star\).  Using (6),
+\[
+ \sup_{Q\in\mathfrak Q_{2,\mathrm{vis}}}E_Qw(B)
+ \ge q_\alpha\Delta_\star=:c_\star>0.                 \tag{15}
+\]
+Taking the infimum proves the lower bound.  The deterministic band \([0,1]\) is honest and has width one, proving the upper bound.
+
+Thus donor-visible known rank two and donor-span inclusion coexist with order-one minimax honest width when target-relevant pre-period strength vanishes.  This is a generic information-theoretic boundary: donor-rank visibility, or a donor-only retained-rank decision, cannot by itself certify a shrinking honest band.  Agarwal--Shah--Shen is used only as PCR/HSVT prediction-preprocessing context and is not attributed an honest-band claim. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The explicit weak-pre-Gram pair proves a generic order-one information bound despite known donor-visible rank two, donor-span inclusion, and fixed joint contrast energy. \textit{Gap.} Donor-rank visibility is not target-pre strength. Agarwal--Shah--Shen provides PCR/HSVT prediction preprocessing but makes no honest-band claim; the obstruction is positioned generically rather than as a method refutation. \textit{Consumer.} It shows that shrinking or uniformly rank-adaptive honest bands require an explicit target-relevant pre-period strength condition in addition to donor-rank information.
+
+\begin{lemma}[lem:stabilized-gridwise-fpcr-transfer]\label{lem:stabilized-gridwise-fpcr-transfer}
+Fix \(r\ge2\), put \(n_D=N_0K_D\), and use the stabilized full-cell and odd--even half-fold inputs in the corrected \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\). Uniformly over \(\mathfrak P_r(N_0,K_T,K_D)\), the aggregate functional-PCR estimator has the gridwise expansion
+\[
+ \widehat\theta_r-\theta
+ =K_T^{-1}\sum_{j=1}^{K_T}\phi_{T,j}
+ +n_D^{-1}\sum_{p,m,j}\phi_{D,p,m,j}
+ +\mathfrak b_r+Q_r,
+\]
+where the patient processes are independent and mean zero,
+\[
+ \|\mathfrak b_r\|_{\infty,\mathcal G}\le\eta_D(K_D),
+ \qquad E\|Q_r\|_{\infty,\mathcal G}^2\le C\upsilon_r^2,
+\]
+with \(\upsilon_r\) as in the corrected definition of \(\omega_r\). There are fixed \(\epsilon_0,c>0\), depending only on the model constants and the fixed rank, and a measurable proof event
+\[
+ \mathcal M_{r,n}=\left\{\|\widehat\Gamma-\widetilde\Gamma\|_{\mathrm{HS}}\le\epsilon_0\right\}
+\]
+for all sufficiently large triples, such that
+\[
+ \sup_{P\in\mathfrak P_r}P(\mathcal M_{r,n}^c)\le Ce^{-cn_D}.
+\]
+In particular, the aggregate spectral/pre-Gram threshold failure probability is at most \(Ce^{-cn_D}\), without a union over donor cells.
+On \(\mathcal M_{r,n}\), the interpolated-population-to-observed covariance segment and every observed-to-one-donor-record-replacement covariance segment remain in one fixed-gap regular neighborhood; target-pre replacements do not change the branch. Only on this event, total-map Taylor and finite-replacement bounds give patient envelopes \(C/K_T\) and \(C/(N_0K_D)\). Separately, on every dataset assigned to the regular branch, the explicitly defined local multiplier coefficients have these same branchwise envelopes; on the fallback branch the explicitly defined ordinary pooled coefficients are used. Consequently, for the oracle linear process \(Z_r\) and the empirical multiplier process \(\widehat Z_r^\xi\),
+\[
+ \sup_PE_P\|Z_r\|_\infty^2
+ +\sup_PE_PE_\xi\|\widehat Z_r^\xi\|_\infty^2
+ \le C\{K_T^{-1}+n_D^{-1}\}=C\rho_r^2.
+\]
+All bounds are continuous-time bounds and incur no \(\sqrt{\log|\mathcal G|}\) factor. No derivative of the total hard-switched map across a cutoff is asserted.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Fix \(P\in\mathfrak P_r(N_0,K_T,K_D)\), put
+\(n_D=N_0K_D\), and suppress \(P\) from the notation.  Constants below
+depend only on the fixed model constants and the fixed rank.  Let
+\[
+ \mathscr A=\{(p,f):p\in\{0,1\},\
+ f\in\{\mathrm{full},\mathrm{odd},\mathrm{even}\}\}
+\]
+index the six donor input families.  Their cell sizes \(k_a\) belong to
+\(\{K_D,\lfloor K_D/2\rfloor,K_D-\lfloor K_D/2\rfloor\}\), and hence
+\(k_a\asymp K_D\) uniformly over \(a\in\mathscr A\).  Apply
+\(\mathrm{lem:stabilized\mbox{-}product\mbox{-}limit\mbox{-}cell}\) to
+the target-pre cell and to every donor input.  After applying the common
+piecewise-linear interpolator, each donor input has the decomposition
+\[
+ \widehat S_{a,m}^{\dagger}-\widetilde S^0_{a,m}
+ =L_{a,m}+b_{a,m}^{\dagger}+q_{a,m},
+ \qquad
+ L_{a,m}=k_a^{-1}\sum_{j=1}^{k_a}\varphi_{a,m,j},       \tag{1}
+\]
+where the patient terms are mean zero,
+\(\|b_{a,m}^{\dagger}\|_\infty\leq Ce^{-c_0k_a}\), and
+\(E\|q_{a,m}\|_\infty^2\leq Ck_a^{-2}\).  The same display holds with
+the appropriate target labels and \(k_a=K_T\).  The odd and even subsets
+within a donor-period cell are independent, as required for the cross-fold
+operator.  Full-cell and half-fold inputs overlap; no independence between
+different members of \(\mathscr A\) will be used.
+
+We first establish the missing dimension-free aggregation of the complete
+donor remainder.  Fix one family \(a\), abbreviate \(k=k_a\), and work with
+the pre-interpolation version of the remainder on the event-time axis; its
+interpolant is the \(q_{a,m}\) in (1).  The exact representation in the cell
+lemma is
+\[
+ q_{a,m}=U_{a,m}+V_{a,m},
+ \qquad
+ U_{a,m}=A_{a,m}-EA_{a,m},
+ \qquad
+ V_{a,m}(t)=-S^0_{a,m}(t)J_{a,m}(t),                   \tag{2}
+\]
+where \(A_{a,m}\) is the clipped-risk drift and
+\[
+ J_{a,m}(t)=\int_0^tD_{a,m}(u)\,dM_{a,m}(u),
+ \qquad
+ D_{a,m}(u)=\frac{R_{a,m}(u-)}{Y_{a,m}^{\dagger}(u)}
+             -\frac{1}{kH_{a,m}(u)}.                  \tag{3}
+\]
+Here \(M_{a,m}\) is the sum of the \(k\) patient counting-process
+martingales in that input.  Independent censoring identifies its compensator,
+patient independence makes it square integrable, and event and censoring
+overlap give \(H_{a,m}\geq s_-g_->0\).  The stopped-risk calculation in
+the cell lemma, valid with donor-specific hazards and censoring laws, gives
+\[
+ E\int_0^{\bar\tau}D_{a,m}(u)^2Y_{a,m}(u)
+       \lambda^0_{a,m}(u)\,du\leq Ck^{-2}.             \tag{4}
+\]
+
+Since \(S^0_{a,m}(0)=1\), \(J_{a,m}(0)=0\), and the survival curve is a
+deterministic bounded-variation function under the fixed law, stochastic
+integration by parts gives the exact identity
+\[
+ \begin{split}
+ V_{a,m}(t)
+ &=-\int_0^tS^0_{a,m}(u)D_{a,m}(u)\,dM_{a,m}(u)\\
+ &\quad+\int_0^tJ_{a,m}(u-)\,d\{1-S^0_{a,m}(u)\}.
+ \end{split}                                           \tag{5}
+\]
+In particular, one may not replace the first integral in (5) by
+\(-J_{a,m}\) when \(S^0_{a,m}\) varies with time.
+
+Average the first term of (5) in the joint donor filtration:
+\[
+ \mathcal A_a(t)=-N_0^{-1}\sum_{m\in\mathcal D}
+ \int_0^tS^0_{a,m}(u)D_{a,m}(u)\,dM_{a,m}(u).          \tag{6}
+\]
+Martingales belonging to distinct donor cells are independent and hence have
+zero cross-brackets.  Because \(0\leq S^0_{a,m}\leq1\), the predictable
+bracket identity and (4) imply
+\[
+ \begin{split}
+ E\langle\mathcal A_a\rangle(\bar\tau)
+ &=N_0^{-2}\sum_{m\in\mathcal D}E\int_0^{\bar\tau}
+   S^0_{a,m}(u)^2D_{a,m}(u)^2Y_{a,m}(u)
+   \lambda^0_{a,m}(u)\,du\\
+ &\leq \frac{C}{N_0k^2}.
+ \end{split}                                           \tag{7}
+\]
+Doob's \(L^2\) inequality therefore yields
+\[
+ E\|\mathcal A_a\|_\infty^2\leq\frac{C}{N_0k^2}.     \tag{8}
+\]
+
+For the finite-variation term in (5), define
+\[
+ F_{a,m}(t)=\int_0^tJ_{a,m}(u-)\,d\{1-S^0_{a,m}(u)\}.
+\]
+The processes \(F_{a,m}\) are independent over donors.  Moreover,
+\(EJ_{a,m}(u)=0\) for every \(u\), so deterministic Stieltjes Fubini gives
+\(EF_{a,m}(t)=0\) for every \(t\).  Monotonicity and endpoint normalization
+of a survival curve imply
+\[
+ \operatorname{TV}(F_{a,m})
+ \leq\|J_{a,m}\|_\infty
+      \operatorname{TV}(1-S^0_{a,m})
+ \leq\|J_{a,m}\|_\infty.                              \tag{9}
+\]
+The time-ordered bounded-variation inequality proved in
+\(\mathrm{lem:stabilized\mbox{-}product\mbox{-}limit\mbox{-}cell}\)
+states that independent pointwise-centered bounded-variation processes
+\(G_m\) satisfy
+\[
+ E\left\|N_0^{-1}\sum_mG_m\right\|_\infty^2
+ \leq\frac{16}{N_0^2}\sum_mE\{\operatorname{TV}(G_m)^2\}. \tag{10}
+\]
+Applying (10), then (9), Doob's inequality, and (4), gives
+\[
+ E\left\|N_0^{-1}\sum_{m\in\mathcal D}F_{a,m}\right\|_\infty^2
+ \leq\frac{C}{N_0^2}\sum_mE\|J_{a,m}\|_\infty^2
+ \leq\frac{C}{N_0k^2}.                                \tag{11}
+\]
+Combining (5), (8), and (11) proves
+\[
+ E\left\|N_0^{-1}\sum_{m\in\mathcal D}V_{a,m}\right\|_\infty^2
+ \leq\frac{C}{N_0k^2}.                                \tag{12}
+\]
+The centered rare-drift conclusion of the cell lemma gives separately
+\[
+ E\left\|N_0^{-1}\sum_{m\in\mathcal D}U_{a,m}\right\|_\infty^2
+ \leq C N_0^{-1}e^{-c_0k}.                             \tag{13}
+\]
+Thus the full remainder, rather than only its rare-drift component, obeys
+\[
+ E\left\|N_0^{-1}\sum_{m\in\mathcal D}q_{a,m}\right\|_\infty^2
+ \leq\frac{C}{N_0k^2}+C N_0^{-1}e^{-c_0k}
+ \leq\frac{C}{N_0K_D^2}+C N_0^{-1}e^{-cK_D}.           \tag{14}
+\]
+
+The same argument permits deterministic scalar or fixed-dimensional weights
+\(c_m\) with \(\max_m\|c_m\|\leq C\): insert \(c_m\) in (6), (10), and
+the bracket sum.  It follows that
+\[
+ E\left\|N_0^{-1}\sum_m c_mq_{a,m}\right\|_\infty^2
+ \leq\frac{C}{N_0K_D^2}+C N_0^{-1}e^{-cK_D}.           \tag{15}
+\]
+This weighted form is what is needed after donor centering.  Indeed, the
+population donor contrasts have the form
+\(\widetilde Y_m=\widetilde b^{\top}z_m\); the fixed rank and donor
+incoherence bound the weights \(z_m\).  Expanding a centered perturbation as
+\(q_{a,m}-N_0^{-1}\sum_\ell q_{a,\ell}\), every first derivative of the
+donor mean or covariance is a fixed finite sum of terms covered by (14) or
+(15).  Piecewise-linear interpolation contracts supremum norm.  Treating the
+six families separately and using
+\(\|\sum_{a\in\mathscr A}x_a\|^2\leq
+|\mathscr A|\sum_a\|x_a\|^2\) combines them without assuming independence
+between overlapping full and half-fold appearances.  Consequently the
+donor-remainder contribution after donor centering and every population
+functional-PCR derivative has \(L^2\)-supremum norm at most
+\[
+ C\{N_0^{-1/2}K_D^{-1}+N_0^{-1/2}e^{-cK_D/2}\}
+ \leq C N_0^{-1/2}K_D^{-1}.                            \tag{16}
+\]
+
+We next construct the fixed covariance-margin event.  Put
+\[
+ \Gamma_{\mathcal G}=\widetilde\Gamma
+ =N_0^{-1}\sum_{m\in\mathcal D}
+   \widetilde Y_m\otimes\widetilde Y_m.
+\]
+By
+\(\mathrm{lem:interpolated\mbox{-}population\mbox{-}fpcr\mbox{-}stability}\),
+for every sufficiently large triple,
+\[
+ \lambda_d(\Gamma_{\mathcal G})\geq\gamma_-^2/2,
+ \qquad \lambda_{d+1}(\Gamma_{\mathcal G})=0,
+ \qquad \lambda_{\min}(H_{0,\mathcal G})\geq\kappa_-/2. \tag{17}
+\]
+Use the selected projector and positive square root, so internal eigenvalue
+ties are immaterial.  The contour-resolvent formula for the selected
+projector, the Sylvester equation for the positive-square-root derivative,
+and
+\[
+ A^{-1}-B^{-1}=A^{-1}(B-A)B^{-1}                       \tag{18}
+\]
+show that the prediction map and its first two derivatives are uniformly
+bounded on a fixed Hilbert--Schmidt neighborhood of
+\(\Gamma_{\mathcal G}\).  Choose its radius
+\(\epsilon_{\mathrm{reg}}>0\) small enough that throughout this neighborhood
+the selected eigenvalue, selected-to-complement gap, and pre-period Gram are
+respectively at least \(3\gamma_-^2/8\), \(3\gamma_-^2/8\), and
+\(3\kappa_-/8\), and set \(\epsilon_0=\epsilon_{\mathrm{reg}}/2\).
+
+The odd and even half-folds within each donor-period cell are independent.
+Using (1) for those two folds and their symmetric cross-product therefore
+removes the same-fold product-limit variance and gives
+\[
+ \|E\widehat\Gamma-\Gamma_{\mathcal G}\|_{\mathrm{HS}}
+ \leq Ce^{-cK_D}=o(1).                                 \tag{19}
+\]
+Changing one donor record changes one stabilized half-fold curve by at most
+\(C/K_D\).  Donor centering, bounded input curves, and the outer factor
+\(N_0^{-1}\) in \(\widehat\Gamma\) hence give, for a one-record replacement,
+\[
+ \|\widehat\Gamma(O)-\widehat\Gamma(O^{(i)})\|_{\mathrm{HS}}
+ \leq\frac{C}{N_0K_D}=\frac{C}{n_D}.                  \tag{20}
+\]
+Hilbert-space Efron--Stein, obtained by expanding in an orthonormal
+Hilbert--Schmidt basis, yields
+\[
+ E\|\widehat\Gamma-E\widehat\Gamma\|_{\mathrm{HS}}^2
+ \leq\frac12\sum_iE
+ \|\widehat\Gamma(O)-\widehat\Gamma(O^{(i)})\|_{\mathrm{HS}}^2
+ \leq\frac{C}{n_D}.                                   \tag{21}
+\]
+The scalar map
+\(O\mapsto\|\widehat\Gamma-E\widehat\Gamma\|_{\mathrm{HS}}\)
+has the same bounded differences.  McDiarmid's exponential argument and
+(21) therefore give
+\[
+ P\left\{\|\widehat\Gamma-E\widehat\Gamma\|_{\mathrm{HS}}
+ >Cn_D^{-1/2}+x\right\}\leq e^{-cn_Dx^2},
+ \qquad x>0.                                           \tag{22}
+\]
+For all sufficiently large triples, (19)--(22), with a fixed sufficiently
+small \(x\), prove that the measurable event
+\[
+ \mathcal M_{r,n}
+ =\{\|\widehat\Gamma-\widetilde\Gamma\|_{\mathrm{HS}}
+       \leq\epsilon_0\}                                \tag{23}
+\]
+satisfies
+\[
+ \sup_{P\in\mathfrak P_r}P(\mathcal M_{r,n}^c)
+ \leq Ce^{-cn_D}.                                      \tag{24}
+\]
+This is one aggregate concentration inequality, not a union over cells.
+
+On \(\mathcal M_{r,n}\), the straight segment from
+\(\widetilde\Gamma\) to \(\widehat\Gamma\) lies in the fixed regular
+neighborhood.  By (20), once \(C/n_D\leq\epsilon_{\mathrm{reg}}/2\), the
+endpoint produced by any one-donor-record replacement and the segment from
+\(\widehat\Gamma\) to that endpoint also remain in the same neighborhood.
+Thus the selected eigenvalue, its gap from the complement, and the empirical
+pre-period Gram remain above the construction's hard thresholds on all these
+segments.  A target-pre replacement does not change \(\widehat\Gamma\), its
+selected positive square root, or \(\widehat H_0\), so it cannot change the
+branch on this event.  This proves every margin and replacement assertion in
+the statement.
+
+For completeness, write the regular coordinate-free prediction map as
+\[
+ A=\Gamma_+^{1/2},\quad A_p=E_pA,\quad H=A_0^*A_0,
+ \quad z=H^{-1}A_0^*x,
+ \quad F(s,A,x)=s_1+A_1z.                              \tag{25}
+\]
+Along a differentiable path,
+\[
+ \dot H=\dot A_0^*A_0+A_0^*\dot A_0,
+ \qquad
+ \dot z=H^{-1}\{\dot A_0^*x+A_0^*\dot x-\dot Hz\},  \tag{26}
+\]
+\[
+ \dot F=\dot s_1+\dot A_1z+A_1\dot z.                \tag{27}
+\]
+The selected-projector derivative is the resolvent integral
+\[
+ D\Pi_\Gamma[E]=\frac{1}{2\pi i}\int_{\mathscr C}
+ (w-\Gamma)^{-1}E(w-\Gamma)^{-1}\,dw,                 \tag{28}
+\]
+and the positive-square-root derivative is the unique selected-range
+solution of
+\[
+ A\,DA_\Gamma[E]+DA_\Gamma[E]A
+ =D\{\Pi\Gamma\Pi\}_\Gamma[E].                        \tag{29}
+\]
+Differentiating (26)--(29) once more, and using the fixed contour distance,
+the lower eigenvalue and Gram bounds, and (18), proves
+\[
+ \|DF\|\leq C,
+ \qquad \|D^2F\|\leq C                                \tag{30}
+\]
+throughout the regular neighborhood, including internal ties.  Composing
+(30) with the deterministic one-record bound from the stabilized cell lemma
+gives, only on \(\mathcal M_{r,n}\) for finite-replacement paths of the total
+estimator,
+\[
+ \|D_j^TF\|_\infty\leq C/K_T,
+ \qquad
+ \|D_{p,m,j}^DF\|_\infty\leq C/(N_0K_D).              \tag{31}
+\]
+
+Both branches return uniformly bounded curves: on the regular branch this
+follows from its hard spectral and Gram thresholds and bounded input curves,
+and on fallback the pooled curve lies in \([0,1]\).  Hence all contributions
+from leaving \(\mathcal M_{r,n}\) can be included in a switch remainder
+\(Q_r^{\mathrm{sw}}\) satisfying
+\[
+ \|Q_r^{\mathrm{sw}}\|_\infty
+ \leq C\mathbf1\{\mathcal M_{r,n}^c\},
+ \qquad
+ E\|Q_r^{\mathrm{sw}}\|_\infty^2\leq Ce^{-cn_D}.      \tag{32}
+\]
+No derivative across the hard cutoff is used.
+
+Apply Taylor's formula with integral remainder on
+\(\mathcal M_{r,n}\), insert the cell decompositions (1), and use (32)
+off that event.  When a patient occurs in both a full input and one half-fold
+input, combine its finitely many first-order appearances into one coefficient.
+The resulting process \(\phi_{D,p,m,j}\) is therefore a function of that one
+patient martingale with deterministic population coefficients; patient
+independence makes the combined processes independent and mean zero.  The
+target-pre terms are treated identically.  At every grid knot this gives
+\[
+ \widehat\theta_r-\theta
+ =K_T^{-1}\sum_{j=1}^{K_T}\phi_{T,j}
+ +n_D^{-1}\sum_{p,m,j}\phi_{D,p,m,j}
+ +\mathfrak b_r+Q_r.                                   \tag{33}
+\]
+The population center is \(\theta\) at every knot by
+\(\mathrm{lem:canonical\mbox{-}target\mbox{-}coordinate}\) and
+\(\mathrm{lem:interpolated\mbox{-}population\mbox{-}fpcr\mbox{-}stability}\).
+The fixed derivative bound sends the donor half-fold stabilization means into
+\[
+ \|\mathfrak b_r\|_{\infty,\mathcal G}\leq\eta_D(K_D). \tag{34}
+\]
+The target cell's centered remainder has \(L^2\)-supremum norm
+\(O(K_T^{-1})\).  The donor centered remainder has norm
+\(O(N_0^{-1/2}K_D^{-1})\) by (14)--(16).  The second-order Taylor terms have
+norm \(O(K_T^{-1}+n_D^{-1})\), the bias--linear interactions have norm
+\(O\{\rho_r\eta_D(K_D)\}\), and the target rare-risk and aggregate fallback
+terms are bounded by \(Ce^{-cK_T/2}\) and \(Ce^{-cn_D/2}\), respectively.
+Choosing the fixed \(c_\dagger\) and \(C_\omega\) in the frozen definition
+no larger and no smaller, respectively, than the uniform constants just
+obtained, these terms are dominated by the displayed \(\upsilon_r\) in the
+definition of \(\omega_r\).  Minkowski's inequality therefore proves
+\[
+ \sup_{P\in\mathfrak P_r}E_P
+ \|Q_r\|_{\infty,\mathcal G}^2\leq C\upsilon_r^2.      \tag{35}
+\]
+This explicitly propagates the full bound (14), rather than only the
+rare-drift part, through donor centering and the functional-PCR map.
+
+It remains to prove the two continuous-time moment bounds.  For the oracle
+linear process, stochastic integration by parts applied to each first-order
+cell influence, followed by the predictable isometry and Doob's inequality,
+gives
+\[
+ E\left\|K_T^{-1}\sum_j\phi_{T,j}\right\|_\infty^2
+ \leq C K_T^{-1},
+ \qquad
+ E\left\|n_D^{-1}\sum_{p,m,j}\phi_{D,p,m,j}\right\|_\infty^2
+ \leq C n_D^{-1}.                                      \tag{36}
+\]
+For the donor term, the proof is the first-order analogue of (6)--(11): its
+cell bracket is \(O(k_a^{-1})\), rather than \(O(k_a^{-2})\), and donor
+orthogonality gives \(O((N_0k_a)^{-1})\).  The finite number of input
+families is combined by the fixed-dimensional inequality used after (15),
+not by an independence assertion.  The bounded deterministic derivatives in
+(30) preserve these orders.  Hence
+\[
+ \sup_{P\in\mathfrak P_r}E_P\|Z_r\|_\infty^2
+ \leq C\{K_T^{-1}+n_D^{-1}\}.                          \tag{37}
+\]
+
+The multiplier coefficients require a separate branchwise argument.  On
+every dataset assigned to the regular branch, the hard thresholds themselves,
+(25)--(30), and the stabilized patient coefficient bound give the explicitly
+defined local coefficients the envelopes \(C/K_T\) and \(C/n_D\).  Combining
+repeated appearances of a patient before attaching its one multiplier changes
+only the fixed constant.  Their time-ordered total variations obey the same
+bounds.  Conditional Gaussian isometry and the time-ordered maximal inequality
+therefore give
+\[
+ E E_\xi\{\|\widehat Z_{r,\mathrm{reg}}^\xi\|_\infty^2
+ \mathbf1(\text{regular branch})\}
+ \leq C\{K_T^{-1}+n_D^{-1}\}.                          \tag{38}
+\]
+On fallback, the definition uses the ordinary pooled donor-post coefficients.
+The aggregate at-risk count at \(\bar\tau\) is a sum of independent, possibly
+non-identically distributed Bernoulli variables with means at least
+\(s_-g_-\).  The Chernoff calculation used in the cell lemma therefore makes
+the event of aggregate risk below \(n_Ds_-g_-/2\) have probability at most
+\(Ce^{-cn_D}\).  On its complement, ordered integration by parts and
+conditional Gaussian Doob inequality give \(C/n_D\); on the rare event the
+same ordered calculation is at most \(Cn_D\).  Since
+\(n_De^{-cn_D}\leq C/n_D\),
+\[
+ E E_\xi\{\|\widehat Z_{r,\mathrm{pool}}^\xi\|_\infty^2
+ \mathbf1(\text{fallback branch})\}\leq Cn_D^{-1}.     \tag{39}
+\]
+Equations (38)--(39) prove
+\[
+ \sup_{P\in\mathfrak P_r}E_PE_\xi
+ \|\widehat Z_r^\xi\|_\infty^2
+ \leq C\{K_T^{-1}+n_D^{-1}\}.                         \tag{40}
+\]
+All maximal inequalities in (36)--(40) were applied in physical time before
+restriction to the grid.  Thus no \(\sqrt{\log|\mathcal G|}\) factor occurs.
+Finally,
+\[
+ K_T^{-1}+n_D^{-1}\leq\rho_r^2
+ \leq2\{K_T^{-1}+n_D^{-1}\},
+\]
+so (37) and (40) give the asserted \(C\rho_r^2\) bound.  The proof used local
+regular-branch derivatives and an explicit fallback calculation, never a
+derivative of the total hard-switched map across its cutoff. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The expansion now respects the hard estimator switch: total-map replacement and Taylor bounds hold on a uniformly exponentially likely fixed-margin event, and switching is an explicit remainder off that event. \textit{Gap.} A branchwise Fréchet derivative is not a global derivative of a hard-switched estimator; the margin-event argument closes that distinction without changing the estimator or model class. \textit{Consumer.} It supplies the linear process, remainder, and branchwise multiplier moments used by covariance transfer and the attaining band.
+
+\begin{theorem}[thm:grid-uniform-random-quantile-validity]\label{thm:grid-uniform-random-quantile-validity}
+Fix \(r\ge1\), and let \(n_{\mathrm{eff},r}\), \(\delta_{r,n}(\alpha)\), \(\chi_{r,n}\), and \(\tau_{r,n}\) be the deterministic sequences in \(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\). Let \(Z_r\) be the oracle patient linear process in \(\mathrm{lem:pooled\mbox{-}noniid\mbox{-}km\mbox{-}linearization}\) when \(r=1\) and in \(\mathrm{lem:stabilized\mbox{-}gridwise\mbox{-}fpcr\mbox{-}transfer}\) when \(r\ge2\). Uniformly over \(P\in\mathfrak P_r(N_0,K_T,K_D)\) and every three-dimensional tail,
+\[
+ \chi_{r,n}\longrightarrow0,
+ \qquad
+ \frac{\tau_{r,n}}{\rho_r(N_0,K_T,K_D)}=\chi_{r,n}\longrightarrow0.
+\]
+For every sufficiently large evaluated triple,
+\[
+ \inf_{P\in\mathfrak P_r}
+ P\left\{\|Z_r\|_{\infty,\mathcal G}
+ \le \widetilde c_r^\xi+\tau_{r,n}\right\}
+ \ge 1-\alpha+\frac12\delta_{r,n}(\alpha)
+ \ge1-\alpha-o(1),
+\]
+and
+\[
+ \sup_{P\in\mathfrak P_r}E_P\widetilde c_r^\xi
+ \le C\rho_r(N_0,K_T,K_D).
+\]
+The result permits singular covariance matrices and zero-variance coordinates, including the coordinate at time zero; \(\widetilde c_r^\xi\) is the measurable left-continuous generalized-inverse conditional \(1-\alpha+\delta_{r,n}(\alpha)\) quantile.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+Put \(n_D=N_0K_D\), \(m=n_{\mathrm{eff},r}\), and \(p_{\mathcal G}=2|\mathcal G|\).  Write \(a_n=a_{r,n}\), \(\delta_n=\delta_{r,n}(\alpha)\), \(\chi_n=\chi_{r,n}\), and \(\tau_n=\tau_{r,n}\).  The covariance-modulus lemma supplies a measurable event \(\mathcal E_{r,n}\), contained in \(\mathcal M_{r,n}\) at ranks at least two, such that
+\[
+ P(\mathcal E_{r,n}^c)\le Ca_n^{1/2},
+ \quad
+ \|\widehat\Sigma_r-\Sigma_r\|_\infty
+ \le C\rho_r^2a_n^{1/2},                                \tag{1}
+\]
+and both oracle and empirical canonical semimetrics are bounded by
+\(C\rho_r^2|g-g'|\).  Thus all empirical coefficients used on \(\mathcal E_{r,n}\) belong to the single regular branch; no derivative across a cutoff is used.
+
+Let \(k=k_{r,n}\), and choose a deterministic subset \(\mathcal T_n\subset\mathcal G\) of at most \(k+1\) knots with physical-time mesh at most \(C/k\).  Evaluate both signs of each normalized patient vector on \(\mathcal T_n\); its dimension is at most
+\[
+ p_{\mathrm c,r,n}=2(k_{r,n}+1).                        \tag{2}
+\]
+The patient envelopes in the covariance-modulus lemma and \(\rho_r\asymp m^{-1/2}\) give
+\[
+ \sum_iE\|L_i/\rho_r\|_{2,\mathcal T_n}^3
+ \le Cp_{\mathrm c,r,n}^{3/2}m^{-1/2}.                 \tag{3}
+\]
+Apply \(\mathrm{lem:yurinskii\mbox{-}degeneracy\mbox{-}robust\mbox{-}coupling}\) in dimension \(p_{\mathrm c,r,n}\) with \(a=U_{r,n}^{1/4}\).  Its dimensioned quantity satisfies
+\[
+ B_0\le Cp_{\mathrm c,r,n}^{5/2}m^{-1/2}a^{-3}
+ \le U_{r,n}^{1/4}.                                     \tag{4}
+\]
+Hence the coarse-net oracle vector couples to a centered Gaussian vector \(G_r\) with the same covariance with normalized error and exceptional probability bounded by \(C\zeta_{r,n}\).  The oracle modulus bound from the covariance-modulus lemma with \(u=C/k\), and the Gaussian union bound using the same semimetric, transfer the coupling to the full canonical grid.  Therefore, for every real \(x\),
+\[
+ P\{\|G_r\|_{\infty,\mathcal G}\le x\}
+ \le P\{\|Z_r\|_{\infty,\mathcal G}
+ \le x+C\rho_r\zeta_{r,n}\}+C\zeta_{r,n}.             \tag{5}
+\]
+This coupling allows singular covariance.
+
+Conditionally on the data, let \(\widehat G_r\) be Gaussian with covariance \(\widehat\Sigma_r\); this is the law of the explicitly defined multiplier process.  Put \(v_n=a_n^{1/2}\).  On \(\mathcal E_{r,n}\), select an auxiliary grid of mesh at most \(u_n=v_n^{1/3}\) and cardinality \(K_n\le Cv_n^{-1/3}\).  The covariance matrices on that grid differ in nuclear norm by at most
+\[
+ CK_n^2\rho_r^2v_n.                                     \tag{6}
+\]
+By \(\mathrm{lem:powers\mbox{-}stormer\mbox{-}square\mbox{-}root}\), a common standard-normal vector couples them so that
+\[
+ E\|G_r-\widehat G_r\|_{2,\mathrm{aux}}
+ \le C\rho_rK_nv_n^{1/2}\le C\rho_ra_n^{1/12}.         \tag{7}
+\]
+The two semimetric bounds and Gaussian exponential moments transfer (7) to the canonical grid.  Markov's inequality at threshold
+\[
+ \rho_ra_n^{1/48}\{1+|\log a_n|\}                     \tag{8}
+\]
+and (5), after enlarging \(C_\chi\), yield on \(\mathcal E_{r,n}\) the simultaneous one-sided comparison
+\[
+ \widehat F_r(x)
+ \le F_{r,P}(x+\rho_r\chi_n)+\chi_n
+ \quad\text{for every }x\in\mathbb R,                  \tag{9}
+\]
+where
+\[
+ F_{r,P}(x)=P\{\|Z_r\|_{\infty,\mathcal G}\le x\},
+ \qquad
+ \widehat F_r(x)=P_\xi\{\|\widehat Z_r^\xi\|_{\infty,\mathcal G}\le x\mid O\}.
+\]
+No anti-concentration or coordinate-variance lower bound is used.
+
+The rates are explicit.  Since \(p_{\mathrm c,r,n}=O(m^{1/9})\),
+\[
+ U_{r,n}=O(m^{-2/9}),
+ \qquad \zeta_{r,n}=O\{m^{-1/18}(1+\log m)\}.           \tag{10}
+\]
+Every term in \(a_n\) tends to zero uniformly on a three-dimensional tail, irrespective of relative growth.  Hence
+\[
+ \chi_n\longrightarrow0,
+ \qquad \tau_n/\rho_r=\chi_n\longrightarrow0.          \tag{11}
+\]
+If \(A=\min\{N_0,K_T,K_D\}\), the terms in \(\chi_n\) decay as positive powers of \(A\), up to logarithms, whereas \(\delta_n\) decreases only at the displayed reciprocal iterated-logarithm rate.  Since \(P(\mathcal E_{r,n}^c)\le Ca_n^{1/2}\), for every sufficiently large triple
+\[
+ \chi_n+P(\mathcal E_{r,n}^c)\le\delta_n/2.             \tag{12}
+\]
+
+Let \(q_n=1-\alpha+\delta_n\), and define the deterministic oracle generalized-inverse quantile
+\[
+ c_{r,P}(u)=\inf\{x\ge0:F_{r,P}(x)\ge u\}.             \tag{13}
+\]
+The conditional Gaussian maximum is a Borel function of a finite standard-normal vector and the observed covariance matrix.  Taking the infimum over nonnegative rationals proves measurability of \(\widetilde c_r^\xi\), including when the covariance is singular or zero.  Right-continuity of the conditional distribution gives
+\(\widehat F_r(\widetilde c_r^\xi)\ge q_n\).  Applying (9) at this random argument shows on \(\mathcal E_{r,n}\) that
+\[
+ \widetilde c_r^\xi+\tau_n
+ \ge c_{r,P}(q_n-\chi_n).                               \tag{14}
+\]
+The right side is deterministic for fixed \(P\).  Therefore, without any independence between \(Z_r\) and \(\mathcal E_{r,n}\),
+\[
+\begin{aligned}
+ P\{\|Z_r\|_{\infty,\mathcal G}
+       \le\widetilde c_r^\xi+\tau_n\}
+ &\ge F_{r,P}\{c_{r,P}(q_n-\chi_n)\}
+       -P(\mathcal E_{r,n}^c)\\
+ &\ge q_n-\chi_n-P(\mathcal E_{r,n}^c)\\
+ &\ge1-\alpha+\delta_n/2,
+\end{aligned}                                           \tag{15}
+\]
+where the last line uses (12).
+
+Finally \(q_n\le1-\alpha/2\).  Conditional Markov inequality implies
+\[
+ \widetilde c_r^\xi
+ \le\left\{\frac2\alpha E_\xi
+ \|\widehat Z_r^\xi\|_{\infty,\mathcal G}^2\right\}^{1/2}. \tag{16}
+\]
+The pooled and stabilized branchwise moment bounds, followed by Jensen's inequality, prove
+\[
+ \sup_{P\in\mathfrak P_r}E_P\widetilde c_r^\xi\le C\rho_r. \tag{17}
+\]
+Equations (11), (15), and (17) prove every assertion, including the zero-variance coordinate at time zero. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The theorem validates the singular-covariance-safe generalized-inverse multiplier quantile through a coarse-net coupling and eventwise covariance transfer. \textit{Gap.} Standard bootstrap validity does not automatically cover an estimated projector, inverse pre-Gram, hard fallback, and zero-variance coordinates. \textit{Consumer.} It supplies the random critical radius in the honest functional-PCR band.
+
+\begin{theorem}[thm:no-uniform-unknown-rank-adaptation]\label{thm:no-uniform-unknown-rank-adaptation}
+Let \(\mathfrak Q_{\leq2}(N_0,K_T,K_D)\) be the separately normalized
+rank-at-most-two closure in
+\(\mathrm{def:rank\mbox{-}at\mbox{-}most\mbox{-}two\mbox{-}closure}\).  There are
+constants \(a_0<\infty\) and \(c_\star>0\), independent of
+\(N_0,K_T,K_D\), such that, whenever
+\(\min\{N_0,K_T,K_D\}\geq a_0\), every random continuous-time band \(B\)
+satisfying
+\[
+\inf_{Q\in\mathfrak Q_{\leq2}(N_0,K_T,K_D)}
+Q\left\{B^{\mathrm{lo}}(t)\leq\theta_Q(t)\leq B^{\mathrm{up}}(t)
+\text{ for every }t\in\mathcal I\right\}
+\geq1-\alpha-\varepsilon_{N_0,K_T,K_D}(\alpha)
+\]
+also satisfies
+\[
+\sup_{Q\in\mathfrak Q_{\leq2}(N_0,K_T,K_D)}E_Q\{w(B)\}\geq c_\star.
+\]
+The constant band with endpoints zero and one has width one and is honest, so the
+corresponding minimax maximal expected width is between \(c_\star\) and \(1\).
+Hence its sharp order is one.  In particular, over the no-common-pre-Gram closure
+there is no single rank-selection band attaining the vanishing known-rank oracle
+widths \(\rho_1\) and \(\rho_2\).  This remains true on a rank-two subfamily whose
+joint donor contrast singular value is bounded away from zero: donor-rank
+detectability alone does not make the target loading estimable.
+\end{theorem}
+\begin{proof}
+\textbf{Proof.}
+By definition,
+\(\mathfrak Q_{2,\mathrm{vis}}(N_0,K_T,K_D)\subset
+\mathfrak Q_{\le2}(N_0,K_T,K_D)\).  Hence any band honest over the latter class is honest over the donor-visible rank-two subclass.  The donor-visible boundary theorem therefore gives
+\[
+ \sup_{Q\in\mathfrak Q_{\le2}}E_Qw(B)
+ \ge\sup_{Q\in\mathfrak Q_{2,\mathrm{vis}}}E_Qw(B)
+ \ge c_\star.                                           \tag{1}
+\]
+The deterministic band \([0,1]\) covers every survival curve and has width one, proving the matching upper bound.  Thus the minimax maximal expected width over the closure is \(\Theta(1)\).  In contrast, the known-rank widths over the strong positive-pre-Gram classes vanish by the sharp-rank theorem because \(\rho_1,\rho_2\to0\) and the stated upper envelope vanishes.  The explicit weak pair inside \(\mathfrak Q_{2,\mathrm{vis}}\) has joint donor contrast bounded away from zero, so the obstruction persists when donor rank is visible: the missing ingredient is target-relevant pre-period strength. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} Subclass monotonicity transfers the donor-visible rank-two order-one converse to the full no-common-pre-Gram rank-at-most-two closure. \textit{Gap.} Generic testing reductions do not establish that observed donor rank can remain strong while the target loading is weakly identified in this survival panel. \textit{Consumer.} It rules out a uniformly shrinking rank-selection band over the stated closure and identifies target-pre strength as necessary for a smaller adaptive model.
+
+\begin{lemma}[lem:fpcr-covariance-modulus-transfer]\label{lem:fpcr-covariance-modulus-transfer}
+Fix \(r\ge1\), put \(n_D=N_0K_D\), \(m=n_{\mathrm{eff},r}\), and let
+\(a_{r,n}\) be the deterministic covariance-transfer schedule in
+\(\mathrm{def:fpcr\mbox{-}multiplier\mbox{-}band}\).  Let \(\Sigma_r\) be
+the covariance kernel of the oracle patient linear process \(Z_r\), let
+\(\widehat\Sigma_r\) be the conditional covariance kernel of
+\(\widehat Z_r^\xi\), and let \(d_r\) and \(\widehat d_r\) be their canonical
+Gaussian semimetrics.  There is a measurable event \(\mathcal E_{r,n}\),
+contained in the regular-margin event \(\mathcal M_{r,n}\) when \(r\ge2\),
+such that, uniformly over \(P\in\mathfrak P_r(N_0,K_T,K_D)\),
+\[
+ P(\mathcal E_{r,n}^c)\le C a_{r,n}^{1/2},
+ \qquad
+ \|\widehat\Sigma_r-\Sigma_r\|_{\infty,\mathcal I^2}
+ \le C\rho_r^2a_{r,n}^{1/2}\quad\hbox{on }\mathcal E_{r,n},
+\]
+and, for all grid points \(g,g'\),
+\[
+ d_r(g,g')^2+\widehat d_r(g,g')^2
+ \le C\rho_r^2|g-g'|\quad\hbox{on }\mathcal E_{r,n}.
+\]
+Moreover the oracle summands have deterministic envelopes \(Cn_D^{-1}\) for
+rank one, and \(CK_T^{-1}\) and \(Cn_D^{-1}\) for target-pre and donor
+patients when \(r\ge2\).  If \(p_{\mathcal G}=2|\mathcal G|\), then for every
+\(u\in[h_{N_0,K_T,K_D},\bar\tau]\),
+\[
+ P\left\{
+ \max_{\substack{g,g'\in\mathcal G\\|g-g'|\le u}}
+ |Z_r(g)-Z_r(g')|>
+ C\rho_r\left[\{u\log(ep_{\mathcal G})\}^{1/2}
+ +m^{-1/2}\log(ep_{\mathcal G})\right]\right\}
+ \le 2p_{\mathcal G}^{-4}.
+\]
+The empirical semimetric assertion uses the explicitly defined branchwise
+multiplier coefficients; it does not assert differentiability of the total
+hard-switched map across a cutoff, and it permits singular covariance and
+zero-variance coordinates.
+\end{lemma}
+\begin{proof}
+\textbf{Proof.}
+Write \(Z_r=\sum_iL_i\).  The pooled linearization gives \(\|L_i\|_\infty\le Cn_D^{-1}\) for \(r=1\).  For \(r\ge2\), the stabilized transfer gives
+\[
+ \|L_i\|_\infty\le
+ \begin{cases}
+ CK_T^{-1},&i\text{ is target-pre},\\
+ Cn_D^{-1},&i\text{ is a donor patient}.
+ \end{cases}                                             \tag{1}
+\]
+
+For rank one the pooled formulas are
+\[
+ \Sigma_1(s,t)=\frac{s_1(s)s_1(t)}{n_D}
+ \int_0^{s\wedge t}\frac{\lambda_1(u)}{H_D(u)}\,du,
+\]
+\[
+ \widehat\Sigma_1(s,t)=\widehat S_D(s-)\widehat S_D(t-)
+ \int_0^{s\wedge t}\frac{J_Y(u)}{Y(u)^2}\,dN(u).       \tag{2}
+\]
+On \(\{Y(\bar\tau)\ge n_Ds_-g_-/2\}\), substitute \(dN=dM+Y\lambda_1du\).  Predictable isometry, the ordered risk-process maximal inequality, and the pooled expansion imply
+\[
+ E\{\rho_1^{-2}\|\widehat\Sigma_1-\Sigma_1\|_\infty\}
+ \le Cn_D^{-1/2}.                                       \tag{3}
+\]
+The complement is exponentially small and the empty-risk convention bounds (2), so (3) is uniform under non-identical donor censoring.
+
+Now suppose \(r\ge2\), and use the measurable event \(\mathcal M_{r,n}\) constructed in the stabilized-transfer proof.  On that event, all population-to-observed and one-replacement covariance segments lie in one fixed-gap neighborhood.  For the coordinate-free regular prediction map \(F\), the projector resolvent identity, the positive-square-root Sylvester equation, and the inverse-Gram identity give, without selecting a Lipschitz eigenvector frame,
+\[
+ E\bigl[\|D\widehat F-DF\|_{\mathrm{op}}
+ \mathbf1\{\mathcal M_{r,n}\}\bigr]
+ \le C\{K_T^{-1/2}+n_D^{-1/2}+\eta_D(K_D)\}.           \tag{4}
+\]
+For a stabilized input of size \(k\), put \(H_k=S^0G\) and
+\[
+ V_k(s,t)=S^0(s)S^0(t)\int_0^{s\wedge t}
+ \frac{\lambda^0(u)}{H_k(u)}\,du,
+\]
+\[
+ \widehat V_k(s,t)=k\widehat S_k^\dagger(s-)
+ \widehat S_k^\dagger(t-)
+ \int_0^{s\wedge t}\{Y_k^\dagger(u)\}^{-2}\,dN_k(u). \tag{5}
+\]
+After substituting \(dN_k=dM_k+Y_k\lambda^0du\), clipping bounds every inverse risk on every dataset.  Predictable isometry and the stabilized cell expansion give
+\[
+ E\|\widehat V_k-V_k\|_{\infty,\mathcal I^2}\le Ck^{-1/2}. \tag{6}
+\]
+Composing (4)--(6), summing the target and donor covariance blocks, and using the deterministic bias bound yields
+\[
+ E\left[\rho_r^{-2}
+ \|\widehat\Sigma_r-\Sigma_r\|_\infty
+ \mathbf1\{\mathcal M_{r,n}\}\right]
+ \le Ca_{r,n}.                                          \tag{7}
+\]
+
+We next control the complement pointwise, rather than multiplying its probability by an unconditional moment.  On every dataset assigned to the regular branch, the hard thresholds and stabilized coefficients give
+\[
+ \|\widehat\Sigma_r\|_\infty\le C\rho_r^2.            \tag{8}
+\]
+On the pooled fallback each of the \(n_D\) coefficients has supremum norm at most one, hence
+\[
+ \|\widehat\Sigma_r\|_\infty\le n_D.                  \tag{9}
+\]
+Equation (1) also gives \(\|\Sigma_r\|_\infty\le C\rho_r^2\), and \(\rho_r^2\ge n_D^{-1}\).  Therefore, on every dataset,
+\[
+ \rho_r^{-2}\|\widehat\Sigma_r-\Sigma_r\|_\infty
+ \mathbf1\{\mathcal M_{r,n}^c\}
+ \le C(1+n_D^2)\mathbf1\{\mathcal M_{r,n}^c\}.        \tag{10}
+\]
+The exponential margin bound implies
+\[
+ E[\text{left side of (10)}]
+ \le Cn_D^2e^{-cn_D}=o(n_D^{-1/2}).                    \tag{11}
+\]
+Thus (11) is absorbed by the existing \(n_D^{-1/2}\) term in \(a_{r,n}\).  Combining (3), (7), and (11) proves
+\[
+ E\{\rho_r^{-2}\|\widehat\Sigma_r-\Sigma_r\|_\infty\}
+ \le Ca_{r,n}.                                          \tag{12}
+\]
+Markov's inequality at level \(a_{r,n}^{1/2}\), intersected with \(\mathcal M_{r,n}\) for \(r\ge2\), supplies a measurable covariance event with complement probability at most \(Ca_{r,n}^{1/2}\) and covariance error at most \(C\rho_r^2a_{r,n}^{1/2}\).
+
+For the semimetric, let \(J=(g,g']\) be a grid interval, and let \(N_T(J)\) and \(N_D(J)\) count target-pre and donor failures, omitting \(N_T\) at rank one.  Hazard smoothness gives
+\[
+ EN_T(J)\le LK_T|J|,
+ \qquad EN_D(J)\le Ln_D|J|.                             \tag{13}
+\]
+The Bernoulli exponential-moment inequality and a union bound over the finite grid give a measurable event on which, simultaneously over all such intervals,
+\[
+ N_T(J)\le CK_T(|J|+h),
+ \qquad N_D(J)\le Cn_D(|J|+h),                           \tag{14}
+\]
+and whose complement is at most \(C|\mathcal G|^2e^{-cmh}\).  Since \(h\asymp\rho_r^{1/q_\beta}\), \(q_\beta>3/2\), and \(\rho_r\asymp m^{-1/2}\), this probability is bounded by \(Ca_{r,n}^{1/2}\) on every sufficiently large three-dimensional tail.
+
+On the intersection with the covariance event and \(\mathcal M_{r,n}\), the empirical coefficients remain on the regular branch.  Smooth coefficient changes contribute \(C\rho_r^2|g-g'|^2\); the failures in \(J\), (1), and (14) contribute
+\[
+ C\{K_T^{-2}N_T(J)+n_D^{-2}N_D(J)\}.
+\]
+For distinct knots \(|g-g'|\ge h\), so
+\[
+ \widehat d_r(g,g')^2\le C\rho_r^2|g-g'|.              \tag{15}
+\]
+Taking expectations in the same calculation yields \(d_r(g,g')^2\le C\rho_r^2|g-g'|\).  This intersection is the asserted measurable \(\mathcal E_{r,n}\).
+
+Finally, every oracle increment is a sum of independent centered variables, has variance at most \(C\rho_r^2|g-g'|\), and has summand envelope at most \(C\rho_rm^{-1/2}\).  Bernstein's exponential-moment calculation gives
+\[
+ P\{|Z_r(g)-Z_r(g')|>x\}
+ \le2\exp\left[-c\min\left\{
+ \frac{x^2}{\rho_r^2|g-g'|},
+ \frac{x\sqrt m}{\rho_r}\right\}\right].             \tag{16}
+\]
+Insert
+\[
+ x=C\rho_r\left[\{u\log(ep_{\mathcal G})\}^{1/2}
+ +m^{-1/2}\log(ep_{\mathcal G})\right]
+\]
+and take a union bound over at most \(p_{\mathcal G}^2\) signed pairs.  Enlarging \(C\) gives the stated \(2p_{\mathcal G}^{-4}\) bound.  No variance was inverted. \(\square\)
+\end{proof}
+\par\smallskip\noindent \textit{Justification.} The measurable margin event and pointwise fallback covariance bound make the conditional covariance and semimetric transfer valid on every dataset branch. \textit{Gap.} Unconditional multiplier moments alone cannot be multiplied by a rare-event probability; a pointwise polynomial envelope is needed on the margin complement. \textit{Consumer.} It supplies the covariance, entropy, and modulus event used in the conditional Gaussian comparison.
+
+\section{Interpretation}
+
+The causal target is the missing post-control curve, while the functional-PCR curve and multiplier band are observed-data procedures. Within the positive-pre-Gram exact-rank class, rank one removes the loading channel and higher rank retains it. Across the larger closure, a strong donor contrast singular value can coexist with a vanishing target-pre Gram, making opposite target loadings nearly observationally indistinguishable while their post-control curves remain separated. Therefore donor-rank detection is not a substitute for target-relevant pre-period strength, but this information-theoretic statement does not attribute an invalid band claim to any PCR or HSVT method.
+
+\section*{Technical internal limitation (diagnostic only)}
+
+For fixed \(r\ge2\), the proved unrestricted conclusion is only \(c\rho_r\le W_r^*\le C\{\rho_r+\eta_D(K_D)\}\). The exponential risk-exhaustion term is an estimator-specific upper allowance; no matching \(\eta_D\) converse and no estimator that removes it uniformly over every relative-growth sequence are proved. Thus tightness outside \(\eta_D(K_D)=O(\rho_r)\) remains unresolved. The hard-switch analysis gives total-map derivative and finite-replacement bounds only on the exponentially likely regular-margin event; off that event it uses separately controlled branchwise coefficients and a bounded switching remainder. Exact fixed rank, independent censoring, a fixed horizon, hazard smoothness, bounded loadings and contrast spectrum, and a positive pre-period Gram remain assumptions of the positive result.
+
+\section{Honest scope}
+
+Honesty and expected width are evaluated at the same sample-size triple, with a deterministic coverage-error allowance vanishing uniformly whenever \(\min\{N_0,K_T,K_D\}\to\infty\), and no balanced-growth restriction. Over the strong exact-rank class, the rank-one frontier is sharp and the higher-rank theorem gives the unrestricted bracket, becoming sharp only in the declared \(\eta_D=O(\rho_r)\) subregimes. Over the separately normalized rank-at-most-two closure without a common positive pre-period Gram, minimax maximal expected width is \(\Theta(1)\), including on a donor-visible known-rank-two subclass inside the Han--Shah Theorem~1 factorization-and-span model. This is a generic boundary on what donor-rank information can establish, not a claim that Agarwal--Shah--Shen or another cited prediction method licenses or is refuted by shrinking bands. Adaptation may still be possible on a smaller class with an explicit target-pre strength separation.
+
+\begin{thebibliography}{99}
+
+  \bibitem{HanShah2025SSC} Jessy Xinyi Han and Devavrat Shah. Synthetic Survival Control: Extending Synthetic Controls for When-If Decision. arXiv:2511.14133, 2025.
+
+  \bibitem{AgarwalShahShen2025PCR} Anish Agarwal, Devavrat Shah, and Dennis Shen. On Model Identification and Out-of-Sample Prediction of PCR: Applications to Synthetic Controls. Journal of Machine Learning Research, 26, 2025; arXiv:2010.14449.
+
+  \bibitem{DoblerPaulyScheike2019} Dennis Dobler, Markus Pauly, and Thomas H. Scheike. Confidence Bands for Multiplicative Hazards Models: Flexible Resampling Approaches. Biometrics, 75(3):906--916, 2019.
+
+  \bibitem{CattaneoFengTitiunik2021} Matias D. Cattaneo, Yingjie Feng, and Rocio Titiunik. Prediction Intervals for Synthetic Control Methods. Journal of the American Statistical Association, 116(536):1865--1880, 2021.
+
+  \bibitem{ImbensViviano2026} Guido W. Imbens and Davide Viviano. Identification and Inference for Synthetic Controls with Confounding. arXiv:2312.00955, 2026 version.
+
+  \bibitem{CarpentierKloppLofflerNickl2018} Alexandra Carpentier, Olga Klopp, Matthias Löffler, and Richard Nickl. Adaptive Confidence Sets for Matrix Completion. Bernoulli, 24(4A):2429--2460, 2018.
+
+  \bibitem{ChenFanMaYan2019} Yuxin Chen, Jianqing Fan, Cong Ma, and Yuling Yan. Inference and Uncertainty Quantification for Noisy Matrix Completion. Proceedings of the National Academy of Sciences, 116(46):22931--22937, 2019.
+
+  \bibitem{GoldsmithGrevenCrainiceanu2013} Jeff Goldsmith, Sonja Greven, and Ciprian M. Crainiceanu. Corrected Confidence Bands for Functional Data Using Principal Components. Biometrics, 69(1):41--51, 2013.
+
+  \bibitem{CurthPoonNoriGonzalez2024} Alicia Curth, Hoifung Poon, Aditya V. Nori, and Javier González. Cautionary Tales on Synthetic Controls in Survival Analyses. Proceedings of Machine Learning Research, 236:143--159, 2024.
+
+  \bibitem{AtheyBayatiDoudchenkoImbensKhosravi2021} Susan Athey, Mohsen Bayati, Nikolay Doudchenko, Guido W. Imbens, and Khashayar Khosravi. Matrix Completion Methods for Causal Panel Data Models. Journal of the American Statistical Association, 116(536):1716--1730, 2021.
+
+  \bibitem{KaplanMeier1958} Edward L. Kaplan and Paul Meier. Nonparametric Estimation from Incomplete Observations. Journal of the American Statistical Association, 53(282):457--481, 1958.
+
+  \bibitem{AndersenBorganGillKeiding1993} Per Kragh Andersen, Ørnulf Borgan, Richard D. Gill, and Niels Keiding. Statistical Models Based on Counting Processes. Springer, 1993.
+
+  \bibitem{RobinsFinkelstein2000} James M. Robins and Dianne M. Finkelstein. Correcting for Noncompliance and Dependent Censoring in an AIDS Clinical Trial with Inverse Probability of Censoring Weighted Log-Rank Tests. Biometrics, 56(3):779--788, 2000.
+
+  \bibitem{ChernozhukovWuthrichZhu2021} Victor Chernozhukov, Kaspar Wüthrich, and Yinchu Zhu. An Exact and Robust Conformal Inference Method for Counterfactual and Synthetic Controls. Journal of the American Statistical Association, 116(536):1849--1864, 2021.
+
+  \bibitem{Tsybakov2009Nonparametric} Alexandre B. Tsybakov. Introduction to Nonparametric Estimation. Springer Series in Statistics. Springer, New York, 2009. DOI: 10.1007/b13794.
+
+  \bibitem{ChernozhukovChetverikovKato2014} V. Chernozhukov, D. Chetverikov, and K. Kato (2014), Gaussian Approximation of Suprema of Empirical Processes, Annals of Statistics 42(4):1564--1597, DOI:10.1214/14-AOS1230.
+
+  \bibitem{PowersStormer1970} Robert T. Powers and Erling St{\o}rmer. Free States of the Canonical Anticommutation Relations. Communications in Mathematical Physics, 16:1--33, 1970. DOI: 10.1007/BF01645492.
+
+\end{thebibliography}
+
+\end{document}

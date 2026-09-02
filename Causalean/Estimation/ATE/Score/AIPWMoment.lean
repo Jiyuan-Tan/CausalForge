@@ -18,6 +18,7 @@ Authors: Jiyuan Tan
 
 import Causalean.Estimation.ATE.Setup
 import Mathlib.MeasureTheory.Function.LpSpace.Basic
+import Causalean.Tactic.Attr
 
 /-!
 Defines the AIPW score objects used throughout the back-door ATE estimation
@@ -54,6 +55,18 @@ def projA : γ × Bool × ℝ → Bool := fun z => z.2.1
 /-- Projection `(x, a, y) ↦ y`. -/
 def projY : γ × Bool × ℝ → ℝ := fun z => z.2.2
 
+/-- The covariate projection of an observed data triple returns its covariate component. -/
+@[causal_defs_simps]
+lemma projX_apply (z : γ × Bool × ℝ) : projX z = z.1 := rfl
+
+/-- The treatment projection of an observed data triple returns its treatment component. -/
+@[causal_defs_simps]
+lemma projA_apply (z : γ × Bool × ℝ) : projA z = z.2.1 := rfl
+
+/-- The outcome projection of an observed data triple returns its outcome component. -/
+@[causal_defs_simps]
+lemma projY_apply (z : γ × Bool × ℝ) : projY z = z.2.2 := rfl
+
 /-- Real-valued indicator of `{a = true}` viewed as a function of the data. -/
 noncomputable def indA (z : γ × Bool × ℝ) : ℝ :=
   if projA z = true then 1 else 0
@@ -67,6 +80,20 @@ noncomputable def aipwMoment
     + (indA z / e_fn (projX z)) * (projY z - μ_fn true (projX z))
     - ((1 - indA z) / (1 - e_fn (projX z))) * (projY z - μ_fn false (projX z))
     - θ
+
+/-- The augmented inverse-probability-weighting moment at a data point, a nuisance pair, and a
+parameter value is the contrast of the two outcome regressions at the covariate, plus the
+treated inverse-propensity-weighted outcome residual, minus the control inverse-propensity-weighted
+outcome residual, minus the parameter value. -/
+@[causal_defs_simps]
+lemma aipwMoment_eq
+    (z : γ × Bool × ℝ) (μ_fn : Bool → γ → ℝ) (e_fn : γ → ℝ) (θ : ℝ) :
+    aipwMoment z μ_fn e_fn θ =
+      (μ_fn true (projX z) - μ_fn false (projX z))
+        + (indA z / e_fn (projX z)) * (projY z - μ_fn true (projX z))
+        - ((1 - indA z) / (1 - e_fn (projX z))) * (projY z - μ_fn false (projX z))
+        - θ :=
+  rfl
 
 /-- The AIPW influence function at the truth:
 `ψ_AIPW(z) := m_AIPW(η₀, z, θ₀)` with `η₀ = (μ_val, e_val)`. -/
@@ -91,6 +118,8 @@ structure NuisanceVec (γ : Type*) [MeasurableSpace γ] where
   e_fn : γ → ℝ
   μ_meas : ∀ b, Measurable (μ_fn b)
   e_meas : Measurable e_fn
+
+attribute [fun_prop] NuisanceVec.μ_meas NuisanceVec.e_meas
 
 namespace NuisanceVec
 

@@ -184,7 +184,7 @@ theorem map_bind_bind_map_proj {α β γ δ : Type*}
     (hker : Measurable fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b))
     (hπ : Measurable π) (hπg : ∀ a b c, π (g a b c) = a) :
     (m.bind fun a => (κ₁ a).bind fun b => (κ₂ a b).map (g a b)).map π = m := by
-  have hdπ : Measurable (fun z => Measure.dirac (π z)) := Measure.measurable_dirac.comp hπ
+  have hdπ : Measurable (fun z => Measure.dirac (π z)) := by fun_prop
   have key : ∀ a, ((κ₁ a).bind fun b => (κ₂ a b).map (g a b)).map π = Measure.dirac a := by
     intro a
     have hinner : (fun b => ((κ₂ a b).map (g a b)).map π) = fun _ => Measure.dirac a := by

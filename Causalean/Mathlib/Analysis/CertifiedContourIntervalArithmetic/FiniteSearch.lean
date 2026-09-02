@@ -102,6 +102,7 @@ theorem finiteRefine_width {n : ℕ} {candidates : Fin (n + 1) → RatInterval}
 
 /-- Finite refinement is measurable as a function of a finite vector of
 rational interval candidates. -/
+@[fun_prop]
 theorem measurable_finiteRefine {n : ℕ} (ε : PosRat) :
     Measurable (fun candidates : Fin (n + 1) → RatInterval => finiteRefine candidates ε) := by
   letI : Countable RatInterval := countable_ratInterval
@@ -174,6 +175,7 @@ theorem leastScoreIndex_tie {n : ℕ} (score : Fin (n + 1) → ℝ)
 real scores, the smallest index attaining the least score is measurable with respect to the
 Borel σ-algebra on the score vector space and the discrete σ-algebra on the finite index
 set](goal). -/
+@[fun_prop]
 theorem measurable_leastScoreIndex {n : ℕ} :
     Measurable (leastScoreIndex : (Fin (n + 1) → ℝ) → Fin (n + 1)) := by
   apply measurable_to_countable'
@@ -223,17 +225,19 @@ theorem measurable_leastScoreIndex {n : ℕ} :
 
 /-- A finite least-success search is measurable when every individual success
 event is measurable. -/
+@[fun_prop]
 theorem measurable_leastTrue {Ω : Type*} [MeasurableSpace Ω] {n : ℕ}
     (accept : Fin (n + 1) → Ω → Bool)
     (haccept : ∀ i, Measurable (accept i)) :
     Measurable (fun ω => leastTrue (fun i => accept i ω)) := by
   have hvector : Measurable (fun ω => fun i => accept i ω) :=
-    measurable_pi_lambda _ haccept
+    by fun_prop
   apply (show Measurable (leastTrue : (Fin (n + 1) → Bool) → Fin (n + 1)) from ?_).comp hvector
   exact fun s _ => (Set.to_countable _).measurableSet
 
 /-- The rational infimum enclosure is measurable as a function of its finite
 rational node vector. -/
+@[fun_prop]
 theorem measurable_infEnclosure {n : ℕ} (hn : 0 < n) (L : ℚ) (hL : 0 ≤ L) :
     Measurable (fun nodes : Fin (n + 1) → RatInterval =>
       CircleMesh.infEnclosure
@@ -243,6 +247,7 @@ theorem measurable_infEnclosure {n : ℕ} (hn : 0 < n) (L : ℚ) (hL : 0 ≤ L) 
 
 /-- The rational supremum enclosure is measurable as a function of its finite
 rational node vector. -/
+@[fun_prop]
 theorem measurable_supEnclosure {n : ℕ} (hn : 0 < n) (L : ℚ) (hL : 0 ≤ L) :
     Measurable (fun nodes : Fin (n + 1) → RatInterval =>
       CircleMesh.supEnclosure
@@ -252,6 +257,7 @@ theorem measurable_supEnclosure {n : ℕ} (hn : 0 < n) (L : ℚ) (hL : 0 ≤ L) 
 
 /-- The rational complex integral enclosure is measurable as a function of its
 finite node rectangles. -/
+@[fun_prop]
 theorem measurable_integralEnclosure {n : ℕ} (hn : 0 < n) (L : ℚ) (hL : 0 ≤ L) :
     Measurable (fun nodes : Fin (n + 1) → ComplexRatInterval =>
       CircleMesh.integralEnclosure

@@ -154,8 +154,24 @@ lemma measurableSet_armGroupEvent (group : Omega -> kappa) (arm : Omega -> Bool)
   exact (measurableSet_groupEvent group hgroup k).inter
     ((measurableSet_singleton a).preimage harm)
 
+/-- Restricting a measurable function to a joint arm/group cell — keeping its values on the
+cell and setting it to zero outside — leaves it measurable, whenever the group and arm labels
+are measurable.
+
+This is the side-condition-free form of `Measurable.indicator` for these cells: it discharges
+the cell's own measurability, so the function-property tactics can apply it with nothing left
+over to prove. -/
+@[fun_prop]
+lemma measurable_armGroupEvent_indicator {beta : Type*} [MeasurableSpace beta] [Zero beta]
+    (group : Omega -> kappa) (arm : Omega -> Bool)
+    (hgroup : Measurable group) (harm : Measurable arm) (a : Bool) (k : kappa)
+    {f : Omega -> beta} (hf : Measurable f) :
+    Measurable ((armGroupEvent group arm a k).indicator f) :=
+  hf.indicator (measurableSet_armGroupEvent group arm hgroup harm a k)
+
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [the coordinatewise
 finite design measurable](goal). -/
+@[fun_prop]
 lemma measurable_sampleDesign {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (hgroup : Measurable group) (harm : Measurable arm) :
     Measurable (sampleDesign (n := n) group arm) := by
@@ -168,6 +184,7 @@ lemma measurable_sampleDesign {n : Nat} (group : Omega -> kappa)
 
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [each fixed
 arm/group count measurable on a finite product sample](goal). -/
+@[fun_prop]
 lemma measurable_groupArmCount {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (hgroup : Measurable group) (harm : Measurable arm)
     (a : Bool) (k : kappa) :
@@ -180,6 +197,7 @@ lemma measurable_groupArmCount {n : Nat} (group : Omega -> kappa)
 
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [each fixed group
 count measurable on the finite product sample space](goal). -/
+@[fun_prop]
 lemma measurable_groupCount {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (hgroup : Measurable group) (harm : Measurable arm)
     (k : kappa) :
@@ -201,8 +219,24 @@ lemma measurableSet_usableGroup {n : Nat} (group : Omega -> kappa)
   exact (measurableSet_lt measurable_const hfalse).inter
     (measurableSet_lt measurable_const htrue)
 
+/-- A quantity defined by two branches, selected according to whether a fixed empirical group
+has both arms represented, is measurable whenever both branches are and the group and arm
+labels are measurable.
+
+This is the side-condition-free form of `Measurable.ite` for the usable-group test. -/
+@[fun_prop]
+lemma measurable_usableGroup_ite {n : Nat} {beta : Type*} [MeasurableSpace beta]
+    (group : Omega -> kappa) (arm : Omega -> Bool)
+    (hgroup : Measurable group) (harm : Measurable arm) (k : kappa)
+    [DecidablePred (fun z : Fin n -> Omega => usableGroup group arm z k)]
+    {f g : (Fin n -> Omega) -> beta} (hf : Measurable f) (hg : Measurable g) :
+    Measurable (fun z : Fin n -> Omega =>
+      if usableGroup group arm z k then f z else g z) :=
+  Measurable.ite (measurableSet_usableGroup group arm hgroup harm k) hf hg
+
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [the total occupancy
 in empirically usable groups measurable](goal). -/
+@[fun_prop]
 lemma measurable_usableGroupTotal {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (hgroup : Measurable group) (harm : Measurable arm) :
     Measurable (fun z : Fin n -> Omega => usableGroupTotal group arm z) := by
@@ -215,6 +249,7 @@ lemma measurable_usableGroupTotal {n : Nat} (group : Omega -> kappa)
 
 /-- A [measurable outcome](hyp:hY) makes [each arm/group-centered residual
 measurable](goal). -/
+@[fun_prop]
 lemma measurable_armGroupResidual (Y : Omega -> Real)
     (center : Bool -> kappa -> Real) (hY : Measurable Y) (a : Bool) (k : kappa) :
     Measurable (armGroupResidual Y center a k) := by
@@ -224,6 +259,7 @@ lemma measurable_armGroupResidual (Y : Omega -> Real)
 
 /-- [Measurable group labels, arm labels, and outcomes](hyp:hgroup,harm,hY) make
 [each residual restricted to its own arm/group cell measurable](goal). -/
+@[fun_prop]
 lemma measurable_supportedArmGroupResidual (group : Omega -> kappa)
     (arm : Omega -> Bool) (Y : Omega -> Real)
     (center : Bool -> kappa -> Real) (hgroup : Measurable group)
@@ -236,6 +272,7 @@ lemma measurable_supportedArmGroupResidual (group : Omega -> kappa)
 /-- [Measurable group labels, arm labels, and outcomes](hyp:hgroup,harm,hY) make
 [each arm/group residual sum measurable on the finite product sample
 space](goal). -/
+@[fun_prop]
 lemma measurable_armResidualSum {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (Y : Omega -> Real)
     (center : Bool -> kappa -> Real) (hgroup : Measurable group)
@@ -252,6 +289,7 @@ lemma measurable_armResidualSum {n : Nat} (group : Omega -> kappa)
 /-- [Measurable group labels, arm labels, and outcomes](hyp:hgroup,harm,hY) make
 [each zero-safe arm/group residual mean measurable on the finite product sample
 space](goal). -/
+@[fun_prop]
 lemma measurable_armResidualMean {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (Y : Omega -> Real)
     (center : Bool -> kappa -> Real) (hgroup : Measurable group)
@@ -273,6 +311,7 @@ lemma measurable_armResidualMean {n : Nat} (group : Omega -> kappa)
 /-- [Measurable group labels, arm labels, and outcomes](hyp:hgroup,harm,hY) make
 [the zero-safe occupancy-weighted residual measurable on the finite product
 sample space](goal). -/
+@[fun_prop]
 lemma measurable_occupancyWeightedResidual {n : Nat} (mu : Measure Omega)
     (group : Omega -> kappa) (arm : Omega -> Bool) (Y : Omega -> Real)
     (center : Bool -> kappa -> Real) (hgroup : Measurable group)
@@ -310,6 +349,7 @@ lemma measurable_occupancyWeightedResidual {n : Nat} (mu : Measure Omega)
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [the zero-safe
 reciprocal usable occupancy measurable on the finite product sample
 space](goal). -/
+@[fun_prop]
 lemma measurable_inverseUsableGroupTotal {n : Nat} (group : Omega -> kappa)
     (arm : Omega -> Bool) (hgroup : Measurable group) (harm : Measurable arm) :
     Measurable (inverseUsableGroupTotal (n := n) group arm) := by
@@ -327,6 +367,7 @@ lemma measurable_inverseUsableGroupTotal {n : Nat} (group : Omega -> kappa)
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [the zero-safe
 occupancy design variance factor measurable on the finite product sample
 space](goal). -/
+@[fun_prop]
 lemma measurable_occupancyDesignVarianceFactor {n : Nat}
     (group : Omega -> kappa) (arm : Omega -> Bool)
     (hgroup : Measurable group) (harm : Measurable arm) :

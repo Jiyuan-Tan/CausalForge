@@ -6,6 +6,7 @@
 // guard, supersession preservation, escalation-log consumption), resolved-OEQ
 // re-application, the carry plan, lemma/member carry, stale-agent recovery, and
 // required-target recovery from the prior published core.
+import { remapResolvedDependencies } from "../core/oeq_edges.js";
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -45,6 +46,13 @@ import {
  * mathematical source is unchanged. The next successful carry rewrites them in the
  * canonical format, avoiding a one-time re-answer across existing runs. */
 export function oeqSourceFingerprintMatches(s: CoreStatement, fingerprint: string): boolean {
+  const canonical = oeqSourceFingerprint(s);
+  if (fingerprint === canonical) return true;
+  // Early sealed-residual writers embedded the fingerprint as JSON and lost one
+  // layer of TeX backslash escaping.  Match that representation only against the
+  // complete current canonical fingerprint; this is not a fuzzy statement or
+  // dependency comparison, so a genuinely stale question still reopens.
+  if (fingerprint === canonical.replaceAll("\\\\", "\\")) return true;
   try {
     const prior = JSON.parse(fingerprint) as { kind?: unknown; statement?: unknown; depends_on?: unknown };
     if (prior.kind !== s.kind || prior.statement !== s.statement || !Array.isArray(prior.depends_on)) return false;
@@ -93,6 +101,9 @@ export interface SolveRoundContext {
   prev: WorkingState | null;
   next: WorkingState;
   validIds: Set<string>;
+  /** Prior records the carry plan deliberately retired; self-containment must
+   * never resurrect them merely because a transient output cites their id. */
+  droppedCarryIds: Set<string>;
   sourceById: Map<string, CoreStatement>;
   persistedOeqReplacements: Map<string, string>;
   carriedMembers: number;
@@ -257,7 +268,7 @@ export async function assembleSolveContext(args: {
     Object.entries(prev?.sealed_open_oeqs ?? {}).filter(([id, fingerprint]) => {
       const source = sealCatalog.get(id);
       return !requiredCoreTargets.has(id) && source?.kind === "openendedquestion" &&
-        oeqSourceFingerprint(source) === fingerprint;
+        oeqSourceFingerprintMatches(source, fingerprint);
     }),
   );
   const next: WorkingState = {
@@ -265,7 +276,11 @@ export async function assembleSolveContext(args: {
     proposal_revision: currentProposalRevision,
     // The GLOBAL basis this round's proofs are solved against; a later APPLIED symbol
     // re-definition invalidates every carried proof (see d0_working.symbol_basis).
-    symbol_basis: symbolBasis(proto),
+    symbol_basis: symbolBasis(
+      proto,
+      Object.values(prev?.solved ?? {}).flatMap((record) => record.node ? [record.node] : []),
+      prev?.resolved_oeqs,
+    ),
     escalation_entries_consumed: escalationLog.length,
     solved: {},
     resolved_oeqs: {},
@@ -395,20 +410,62 @@ export async function assembleSolveContext(args: {
   // proto still name the OEQ, but after a durable resolution they semantically
   // depend on its theorem answer. Normalize that edge for the reuse calculation,
   // otherwise every consumer is needlessly invalidated by the absent OEQ record.
-  if (persistedOeqReplacements.size > 0) {
-    const protoWithResolvedDeps: Core = {
-      ...proto,
-      statements: proto.statements.map((s) => ({
-        ...s,
-        depends_on: s.depends_on.map((d) => persistedOeqReplacements.get(d) ?? d),
-      })),
-    };
-    validIds = computeValidNodes(prev, protoWithResolvedDeps);
+  // Only validated mappings above define the effective statement graph and symbol
+  // referent. Run ONE canonical validity pass over that graph: intersecting a raw
+  // Q-dependent pass with the normalized Q→T pass makes an initial false result
+  // unrecoverable and needlessly reopens every direct consumer on every restart.
+  const protoQuestionDeps = (id: string): readonly string[] | undefined =>
+    proto.statements.find((statement) => statement.id === id)?.depends_on;
+  const protoForResolutionValidity: Core = persistedOeqReplacements.size > 0
+    ? {
+        ...proto,
+        statements: proto.statements.map((statement) => ({
+          ...statement,
+          depends_on: remapResolvedDependencies(statement.id, statement.depends_on, persistedOeqReplacements, protoQuestionDeps),
+        })),
+      }
+    : proto;
+  const resolutionProbe = prev === null ? null : structuredClone(prev);
+  if (resolutionProbe !== null) {
+    resolutionProbe.resolved_oeqs = structuredClone(next.resolved_oeqs);
+    // Snapshots carry the proof's historical dependency edges for transitive
+    // invalidation. Once Q→T is durable, a stored Q edge denotes that same T
+    // endpoint; leaving it raw makes the still-present (but intentionally
+    // unsolved) frozen Q poison an otherwise current consumer forever. Agent
+    // catalog nodes need the same normalization to avoid a false proto collision.
+    // This probe only feeds `computeValidNodes` over a throwaway clone. A record's OWN
+    // raw Q edge must stay as persisted here: rewriting it changes the snapshot basis
+    // the proof argued and the snapshot-basis invariant then reads the answer as stale
+    // every round. Rendered/dispatch cores use the shared Q→T rule (core/oeq_edges.ts).
+    for (const [recordId, record] of Object.entries(resolutionProbe.solved)) {
+      const remap = (dependency: string): string => {
+        const target = persistedOeqReplacements.get(dependency);
+        return target === undefined || target === recordId ? dependency : target;
+      };
+      if (record.node !== undefined) {
+        record.node.depends_on = record.node.depends_on.map(remap);
+      }
+      if (record.snapshot.depends_on !== undefined) {
+        record.snapshot.depends_on = record.snapshot.depends_on.map(remap);
+      }
+    }
   }
+  const carryPrev = resolutionProbe;
+  validIds = computeValidNodes(carryPrev, protoForResolutionValidity);
+  const basisCarriedStatements = Object.values(carryPrev?.solved ?? {})
+    .flatMap((record) => record.node ? [record.node] : []);
+  const effectiveResolutionBasis = symbolBasis(proto, basisCarriedStatements, next.resolved_oeqs);
+  next.symbol_basis = effectiveResolutionBasis;
   if (persistedOeqReplacements.size > 0) {
+    core.symbols = core.symbols.map((symbol) => ({
+      ...symbol,
+      ...(symbol.ref !== undefined
+        ? { ref: persistedOeqReplacements.get(symbol.ref) ?? symbol.ref }
+        : {}),
+    }));
     core.statements = core.statements
       .filter((s) => !persistedOeqReplacements.has(s.id))
-      .map((s) => ({ ...s, depends_on: s.depends_on.map((d) => persistedOeqReplacements.get(d) ?? d) }));
+      .map((s) => ({ ...s, depends_on: remapResolvedDependencies(s.id, s.depends_on, persistedOeqReplacements, protoQuestionDeps) }));
     // The core is rebuilt from the frozen proto, whose `used_by` still names the OEQ, so the
     // reverse edge needs the same remap the fresh-resolution path applies below.
     core.assumptions = core.assumptions.map((a) =>
@@ -419,12 +476,12 @@ export async function assembleSolveContext(args: {
       // target under the SAME id — which is the whole point: the question stays answered,
       // so the OEQ never returns to the frontier and no new answer id is invented.
       if (!validIds.has(theoremId)) continue;
-      const theorem = prev!.solved[theoremId];
+      const theorem = carryPrev!.solved[theoremId];
       core.statements.push({
         ...theorem.node!,
         proof_tex: theorem.proof_tex,
         status: solvedStatus(theorem.node!),
-        depends_on: theorem.node!.depends_on.map((d) => persistedOeqReplacements.get(d) ?? d),
+        depends_on: remapResolvedDependencies(theoremId, theorem.node!.depends_on, persistedOeqReplacements, protoQuestionDeps),
       });
     }
   }
@@ -433,12 +490,13 @@ export async function assembleSolveContext(args: {
   // executes this plan rather than re-deriving the predicate; `carryPlan.explain(id)`
   // answers "why did X vanish?" without tracing the assembly.
   const carryPlan = planCarry({
-    prev,
+    prev: carryPrev,
     protoIds: new Set(sourceById.keys()),
     validIds,
     resolutionTheoremIds,
     persistedOeqReplacements,
   });
+  const droppedCarryIds = new Set(carryPlan.ids("dropped"));
   // A dropped node leaves the working state with no record anywhere, so this is the
   // only chance to say so. Silence here is what made a lost theorem undiagnosable.
   for (const id of carryPlan.ids("dropped")) {
@@ -446,7 +504,7 @@ export async function assembleSolveContext(args: {
   }
 
   // Carry valid agent-added LEMMAS (not in the proto) into the assembled core + state.
-  for (const [id, rec] of Object.entries(prev?.solved ?? {})) {
+  for (const [id, rec] of Object.entries(carryPrev?.solved ?? {})) {
     const verdict = carryPlan.verdicts.get(id);
     if (rec.node && verdict?.fate === "carried" && verdict.as !== "proto-member") {
       // Resolved OEQ theorems were inserted above while replacing their source.
@@ -469,7 +527,7 @@ export async function assembleSolveContext(args: {
   // onto both changed behaviour in that overlap.
   for (const m of proto.statements) {
     if (validIds.has(m.id)) {
-      const rec = prev!.solved[m.id];
+      const rec = carryPrev!.solved[m.id];
       const cs = core.statements.find((s) => s.id === m.id);
       if (cs) {
         cs.proof_tex = rec.proof_tex;
@@ -477,7 +535,7 @@ export async function assembleSolveContext(args: {
       }
       next.solved[m.id] = rec;
       carriedMembers += 1;
-    } else if (prev?.solved[m.id] !== undefined && next.solved[m.id] === undefined) {
+    } else if (carryPrev?.solved[m.id] !== undefined && next.solved[m.id] === undefined) {
       // An INVALID frozen-member record still carries durable state later rounds
       // need: the reopen marker (`partial`) of a cited leaf awaiting revalidation,
       // and the node's hot partial proof bytes (its single repair basis). `next`
@@ -488,7 +546,7 @@ export async function assembleSolveContext(args: {
       // Carry it as PARTIAL debt (never reusable proof — `partial` outranks the cited
       // exemption at every discharge gate); a successful re-proof or revalidation
       // receipt overwrites this record within the round that discharges it.
-      next.solved[m.id] = { ...prev.solved[m.id], partial: true };
+      next.solved[m.id] = { ...carryPrev.solved[m.id], partial: true };
     }
   }
 
@@ -499,7 +557,7 @@ export async function assembleSolveContext(args: {
   // agent-added dependency closure as explicit to-prove targets. Actual OEQ
   // replacement theorems remain governed by the source->answer mapping above.
   const staleAgentById = new Map<string, WorkingState["solved"][string]>();
-  for (const [id, rec] of Object.entries(prev?.solved ?? {})) {
+  for (const [id, rec] of Object.entries(carryPrev?.solved ?? {})) {
     const verdict = carryPlan.verdicts.get(id);
     // `oeq-answer` joins `agent-node` here: a still-mapped but stale OEQ answer is
     // recovered as an ordinary to-prove target under its own id, rather than being
@@ -543,7 +601,14 @@ export async function assembleSolveContext(args: {
     // consumer is handled by the proto frontier rather than staleAgentById, so without
     // this edge the helper remains working-only and can never be revalidated. Explicit
     // required targets remain roots as before.
-    if (rec.node?.kind !== "lemma" || requiredCoreTargets.has(id) || frozenDependencyIds.has(id)) {
+    // `shelved` is an explicit publication/dispatch decision, not merely a render
+    // hint.  Do not immediately resurrect a rejected non-lemma as an independent
+    // root on the next resume.  It still enters through addStaleClosure when a live
+    // root actually depends on it, and an exact target deliberately reopens it.
+    const independentlyShelved = rec.shelved === true &&
+      !requiredCoreTargets.has(id) && !frozenDependencyIds.has(id);
+    if (!independentlyShelved &&
+        (rec.node?.kind !== "lemma" || requiredCoreTargets.has(id) || frozenDependencyIds.has(id))) {
       addStaleClosure(id);
     }
   }
@@ -644,6 +709,7 @@ export async function assembleSolveContext(args: {
     prev,
     next,
     validIds,
+    droppedCarryIds,
     sourceById,
     persistedOeqReplacements,
     carriedMembers,

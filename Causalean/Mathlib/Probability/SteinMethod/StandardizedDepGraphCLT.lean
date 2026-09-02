@@ -45,13 +45,9 @@ noncomputable def depGraph_div_const
   let φ : (A → ℝ) → (A → ℝ) := fun v k => v k / s
   let ψ : (B → ℝ) → (B → ℝ) := fun v k => v k / s
   have hφ : Measurable φ := by
-    exact measurable_pi_lambda φ fun k => by
-      have hk : Measurable (fun v : A → ℝ => v k) := measurable_pi_apply k
-      simpa [φ] using hk.div_const s
+    fun_prop
   have hψ : Measurable ψ := by
-    exact measurable_pi_lambda ψ fun k => by
-      have hk : Measurable (fun v : B → ℝ => v k) := measurable_pi_apply k
-      simpa [ψ] using hk.div_const s
+    fun_prop
   exact h.comp hφ hψ
 
 /-- Dependency-graph CLT wrapper when the linear variance floor holds at every index.

@@ -177,6 +177,7 @@ noncomputable def extendTianPrefix (H : SWIGGraph N) (D : Finset (SWIGNode N))
       (valuesUnionMk p.1 p.2)
 
 /-- Prefix extension is measurable. -/
+@[fun_prop]
 lemma measurable_extendTianPrefix (H : SWIGGraph N) (D : Finset (SWIGNode N))
     {n : ℕ} (hn : n < D.card) :
     Measurable (extendTianPrefix (Ω := Ω) H D hn) := by

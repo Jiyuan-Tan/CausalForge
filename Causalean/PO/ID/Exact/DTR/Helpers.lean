@@ -49,6 +49,7 @@ noncomputable def hb_step_proj (S : PODTRSystem P n δ γ) (k : ℕ) (h : k + 1 
   fun f j => f j.succ.succ
 
 /-- The projection from a stage's extended history to the previous history is measurable. -/
+@[fun_prop]
 lemma measurable_hb_step_proj (S : PODTRSystem P n δ γ) (k : ℕ) (h : k + 1 < n) :
     Measurable (S.hb_step_proj k h) := by
   apply measurable_pi_lambda
@@ -117,6 +118,7 @@ lemma indD_eq_zero_or_one (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
         exact indD_eq_zero_or_one S dbar k ω
 
 /-- `indD dbar k` is bounded by 1, hence integrable for finite `μ`. -/
+@[fun_prop]
 lemma indD_integrable (S : PODTRSystem P n δ γ)
     (dbar : Fin n → δ) (k : ℕ) [IsFiniteMeasure P.μ] :
     Integrable (S.indD dbar k) P.μ := by
@@ -281,6 +283,54 @@ lemma stronglyMeasurable_indicator_dVar_sigma_history (S : PODTRSystem P n δ γ
     exact measurable_const.indicator hev
   exact hmeas.stronglyMeasurable
 
+/-! #### Index-free corollaries of the `sigma_history` family
+
+The three lemmas above carry an index side condition (`k' ≤ m`, `k' < m`) that a
+function-property tactic cannot discharge, because its default discharger only
+looks for the hypothesis in the caller's context.  The corollaries below fix the
+index to the two positions that actually occur — the stage the bundle ends on and
+the stage just before it — so the bound is discharged by the statement itself and
+the goal is closed by a bare tactic call. -/
+
+/-- The state observed at the stage a history bundle ends on is measurable with
+respect to that history bundle's σ-algebra. -/
+@[fun_prop]
+lemma measurable_factualS_sigma_history_last (S : PODTRSystem P n δ γ)
+    (m : ℕ) (hm : m < n) :
+    Measurable[(S.historyBundle m hm).sigma] (S.factualS ⟨m, hm⟩) :=
+  S.measurable_factualS_sigma_history m hm ⟨m, hm⟩ (le_refl m)
+
+/-- The state observed one stage before the stage a history bundle ends on is
+measurable with respect to that history bundle's σ-algebra. -/
+@[fun_prop]
+lemma measurable_factualS_sigma_history_pred (S : PODTRSystem P n δ γ)
+    (m : ℕ) (hm : m + 1 < n) :
+    Measurable[(S.historyBundle (m + 1) hm).sigma]
+      (S.factualS ⟨m, Nat.lt_of_succ_lt hm⟩) :=
+  S.measurable_factualS_sigma_history (m + 1) hm ⟨m, Nat.lt_of_succ_lt hm⟩
+    (Nat.le_succ m)
+
+/-- The last treatment recorded in a history bundle is measurable with respect to
+that history bundle's σ-algebra. -/
+@[fun_prop]
+lemma measurable_factualD_sigma_history_last (S : PODTRSystem P n δ γ)
+    (m : ℕ) (hm : m + 1 < n) :
+    Measurable[(S.historyBundle (m + 1) hm).sigma]
+      (S.factualD ⟨m, Nat.lt_of_succ_lt hm⟩) :=
+  S.measurable_factualD_sigma_history (m + 1) hm ⟨m, Nat.lt_of_succ_lt hm⟩
+    (Nat.lt_succ_self m)
+
+/-- The indicator that the last treatment recorded in a history bundle equals a
+given value is strongly measurable with respect to that history bundle's
+σ-algebra. -/
+@[fun_prop]
+lemma stronglyMeasurable_indicator_dVar_sigma_history_last
+    (S : PODTRSystem P n δ γ) (m : ℕ) (hm : m + 1 < n) (x : δ) :
+    StronglyMeasurable[(S.historyBundle (m + 1) hm).sigma]
+      ((S.dVar ⟨m, Nat.lt_of_succ_lt hm⟩).indicator x) :=
+  S.stronglyMeasurable_indicator_dVar_sigma_history (m + 1) hm
+    ⟨m, Nat.lt_of_succ_lt hm⟩ (Nat.lt_succ_self m) x
+
 /-- The joint-agreement indicator `indD dbar m'` is
 `(historyBundle m).sigma`-strongly-measurable for `m' ≤ m`. -/
 lemma stronglyMeasurable_indD_sigma_history (S : PODTRSystem P n δ γ)
@@ -355,6 +405,7 @@ lemma indD_mul_Y_integrable (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) (k
 /-! ### Measurability of `innerReg` -/
 
 /-- `innerReg dbar j` is measurable for every `j`. -/
+@[fun_prop]
 lemma measurable_innerReg (S : PODTRSystem P n δ γ) (dbar : Fin n → δ) :
     ∀ j : ℕ, Measurable (S.innerReg dbar j)
   | 0 => by

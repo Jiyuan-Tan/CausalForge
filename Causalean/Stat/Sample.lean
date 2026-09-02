@@ -54,6 +54,15 @@ namespace IIDSample
 variable {Ω X : Type*} [MeasurableSpace Ω] [MeasurableSpace X]
   {μ : Measure Ω} {P : Measure X}
 
+/-- Each individual sample point of an i.i.d. sample is a measurable map from the ambient
+probability space to the observation space.
+
+This is the `meas` field with the sample index instantiated. The field itself is stated for
+all indices at once, which the function-property tactics cannot use; this per-index form is
+the one they can. -/
+@[fun_prop]
+theorem measurable_Z (S : IIDSample Ω X μ P) (i : ℕ) : Measurable (S.Z i) := S.meas i
+
 /-- Sample mean of a real-valued statistic `f` along the sample's first `n`
 points: `(1/n) Σ_{i < n} f (Z i ω)`. -/
 noncomputable def sampleMean (S : IIDSample Ω X μ P) (f : X → ℝ) (n : ℕ) :

@@ -23,6 +23,13 @@ describe("GraphSchema", () => {
     expect(GraphSchema.parse(minimal)).toEqual(minimal);
   });
 
+  it("loads a legacy `derived` review status as `drift`, never as a pass", () => {
+    // A banked graph written before the status was retired carries it. It must still load, and it
+    // must land on the FAIL side: every consumer of a passing status requires `matched`.
+    const legacy = { ...minimal, nodes: [{ ...minimal.nodes[0], review: { status: "derived", passed_hash: "h" } }] };
+    expect(GraphSchema.parse(legacy).nodes[0].review.status).toBe("drift");
+  });
+
   it("rejects an unknown node kind", () => {
     const bad = { ...minimal, nodes: [{ ...minimal.nodes[0], kind: "widget" }] };
     expect(() => GraphSchema.parse(bad)).toThrow();

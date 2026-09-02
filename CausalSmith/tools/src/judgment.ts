@@ -64,7 +64,7 @@ export interface SubstrateGate {
 }
 
 export type ReviewResult =
-  | { status: "pass"; notes?: string; assumption_table_markdown?: string; theorems_review?: TheoremReviewEntry[]; substrate_gates?: SubstrateGate[]; derived_obj_ids?: string[] }
+  | { status: "pass"; notes?: string; assumption_table_markdown?: string; theorems_review?: TheoremReviewEntry[]; substrate_gates?: SubstrateGate[] }
   | {
       status: "accept";
       notes?: string;
@@ -188,12 +188,6 @@ export type ReviewResult =
        */
       escalate_route?: "stage_0" | "stage_1";
       escalate_locus_reason?: string;
-      /**
-       * Stage 4 only (PRIMITIVE-vs-DERIVED audit → graph). obj_ids the reviewer
-       * classified as DERIVED (proven from primitives, not an assumed primitive).
-       * Written back to the formalization graph as `node.review.status = "derived"`.
-       */
-      derived_obj_ids?: string[];
     };
 
 export interface Intervention {

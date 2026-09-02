@@ -178,6 +178,7 @@ noncomputable def fixedStratumArmMassFluctuation {m : Nat} (mu : Measure Omega)
 
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [every fixed
 empirical arm/category count measurable on the product sample space](goal). -/
+@[fun_prop]
 theorem measurable_categoryArmCount {m : Nat} (group : Omega → kappa)
     (arm : Omega → Bool) (hgroup : Measurable group) (harm : Measurable arm)
     (a : Bool) (k : kappa) :
@@ -186,6 +187,7 @@ theorem measurable_categoryArmCount {m : Nat} (group : Omega → kappa)
 
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [every fixed
 empirical category count measurable on the product sample space](goal). -/
+@[fun_prop]
 theorem measurable_categoryCount {m : Nat} (group : Omega → kappa)
     (arm : Omega → Bool) (hgroup : Measurable group) (harm : Measurable arm)
     (k : kappa) : Measurable (fun z : Fin m → Omega => categoryCount group arm z k) := by
@@ -193,6 +195,7 @@ theorem measurable_categoryCount {m : Nat} (group : Omega → kappa)
 
 /-- [Measurable group and arm labels and a measurable mark](hyp:hgroup,harm,hY)
 make [every empirical arm/category mark sum measurable](goal). -/
+@[fun_prop]
 theorem measurable_armMarkSum {m : Nat} (group : Omega → kappa)
     (arm : Omega → Bool) (Y : Omega → Real) (hgroup : Measurable group)
     (harm : Measurable arm) (hY : Measurable Y) (a : Bool) (k : kappa) :
@@ -208,6 +211,7 @@ theorem measurable_armMarkSum {m : Nat} (group : Omega → kappa)
 /-- [Measurable group and arm labels and a measurable mark](hyp:hgroup,harm,hY)
 make [every totalized empirical arm/category mark mean measurable, including
 at zero count](goal). -/
+@[fun_prop]
 theorem measurable_totalizedArmMean {m : Nat} (group : Omega → kappa)
     (arm : Omega → Bool) (Y : Omega → Real) (hgroup : Measurable group)
     (harm : Measurable arm) (hY : Measurable Y) (a : Bool) (k : kappa) :
@@ -226,6 +230,7 @@ theorem measurable_totalizedArmMean {m : Nat} (group : Omega → kappa)
 
 /-- [Measurable group and arm labels and a measurable mark](hyp:hgroup,harm,hY)
 make [the fixed-set marked ratio score measurable](goal). -/
+@[fun_prop]
 theorem measurable_fixedStratumMarkedRatio {m : Nat} (group : Omega → kappa)
     (arm : Omega → Bool) (Y : Omega → Real) (H : Finset kappa)
     (hgroup : Measurable group) (harm : Measurable arm) (hY : Measurable Y) :
@@ -248,6 +253,7 @@ theorem measurable_fixedStratumMarkedRatio {m : Nat} (group : Omega → kappa)
 
 /-- [Measurable group and arm labels](hyp:hgroup,harm) make [each missing-arm
 category count measurable](goal). -/
+@[fun_prop]
 theorem measurable_missingArmCount {m : Nat} (group : Omega → kappa)
     (arm : Omega → Bool) (hgroup : Measurable group) (harm : Measurable arm)
     (a : Bool) (k : kappa) :

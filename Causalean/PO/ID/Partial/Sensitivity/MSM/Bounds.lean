@@ -31,6 +31,7 @@ conditional-quantile / CVaR balancing functional; the calibrated sharp bounds ar
 -/
 
 import Causalean.PO.ID.Partial.Sensitivity.MSM.Setup
+import Causalean.Tactic.Attr
 
 /-! # Closed-form uncalibrated marginal-sensitivity bounds
 
@@ -63,6 +64,64 @@ noncomputable def wMin (Λ : ℝ) (ω : P.Ω) : ℝ :=
 `wMax = 1 + Λ · (1 − e(X)) / e(X)`, the `OR = Λ` endpoint of the odds-ratio box. -/
 noncomputable def wMax (Λ : ℝ) (ω : P.Ω) : ℝ :=
   1 + Λ * (1 - S.propScore true ω) / S.propScore true ω
+
+/-- The smallest admissible inverse-propensity weight at a sensitivity level sends a unit to
+one plus the ratio of the complementary propensity score to the sensitivity level times the
+propensity score. -/
+@[causal_defs_simps]
+lemma wMin_def (Λ : ℝ) :
+    S.wMin Λ =
+      fun ω => 1 + (1 - S.propScore true ω) / (Λ * S.propScore true ω) :=
+  rfl
+
+/-- The largest admissible inverse-propensity weight at a sensitivity level sends a unit to one
+plus the sensitivity level times the complementary propensity score, divided by the propensity
+score. -/
+@[causal_defs_simps]
+lemma wMax_def (Λ : ℝ) :
+    S.wMax Λ =
+      fun ω => 1 + Λ * (1 - S.propScore true ω) / S.propScore true ω :=
+  rfl
+
+/-- The lower marginal-sensitivity weight is measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_wMin_sigmaX (Λ : ℝ) : Measurable[S.sigmaX] (S.wMin Λ) := by
+  have hp : Measurable[S.sigmaX] (S.propScore true) := by
+    unfold POBackdoorSystem.propScore
+    exact stronglyMeasurable_condExp.measurable
+  unfold POBackdoorSystem.wMin
+  exact measurable_const.add ((measurable_const.sub hp).div (measurable_const.mul hp))
+
+/-- The upper marginal-sensitivity weight is measurable for the covariate σ-algebra. -/
+@[fun_prop]
+lemma measurable_wMax_sigmaX (Λ : ℝ) : Measurable[S.sigmaX] (S.wMax Λ) := by
+  have hp : Measurable[S.sigmaX] (S.propScore true) := by
+    unfold POBackdoorSystem.propScore
+    exact stronglyMeasurable_condExp.measurable
+  unfold POBackdoorSystem.wMax
+  exact measurable_const.add ((measurable_const.mul (measurable_const.sub hp)).div hp)
+
+/-- The strongly-measurable form, for the covariate σ-algebra, of the lower sensitivity weight. -/
+@[fun_prop]
+lemma stronglyMeasurable_wMin_sigmaX (Λ : ℝ) :
+    StronglyMeasurable[S.sigmaX] (S.wMin Λ) :=
+  (S.measurable_wMin_sigmaX Λ).stronglyMeasurable
+
+/-- The strongly-measurable form, for the covariate σ-algebra, of the upper sensitivity weight. -/
+@[fun_prop]
+lemma stronglyMeasurable_wMax_sigmaX (Λ : ℝ) :
+    StronglyMeasurable[S.sigmaX] (S.wMax Λ) :=
+  (S.measurable_wMax_sigmaX Λ).stronglyMeasurable
+
+/-- The lower sensitivity weight is measurable for the ambient σ-algebra. -/
+@[fun_prop]
+lemma measurable_wMin (Λ : ℝ) : Measurable (S.wMin Λ) :=
+  (S.measurable_wMin_sigmaX Λ).mono S.sigmaX_le le_rfl
+
+/-- The upper sensitivity weight is measurable for the ambient σ-algebra. -/
+@[fun_prop]
+lemma measurable_wMax (Λ : ℝ) : Measurable (S.wMax Λ) :=
+  (S.measurable_wMax_sigmaX Λ).mono S.sigmaX_le le_rfl
 
 /-- The closed-form **upper** integrand: `wMax` where `Y ≥ 0`, `wMin` where `Y < 0`. -/
 noncomputable def msmUpperForm (Λ : ℝ) : ℝ :=

@@ -42,6 +42,7 @@ variable (D : FiniteDesign Ω)
 
 /-- On a finite assignment space every statistic is strongly measurable, because singletons — hence
 all sets — are measurable. -/
+@[fun_prop]
 lemma aestronglyMeasurable_toMeasure {β : Type*} [MeasurableSpace β] [TopologicalSpace β]
     [TopologicalSpace.PseudoMetrizableSpace β] [SecondCountableTopology β]
     [OpensMeasurableSpace β] (g : Ω → β) :
@@ -50,6 +51,7 @@ lemma aestronglyMeasurable_toMeasure {β : Type*} [MeasurableSpace β] [Topologi
 
 /-- On a finite assignment space every statistic with a measurable codomain is a.e.-measurable
 under the design measure. -/
+@[fun_prop]
 lemma aemeasurable_toMeasure {β : Type*} [MeasurableSpace β] (g : Ω → β) :
     AEMeasurable g D.toMeasure :=
   (measurable_of_finite g).aemeasurable

@@ -32,6 +32,7 @@ This is the engine behind the quantile treatment effect identification
 
 import Causalean.PO.ID.Exact.ATE
 import Causalean.PO.Analysis.Quantile
+import Causalean.Tactic.CondexpLinearity
 
 /-! # Distributional Backdoor Identification
 
@@ -57,6 +58,7 @@ namespace POBackdoorSystem
 
 variable {P : POSystem} {γ : Type*} [MeasurableSpace γ]
 variable (S : POBackdoorSystem P γ)
+
 
 /-- Observable inverse-probability-weighting density for arm `d`:
 `1_{T=d} / e_d(X)`, where `e_d = P[T=d | σ(X)]` is the propensity score. -/
@@ -97,10 +99,18 @@ lemma Assumptions.toDistributional [StandardBorelSpace P.Ω] [IsFiniteMeasure P.
   overlap := hA.overlap
 
 /-- `propScore d` is `σ(X)`-strongly-measurable (it is a conditional expectation). -/
+@[fun_prop]
 lemma stronglyMeasurable_propScore [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (d : Bool) :
     StronglyMeasurable[S.sigmaX] (S.propScore d) :=
   S.xVar.stronglyMeasurable_condExpGiven_comap (S.dVar.indicator d)
+
+/-- The observable inverse-probability weight for a treatment arm is a measurable
+function of the unit. -/
+@[fun_prop]
+lemma measurable_ipwDensity (d : Bool) : Measurable (S.ipwDensity d) := by
+  unfold POBackdoorSystem.ipwDensity
+  fun_prop
 
 /-- `propScore d ≥ 0` a.e. (conditional expectation of a nonnegative function). -/
 lemma propScore_nonneg [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ] (d : Bool) :
@@ -123,11 +133,11 @@ lemma propScore_pos [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     have hsum : P.μ[fun ω => S.dVar.indicator true ω + S.dVar.indicator false ω | S.sigmaX]
         =ᵐ[P.μ] (fun _ => (1:ℝ)) := by
       rw [hsum_pt]
-      exact Filter.EventuallyEq.of_eq (MeasureTheory.condExp_const S.sigmaX_le (1:ℝ))
+      condexp_linearity
     have hadd : P.μ[fun ω => S.dVar.indicator true ω + S.dVar.indicator false ω | S.sigmaX]
         =ᵐ[P.μ] P.μ[S.dVar.indicator true | S.sigmaX]
           + P.μ[S.dVar.indicator false | S.sigmaX] :=
-      MeasureTheory.condExp_add (hindD true) (hindD false) S.sigmaX
+      by condexp_linearity [hindD true, hindD false]
     filter_upwards [hsum, hadd, hA.overlap] with ω h1 h2 hT
     have heq : S.propScore true ω + S.propScore false ω = 1 := by
       have hh : P.μ[S.dVar.indicator true | S.sigmaX] ω
@@ -144,7 +154,8 @@ lemma integral_mul_indicator_eq_integral_mul_propScore
     (hh_ind_int : Integrable (fun ω => h ω * S.dVar.indicator d ω) P.μ) :
     ∫ ω, h ω * S.dVar.indicator d ω ∂P.μ
       = ∫ ω, h ω * S.propScore d ω ∂P.μ := by
-  have hsm' : StronglyMeasurable[MeasurableSpace.comap S.xVar.factual inferInstance] h := hh_sm
+  have hsm' :
+      StronglyMeasurable[MeasurableSpace.comap S.xVar.factual inferInstance] h := by fun_prop
   -- `μ[h·1_{D=d} | σX] =ᵐ h · μ[1_{D=d} | σX] = h · e_d`  (pull out the σX-meas factor `h`).
   have key : (fun ω => S.xVar.condExpGiven (fun ω => h ω * S.dVar.indicator d ω) P.μ ω)
       =ᵐ[P.μ] (fun ω => h ω * S.propScore d ω) :=
@@ -170,15 +181,13 @@ Bare overlap gives no uniform lower bound on `e_d`, so we truncate: the sequence
 converges a.e. to `1_{D=d}/e_d` (since `e_d > 0` a.e.).  Its integrals satisfy
 `∫ f n = ∫ min n (1/e_d)·e_d → ∫ 1 = 1` (pull-out + monotone convergence), so
 `integrable_of_integral_tendsto_of_monotone` gives the limit integrable. -/
+@[fun_prop]
 lemma ipwDensity_integrable [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (hA : S.DistributionalAssumptions) (d : Bool) :
     Integrable (S.ipwDensity d) P.μ := by
-  have hmeas : Measurable (S.ipwDensity d) :=
-    (S.dVar.measurable_indicator d (measurableSet_singleton d)).div
-      ((S.stronglyMeasurable_propScore d).mono S.sigmaX_le).measurable
-  have he_sm : StronglyMeasurable[S.sigmaX] (S.propScore d) :=
-    S.stronglyMeasurable_propScore d
-  have he_meas : Measurable (S.propScore d) := (he_sm.mono S.sigmaX_le).measurable
+  have hmeas : Measurable (S.ipwDensity d) := by fun_prop
+  have he_sm : StronglyMeasurable[S.sigmaX] (S.propScore d) := by fun_prop
+  have he_meas : Measurable (S.propScore d) := by fun_prop
   have he_pos : ∀ᵐ ω ∂P.μ, 0 < S.propScore d ω := S.propScore_pos hA d
   -- the truncations
   set f : ℕ → P.Ω → ℝ := S.ipwTrunc d with hf
@@ -308,14 +317,12 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
       = ∫ ω, g (S.factualY ω) * S.ipwDensity d ω ∂P.μ := by
   classical
   -- Measurability of the composites and the indicator / propensity score.
-  have hgY_meas : Measurable (fun ω => g (S.factualY ω)) := hg.comp S.measurable_factualY
-  have hgYd_meas : Measurable (fun ω => g (S.YofD d ω)) := hg.comp (S.measurable_YofD d)
-  have hind_meas : Measurable (S.dVar.indicator d) :=
-    S.dVar.measurable_indicator d (measurableSet_singleton d)
-  have he_sm : StronglyMeasurable[S.sigmaX] (S.propScore d) := S.stronglyMeasurable_propScore d
+  have hgY_meas : Measurable (fun ω => g (S.factualY ω)) := by fun_prop
+  have hgYd_meas : Measurable (fun ω => g (S.YofD d ω)) := by fun_prop
+  have hind_meas : Measurable (S.dVar.indicator d) := by fun_prop
+  have he_sm : StronglyMeasurable[S.sigmaX] (S.propScore d) := by fun_prop
   have he_pos : ∀ᵐ ω ∂P.μ, 0 < S.propScore d ω := S.propScore_pos hA d
-  have hipw_meas : Measurable (S.ipwDensity d) :=
-    hind_meas.div (he_sm.mono S.sigmaX_le).measurable
+  have hipw_meas : Measurable (S.ipwDensity d) := by fun_prop
   have hipw_nn : 0 ≤ᵐ[P.μ] S.ipwDensity d := by
     filter_upwards [he_pos] with ω hω
     refine div_nonneg ?_ hω.le
@@ -367,7 +374,7 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     rw [hYofD_eq]; exact hproj
   -- The set-indicator packaging `u (factualD ω) = 1_{D=d} ω`.
   let u : Bool → ℝ := ({d} : Set Bool).indicator (fun _ => (1 : ℝ))
-  have hu_meas : Measurable u := measurable_const.indicator (MeasurableSet.singleton d)
+  have hu_meas : Measurable u := by fun_prop
   have hu_eq : (fun ω => u (S.factualD ω)) = S.dVar.indicator d := by
     funext ω
     unfold POVar.indicator
@@ -406,9 +413,7 @@ lemma integral_comp_YofD_eq [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have kprod_int : Integrable
       (fun ω => k ω * (S.dVar.indicator d ω * g (S.YofD d ω))) P.μ := by
     rw [← hkey]; exact hgYd_ipw_int
-  have hk_sm : StronglyMeasurable[S.sigmaX] k := by
-    rw [hk_def]
-    exact (measurable_const.div he_sm.measurable).stronglyMeasurable
+  have hk_sm : StronglyMeasurable[S.sigmaX] k := by fun_prop
   have hfin : P.μ[fun ω => k ω * (S.dVar.indicator d ω * g (S.YofD d ω)) | S.sigmaX]
       =ᵐ[P.μ] P.μ[fun ω => g (S.YofD d ω) | S.sigmaX] := by
     have hpull : P.μ[fun ω => k ω * (S.dVar.indicator d ω * g (S.YofD d ω)) | S.sigmaX]
@@ -441,7 +446,7 @@ outcome `Y(d)` equals the observable inverse-probability-weighted outcome law
 theorem cfUnderLaw_eq_ipwLaw [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
     (hA : S.DistributionalAssumptions) (d : Bool) :
     S.yVar.cfUnderLaw S.dVar d P.μ = S.ipwLaw d P.μ := by
-  have hipw_int : Integrable (S.ipwDensity d) P.μ := S.ipwDensity_integrable hA d
+  have hipw_int : Integrable (S.ipwDensity d) P.μ := by fun_prop
   have hipw_nn : 0 ≤ᵐ[P.μ] S.ipwDensity d := by
     filter_upwards [S.propScore_pos hA d] with ω hω
     refine div_nonneg ?_ hω.le
@@ -452,7 +457,7 @@ theorem cfUnderLaw_eq_ipwLaw [StandardBorelSpace P.Ω] [IsFiniteMeasure P.μ]
   have hU_meas : MeasurableSet (S.factualY ⁻¹' s) := S.measurable_factualY hs
   -- Bounded measurable test function `g = 1_s`.
   set g : ℝ → ℝ := s.indicator (fun _ => (1 : ℝ)) with hg_def
-  have hg_meas : Measurable g := measurable_const.indicator hs
+  have hg_meas : Measurable g := by fun_prop
   have hg_bdd : ∀ y, |g y| ≤ 1 := by
     intro y
     by_cases hy : y ∈ s

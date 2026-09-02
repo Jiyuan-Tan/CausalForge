@@ -61,10 +61,8 @@ lemma setIntegral_eq_setIntegral_mul_of_likelihoodRatio_swap
   -- definitional unfolding issues with `condExp_mul_of_aestronglyMeasurable_left`).
   let Ia : Ω → ℝ := Set.indicator s (fun _ => (1 : ℝ))
   let Ia' : Ω → ℝ := Set.indicator t (fun _ => (1 : ℝ))
-  have hIa_meas : Measurable Ia :=
-    (measurable_const).indicator hs_meas
-  have hIa'_meas : Measurable Ia' :=
-    (measurable_const).indicator ht_meas
+  have hIa_meas : Measurable Ia := by fun_prop
+  have hIa'_meas : Measurable Ia' := by fun_prop
   have hIa_le : ∀ ω, ‖Ia ω‖ ≤ 1 := by
     intro ω; by_cases h : ω ∈ s
     · simp [Ia, Set.indicator_of_mem h]

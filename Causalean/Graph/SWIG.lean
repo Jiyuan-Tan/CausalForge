@@ -141,6 +141,7 @@ instance instMeasurableSpaceSwigΩ {N : Type*} (Ω : N → Type*)
 namespace SCM
 
 /-- Transporting a value along an equality of indices is measurable. -/
+@[fun_prop]
 theorem measurable_cast_family {I : Type*} {X : I → Type*}
     [∀ i, MeasurableSpace (X i)] {a b : I} (hab : a = b) :
     Measurable (cast (congrArg X hab) : X a → X b) := by
@@ -148,6 +149,7 @@ theorem measurable_cast_family {I : Type*} {X : I → Type*}
   exact measurable_id
 
 /-- A measurable function remains measurable after transporting its codomain index. -/
+@[fun_prop]
 theorem measurable_family_cast {I γ : Type*} {X : I → Type*}
     [∀ i, MeasurableSpace (X i)] [MeasurableSpace γ]
     {v w : I} (h : v = w) {f : γ → X v} (hf : Measurable f) :

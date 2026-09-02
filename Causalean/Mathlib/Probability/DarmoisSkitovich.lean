@@ -90,8 +90,8 @@ lemma bernstein_charFun_funeq
     rw [Pi.mul_apply] at h1
     rw [hscale Z mZ a 1, hscale W mW b 1] at h1
     simpa using h1
-  have mAdd : Measurable (X + Y) := mX.add mY
-  have mSub : Measurable (X - Y) := mX.sub mY
+  have mAdd : Measurable (X + Y) := by fun_prop
+  have mSub : Measurable (X - Y) := by fun_prop
   have hAdd : ∀ t : ℝ,
       charFun (P.map (X + Y)) t = charFun (P.map X) t * charFun (P.map Y) t := by
     intro t

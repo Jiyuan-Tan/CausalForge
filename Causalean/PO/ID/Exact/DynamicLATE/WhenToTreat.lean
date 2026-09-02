@@ -23,6 +23,7 @@ which are assembled from those helpers plus the bridge identities in
 -/
 
 import Causalean.PO.ID.Exact.DynamicLATE.Bridges
+import Causalean.Tactic.CondexpLinearity
 
 /-! # Two-period dynamic LATE when-to-treat ratios
 
@@ -500,12 +501,7 @@ theorem cWhenToTreat_wald (As : S.Assumptions) (d : Fin 2 → Bool)
         =ᵐ[P.μ]
       fun ω => S.historyBundle1.condExpGiven (S.YofDofZ d) P.μ ω -
         S.historyBundle1.condExpGiven (S.YofDofZ z0) P.μ ω := by
-    unfold POCFBundle.condExpGiven
-    exact
-      (MeasureTheory.condExp_sub (μ := P.μ)
-        (f := S.YofDofZ d) (g := S.YofDofZ z0)
-        (As.integrable_YofDofZ d) (As.integrable_YofDofZ z0)
-        S.historyBundle1.sigma)
+    condexp_linearity [As.integrable_YofDofZ d, As.integrable_YofDofZ z0]
   have hbr_d := cOutcome_bridge As d d hd_pre
   have hbr_0 := cOutcome_bridge As z0 z0 hpre_00
   have hNum :
@@ -569,12 +565,7 @@ theorem cMixtureLATE_wald (As : S.Assumptions) (z : Fin 2 → Bool) :
         =ᵐ[P.μ]
       fun ω => S.historyBundle1.condExpGiven (S.YofDofZ z) P.μ ω -
         S.historyBundle1.condExpGiven (S.YofDofZ z0) P.μ ω := by
-    unfold POCFBundle.condExpGiven
-    exact
-      (MeasureTheory.condExp_sub (μ := P.μ)
-        (f := S.YofDofZ z) (g := S.YofDofZ z0)
-        (As.integrable_YofDofZ z) (As.integrable_YofDofZ z0)
-        S.historyBundle1.sigma)
+    condexp_linearity [As.integrable_YofDofZ z, As.integrable_YofDofZ z0]
   have hbr_z := cOutcome_bridge As z z0 hpre_z0
   have hbr_0 := cOutcome_bridge As z0 z0 hpre_00
   have hNum :
@@ -624,12 +615,7 @@ theorem cMixtureLATE_wald (As : S.Assumptions) (z : Fin 2 → Bool) :
         fun ω => S.historyBundle1.condExpGiven (fun _ : P.Ω => (1 : ℝ)) P.μ ω -
           S.historyBundle1.condExpGiven
             ((S.DofZEq z z0).indicator (fun _ => (1 : ℝ))) P.μ ω := by
-      unfold POCFBundle.condExpGiven
-      exact
-        (MeasureTheory.condExp_sub (μ := P.μ)
-          (f := fun _ : P.Ω => (1 : ℝ))
-          (g := (S.DofZEq z z0).indicator (fun _ => (1 : ℝ)))
-          (integrable_const (1 : ℝ)) hind_int S.historyBundle1.sigma)
+      condexp_linearity
     filter_upwards [hsub'] with ω hω
     rw [hω, hconst]
   have hDen_bridge := cCompliance_bridge As z z0 hpre_z0

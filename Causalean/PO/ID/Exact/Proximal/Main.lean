@@ -14,6 +14,7 @@ Two theorems:
 -/
 
 import Causalean.PO.ID.Exact.Proximal.Helpers
+import Causalean.Tactic.CondexpLinearity
 import Mathlib.MeasureTheory.Function.FactorsThrough
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
@@ -77,59 +78,41 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     cases a
     · exact HA.integrable_YofA0
     · exact HA.integrable_YofA1
-  have hhInt : Integrable (fun ω => HA.h (a, S.W ω, S.X ω)) μ := by
-    cases a
-    · exact HA.integrable_h0WX
-    · exact HA.integrable_h1WX
-  have hhAInt : Integrable (fun ω => HA.h (S.A ω, S.W ω, S.X ω)) μ := HA.integrable_hAWX
-  have h_meas_haWX : Measurable (fun ω => HA.h (a, S.W ω, S.X ω)) := by
-    have hp : Measurable (fun ω : P.Ω => (a, S.W ω, S.X ω)) := by
-      exact Measurable.prodMk measurable_const
-        (Measurable.prodMk S.measurable_W S.measurable_X)
-    exact HA.measurable_h.comp hp
+  have hhInt : Integrable (fun ω => HA.h (a, S.W ω, S.X ω)) μ := by fun_prop
+  have hhAInt : Integrable (fun ω => HA.h (S.A ω, S.W ω, S.X ω)) μ := by fun_prop
+  have h_meas_haWX : Measurable (fun ω => HA.h (a, S.W ω, S.X ω)) := by fun_prop
   -- ============================================================
   -- Step 1: Construct g_a : γ_U × γ_X → ℝ via Doob–Dynkin.
   -- ============================================================
   -- μ[Y | σ_AUX] is σ_AUX = comap S.AUX-measurable, so factors through S.AUX.
-  have hCEY_meas : Measurable[S.σ_AUX] (μ[S.Y | S.σ_AUX]) :=
-    MeasureTheory.stronglyMeasurable_condExp.measurable
+  have hCEY_meas : Measurable[S.σ_AUX] (μ[S.Y | S.σ_AUX]) := by fun_prop
   have hCEY_meas' : Measurable[MeasurableSpace.comap S.AUX inferInstance]
-      (μ[S.Y | S.σ_AUX]) := hCEY_meas
+      (μ[S.Y | S.σ_AUX]) := by fun_prop
   obtain ⟨f_Y, hf_Y_meas, hf_Y_eq⟩ :=
     Measurable.exists_eq_measurable_comp (f := S.AUX) (Z := ℝ) hCEY_meas'
   -- μ[h(a,W,X) | σ_AUX] is also σ_AUX-measurable.
   have hCEh_meas : Measurable[S.σ_AUX]
-      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) :=
-    MeasureTheory.stronglyMeasurable_condExp.measurable
+      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) := by fun_prop
   have hCEh_meas' : Measurable[MeasurableSpace.comap S.AUX inferInstance]
-      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) := hCEh_meas
+      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) := by fun_prop
   obtain ⟨f_h, hf_h_meas, hf_h_eq⟩ :=
     Measurable.exists_eq_measurable_comp (f := S.AUX) (Z := ℝ) hCEh_meas'
   -- Define g_a (u, x) := f_Y (a, u, x) - f_h (a, u, x).
   let g_a : γ_U × γ_X → ℝ := fun p => f_Y (a, p.1, p.2) - f_h (a, p.1, p.2)
-  have g_a_meas : Measurable g_a := by
-    have h1 : Measurable (fun p : γ_U × γ_X => f_Y (a, p.1, p.2)) := by
-      have : Measurable (fun p : γ_U × γ_X => (a, p.1, p.2)) := by fun_prop
-      exact hf_Y_meas.comp this
-    have h2 : Measurable (fun p : γ_U × γ_X => f_h (a, p.1, p.2)) := by
-      have : Measurable (fun p : γ_U × γ_X => (a, p.1, p.2)) := by fun_prop
-      exact hf_h_meas.comp this
-    exact h1.sub h2
+  have g_a_meas : Measurable g_a := by fun_prop
   -- g_a ∘ S.UX is integrable on the restriction to s = {A = a}.
   -- On s, S.AUX ω = (a, S.U ω, S.X ω), so g_a ∘ UX = (μ[Y|σ_AUX]) - (μ[h|σ_AUX])
   -- pointwise. Both condExps are integrable globally, hence on restrict, and
   -- their difference is integrable; congr lifts to g_a ∘ UX.
   have g_a_UX_int : Integrable (fun ω => g_a (S.UX ω)) (μ.restrict s) := by
-    have hCEY_int : Integrable (μ[S.Y | S.σ_AUX]) μ := MeasureTheory.integrable_condExp
-    have hCEh_int : Integrable (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) μ :=
-      MeasureTheory.integrable_condExp
+    have hCEY_int : Integrable (μ[S.Y | S.σ_AUX]) μ := by fun_prop
+    have hCEh_int : Integrable (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) μ := by fun_prop
     have hCEY_int_r : Integrable (μ[S.Y | S.σ_AUX]) (μ.restrict s) := hCEY_int.restrict
     have hCEh_int_r : Integrable (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX])
         (μ.restrict s) := hCEh_int.restrict
     have hdiff_int : Integrable
         (fun ω => (μ[S.Y | S.σ_AUX]) ω -
-          (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) ω) (μ.restrict s) :=
-      hCEY_int_r.sub hCEh_int_r
+          (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) ω) (μ.restrict s) := by fun_prop
     -- Show on s: g_a (S.UX ω) = (μ[Y|σ_AUX]) ω - (μ[h|σ_AUX]) ω.
     have hae : (fun ω => (μ[S.Y | S.σ_AUX]) ω -
           (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AUX]) ω)
@@ -165,7 +148,7 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     -- Linearity: μ[Y - h(a,W,X)|σ_AZUX] =ᵐ μ[Y|σ_AZUX] - μ[h(a,W,X)|σ_AZUX].
     have hlin : μ[fun ω => S.Y ω - HA.h (a, S.W ω, S.X ω) | S.σ_AZUX]
         =ᵐ[μ] μ[S.Y | S.σ_AZUX] - μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AZUX] :=
-      MeasureTheory.condExp_sub (m := S.σ_AZUX) hYInt hhInt
+      by condexp_linearity
     -- Helpers 1, 2: drop Z.
     have h1 : μ[S.Y | S.σ_AZUX] =ᵐ[μ] μ[S.Y | S.σ_AUX] := condExp_drop_Z HA hAY
     have h2 : μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_AZUX]
@@ -221,14 +204,7 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     -- σ_AZX ≤ σ_AZUX (since AZUX projects onto AZX measurably).
     have hAZX_le_AZUX : S.σ_AZX ≤ S.σ_AZUX := by
       -- Show S.AZX is σ_AZUX-measurable.
-      have hAZX_meas : Measurable[S.σ_AZUX] S.AZX := by
-        show Measurable[MeasurableSpace.comap S.AZUX inferInstance] S.AZX
-        intro u hu
-        refine ⟨(fun p : Bool × γ_Z × γ_U × γ_X => (p.1, p.2.1, p.2.2.2)) ⁻¹' u, ?_, ?_⟩
-        · exact (measurable_fst.prodMk
-            (measurable_fst.comp measurable_snd |>.prodMk
-              (measurable_snd.comp (measurable_snd.comp measurable_snd)))) hu
-        · ext ω; rfl
+      have hAZX_meas : Measurable[S.σ_AZUX] S.AZX := by fun_prop
       exact hAZX_meas.comap_le
     -- s = {A=a} ∈ σ_AZX (use comap of (A,Z,X) on the first coordinate).
     have hs_in_AZX : MeasurableSet[S.σ_AZX] s := by
@@ -238,8 +214,8 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     -- Difference function and integrability.
     let h : P.Ω → ℝ := fun ω => S.Y ω - HA.h (S.A ω, S.W ω, S.X ω)
     let h' : P.Ω → ℝ := fun ω => S.Y ω - HA.h (a, S.W ω, S.X ω)
-    have hint : Integrable h μ := hYInt.sub hhAInt
-    have hint' : Integrable h' μ := hYInt.sub hhInt
+    have hint : Integrable h μ := by fun_prop
+    have hint' : Integrable h' μ := by fun_prop
     -- On s, h = h' pointwise.
     have hh_eq_on_s : ∀ᵐ ω ∂(μ.restrict s), h ω = h' ω := by
       filter_upwards [ae_restrict_mem hs_meas] with ω hω_s
@@ -256,7 +232,7 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     -- Actually simpler: condExp_congr on restrict requires inner =ᵐ on restrict,
     -- which doesn't directly give condExp =ᵐ on restrict.
     -- We use: indicator s · μ[h'|σ_AZUX] =ᵐ[μ] indicator s · g_a∘UX.
-    have hCEh'_AZUX_int : Integrable (μ[h' | S.σ_AZUX]) μ := MeasureTheory.integrable_condExp
+    have hCEh'_AZUX_int : Integrable (μ[h' | S.σ_AZUX]) μ := by fun_prop
     -- Case split: if g_a ∘ UX is not globally integrable, μ[g_a∘UX|σ_AZX] = 0
     -- everywhere, so the goal is trivial. Otherwise, use original argument.
     by_cases hg_a_int : Integrable (fun ω => g_a (S.UX ω)) μ
@@ -417,22 +393,20 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     · exact measurable_fst (measurableSet_singleton a)
     · ext ω; rfl
   -- Doob–Dynkin: factor μ[YofA a | σ_UX] and μ[h(a,W,X) | σ_UX] through S.UX.
-  have hCEYa_meas : Measurable[S.σ_UX] (μ[S.YofA a | S.σ_UX]) :=
-    MeasureTheory.stronglyMeasurable_condExp.measurable
+  have hCEYa_meas : Measurable[S.σ_UX] (μ[S.YofA a | S.σ_UX]) := by fun_prop
   have hCEYa_meas' : Measurable[MeasurableSpace.comap S.UX inferInstance]
-      (μ[S.YofA a | S.σ_UX]) := hCEYa_meas
+      (μ[S.YofA a | S.σ_UX]) := by fun_prop
   obtain ⟨f_Ya, hf_Ya_meas, hf_Ya_eq⟩ :=
     Measurable.exists_eq_measurable_comp (f := S.UX) (Z := ℝ) hCEYa_meas'
   have hCEhUX_meas : Measurable[S.σ_UX]
-      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) :=
-    MeasureTheory.stronglyMeasurable_condExp.measurable
+      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) := by fun_prop
   have hCEhUX_meas' : Measurable[MeasurableSpace.comap S.UX inferInstance]
-      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) := hCEhUX_meas
+      (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) := by fun_prop
   obtain ⟨f_hUX, hf_hUX_meas, hf_hUX_eq⟩ :=
     Measurable.exists_eq_measurable_comp (f := S.UX) (Z := ℝ) hCEhUX_meas'
   -- Define g_D : γ_U × γ_X → ℝ.
   let g_D : γ_U × γ_X → ℝ := fun p => f_Ya p - f_hUX p
-  have g_D_meas : Measurable g_D := hf_Ya_meas.sub hf_hUX_meas
+  have g_D_meas : Measurable g_D := by fun_prop
   -- D := μ[YofA a | σ_UX] - μ[h(a,W,X) | σ_UX] =ᵐ g_D ∘ S.UX (globally).
   -- More precisely: μ[YofA a | σ_UX] = f_Ya ∘ S.UX (eq_fun) and similarly for h.
   have hD_eq : (μ[S.YofA a | S.σ_UX] - μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX])
@@ -443,9 +417,8 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     rw [congrFun hf_Ya_eq ω, congrFun hf_hUX_eq ω]
     rfl
   -- Integrabilities.
-  have hCEYa_int : Integrable (μ[S.YofA a | S.σ_UX]) μ := MeasureTheory.integrable_condExp
-  have hCEhUX_int : Integrable (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) μ :=
-    MeasureTheory.integrable_condExp
+  have hCEYa_int : Integrable (μ[S.YofA a | S.σ_UX]) μ := by fun_prop
+  have hCEhUX_int : Integrable (μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) μ := by fun_prop
   have hg_D_int : Integrable (fun ω => g_D (S.UX ω)) μ := by
     have : Integrable (μ[S.YofA a | S.σ_UX] - μ[fun ω => HA.h (a, S.W ω, S.X ω) | S.σ_UX]) μ :=
       hCEYa_int.sub hCEhUX_int
@@ -481,10 +454,7 @@ theorem Eofyofa_eq_Eh (HA : Assumptions S μ) (a : Bool)
     hg_D_int.restrict
   have hg_D_zero_on_arm : (fun ω => g_D (S.UX ω)) =ᵐ[μ.restrict s] 0 :=
     HA.completeness a g_D g_D_meas hg_D_int_r hCE_g_D_zero
-  have hg_D_meas_UX : Measurable[S.σ_UX] (fun ω => g_D (S.UX ω)) := by
-    show Measurable[MeasurableSpace.comap S.UX inferInstance] (fun ω => g_D (S.UX ω))
-    intro u hu
-    exact ⟨g_D ⁻¹' u, g_D_meas hu, rfl⟩
+  have hg_D_meas_UX : Measurable[S.σ_UX] (fun ω => g_D (S.UX ω)) := by fun_prop
   have hg_D_zero : (fun ω => g_D (S.UX ω)) =ᵐ[μ] 0 :=
     eq_zero_globally_of_eq_zero_on_arm HA a hg_D_meas_UX hg_D_zero_on_arm
   -- So D =ᵐ[μ] 0, i.e., μ[YofA a|σ_UX] =ᵐ[μ] μ[h(a,W,X)|σ_UX].

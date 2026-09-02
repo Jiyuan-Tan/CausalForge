@@ -104,6 +104,7 @@ variable (μ ν : Measure Ω) [IsProbabilityMeasure μ] [IsProbabilityMeasure ν
 local notation3 "p" => fun x => (μ.rnDeriv ν x).toReal
 
 /-- `√p` is `ν`-integrable (dominated by `(p+1)/2`). -/
+@[fun_prop]
 theorem integrable_sqrt_rnDeriv :
     Integrable (fun x => Real.sqrt ((μ.rnDeriv ν x).toReal)) ν := by
   have hp : Integrable (fun x => (μ.rnDeriv ν x).toReal) ν :=

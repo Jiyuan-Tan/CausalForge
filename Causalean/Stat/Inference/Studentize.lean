@@ -59,7 +59,7 @@ theorem Tendsto_dist.tendsto_measure_of_null_frontier
     (hX : Tendsto_dist Xn Q μ hXn)
     {E : Set ℝ} (hE : Q (frontier E) = 0) :
     Tendsto (fun n => ((μ.map (Xn n)) E).toReal) atTop (𝓝 (Q E).toReal) := by
-  unfold Tendsto_dist at hX
+  simp only [causal_defs_simps] at hX
   let μs : ℕ → ProbabilityMeasure ℝ := fun n =>
     ⟨μ.map (Xn n), Measure.isProbabilityMeasure_map (hXn n)⟩
   let ν : ProbabilityMeasure ℝ := ⟨Q, inferInstance⟩

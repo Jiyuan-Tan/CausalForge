@@ -22,6 +22,7 @@ not depend on a specific bridge:
 
 import Causalean.PO.ID.Partial.Proxy.Assumptions
 import Causalean.PO.ID.Exact.Proximal.Helpers
+import Causalean.Tactic.CondexpLinearity
 
 /-! # Common proximal-proxy partial-identification helpers
 
@@ -144,7 +145,7 @@ lemma condExp_Y_eq_condExp_h_arm_AX_core
   -- Step 1: bridge equation gives μ[Y | σ_AUX] =ᵐ[μ] μ[h(A,W,X) | σ_AUX] globally.
   have hCEsub : μ[fun ω => S.Y ω - h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]
       =ᵐ[μ] μ[S.Y | S.σ_AUX] - μ[fun ω => h (S.A ω, S.W ω, S.X ω) | S.σ_AUX] :=
-    MeasureTheory.condExp_sub (m := S.σ_AUX) hYInt hhAInt
+    by condexp_linearity
   have hBridge_AUX : μ[S.Y | S.σ_AUX]
       =ᵐ[μ] μ[fun ω => h (S.A ω, S.W ω, S.X ω) | S.σ_AUX] := by
     have h1 := hCEsub.symm.trans hbridge
@@ -183,7 +184,7 @@ lemma condExp_Y_eq_condExp_h_arm_AX_core
     have hCE_dsub : μ[d | S.σ_AUX]
         =ᵐ[μ] μ[fun ω => h (S.A ω, S.W ω, S.X ω) | S.σ_AUX]
             - μ[fun ω => h (a, S.W ω, S.X ω) | S.σ_AUX] :=
-      MeasureTheory.condExp_sub (m := S.σ_AUX) hhAInt hhArmInt
+      by condexp_linearity
     have hCE_dsub_restrict :
         μ[d | S.σ_AUX]
           =ᵐ[μ.restrict {ω | S.A ω = a}]
@@ -260,7 +261,7 @@ lemma condExp_Y_eq_condExp_h_arm_AX_core
     simpa using Causalean.aeEq_restrict_of_indicator_aeEq hs_meas hindCE_zero'
   -- Decompose μ[D | σ_AX] = μ[f1 | σ_AX] - μ[f2 | σ_AX] and apply tower.
   have hCE_Dsub : μ[D | S.σ_AX] =ᵐ[μ] μ[f1 | S.σ_AX] - μ[f2 | S.σ_AX] :=
-    MeasureTheory.condExp_sub (m := S.σ_AX) hf1_int hf2_int
+    by condexp_linearity
   have hf1_AX_eq : μ[f1 | S.σ_AX] =ᵐ[μ] μ[S.Y | S.σ_AX] := hY_tower
   have hf2_AX_eq : μ[f2 | S.σ_AX] =ᵐ[μ] μ[fun ω => h (a, S.W ω, S.X ω) | S.σ_AX] :=
     hh_tower

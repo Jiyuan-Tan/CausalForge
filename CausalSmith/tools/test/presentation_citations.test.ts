@@ -192,4 +192,47 @@ describe("defaultLookup: transient-unreachable vs definitively-absent", () => {
     await vi.runAllTimersAsync();
     expect((await p).verdict).toBe("major"); // reachable-but-absent id is not laundered to non-blocking
   });
+
+  it("uses a canonical JMLR article URL instead of a wrong title-search hit", async () => {
+    const crossref = vi.fn(async () => wrongCrossrefHit);
+    globalThis.fetch = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u === "https://www.jmlr.org/papers/v7/shimizu06a.html") {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => `<html><head>
+            <meta content="A Linear Non-Gaussian Acyclic Model for Causal Discovery" name="citation_title">
+            <meta name="citation_author" content="Shohei Shimizu">
+            <meta name="citation_author" content="Aapo Hyv&amp;#228;rinen">
+            <meta name="citation_publication_date" content="2006">
+          </head></html>`,
+          json: async () => ({}),
+        } as unknown as Response;
+      }
+      if (u.includes("api.crossref.org")) return crossref() as unknown as Promise<Response>;
+      return { ok: false, status: 404 } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    const entry: BibEntry = {
+      key: "shimizu2006",
+      type: "article",
+      fields: {
+        title: "A Linear Non-Gaussian Acyclic Model for Causal Discovery",
+        author: "Shimizu, Shohei and Hyvarinen, Aapo",
+        year: "2006",
+        url: "https://www.jmlr.org/papers/v7/shimizu06a.html",
+      },
+    };
+    const rec = await runLookup(entry);
+    expect(rec).toMatchObject({
+      title: entry.fields.title,
+      authorFamily: "Shimizu",
+      author: "Shohei Shimizu and Aapo Hyvärinen",
+      year: 2006,
+      authoritative: true,
+    });
+    expect(crossref).not.toHaveBeenCalled();
+    expect((await verifyEntry(entry, async () => rec)).verdict).toBe("exact");
+  });
 });

@@ -93,6 +93,7 @@ private lemma inner_empProcVec (S : IIDSample Ω X μ P) (f : X → E)
     nsmul_eq_mul, mul_sub, ← mul_assoc, key]
 
 /-- The vector empirical process is measurable in `ω`. -/
+@[fun_prop]
 lemma measurable_empProcVec [MeasurableSpace E] [BorelSpace E]
     (S : IIDSample Ω X μ P) (f : X → E) (hf : Measurable f) (n : ℕ) :
     Measurable (fun ω => S.empProcVec f n ω) := by
@@ -130,8 +131,9 @@ theorem empProcVec_sq_lintegral_le [IsProbabilityMeasure μ] [IsProbabilityMeasu
   set b := stdOrthonormalBasis ℝ E with hb
   -- coordinate functions `g j x = ⟪b j, f x⟫`
   set g : _ → X → ℝ := fun j x => inner ℝ (b j) (f x) with hg
-  have hg_meas : ∀ j, Measurable (g j) := fun j =>
-    ((innerSL ℝ (b j)).continuous.measurable).comp hf_meas
+  have hg_meas : ∀ j, Measurable (g j) := by
+    intro j
+    fun_prop
   have hbnorm : ∀ j, ‖b j‖ = 1 := fun j => b.orthonormal.norm_eq_one j
   -- each coordinate function is in `L²(P)`
   have hg_L2 : ∀ j, MemLp (g j) 2 P := by
@@ -186,7 +188,7 @@ theorem empProcVec_sq_lintegral_le [IsProbabilityMeasure μ] [IsProbabilityMeasu
     intro j
     have hproc : Measurable (fun ω => S.empProcVec f n ω) :=
       S.measurable_empProcVec f hf_meas n
-    exact (((innerSL ℝ (b j)).continuous.measurable.comp hproc).pow_const 2).ennreal_ofReal
+    fun_prop
   -- assembly: Parseval coordinate-wise, then sum the bounds
   calc ∫⁻ ω, ENNReal.ofReal (‖S.empProcVec f n ω‖ ^ 2) ∂μ
       = ∫⁻ ω, ∑ j, ENNReal.ofReal (inner ℝ (b j) (S.empProcVec f n ω) ^ 2) ∂μ := by
@@ -233,8 +235,8 @@ theorem empProcVec_chebyshev [IsProbabilityMeasure μ] [IsProbabilityMeasure P]
     rw [Ne, ENNReal.ofReal_eq_zero]; linarith
   have hnetop : ENNReal.ofReal (ε ^ 2) ≠ ⊤ := ENNReal.ofReal_ne_top
   have haemeas : AEMeasurable
-      (fun ω => ENNReal.ofReal (‖S.empProcVec f n ω‖ ^ 2)) μ :=
-    (((S.measurable_empProcVec f hf_meas n).norm.pow_const 2).ennreal_ofReal).aemeasurable
+      (fun ω => ENNReal.ofReal (‖S.empProcVec f n ω‖ ^ 2)) μ := by
+    fun_prop
   have hsub : {ω | ε < ‖S.empProcVec f n ω‖}
       ⊆ {ω | ENNReal.ofReal (ε ^ 2)
           ≤ ENNReal.ofReal (‖S.empProcVec f n ω‖ ^ 2)} := by

@@ -1,0 +1,1266 @@
+{
+  "qid": "stat_discrete_optimal_value_minimax",
+  "specialization": "diagonal_adaptive_ratio_tv",
+  "cluster": "stat",
+  "symbols": [
+    {
+      "name": "\\(n\\)",
+      "type": "sample size",
+      "space": "\\(\\mathbb N\\)",
+      "def": "Number of observed units.",
+      "role": "index"
+    },
+    {
+      "name": "\\(d\\)",
+      "type": "alphabet size",
+      "space": "\\(\\mathbb N\\)",
+      "def": "Number of discrete confounder cells.",
+      "role": "index"
+    },
+    {
+      "name": "\\(\\epsilon\\)",
+      "type": "overlap constant",
+      "space": "\\((0,1/2)\\)",
+      "def": "Fixed lower bound on both treatment probabilities.",
+      "role": "regime parameter"
+    },
+    {
+      "name": "\\(\\rho_\\epsilon\\)",
+      "type": "range constant",
+      "space": "\\((0,\\infty)\\)",
+      "def": "Positive constant depending only on \\(\\epsilon\\) that bounds the proved range \\(d\\le \\rho_\\epsilon n\\log(en)\\).",
+      "role": "regime parameter",
+      "refs": [
+        "\\(\\epsilon\\)",
+        "\\(d\\)",
+        "\\(n\\)"
+      ]
+    },
+    {
+      "name": "\\(c_\\epsilon\\)",
+      "type": "minimax lower constant",
+      "space": "\\((0,\\infty)\\)",
+      "def": "Positive lower-bound constant depending only on \\(\\epsilon\\) whose existence is asserted by the risk statements.",
+      "role": "theorem constant",
+      "refs": [
+        "\\(\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(C_\\epsilon\\)",
+      "type": "minimax upper constant",
+      "space": "\\((0,\\infty)\\)",
+      "def": "Finite upper-bound constant depending only on \\(\\epsilon\\) whose existence is asserted by the risk statements.",
+      "role": "theorem constant",
+      "refs": [
+        "\\(\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\([d]\\)",
+      "type": "covariate alphabet",
+      "space": "finite sets",
+      "def": "\\([d]=\\{1,\\ldots,d\\}\\).",
+      "role": "index set",
+      "refs": [
+        "\\(d\\)"
+      ]
+    },
+    {
+      "name": "\\(a\\)",
+      "type": "treatment index",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "Generic treatment level.",
+      "role": "index"
+    },
+    {
+      "name": "\\(y\\)",
+      "type": "outcome index",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "Generic outcome level.",
+      "role": "index"
+    },
+    {
+      "name": "\\(x\\)",
+      "type": "cell index",
+      "space": "\\([d]\\)",
+      "def": "Generic confounder cell.",
+      "role": "index",
+      "refs": [
+        "\\([d]\\)"
+      ]
+    },
+    {
+      "name": "\\(i\\)",
+      "type": "unit index",
+      "space": "\\(\\{1,\\ldots,n\\}\\)",
+      "def": "Generic observed-unit index.",
+      "role": "index",
+      "refs": [
+        "\\(n\\)"
+      ]
+    },
+    {
+      "name": "\\(X\\)",
+      "type": "covariate",
+      "space": "\\([d]\\)",
+      "def": "Observed discrete confounder.",
+      "role": "data",
+      "refs": [
+        "\\([d]\\)"
+      ]
+    },
+    {
+      "name": "\\(A\\)",
+      "type": "treatment",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "Observed binary treatment.",
+      "role": "data"
+    },
+    {
+      "name": "\\(Y\\)",
+      "type": "outcome",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "Observed binary outcome.",
+      "role": "data"
+    },
+    {
+      "name": "\\(Y(a)\\)",
+      "type": "potential outcome",
+      "space": "\\(\\{0,1\\}\\)",
+      "def": "Outcome under treatment level \\(a\\in\\{0,1\\}\\).",
+      "role": "causal object",
+      "refs": [
+        "\\(a\\)"
+      ]
+    },
+    {
+      "name": "\\(O_i\\)",
+      "type": "observed unit",
+      "space": "\\([d]\\times\\{0,1\\}^2\\)",
+      "def": "\\(O_i=(X_i,A_i,Y_i)\\) for \\(i\\in\\{1,\\ldots,n\\}\\).",
+      "role": "sample",
+      "refs": [
+        "\\(n\\)",
+        "\\(i\\)",
+        "\\([d]\\)",
+        "\\(X\\)",
+        "\\(A\\)",
+        "\\(Y\\)"
+      ]
+    },
+    {
+      "name": "\\(P\\)",
+      "type": "full-data law",
+      "space": "laws of \\((X,A,Y,Y(0),Y(1))\\)",
+      "def": "A law whose observed margin is the distribution of \\(O=(X,A,Y)\\).",
+      "role": "model",
+      "refs": [
+        "\\(X\\)",
+        "\\(A\\)",
+        "\\(Y\\)",
+        "\\(Y(a)\\)"
+      ]
+    },
+    {
+      "name": "\\(p_x\\)",
+      "type": "cell mass",
+      "space": "\\([0,1]\\)",
+      "def": "\\(p_x=P(X=x)\\).",
+      "role": "primitive",
+      "refs": [
+        "\\(P\\)",
+        "\\(X\\)",
+        "\\(x\\)"
+      ]
+    },
+    {
+      "name": "\\(\\pi_x\\)",
+      "type": "propensity score",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\pi_x=P(A=1\\mid X=x)\\) when \\(p_x>0\\).",
+      "role": "primitive",
+      "refs": [
+        "\\(P\\)",
+        "\\(A\\)",
+        "\\(X\\)",
+        "\\(x\\)",
+        "\\(p_x\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mu_{ax}\\)",
+      "type": "outcome regression",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\mu_{ax}=E_P[Y\\mid A=a,X=x]\\) when \\(p_x>0\\).",
+      "role": "primitive",
+      "refs": [
+        "\\(P\\)",
+        "\\(Y\\)",
+        "\\(A\\)",
+        "\\(a\\)",
+        "\\(X\\)",
+        "\\(x\\)",
+        "\\(p_x\\)"
+      ]
+    },
+    {
+      "name": "\\(q_{ay,x}\\)",
+      "type": "observed joint cell mass",
+      "space": "\\([0,1]\\)",
+      "def": "\\(q_{ay,x}=P(X=x,A=a,Y=y)\\).",
+      "role": "primitive",
+      "refs": [
+        "\\(P\\)",
+        "\\(X\\)",
+        "\\(x\\)",
+        "\\(A\\)",
+        "\\(a\\)",
+        "\\(Y\\)",
+        "\\(y\\)"
+      ]
+    },
+    {
+      "name": "\\(\\psi_1(P)\\)",
+      "type": "treatment-specific mean",
+      "space": "\\([0,1]\\)",
+      "def": "\\(\\psi_1(P)=\\sum_{x=1}^dp_x\\mu_{1x}\\).",
+      "role": "published comparator target",
+      "refs": [
+        "\\(P\\)",
+        "\\(d\\)",
+        "\\(x\\)",
+        "\\(p_x\\)",
+        "\\(\\mu_{ax}\\)"
+      ]
+    },
+    {
+      "name": "\\(a^\\star(x)\\)",
+      "type": "identified oracle treatment rule",
+      "space": "maps from \\([d]\\) to \\(\\{0,1\\}\\)",
+      "def": "\\(a^\\star(x)=\\min\\arg\\max_{a\\in\\{0,1\\}}\\mu_{ax}\\) when \\(p_x>0\\), and \\(a^\\star(x)=0\\) when \\(p_x=0\\).",
+      "role": "causal decision",
+      "refs": [
+        "\\([d]\\)",
+        "\\(a\\)",
+        "\\(x\\)",
+        "\\(\\mu_{ax}\\)",
+        "\\(p_x\\)"
+      ]
+    },
+    {
+      "name": "\\(q_x\\)",
+      "type": "four-cell mass vector",
+      "space": "\\(\\mathbb R_+^4\\)",
+      "def": "\\(q_x=(q_{00,x},q_{01,x},q_{10,x},q_{11,x})\\), ordered by \\((A,Y)=(0,0),(0,1),(1,0),(1,1)\\).",
+      "role": "primitive",
+      "refs": [
+        "\\(q_{ay,x}\\)",
+        "\\(A\\)",
+        "\\(Y\\)"
+      ]
+    },
+    {
+      "name": "\\(\\Delta_x\\)",
+      "type": "cell treatment contrast",
+      "space": "\\([-1,1]\\)",
+      "def": "\\(\\Delta_x=\\mu_{1x}-\\mu_{0x}\\).",
+      "role": "primitive",
+      "refs": [
+        "\\(\\mu_{ax}\\)"
+      ]
+    },
+    {
+      "name": "\\(\\Delta_d\\)",
+      "type": "probability simplex",
+      "space": "subsets of \\(\\mathbb R_+^d\\)",
+      "def": "\\(\\Delta_d=\\{R\\in\\mathbb R_+^d:\\sum_{x=1}^dR_x=1\\}\\).",
+      "role": "comparator parameter space",
+      "refs": [
+        "\\(d\\)",
+        "\\(x\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathbf P\\)",
+      "type": "first multinomial distribution",
+      "space": "\\(\\Delta_d\\)",
+      "def": "\\(\\mathbf P=(P_1,\\ldots,P_d)\\) is the first distribution in the normalized \\(L_1\\)-distance comparator experiment.",
+      "role": "lower-bound input",
+      "refs": [
+        "\\(\\Delta_d\\)",
+        "\\(d\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathbf Q\\)",
+      "type": "second multinomial distribution",
+      "space": "\\(\\Delta_d\\)",
+      "def": "\\(\\mathbf Q=(Q_1,\\ldots,Q_d)\\) is the second distribution in the normalized \\(L_1\\)-distance comparator experiment.",
+      "role": "lower-bound input",
+      "refs": [
+        "\\(\\Delta_d\\)",
+        "\\(d\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathcal C_\\epsilon\\)",
+      "type": "overlap cone",
+      "space": "subsets of \\(\\mathbb R_+^4\\)",
+      "def": "Cone constructed in \\(\\mathrm{def:overlap-cone}\\).",
+      "role": "approximation domain",
+      "refs": [
+        "\\(\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(\\Lambda\\)",
+      "type": "degree-one homogeneous ratio-sum functional",
+      "sig": "\\(\\mathcal C_\\epsilon\\to[0,\\infty)\\)",
+      "def": "Continuous cell functional, smooth on \\(\\mathcal C_\\epsilon\\setminus\\{0\\}\\), constructed in \\(\\mathrm{def:cell-functionals}\\).",
+      "role": "functional",
+      "refs": [
+        "\\(\\mathcal C_\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(\\Gamma\\)",
+      "type": "homogeneous ratio-absolute-contrast",
+      "sig": "\\(\\mathcal C_\\epsilon\\to[0,\\infty)\\)",
+      "def": "Continuous degree-one homogeneous cell functional constructed in \\(\\mathrm{def:cell-functionals}\\).",
+      "role": "functional",
+      "refs": [
+        "\\(\\mathcal C_\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(V^\\star(P)\\)",
+      "type": "oracle optimal-policy value",
+      "space": "\\([0,1]\\)",
+      "def": "Causal target identified in \\(\\mathrm{def:oracle-value}\\).",
+      "role": "target",
+      "refs": [
+        "\\(P\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathcal P_{d,\\epsilon}\\)",
+      "type": "discrete-confounder law class",
+      "space": "law classes",
+      "def": "Class constructed in \\(\\mathrm{def:model-class}\\).",
+      "role": "model class",
+      "refs": [
+        "\\(d\\)",
+        "\\(\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(I_0\\)",
+      "type": "pilot sample block",
+      "space": "subsets of \\(\\{1,\\ldots,n\\}\\)",
+      "def": "First block in a deterministic three-way partition with block sizes differing by at most one.",
+      "role": "construction input",
+      "refs": [
+        "\\(n\\)"
+      ]
+    },
+    {
+      "name": "\\(I_1\\)",
+      "type": "ratio-estimation sample block",
+      "space": "subsets of \\(\\{1,\\ldots,n\\}\\)",
+      "def": "Second block in the deterministic three-way partition.",
+      "role": "construction input",
+      "refs": [
+        "\\(n\\)",
+        "\\(I_0\\)"
+      ]
+    },
+    {
+      "name": "\\(I_2\\)",
+      "type": "factorial-estimation sample block",
+      "space": "subsets of \\(\\{1,\\ldots,n\\}\\)",
+      "def": "Third block in the deterministic three-way partition.",
+      "role": "construction input",
+      "refs": [
+        "\\(n\\)",
+        "\\(I_0\\)",
+        "\\(I_1\\)"
+      ]
+    },
+    {
+      "name": "\\(N^{(j)}_{ay,x}\\)",
+      "type": "split joint cell count",
+      "space": "\\(\\mathbb N_0\\)",
+      "def": "\\(N^{(j)}_{ay,x}=\\sum_{i\\in I_j}\\mathbf 1\\{X_i=x,A_i=a,Y_i=y\\}\\) for \\(j\\in\\{0,1,2\\}\\).",
+      "role": "statistic",
+      "refs": [
+        "\\(I_0\\)",
+        "\\(I_1\\)",
+        "\\(I_2\\)",
+        "\\(O_i\\)",
+        "\\(x\\)",
+        "\\(a\\)",
+        "\\(y\\)"
+      ]
+    },
+    {
+      "name": "\\(r\\)",
+      "type": "four-dimensional multi-index",
+      "space": "\\(\\mathbb N_0^4\\)",
+      "def": "Exponent vector \\(r=(r_{00},r_{01},r_{10},r_{11})\\) with \\(\\lvert r\\rvert=\\sum_{a,y}r_{ay}\\).",
+      "role": "construction input",
+      "refs": [
+        "\\(a\\)",
+        "\\(y\\)"
+      ]
+    },
+    {
+      "name": "\\(K_n\\)",
+      "type": "polynomial degree",
+      "space": "\\(\\mathbb N\\)",
+      "def": "\\(K_n=\\max\\{1,\\lfloor\\epsilon^2\\log(en)/2^{16}\\rfloor\\}\\).",
+      "role": "tuning parameter",
+      "refs": [
+        "\\(n\\)",
+        "\\(\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(\\widehat{\\mathcal R}_n\\)",
+      "type": "pilot regular region",
+      "space": "subsets of \\([d]\\)",
+      "def": "Pilot-certified massive cells separated from the tie diagonal, constructed in \\(\\mathrm{def:pilot-partition}\\).",
+      "role": "statistic",
+      "refs": [
+        "\\([d]\\)"
+      ]
+    },
+    {
+      "name": "\\(\\widehat{\\mathcal D}_n\\)",
+      "type": "pilot diagonal-or-sparse region",
+      "space": "subsets of \\([d]\\)",
+      "def": "Complement of the pilot regular region, constructed in \\(\\mathrm{def:pilot-partition}\\).",
+      "role": "statistic",
+      "refs": [
+        "\\([d]\\)",
+        "\\(\\widehat{\\mathcal R}_n\\)"
+      ]
+    },
+    {
+      "name": "\\(\\widetilde B_{x,n}\\)",
+      "type": "raw pilot-local feasible region",
+      "space": "compact subsets of \\(\\mathcal C_\\epsilon\\)",
+      "def": "Possibly empty confidence-box intersection constructed in \\(\\mathrm{def:pilot-partition}\\).",
+      "role": "approximation domain",
+      "refs": [
+        "\\(x\\)",
+        "\\(n\\)",
+        "\\(\\mathcal C_\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(B_{x,n}\\)",
+      "type": "total pilot-local overlap region",
+      "space": "nonempty compact subsets of \\(\\mathcal C_\\epsilon\\)",
+      "def": "Raw confidence-box intersection with the deterministic singleton fallback constructed in \\(\\mathrm{def:pilot-partition}\\).",
+      "role": "approximation domain",
+      "refs": [
+        "\\(x\\)",
+        "\\(n\\)",
+        "\\(\\mathcal C_\\epsilon\\)",
+        "\\(\\widetilde B_{x,n}\\)"
+      ]
+    },
+    {
+      "name": "\\(\\widehat V_n^{\\mathrm{DAT}}\\)",
+      "type": "empirical cellwise ratio fallback estimator",
+      "space": "\\([0,1]\\)",
+      "def": "Full-sample plug-in statistic constructed in \\(\\mathrm{def:diagonal-adaptive-estimator}\\).",
+      "role": "estimator",
+      "refs": [
+        "\\(n\\)",
+        "\\(d\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathfrak R_{n,d,\\epsilon}\\)",
+      "type": "minimax mean-squared error",
+      "space": "\\([0,1]\\)",
+      "def": "Risk constructed in \\(\\mathrm{def:minimax-risk}\\).",
+      "role": "risk",
+      "refs": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathsf K_{n,d}\\)",
+      "type": "Markov experiment-reduction kernel",
+      "space": "Markov kernels from two multinomial samples to causal samples",
+      "def": "Kernel constructed in \\(\\mathrm{def:l1-embedding}\\) from \\(n\\) draws from each of \\(\\mathbf P\\) and \\(\\mathbf Q\\) to \\(n\\) observed causal triples.",
+      "role": "lower-bound construction",
+      "refs": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathfrak R^{L_1}_{n,d}\\)",
+      "type": "normalized multinomial distance minimax mean-squared error",
+      "space": "\\([0,4]\\)",
+      "def": "Risk constructed in \\(\\mathrm{def:l1-embedding}\\) for estimating \\(\\lVert\\mathbf P-\\mathbf Q\\rVert_1\\) from \\(n\\) samples from each distribution.",
+      "role": "comparator risk",
+      "refs": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)"
+      ]
+    },
+    {
+      "name": "\\(\\mathscr H_\\epsilon^{\\mathrm{dual}}\\)",
+      "type": "exact-constant derivation handle",
+      "space": "approximation-duality programs",
+      "def": "Handle constructed in \\(\\mathrm{def:exact-constant-handle}\\).",
+      "role": "open construction",
+      "refs": [
+        "\\(\\epsilon\\)"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "ass:iid-sampling",
+      "kind": "sampling",
+      "condition": "\\(O_1,\\ldots,O_n\\) are independent draws from the observed \\((X,A,Y)\\)-margin of \\(P\\).",
+      "free_symbols": [
+        "\\(O_i\\)",
+        "\\(n\\)",
+        "\\(P\\)",
+        "\\(X\\)",
+        "\\(A\\)",
+        "\\(Y\\)"
+      ],
+      "standard": {
+        "name": "independent and identically distributed sampling",
+        "cite": "ZengBalakrishnanHanKennedy2024Discrete"
+      },
+      "used_by": [
+        "lem:empirical-cellwise-ratio-upper",
+        "lem:factorial-lift-unbiased",
+        "lem:l1-lower-transfer",
+        "lem:overlap-cone-polynomial-certificate",
+        "thm:no-four-cell-logarithmic-upper"
+      ]
+    },
+    {
+      "id": "ass:consistency",
+      "kind": "causal-structural",
+      "condition": "\\(Y=Y(A)\\) almost surely.",
+      "free_symbols": [
+        "\\(Y\\)",
+        "\\(Y(a)\\)",
+        "\\(A\\)"
+      ],
+      "standard": {
+        "name": "consistency",
+        "cite": "ZengBalakrishnanHanKennedy2024Discrete"
+      },
+      "used_by": [
+        "def:model-class",
+        "def:oracle-value",
+        "prop:identification-decomposition"
+      ]
+    },
+    {
+      "id": "ass:conditional-exchangeability",
+      "kind": "causal-structural",
+      "condition": "\\((Y(0),Y(1))\\perp A\\mid X\\).",
+      "free_symbols": [
+        "\\(Y(a)\\)",
+        "\\(A\\)",
+        "\\(X\\)"
+      ],
+      "standard": {
+        "name": "conditional exchangeability",
+        "cite": "ZengBalakrishnanHanKennedy2024Discrete"
+      },
+      "used_by": [
+        "def:model-class",
+        "def:oracle-value",
+        "prop:identification-decomposition"
+      ]
+    },
+    {
+      "id": "ass:fixed-overlap",
+      "kind": "support",
+      "condition": "\\(\\epsilon\\le\\pi_x\\le1-\\epsilon\\) for every \\(x\\in[d]\\) with \\(p_x>0\\).",
+      "free_symbols": [
+        "\\(\\epsilon\\)",
+        "\\(\\pi_x\\)",
+        "\\(x\\)",
+        "\\([d]\\)",
+        "\\(p_x\\)"
+      ],
+      "standard": {
+        "name": "fixed strong overlap",
+        "cite": "ZengBalakrishnanHanKennedy2024Discrete"
+      },
+      "used_by": [
+        "def:model-class",
+        "def:oracle-value",
+        "lem:empirical-cellwise-ratio-upper",
+        "lem:l1-lower-transfer",
+        "lem:overlap-cone-polynomial-certificate",
+        "thm:no-four-cell-logarithmic-upper",
+        "prop:identification-decomposition"
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:model-class",
+      "name": "published unrestricted discrete-confounder class",
+      "construction": "\\(\\mathcal P_{d,\\epsilon}:=\\{P: P\\text{ is a law of }(X,A,Y,Y(0),Y(1))\\text{ with }X\\in[d],\\ A,Y,Y(0),Y(1)\\in\\{0,1\\},\\text{ and }P\\text{ satisfies }\\mathrm{ass:consistency},\\mathrm{ass:conditional-exchangeability},\\mathrm{ass:fixed-overlap}\\}\\) for every \\(d\\in\\mathbb N\\) and \\(0<\\epsilon<1/2\\).",
+      "free_symbols": [
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(P\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(X\\)",
+        "\\([d]\\)",
+        "\\(A\\)",
+        "\\(Y\\)",
+        "\\(Y(a)\\)"
+      ],
+      "by_member_properties": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:fixed-overlap"
+      ],
+      "revision": "rev:4933ad8611a9632d7ac1ac1512215c241efb8eb59bec7f22a1dd1fb49dc9befb"
+    },
+    {
+      "id": "def:overlap-cone",
+      "name": "overlap-restricted four-cell cone",
+      "construction": "For \\(u=(u_{00},u_{01},u_{10},u_{11})\\in\\mathbb R_+^4\\), put \\(s_a(u)=u_{a0}+u_{a1}\\) and \\(s(u)=s_0(u)+s_1(u)\\). Define \\(\\mathcal C_\\epsilon:=\\{u\\in\\mathbb R_+^4:\\epsilon s(u)\\le s_1(u)\\le(1-\\epsilon)s(u)\\}\\).",
+      "free_symbols": [
+        "\\(\\mathcal C_\\epsilon\\)",
+        "\\(\\epsilon\\)",
+        "\\(a\\)",
+        "\\(y\\)"
+      ],
+      "inputs": [
+        "\\(\\epsilon\\)"
+      ],
+      "revision": "rev:bfcf8a3314b4e2b235ad6c91b8b80bf318cc5ca7a9cd12703efbab21f8ee036e"
+    },
+    {
+      "id": "def:cell-functionals",
+      "name": "homogeneous ratio sum and ratio-absolute-contrast",
+      "construction": "For nonzero \\(u\\in\\mathcal C_\\epsilon\\), define \\(\\Lambda(u):=s(u)\\{u_{11}/s_1(u)+u_{01}/s_0(u)\\}\\) and \\(\\Gamma(u):=s(u)\\lvert u_{11}/s_1(u)-u_{01}/s_0(u)\\rvert\\); set \\(\\Lambda(0)=\\Gamma(0)=0\\). For every \\(t\\ge0\\), \\(\\Lambda(tu)=t\\Lambda(u)\\) and \\(\\Gamma(tu)=t\\Gamma(u)\\), with \\(0\\le\\Lambda(u)\\le2s(u)\\) and \\(0\\le\\Gamma(u)\\le s(u)\\). Thus both maps have linear growth on the unrestricted cone rather than a bounded range. The map \\(\\Lambda\\) is smooth only on \\(\\mathcal C_\\epsilon\\setminus\\{0\\}\\); there \\(\\Gamma\\) is nonsmooth exactly on the ratio-tie diagonal \\(u_{11}s_0(u)=u_{01}s_1(u)\\).",
+      "free_symbols": [
+        "\\(\\mathcal C_\\epsilon\\)",
+        "\\(\\Lambda\\)",
+        "\\(\\Gamma\\)",
+        "\\(a\\)",
+        "\\(y\\)"
+      ],
+      "inputs": [
+        "\\(\\mathcal C_\\epsilon\\)"
+      ],
+      "revision": "rev:fb8c96e22e7ac95f909123a3e301f063b5ff0b7ae78b2704ba11350977b6c39b"
+    },
+    {
+      "id": "def:oracle-value",
+      "name": "identified unrestricted oracle value",
+      "construction": "\\(V^\\star(P):=E_P[\\max_{a\\in\\{0,1\\}}E_P\\{Y(a)\\mid X\\}]=\\sum_{x=1}^d p_x\\max\\{\\mu_{0x},\\mu_{1x}\\}=\\frac12\\sum_{x=1}^d\\{\\Lambda(q_x)+\\Gamma(q_x)\\}\\).",
+      "free_symbols": [
+        "\\(V^\\star(P)\\)",
+        "\\(P\\)",
+        "\\(a\\)",
+        "\\(Y(a)\\)",
+        "\\(X\\)",
+        "\\(d\\)",
+        "\\(x\\)",
+        "\\(p_x\\)",
+        "\\(\\mu_{ax}\\)",
+        "\\(\\Lambda\\)",
+        "\\(\\Gamma\\)",
+        "\\(q_x\\)"
+      ],
+      "inputs": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:fixed-overlap",
+        "def:cell-functionals"
+      ],
+      "revision": "rev:69db3bc87a257471b45bf25fc2cd0c1549f180068533421d618584cdedb7c155"
+    },
+    {
+      "id": "def:pilot-partition",
+      "name": "mass-and-tie pilot partition",
+      "construction": "Let \\(m_j=\\lvert I_j\\rvert\\), set \\(\\widehat q^{(0)}_{ay,x}=N^{(0)}_{ay,x}/\\max\\{m_0,1\\}\\), and put \\(\\widehat p_x^{(0)}=\\sum_{a,y}\\widehat q^{(0)}_{ay,x}\\). Let \\(\\widehat\\Delta_x^{(0)}\\) be the difference of the two empirical arm means, with \\(0/0=0\\). Define \\(\\widehat{\\mathcal R}_n:=\\{x:\\widehat p_x^{(0)}\\ge256\\log(en)/\\max\\{m_0,1\\},\\ \\min_a\\sum_yN^{(0)}_{ay,x}\\ge64\\log(en),\\ \\lvert\\widehat\\Delta_x^{(0)}\\rvert\\ge32\\sqrt{\\log(en)/(\\max\\{m_0,1\\}\\widehat p_x^{(0)})}\\}\\) and \\(\\widehat{\\mathcal D}_n=[d]\\setminus\\widehat{\\mathcal R}_n\\), interpreting the last inequality as false when \\(\\widehat p_x^{(0)}=0\\). For every \\(x\\in[d]\\), put \\(w_{ay,x}=16\\sqrt{\\widehat q^{(0)}_{ay,x}\\log(en)/\\max\\{m_0,1\\}}+16\\log(en)/\\max\\{m_0,1\\}\\) and \\(\\widetilde B_{x,n}:=\\mathcal C_\\epsilon\\cap\\prod_{a,y}[\\max\\{0,\\widehat q^{(0)}_{ay,x}-w_{ay,x}\\},\\widehat q^{(0)}_{ay,x}+w_{ay,x}]\\). Define the total compact-box convention \\(B_{x,n}:=\\widetilde B_{x,n}\\) when \\(\\widetilde B_{x,n}\\ne\\varnothing\\), and \\(B_{x,n}:=\\{0\\}\\) otherwise. This definition applies on every sample outcome and to cells in both pilot regions.",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\([d]\\)",
+        "\\(x\\)",
+        "\\(i\\)",
+        "\\(a\\)",
+        "\\(y\\)",
+        "\\(I_0\\)",
+        "\\(I_1\\)",
+        "\\(I_2\\)",
+        "\\(N^{(j)}_{ay,x}\\)",
+        "\\(r\\)",
+        "\\(\\Delta_x\\)",
+        "\\(\\widehat{\\mathcal R}_n\\)",
+        "\\(\\widehat{\\mathcal D}_n\\)",
+        "\\(B_{x,n}\\)",
+        "\\(\\widetilde B_{x,n}\\)",
+        "\\(\\mathcal C_\\epsilon\\)"
+      ],
+      "inputs": [
+        "\\(O_i\\)",
+        "\\(I_0\\)",
+        "\\(I_1\\)",
+        "\\(I_2\\)",
+        "\\(N^{(j)}_{ay,x}\\)",
+        "\\(\\mathcal C_\\epsilon\\)"
+      ],
+      "revision": "rev:f635ec7f96ce16f8fa9504dc24307047658acd11c19f32b0087980f78ede1853"
+    },
+    {
+      "id": "def:diagonal-adaptive-estimator",
+      "name": "explicit empirical cellwise ratio fallback estimator",
+      "construction": "Given \\(O_1,\\ldots,O_n\\), for every \\(x\\in[d]\\) and \\(a\\in\\{0,1\\}\\) define\n\\[\n \\overline N_x=\\sum_{i=1}^n\\mathbf 1\\{X_i=x\\},\\qquad\n \\overline N_{ax}=\\sum_{i=1}^n\\mathbf 1\\{X_i=x,A_i=a\\},\\qquad\n \\overline S_{ax}=\\sum_{i=1}^n\\mathbf 1\\{X_i=x,A_i=a,Y_i=1\\}.\n\\]\nPut \\(\\widehat p_x=\\overline N_x/n\\) and \\(\\widehat\\mu_{ax}=\\overline S_{ax}/\\overline N_{ax}\\), with \\(0/0=0\\).  Define the full-sample empirical cellwise ratio estimator\n\\[\n \\widehat V_n^{\\mathrm{DAT}}\n :=\\sum_{x=1}^d\\widehat p_x\n       \\max_{a\\in\\{0,1\\}}\\widehat\\mu_{ax}.\n\\]\nIt is a finite, one-pass computable statistic and belongs to \\([0,1]\\).  The legacy definition identifier is retained only to preserve stable references; this construction replaces the uncertified pilot-polynomial selector.",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\([d]\\)",
+        "\\(i\\)",
+        "\\(x\\)",
+        "\\(a\\)",
+        "\\(O_i\\)",
+        "\\(X\\)",
+        "\\(A\\)",
+        "\\(Y\\)",
+        "\\(\\widehat V_n^{\\mathrm{DAT}}\\)"
+      ],
+      "inputs": [
+        "\\(O_i\\)"
+      ],
+      "revision": "rev:2834cfbc43d4d9be3f5b67541a03599978168c1516e69d33cf33437a1313418f"
+    },
+    {
+      "id": "def:minimax-risk",
+      "name": "minimax oracle-value risk",
+      "construction": "\\(\\mathfrak R_{n,d,\\epsilon}:=\\inf_{\\widehat V}\\sup_{P\\in\\mathcal P_{d,\\epsilon}}E_P[(\\widehat V(O_1,\\ldots,O_n)-V^\\star(P))^2]\\), where the infimum is over all measurable estimators.",
+      "free_symbols": [
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)",
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(P\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(O_i\\)",
+        "\\(V^\\star(P)\\)"
+      ],
+      "inputs": [
+        "def:model-class",
+        "def:oracle-value"
+      ],
+      "revision": "rev:f1b6b019d9f9ea80ab55d5017fa94099232edbcef4dfd1b1ce065b6e0b8f4d72"
+    },
+    {
+      "id": "def:l1-embedding",
+      "name": "exact normalized equal-propensity \\(L_1\\) embedding and Markov reduction",
+      "construction": "For every \\((\\mathbf P,\\mathbf Q)\\in\\Delta_d\\times\\Delta_d\\), define an observed causal law by \\(p_x=(P_x+Q_x)/2\\), \\(\\pi_x=1/2\\), \\(\\mu_{1x}=P_x/(P_x+Q_x)\\), and \\(\\mu_{0x}=Q_x/(P_x+Q_x)\\), setting both ratios to zero when \\(P_x+Q_x=0\\). Equivalently, \\(q_{11,x}=q_{00,x}=P_x/4\\) and \\(q_{10,x}=q_{01,x}=Q_x/4\\). Complete this observed law to a member of \\(\\mathcal P_{d,\\epsilon}\\) by taking \\(Y(0)\\) and \\(Y(1)\\) conditionally independent Bernoulli variables with means \\(\\mu_{0x}\\) and \\(\\mu_{1x}\\), drawing \\(A\\mid X=x\\sim\\operatorname{Bernoulli}(1/2)\\) independently of \\((Y(0),Y(1))\\) conditional on \\(X\\), and setting \\(Y=Y(A)\\). The Markov kernel \\(\\mathsf K_{n,d}\\) takes independent streams \\(U_1,\\ldots,U_n\\sim\\mathbf P\\) and \\(W_1,\\ldots,W_n\\sim\\mathbf Q\\); independently for every \\(i\\), it tosses two fair coins \\(S_i,D_i\\), uses \\(X_i=U_i\\) when \\(S_i=1\\) and \\(X_i=W_i\\) when \\(S_i=0\\), assigns \\((A_i,Y_i)=(1,1)\\) or \\((0,0)\\) according to \\(D_i\\) on the first stream, and assigns \\((A_i,Y_i)=(1,0)\\) or \\((0,1)\\) according to \\(D_i\\) on the second stream. Finally, \\(\\mathfrak R^{L_1}_{n,d}:=\\inf_{\\widehat L}\\sup_{(\\mathbf P,\\mathbf Q)\\in\\Delta_d^2}E[(\\widehat L-\\lVert\\mathbf P-\\mathbf Q\\rVert_1)^2]\\), where \\(\\widehat L\\) uses the two input streams.",
+      "free_symbols": [
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)",
+        "\\(\\Delta_d\\)",
+        "\\(d\\)",
+        "\\(x\\)",
+        "\\(p_x\\)",
+        "\\(\\pi_x\\)",
+        "\\(\\mu_{ax}\\)",
+        "\\(q_{ay,x}\\)",
+        "\\(P\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(\\epsilon\\)",
+        "\\(A\\)",
+        "\\(X\\)",
+        "\\(Y\\)",
+        "\\(Y(a)\\)",
+        "\\(n\\)",
+        "\\(i\\)",
+        "\\(O_i\\)",
+        "\\(\\mathsf K_{n,d}\\)",
+        "\\(\\mathfrak R^{L_1}_{n,d}\\)"
+      ],
+      "inputs": [
+        "def:model-class",
+        "def:oracle-value",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)"
+      ],
+      "revision": "rev:30d79692d45142487e4476f5e33bf4d45990a82cbd45ab0ab13099076bf945c5"
+    },
+    {
+      "id": "def:exact-constant-handle",
+      "name": "approximation-duality handle for the leading constant",
+      "construction": "\\(\\mathscr H_\\epsilon^{\\mathrm{dual}}\\) is the program that first rescales each pilot-local cone by its Poisson noise radius, then computes the limiting best-polynomial error for \\(\\Gamma\\), and finally compares its moment-problem dual with the normalized equal-propensity \\(L_1\\) experiment in \\(\\mathrm{def:l1-embedding}\\). This handle specifies the route to the local asymptotic minimax constant without fixing its value.",
+      "free_symbols": [
+        "\\(\\mathscr H_\\epsilon^{\\mathrm{dual}}\\)",
+        "\\(\\epsilon\\)",
+        "\\(C_\\epsilon\\)",
+        "\\(B_{x,n}\\)",
+        "\\(\\Gamma\\)",
+        "\\(\\pi_x\\)",
+        "\\(\\mu_{ax}\\)",
+        "\\(\\mathfrak R^{L_1}_{n,d}\\)"
+      ],
+      "inputs": [
+        "def:pilot-partition",
+        "def:cell-functionals",
+        "def:l1-embedding"
+      ],
+      "revision": "rev:e7422f63b30abe0fdf966d2f96ce9203bddf83886ebea7e22b4403eff01b984e"
+    }
+  ],
+  "statements": [
+    {
+      "id": "prop:identification-decomposition",
+      "kind": "proposition",
+      "statement": "Under \\(\\mathrm{ass:consistency}\\), \\(\\mathrm{ass:conditional-exchangeability}\\), and \\(\\mathrm{ass:fixed-overlap}\\), the rule \\(a^\\star(x)=\\min\\arg\\max_{a\\in\\{0,1\\}}\\mu_{ax}\\) is identified on \\(\\{x:p_x>0\\}\\), is defined as zero when \\(p_x=0\\), and has value \\(V^\\star(P)=\\frac12\\sum_{x=1}^d\\{\\Lambda(q_x)+\\Gamma(q_x)\\}\\).",
+      "free_symbols": [
+        "\\(a\\)",
+        "\\(x\\)",
+        "\\(P\\)",
+        "\\(p_x\\)",
+        "\\(\\mu_{ax}\\)",
+        "\\(a^\\star(x)\\)",
+        "\\(V^\\star(P)\\)",
+        "\\(d\\)",
+        "\\(\\Lambda\\)",
+        "\\(\\Gamma\\)",
+        "\\(q_x\\)"
+      ],
+      "depends_on": [
+        "ass:consistency",
+        "ass:conditional-exchangeability",
+        "ass:fixed-overlap",
+        "def:cell-functionals",
+        "def:oracle-value"
+      ],
+      "status": "proved",
+      "justification": "The decomposition isolates the ordinary ratio problem from the absolute-value cusp that changes the minimax frontier.",
+      "gap": "LuedtkeVanderLaan2016OptimalValue, Theorem 1, characterizes pathwise differentiability and the canonical gradient of the optimal value, but does not express the growing-alphabet experiment as a homogeneous four-cell approximation problem.",
+      "consumer": "The decomposition supplies the target used by the upper estimator and the normalized \\(L_1\\) lower-bound transfer.",
+      "proof_tex": "\\textbf{Proof.}\nFix \\(P\\in\\mathcal P_{d,\\epsilon}\\) and a cell \\(x\\) with \\(p_x>0\\).  Fixed overlap gives\n\\[\n P(A=a\\mid X=x)>0,\n \\qquad a\\in\\{0,1\\},\n\\]\nso both observed conditional means \\(\\mu_{ax}\\) are well defined.  By conditional exchangeability and consistency,\n\\[\n E_P\\{Y(a)\\mid X=x\\}\n =E_P\\{Y(a)\\mid A=a,X=x\\}\n =E_P\\{Y\\mid A=a,X=x\\}\n =\\mu_{ax}.\n\\]\nThus the two conditional causal means, their ordering, and the tie-broken maximizer\n\\(a^\\star(x)=\\min\\arg\\max_a\\mu_{ax}\\) are identified from the observed law on the support \\(\\{x:p_x>0\\}\\).  The stipulated value \\(a^\\star(x)=0\\) on a null cell is immaterial to every value functional.\n\nFor the four-cell vector \\(q_x\\), write \\(s_a(q_x)=q_{a0,x}+q_{a1,x}\\) and \\(s(q_x)=s_0(q_x)+s_1(q_x)\\).  Directly from the definitions,\n\\[\n s(q_x)=p_x,\n \\qquad s_1(q_x)=p_x\\pi_x,\n \\qquad s_0(q_x)=p_x(1-\\pi_x).\n\\]\nFixed overlap makes the last two quantities positive.  Consequently,\n\\[\n \\frac{q_{11,x}}{s_1(q_x)}=\\mu_{1x},\n \\qquad\n \\frac{q_{01,x}}{s_0(q_x)}=\\mu_{0x}.\n\\]\nThe definitions of \\(\\Lambda\\) and \\(\\Gamma\\) therefore give\n\\[\n \\Lambda(q_x)=p_x(\\mu_{1x}+\\mu_{0x}),\n \\qquad\n \\Gamma(q_x)=p_x\\lvert\\mu_{1x}-\\mu_{0x}\\rvert.\n\\]\nUsing \\(\\max\\{u,v\\}=\\{u+v+\\lvert u-v\\rvert\\}/2\\),\n\\[\n p_x\\max\\{\\mu_{0x},\\mu_{1x}\\}\n =\\frac12\\{\\Lambda(q_x)+\\Gamma(q_x)\\}.\n\\]\nWhen \\(p_x=0\\), all four coordinates of \\(q_x\\) vanish, and both sides are zero by the conventions in \\(\\mathrm{def:cell-functionals}\\).  Summing over \\(x\\in[d]\\) and invoking \\(\\mathrm{def:oracle-value}\\) proves\n\\[\n V^\\star(P)=\\frac12\\sum_{x=1}^d\\{\\Lambda(q_x)+\\Gamma(q_x)\\}.\n\\]",
+      "revision": "rev:70090eefe8f35823cc65e857482ea5c0a02f4fd0bb6c9ceb49dd00fd2605ffa9"
+    },
+    {
+      "id": "lem:l1-lower-transfer",
+      "kind": "lemma",
+      "statement": "For every \\((\\mathbf P,\\mathbf Q)\\in\\Delta_d^2\\), the law produced by \\(\\mathrm{def:l1-embedding}\\) belongs to \\(\\mathcal P_{d,\\epsilon}\\), satisfies \\(\\sum_{x=1}^dp_x=1\\), and obeys \\(V^\\star(P)=1/2+\\lVert\\mathbf P-\\mathbf Q\\rVert_1/4\\). The causal sample is the Markov image under \\(\\mathsf K_{n,d}\\) of \\(n\\) independent \\(\\mathbf P\\)-draws and \\(n\\) independent \\(\\mathbf Q\\)-draws, so total variation contracts under this reduction. For every causal estimator \\(\\widehat V\\), the composed estimator \\(\\widehat L=4\\widehat V\\circ\\mathsf K_{n,d}-2\\) therefore yields \\(\\mathfrak R_{n,d,\\epsilon}\\ge\\mathfrak R^{L_1}_{n,d}/16\\). A paired-sign fuzzy mixture gives \\(\\mathfrak R^{L_1}_{n,d}\\ge c_\\epsilon d/\\{n\\log(en)\\}\\) for \\(2\\le d\\le C\\log^2(en)\\); for \\(C\\log^2(en)\\le d\\le\\rho_\\epsilon n\\log(en)\\), the same bound follows by specializing Theorem 3 of JiaoHanWeissman2018L1 to uniform \\(\\mathbf Q\\) and checking its dominance condition. Independently, a regular two-point submodel gives \\(\\mathfrak R_{n,d,\\epsilon}\\ge c_\\epsilon/n\\).",
+      "free_symbols": [
+        "\\(\\epsilon\\)",
+        "\\(c_\\epsilon\\)",
+        "\\(\\rho_\\epsilon\\)",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)",
+        "\\(\\Delta_d\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(n\\)",
+        "\\(V^\\star(P)\\)",
+        "\\(P\\)",
+        "\\(d\\)",
+        "\\(x\\)",
+        "\\(p_x\\)",
+        "\\(\\mathsf K_{n,d}\\)",
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)",
+        "\\(\\mathfrak R^{L_1}_{n,d}\\)"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:fixed-overlap",
+        "def:model-class",
+        "def:minimax-risk",
+        "def:l1-embedding",
+        "prop:identification-decomposition"
+      ],
+      "proof_tex": "\\textbf{Proof.}\nThe exact membership, target identity, Markov simulation, decision-theoretic factor \\(1/16\\), and parametric floor are established in \\(\\mathrm{lem:exact-l1-transfer-parametric-floor}\\).  In particular,\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\ge\\frac1{16}\\mathfrak R^{L_1}_{n,d},\n \\qquad\n \\mathfrak R_{n,d,\\epsilon}\\ge\\frac1{1024n}.\n\\]\nThe first inequality is valid for fixed-sample experiments because the kernel produces exactly \\(n\\) independent causal observations, and conditional Jensen derandomizes the composed estimator without increasing squared risk.  Apply \\(\\mathrm{lem:two-band-l1-lower}\\) to the first display.  For \\(2\\le d\\le\\rho n\\log(en)\\), it gives\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\ge c\\frac d{n\\log(en)}.\n\\]\nCombining this with the parametric floor and using \\(\\max\\{u,v\\}\\ge(u+v)/2\\) yields\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\ge c_\\epsilon\\left\\{\\frac1n+\\frac d{n\\log(en)}\\right\\}.\n\\]\nThe constants may be renamed as functions of \\(\\epsilon\\); the embedded propensity is \\(1/2\\), so the only overlap requirement is the stated boundary condition \\(0<\\epsilon<1/2\\).  This proves the corrected two-band statement.",
+      "status": "proved",
+      "justification": "The exact Markov reduction imports the normalized multinomial distance obstruction without inventing a bespoke coordinate prior or normalization argument.",
+      "gap": "Theorem 3 of the accessible five-page author version of JiaoHanWeissman2018L1, and likewise Theorem 3 of arXiv:1705.00807v7, gives the normalized two-multinomial \\(L_1\\) lower bound. Construction 2 and Theorem 5 in the five-page version, corresponding to Construction 2 and Theorem 6 in arXiv v7 and the paragraph after equation (50), concern the unknown--unknown estimator and upper-risk bound, not the lower bound. This lemma embeds the exact comparator experiment into the causal class and transfers its lower risk by a black-box Markov-kernel argument; ZengBalakrishnanHanKennedy2024Discrete, arXiv v3, Theorem 2 on pages 9--10, instead gives a treatment-specific-mean \\(\\psi_1(P)\\) lower bound.",
+      "consumer": "The lower bound tells study designers when no estimator of the oracle value can be reliable, regardless of computation or nuisance modeling.",
+      "revision": "rev:8772019bb717cdc7f64475c220c900c30f479ddf2290c2164f0fcb6d5f293897"
+    },
+    {
+      "id": "prop:l1-reduction",
+      "kind": "proposition",
+      "statement": "For every \\((\\mathbf P,\\mathbf Q)\\in\\Delta_d^2\\), the exact embedding in \\(\\mathrm{def:l1-embedding}\\) has \\(p_x=(P_x+Q_x)/2\\), \\(\\pi_x=1/2\\), \\(q_{11,x}=q_{00,x}=P_x/4\\), and \\(q_{10,x}=q_{01,x}=Q_x/4\\), with \\(\\sum_{x=1}^dp_x=1\\) and fixed overlap. On this normalized slice, \\[V^\\star(P)=\\frac12+\\frac14\\lVert\\mathbf P-\\mathbf Q\\rVert_1.\\] The slice is a proper subexperiment of the full observational four-cell model, whose unknown arm masses and ratios are handled by \\(\\widehat V_n^{\\mathrm{DAT}}\\).",
+      "free_symbols": [
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)",
+        "\\(\\Delta_d\\)",
+        "\\(\\pi_x\\)",
+        "\\(x\\)",
+        "\\(P\\)",
+        "\\(V^\\star(P)\\)",
+        "\\(d\\)",
+        "\\(p_x\\)",
+        "\\(q_{ay,x}\\)",
+        "\\(\\widehat V_n^{\\mathrm{DAT}}\\)"
+      ],
+      "depends_on": [
+        "def:model-class",
+        "def:oracle-value",
+        "def:l1-embedding",
+        "def:diagonal-adaptive-estimator"
+      ],
+      "status": "proved",
+      "justification": "The exact identity is the required sanity reduction and supplies the comparator slice used by the rigorous lower-bound transfer.",
+      "gap": "Theorem 3 of the accessible five-page author version of JiaoHanWeissman2018L1 gives the normalized multinomial-distance lower bound, while Construction 2 and Theorem 5 give its unknown--unknown estimator and upper-risk bound; in arXiv:1705.00807v7 the corresponding locators are Theorem 3 for the lower bound and Construction 2 with Theorem 6 for the upper result, summarized after equation (50). Those results concern normalized multinomial distributions, not the observational causal model. This proposition identifies that exact experiment inside the causal model without conflating it with the general four-cell ratio experiment.",
+      "consumer": "The reduction lets approximation theorists transfer diagnostics and simulation benchmarks from large-alphabet distance estimation to the causal estimator.",
+      "proof_tex": "\\textbf{Proof.}\nFix \\((\\mathbf P,\\mathbf Q)\\in\\Delta_d^2\\), and write \\(s_x=P_x+Q_x\\).  The construction in \\(\\mathrm{def:l1-embedding}\\) gives\n\\[\n p_x=\\frac{s_x}{2},\\qquad \\pi_x=\\frac12.\n\\]\nIf \\(s_x>0\\), multiplication of the cell mass, treatment probability, and conditional outcome probability gives\n\\[\n \\begin{aligned}\n q_{11,x}&=p_x\\pi_x\\mu_{1x}\n =\\frac{s_x}{2}\\frac12\\frac{P_x}{s_x}=\\frac{P_x}{4},\n &q_{10,x}&=p_x\\pi_x(1-\\mu_{1x})=\\frac{Q_x}{4},\\\\\n q_{01,x}&=p_x(1-\\pi_x)\\mu_{0x}=\\frac{Q_x}{4},\n &q_{00,x}&=p_x(1-\\pi_x)(1-\\mu_{0x})=\\frac{P_x}{4}.\n \\end{aligned}\n\\]\nIf \\(s_x=0\\), nonnegativity implies \\(P_x=Q_x=0\\), and the zero-ratio convention in \\(\\mathrm{def:l1-embedding}\\) makes the same four identities hold.  Since \\(\\mathbf P\\) and \\(\\mathbf Q\\) are probability vectors,\n\\[\n \\sum_{x=1}^d p_x\n =\\frac12\\sum_{x=1}^d(P_x+Q_x)=1.\n\\]\nMoreover, \\(0<\\epsilon<1/2\\) implies \\(\\epsilon<1/2<1-\\epsilon\\), so the embedded law satisfies fixed overlap on every supported cell.\n\nBy \\(\\mathrm{def:oracle-value}\\), with the zero-mass cells again contributing zero,\n\\[\n \\begin{aligned}\n V^\\star(P)\n &=\\sum_{x=1}^d \\frac{P_x+Q_x}{2}\n   \\max\\!\\left\\{\\frac{Q_x}{P_x+Q_x},\n                    \\frac{P_x}{P_x+Q_x}\\right\\}\\\\\n &=\\frac12\\sum_{x=1}^d\\max\\{P_x,Q_x\\}\\\\\n &=\\frac14\\sum_{x=1}^d\n   \\{P_x+Q_x+\\lvert P_x-Q_x\\rvert\\}\\\\\n &=\\frac12+\\frac14\\lVert\\mathbf P-\\mathbf Q\\rVert_1.\n \\end{aligned}\n\\]\nThe slice is proper.  Indeed, for any \\(d\\ge1\\), take \\(p_1=1\\), \\(\\pi_1=\\epsilon\\), and, for example, \\(\\mu_{01}=\\mu_{11}=0\\), with all remaining cells null; conditionally independent Bernoulli potential outcomes and \\(Y=Y(A)\\) complete this to a member of \\(\\mathcal P_{d,\\epsilon}\\).  Its supported-cell propensity is \\(\\epsilon\\ne1/2\\), so it is not in the embedded slice.  Finally, the statistic in \\(\\mathrm{def:diagonal-adaptive-estimator}\\) computes each empirical arm mean from the unrestricted arm count \\(\\overline N_{ax}\\) and success count \\(\\overline S_{ax}\\); it imposes neither equal arm masses nor the normalized-slice ratio identities.  Thus it is defined on the full four-cell experiment, as claimed.",
+      "revision": "rev:ad39f15467784b719cd4cb5cca40e552081692603282c3da98f8fce4f81c7aed"
+    },
+    {
+      "id": "oeq:exact-leading-constant",
+      "kind": "openendedquestion",
+      "statement": "Along sequences with \\(d/\\log n\\to\\infty\\) and \\(d/(n\\log n)\\to0\\), does \\((n\\log n/d)\\mathfrak R_{n,d,\\epsilon}\\) converge, and can its limit be characterized and attained through the approximation-duality handle \\(\\mathscr H_\\epsilon^{\\mathrm{dual}}\\) while retaining a computable fixed-sample estimator?",
+      "free_symbols": [
+        "\\(d\\)",
+        "\\(n\\)",
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)",
+        "\\(\\epsilon\\)",
+        "\\(\\mathscr H_\\epsilon^{\\mathrm{dual}}\\)"
+      ],
+      "depends_on": [
+        "def:minimax-risk",
+        "def:exact-constant-handle",
+        "thm:elementary-minimax-bracket",
+        "prop:l1-reduction"
+      ],
+      "status": "to-prove",
+      "justification": "Constant-factor minimaxity leaves open whether causal overlap changes the exact local asymptotic constant away from the equal-propensity slice.",
+      "gap": "Construction 2 and Theorem 5 of the accessible five-page author version of JiaoHanWeissman2018L1, corresponding to Construction 2 and Theorem 6 of arXiv:1705.00807v7, and WuYang2016Entropy, Sections 3 and 4, identify approximation-dual upper-rate mechanisms, but do not solve this four-cell ratio-cone constant. The normalized \\(L_1\\) lower result is separately Theorem 3 in both Jiao--Han--Weissman versions.",
+      "consumer": "An exact constant would calibrate polynomial degree and quantify the efficiency price of observational treatment imbalance.",
+      "revision": "rev:e7685fea2fe0639172439283f0be61a3dce8c1fdb96108ca3aeaf59622c41d58"
+    },
+    {
+      "id": "thm:no-four-cell-logarithmic-upper",
+      "kind": "theorem",
+      "statement": "For every fixed \\(0<\\epsilon<1/2\\), the answer to \\(\\mathrm{oeq:four-cell-logarithmic-upper}\\) is negative.  There do not exist finite \\(C_\\epsilon\\), positive \\(\\rho_\\epsilon\\), and a collection of measurable estimators \\(\\widehat V_{n,d}\\) such that\n\\[\n \\sup_{P\\in\\mathcal P_{d,\\epsilon}}\n E_P\\!\\left[\n  \\left\\{\\widehat V_{n,d}(O_1,\\ldots,O_n)-V^\\star(P)\\right\\}^2\n \\right]\n \\le C_\\epsilon\\left\\{\\frac1n+\\frac d{n\\log(en)}\\right\\}\n\\]\nfor every \\(2\\le d\\le\\rho_\\epsilon n\\log(en)\\).  Indeed, for \\(d_n=\\max\\{2,\\lfloor\\log(en)\\rfloor\\}\\),\n\\[\n \\mathfrak R_{n,d_n,\\epsilon}\n \\ge \\frac{\\sqrt{\\log(en)}}{8192n}\n\\]\nfor all sufficiently large \\(n\\).  Hence no finite computable four-cell overlap-cone construction can have the proposed uniform risk certificate.  Moreover, along every sequence with \\(2\\le d\\le n^2\\), \\(\\mathfrak R_{n,d,\\epsilon}=O(n^{-1})\\) holds if and only if \\(d=O(1)\\); for bounded \\(d\\), the risk is of order \\(n^{-1}\\).",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(C_\\epsilon\\)",
+        "\\(\\rho_\\epsilon\\)",
+        "\\(P\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(O_i\\)",
+        "\\(V^\\star(P)\\)",
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:fixed-overlap",
+        "def:model-class",
+        "def:minimax-risk",
+        "lem:paired-sign-small-alphabet-floor",
+        "lem:empirical-cellwise-ratio-upper",
+        "thm:elementary-minimax-bracket"
+      ],
+      "proof_tex": "\\textbf{Proof.}\nFix \\(0<\\epsilon<1/2\\), and suppose for contradiction that finite \\(C_\\epsilon\\), positive \\(\\rho_\\epsilon\\), and estimators satisfying the displayed uniform bound exist.  Put\n\\[\n L_n=\\log(en),\\qquad d_n=\\max\\{2,\\lfloor L_n\\rfloor\\}.\n\\]\nFor all sufficiently large \\(n\\),\n\\[\n 2\\le d_n\\le n^2,qquad\n d_n\\le\\rho_\\epsilon nL_n,qquad\n \\frac{L_n}{2}\\le d_n\\le L_n.\n\\]\nThe first inequality places \\((n,d_n)\\) in the range of \\(\\mathrm{lem:paired-sign-small-alphabet-floor}\\), and the second places it in the range of the supposed upper bound.  By \\(\\mathrm{def:minimax-risk}\\), the minimax risk is no larger than the worst-case risk of any particular measurable estimator.  The supposed bound would thus imply\n\\[\n \\mathfrak R_{n,d_n,\\epsilon}\n \\le C_\\epsilon\\left\\{\\frac1n+\\frac{d_n}{nL_n}\\right\\}\n \\le\\frac{2C_\\epsilon}{n}.\n\\]\nOn the other hand, \\(\\mathrm{lem:paired-sign-small-alphabet-floor}\\) gives\n\\[\n \\mathfrak R_{n,d_n,\\epsilon}\n \\ge\\frac{\\sqrt{d_n}}{4096\\sqrt2\\,n}\n \\ge\\frac{\\sqrt{L_n}}{8192n}.\n\\]\nSince \\(L_n\\to\\infty\\), this lower bound eventually exceeds \\(2C_\\epsilon/n\\), a contradiction.  No measurable estimator can therefore satisfy the proposed bound uniformly.  A finite computable estimator with the requested approximation and covariance certificate would be a measurable estimator, so it is ruled out a fortiori.\n\nIt remains to verify the corrected parametric boundary.  Along any sequence with \\(2\\le d\\le n^2\\), the paired-sign lemma shows that \\(\\mathfrak R_{n,d,\\epsilon}=O(n^{-1})\\) forces \\(\\sqrt d=O(1)\\), equivalently \\(d=O(1)\\).  Conversely, when \\(d=O(1)\\), \\(\\mathrm{lem:empirical-cellwise-ratio-upper}\\) gives\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\le \\left(\\frac12+\\frac6\\epsilon\\right)\\frac dn\n =O(n^{-1}).\n\\]\nFor all sufficiently large \\(n\\), bounded \\(d\\ge2\\) also lies in the range of \\(\\mathrm{thm:elementary-minimax-bracket}\\), whose parametric component gives \\(\\mathfrak R_{n,d,\\epsilon}\\ge c_\\epsilon/n\\).  Thus bounded \\(d\\) yields risk of exact order \\(n^{-1}\\), completing the proof.",
+      "status": "proved",
+      "revision": "rev:9eb0da9cc626847682b21eac909bb99983de3f1a5ef6124ee5f313ff18380a70"
+    },
+    {
+      "id": "lem:jiao-han-weissman-known-q-lower",
+      "kind": "lemma",
+      "statement": "Fix \\(C>0\\).  In the Poissonized known-\\(\\mathbf Q\\) experiment of Jiao, Han, and Weissman, let\n\\[\n T_{n,d}(\\mathbf Q)\n :=\\sum_{x=1}^d\\left\\{Q_x\\wedge\\sqrt{\\frac{Q_x}{n\\log n}}\\right\\}.\n\\]\nTheir Theorem 3 states that, when \\(d\\ge2\\), \\(\\log n\\ge C\\log d\\), and\n\\[\n T_{n,d}(\\mathbf Q)\n \\ge C'\\left\\{\\sqrt{\\frac{\\log n}{n}}+\\frac{\\sqrt d\\log n}{n}\\right\\},\n\\]\nwhere \\(C'>0\\) depends only on \\(C\\), the minimax mean-squared error for estimating \\(\\lVert\\mathbf P-\\mathbf Q\\rVert_1\\) is bounded below by \\(c_C T_{n,d}(\\mathbf Q)^2\\).  The comparison between the Poissonized and fixed-multinomial experiments is given in the fixed-sample correction used in that theorem's proof.",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(x\\)",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)",
+        "\\(\\Delta_d\\)"
+      ],
+      "depends_on": [],
+      "proof_tex": "",
+      "status": "cited",
+      "source": {
+        "cite": "JiaoHanWeissman2018L1",
+        "locator": "Theorem 3 and the fixed-multinomial comparison in Lemma 33, arXiv:1705.00807v7",
+        "arxiv": "1705.00807v7",
+        "url": "https://arxiv.org/abs/1705.00807v7"
+      },
+      "revision": "rev:df042ced90e1c745521e8c1ec6f4e1005991b44e5ab0a273018556bc1df89810"
+    },
+    {
+      "id": "lem:exact-l1-transfer-parametric-floor",
+      "kind": "lemma",
+      "statement": "For every \\(n\\ge1\\), \\(d\\ge2\\), and \\(0<\\epsilon<1/2\\), the embedding in \\(\\mathrm{def:l1-embedding}\\) maps \\(\\Delta_d^2\\) into \\(\\mathcal P_{d,\\epsilon}\\), obeys\n\\[\n V^\\star(P)=\\frac12+\\frac14\\lVert\\mathbf P-\\mathbf Q\\rVert_1,\n\\]\nand gives the exact decision-theoretic inequalities\n\\[\n \\mathfrak R_{n,d,\\epsilon}\\ge\\frac1{16}\\mathfrak R^{L_1}_{n,d}\n \\qquad\\text{and}\\qquad\n \\mathfrak R_{n,d,\\epsilon}\\ge\\frac{1}{1024n}.\n\\]",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(P\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)",
+        "\\(\\Delta_d\\)",
+        "\\(V^\\star(P)\\)",
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)",
+        "\\(\\mathfrak R^{L_1}_{n,d}\\)"
+      ],
+      "depends_on": [
+        "def:model-class",
+        "def:oracle-value",
+        "def:minimax-risk",
+        "def:l1-embedding",
+        "prop:identification-decomposition"
+      ],
+      "proof_tex": "\\textbf{Proof.}\nFor \\((\\mathbf P,\\mathbf Q)\\in\\Delta_d^2\\), the construction gives nonnegative four-cell masses with total mass\n\\[\n \\sum_{x=1}^d\\sum_{a,y}q_{ay,x}\n =\\frac12\\sum_{x=1}^d(P_x+Q_x)=1.\n\\]\nMoreover,\n\\[\n p_x=\\sum_{a,y}q_{ay,x}=\\frac{P_x+Q_x}{2},\n \\qquad\n \\sum_xp_x=1,\n\\]\nand, whenever \\(p_x>0\\),\n\\[\n \\pi_x=\\frac{q_{10,x}+q_{11,x}}{p_x}=\\frac12,\n \\quad\n \\mu_{1x}=\\frac{P_x}{P_x+Q_x},\n \\quad\n \\mu_{0x}=\\frac{Q_x}{P_x+Q_x}.\n\\]\nThe potential-outcome completion in \\(\\mathrm{def:l1-embedding}\\) satisfies consistency and conditional exchangeability by construction, while \\(\\pi_x=1/2\\) satisfies fixed overlap because \\(0<\\epsilon<1/2\\).  Thus the law is in \\(\\mathcal P_{d,\\epsilon}\\).  The identification formula gives\n\\[\n \\begin{aligned}\n V^\\star(P)\n &=\\frac12\\sum_{x=1}^d\\max\\{P_x,Q_x\\}\\\\\n &=\\frac14\\sum_{x=1}^d\\{P_x+Q_x+\\lvert P_x-Q_x\\rvert\\}\\\\\n &=\\frac12+\\frac14\\lVert\\mathbf P-\\mathbf Q\\rVert_1.\n \\end{aligned}\n\\]\n\nFor each \\(i\\), the kernel first chooses the \\(\\mathbf P\\)-stream or the \\(\\mathbf Q\\)-stream with probability \\(1/2\\), and then chooses one of the two associated \\((A,Y)\\) pairs with probability \\(1/2\\).  Hence its one-observation output probabilities are exactly\n\\[\n q_{11,x}=q_{00,x}=P_x/4,\n \\qquad\n q_{10,x}=q_{01,x}=Q_x/4.\n\\]\nThe input streams and all kernel coins are independent across \\(i\\), so the output is an independent sample of size \\(n\\) from the embedded causal law.\n\nLet \\(\\widehat V\\) be any causal estimator and form the randomized comparator estimator\n\\[\n \\widehat L=4\\widehat V\\circ\\mathsf K_{n,d}-2.\n\\]\nThe displayed target identity implies, for every \\((\\mathbf P,\\mathbf Q)\\),\n\\[\n E_{\\mathbf P,\\mathbf Q}\\!\\left[\n   (\\widehat L-\\lVert\\mathbf P-\\mathbf Q\\rVert_1)^2\n \\right]\n =16E_P[(\\widehat V-V^\\star(P))^2].\n\\]\nIf randomized estimators are not included in the definition of \\(\\mathfrak R^{L_1}_{n,d}\\), replace \\(\\widehat L\\) by its conditional expectation given the two input streams; conditional Jensen's inequality cannot increase squared risk.  Taking suprema and then the infimum over \\(\\widehat V\\) yields\n\\[\n \\mathfrak R^{L_1}_{n,d}\\le16\\mathfrak R_{n,d,\\epsilon}.\n\\]\n\nIt remains to prove the parametric floor.  Consider two laws supported on \\(X=1\\), with \\(\\pi_1=1/2\\), \\(\\mu_{01}=1/4\\), and\n\\[\n \\mu_{11}^{(0)}=\\frac12,\n \\qquad\n \\mu_{11}^{(1)}=\\frac12+t,\n \\qquad\n t=\\frac{1}{8\\sqrt n}.\n\\]\nComplete both laws by conditionally independent Bernoulli potential outcomes as in \\(\\mathrm{def:l1-embedding}\\).  Both laws belong to \\(\\mathcal P_{d,\\epsilon}\\), and their targets differ by \\(t\\).  Their one-observation Hellinger affinity is\n\\[\n r=\\frac12+\\frac14\\{\\sqrt{1+2t}+\\sqrt{1-2t}\\}.\n\\]\nThe elementary inequality\n\\(\\sqrt{1+u}+\\sqrt{1-u}\\ge2-u^2\\) for \\(\\lvert u\\rvert\\le1/2\\) gives \\(r\\ge1-t^2\\).  Product structure and Bernoulli's inequality imply\n\\[\n r^n\\ge(1-t^2)^n\\ge1-nt^2=\\frac{63}{64}.\n\\]\nFor probability masses \\(f,g\\), Cauchy--Schwarz gives\n\\[\n \\lVert f-g\\rVert_{\\mathrm{TV}}\n \\le\\sqrt{1-\\left(\\sum_z\\sqrt{f(z)g(z)}\\right)^2}.\n\\]\nThus the total variation distance between the two \\(n\\)-sample laws is less than \\(1/2\\).  Given any estimator, test the two laws by choosing the target value closest to its output.  On a testing error the squared estimation error is at least \\(t^2/4\\), while the sum of the two testing-error probabilities is at least one minus total variation.  Hence the maximum of the two risks is at least\n\\[\n \\frac{t^2}{8}\\{1-\\lVert P_0^n-P_1^n\\rVert_{\\mathrm{TV}}\\}\n \\ge\\frac{t^2}{16}\n =\\frac{1}{1024n}.\n\\]\nTaking the infimum over estimators proves the second inequality.",
+      "status": "proved",
+      "revision": "rev:90988ba7ea96a68ac9b8872e55d23b4825295d1e5a7b7c1ecc00b199116bd4e4"
+    },
+    {
+      "id": "lem:jhw-local-polynomial-toolkit",
+      "kind": "lemma",
+      "statement": "The sparse-square and local-stripe polynomial constructions of Jiao, Han, and Weissman have zero-anchored sparse approximants, pointwise approximation at the local Poisson scale, centered near-diagonal stripe approximants, and unbiased factorial-moment lifts with coefficient-growth control.",
+      "free_symbols": [],
+      "depends_on": [],
+      "proof_tex": "",
+      "status": "cited",
+      "source": {
+        "cite": "JiaoHanWeissman2018L1",
+        "locator": "arXiv:1705.00807v7, lines 570--623 and Construction 2",
+        "arxiv": "1705.00807v7",
+        "url": "https://arxiv.org/abs/1705.00807v7",
+        "attestation": {
+          "by": "d0-agent",
+          "note": "Source handle and precise line range supplied in the orchestrator directive; the node records only the generic published polynomial toolkit."
+        }
+      },
+      "justification": "This leaf records the published approximation and factorial-lift substrate used by the new overlap-cone adaptation.",
+      "gap": "The source treats normalized multinomial distance, not the observational four-cell ratio cone.",
+      "consumer": "The cone certificate adapts these generic constructions.",
+      "revision": "rev:17dfc2c15ce9c392aaa487a43bffcef8ffdfc26dac9b956d43dd84eb439eff18"
+    },
+    {
+      "id": "lem:jvhw-coefficient-toolkit",
+      "kind": "lemma",
+      "statement": "The polynomial constructions of Jiao, Venkat, Han, and Weissman include the zero-constant normalization, pointwise and uniform approximation estimates, and coefficient-growth bounds for factorial-moment estimation of nonsmooth discrete functionals.",
+      "free_symbols": [],
+      "depends_on": [],
+      "proof_tex": "",
+      "status": "cited",
+      "source": {
+        "cite": "JiaoVenkatHanWeissman2015Functionals",
+        "locator": "source lines 809--817, 1740--1758, and 3506--3520",
+        "doi": "10.1109/TIT.2015.2410256",
+        "attestation": {
+          "by": "d0-agent",
+          "note": "The exact source line ranges were supplied in the orchestrator directive."
+        }
+      },
+      "justification": "This leaf records the published zero-constant and coefficient-control facts used in the covariance proof.",
+      "gap": "The source does not contain the present causal ratio-cone selector.",
+      "consumer": "The cone certificate combines these bounds with overlap geometry.",
+      "revision": "rev:43ee907332cb3b61b95b8af39a28762b03c5cd4fdaf5f275d5bf260daa852fb5"
+    },
+    {
+      "id": "lem:two-band-l1-lower",
+      "kind": "lemma",
+      "statement": "There are universal constants \\(c,C,\\rho>0\\) such that the two-sample multinomial risk in \\(\\mathrm{def:l1-embedding}\\) satisfies\n\\[\n \\mathfrak R^{L_1}_{n,d}\\ge c\\frac{d}{n\\log(en)}\n\\]\nfor every \\(2\\le d\\le\\rho n\\log(en)\\).  For \\(d\\le C\\log^2(en)\\) this follows from a paired-sign fuzzy mixture, and for \\(d\\ge C\\log^2(en)\\) it follows from \\(\\mathrm{lem:jiao-han-weissman-known-q-lower}\\) with uniform \\(\\mathbf Q\\).",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\mathfrak R^{L_1}_{n,d}\\)",
+        "\\(\\mathbf Q\\)"
+      ],
+      "depends_on": [
+        "def:l1-embedding",
+        "lem:jiao-han-weissman-known-q-lower"
+      ],
+      "proof_tex": "\\textbf{Proof.}\nPut \\(L=\\log(en)\\).  We prove two overlapping bands.\n\n\\emph{The paired-sign band.}\nLet \\(k=2\\lfloor d/2\\rfloor\\), let \\(Q_x=1/k\\) for \\(x\\le k\\), and pad the remaining coordinates by zero.  For \\(\\sigma=(\\sigma_1,\\ldots,\\sigma_{k/2})\\in\\{-1,1\\}^{k/2}\\) and \\(0<\\alpha\\le1/2\\), set\n\\[\n p_{\\sigma,2j-1}=\\frac{1+\\alpha\\sigma_j}{k},\n \\qquad\n p_{\\sigma,2j}=\\frac{1-\\alpha\\sigma_j}{k}.\n\\]\nThese coordinates are nonnegative and sum to one.  Moreover,\n\\[\n \\lVert\\mathbf P_\\sigma-\\mathbf Q\\rVert_1\n =\\sum_{j=1}^{k/2}\\frac{2\\alpha}{k}=\\alpha.\n\\]\nLet \\(M\\) be the uniform mixture of the \\(n\\)-sample laws \\(\\mathbf P_\\sigma^n\\), and use \\(\\mathbf Q^n\\) as the null law.  The likelihood-ratio second-moment identity gives\n\\[\n \\begin{aligned}\n 1+\\chi^2(M,\\mathbf Q^n)\n &=E_{\\sigma,\\tau}\\left[\n  1+\\frac{2\\alpha^2}{k}\n       \\sum_{j=1}^{k/2}\\sigma_j\\tau_j\n  \\right]^n\\\\\n &\\le E_{\\sigma,\\tau}\\exp\\!\\left{\n  \\frac{2n\\alpha^2}{k}\n       \\sum_{j=1}^{k/2}\\sigma_j\\tau_j\n \\right}\\\\\n &=\\left\\{\\cosh\\left(\\frac{2n\\alpha^2}{k}\\right)\\right\\}^{k/2}\n \\le\\exp\\left(\\frac{n^2\\alpha^4}{k}\\right).\n \\end{aligned}\n\\]\nHere \\(1+t\\le e^t\\), independence of the Rademacher products, and \\(\\cosh t\\le e^{t^2/2}\\) justify the three successive steps.  Choose\n\\[\n \\alpha^2=c_0\\frac{\\sqrt{k}}n\n\\]\nwith a sufficiently small universal \\(c_0\\); when the displayed value exceeds \\(1/4\\), use \\(\\alpha=1/2\\).  The chi-square distance is then bounded by a constant smaller than one after reducing \\(c_0\\).  The inequality \\(\\lVert M-\\mathbf Q^n\\rVert_{\\mathrm{TV}}\\le\\sqrt{\\chi^2(M,\\mathbf Q^n)/2}\\) and the usual nearest-target test imply that every estimator has maximum squared risk at least \\(c\\alpha^2\\).  The second sample, drawn from the same fixed \\(\\mathbf Q\\) under null and alternatives, contains no information for this test.  Thus\n\\[\n \\mathfrak R^{L_1}_{n,d}\n \\ge c\\min\\left\\{1,\\frac{\\sqrt{k}}n\\right\\}.\n\\]\nIf \\(d\\le C_1L^2\\), then \\(k\\ge d/2\\) and\n\\[\n \\frac{\\sqrt{k}}n\\ge c\\frac{d}{nL}.\n\\]\nThe capped case is no smaller because \\(d/(nL)\\le\\rho\\) in the stated range.  This proves the desired bound throughout the lower band, including the finite small-\\(n\\) cases after decreasing \\(c\\).\n\n\\emph{The uniform known-\\(\\mathbf Q\\) band.}\nTake \\(Q_x=1/d\\).  For \\(d\\le\\rho nL\\), the functional in \\(\\mathrm{lem:jiao-han-weissman-known-q-lower}\\) equals\n\\[\n T_{n,d}(\\mathbf Q)\n =d\\sqrt{\\frac{1/d}{n\\log n}}\n =\\sqrt{\\frac d{n\\log n}},\n\\]\nwith \\(L\\) replacing \\(\\log n\\) for the finitely many small values of \\(n\\).  If \\(d\\ge C_2L^2\\), then\n\\[\n T_{n,d}(\\mathbf Q)\n \\ge C'\\sqrt{\\frac{\\log n}{n}}.\n\\]\nAlso\n\\[\n \\frac{T_{n,d}(\\mathbf Q)}{\\sqrt d\\log n/n}\n =\\frac{\\sqrt n}{(\\log n)^{3/2}},\n\\]\nwhich exceeds the required constant for all sufficiently large \\(n\\).  Since \\(d\\le\\rho nL\\), choosing the theorem's logarithmic constant below one gives \\(\\log n\\ge C\\log d\\); finite exceptions are again absorbed by decreasing the universal lower constant.  The cited theorem therefore gives known-\\(\\mathbf Q\\) risk at least\n\\[\n cT_{n,d}(\\mathbf Q)^2\n =c\\frac d{n\\log n}.\n\\]\nAn experiment in which \\(\\mathbf Q\\) is unknown cannot have smaller minimax risk than the subexperiment in which it is fixed and revealed.  The fixed-multinomial comparison in the cited result transfers the displayed Poissonized bound, with only a universal constant change.  The two bands overlap after taking \\(C_1\\ge C_2\\), and \\(\\log n\\asymp\\log(en)\\) away from the absorbed finite cases.  This proves the lemma.",
+      "status": "proved",
+      "justification": "The direct fuzzy mixture closes the dimension band not covered by the cited theorem's dominance condition.",
+      "gap": "The published known-distribution result directly supplies the desired rate only above a logarithmic-square threshold.",
+      "consumer": "The exact causal Markov reduction uses this all-range comparator lower bound.",
+      "revision": "rev:bdb43e187b91283e967d67b0c241002f5ec26d46e8f7cee7f0563e3b23e190fd"
+    },
+    {
+      "id": "lem:empirical-cellwise-ratio-upper",
+      "kind": "lemma",
+      "statement": "For every \\(n\\ge1\\), \\(d\\ge1\\), and \\(0<\\epsilon<1/2\\), the empirical cellwise ratio estimator in \\(\\mathrm{def:diagonal-adaptive-estimator}\\) satisfies\n\\[\n \\sup_{P\\in\\mathcal P_{d,\\epsilon}}\n E_P\\!\\left[\n  \\left\\{\\widehat V_n^{\\mathrm{DAT}}-V^\\star(P)\\right\\}^2\n \\right]\n \\le\n \\min\\!\\left\\{1,\n  \\left(\\frac12+\\frac6\\epsilon\\right)\\frac dn\n \\right\\}.\n\\]\nAll empirical divisions use the stated zero-denominator convention; fixed overlap is required only on cells with positive mass.",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(P\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(\\widehat V_n^{\\mathrm{DAT}}\\)",
+        "\\(V^\\star(P)\\)"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:fixed-overlap",
+        "def:model-class",
+        "def:oracle-value",
+        "def:diagonal-adaptive-estimator"
+      ],
+      "status": "proved",
+      "justification": "This explicit estimator supplies the strongest verified achievability bound under the unchanged unrestricted observational model.",
+      "gap": "It is a direct empirical-ratio bound and does not claim the logarithmic improvement that would require a quantitative four-cell overlap-cone polynomial certificate.",
+      "consumer": "A practitioner obtains a one-pass computable estimator with a uniform finite-sample mean-squared-error guarantee.",
+      "proof_tex": "\\textbf{Proof.}\nFix \\(P\\in\\mathcal P_{d,\\epsilon}\\).  On a null cell \\(p_x=0\\), set \\(\\mu_{0x}=\\mu_{1x}=0\\) for this proof.  Such a cell has \\(\\overline N_x=0\\) almost surely and contributes zero to both the estimator and the target.  On a supported cell define\n\\[\n v_x=\\max_{a\\in\\{0,1\\}}\\mu_{ax},\n \\qquad\n \\widehat v_x=\\max_{a\\in\\{0,1\\}}\\widehat\\mu_{ax}.\n\\]\nBy \\(\\mathrm{def:oracle-value}\\) and \\(\\mathrm{def:diagonal-adaptive-estimator}\\),\n\\[\n \\widehat V_n^{\\mathrm{DAT}}-V^\\star(P)=T_1+T_2,\n\\]\nwhere\n\\[\n T_1=\\sum_{x=1}^d(\\widehat p_x-p_x)v_x,\n \\qquad\n T_2=\\sum_{x=1}^d\\widehat p_x(\\widehat v_x-v_x).\n\\]\nThe first term is the centered sample average\n\\[\n T_1=\\frac1n\\sum_{i=1}^n\n \\left[v_{X_i}-E_P\\{v_X\\}\\right].\n\\]\nBecause \\(0\\le v_X\\le1\\), \\(\\mathrm{ass:iid-sampling}\\) gives\n\\[\n E_P(T_1^2)=\\frac{\\operatorname{Var}_P(v_X)}n\\le\\frac1{4n}.\n\\]\n\nIt remains to control the empirical ratios.  Fix a supported cell and condition on \\(\\overline N_x=k\\ge1\\).  Put \\(\\pi_{1x}=\\pi_x\\) and \\(\\pi_{0x}=1-\\pi_x\\).  Then \\(\\overline N_{ax}\\mid\\overline N_x=k\\) is binomial with parameters \\((k,\\pi_{ax})\\).  Conditional on \\(\\overline N_{ax}=j>0\\), the corresponding \\(j\\) outcomes are independent Bernoulli variables with mean \\(\\mu_{ax}\\).  The zero-denominator convention therefore gives\n\\[\n \\begin{aligned}\n E_P\\!\\left[\n   (\\widehat\\mu_{ax}-\\mu_{ax})^2\n   \\mid \\overline N_x=k\n \\right]\n &\\le \\frac14 E\\!\\left[\n    \\frac{\\mathbf 1\\{\\overline N_{ax}>0\\}}{\\overline N_{ax}}\n    \\mathrel{\\Big|}\\overline N_x=k\n  \\right]\n  +P(\\overline N_{ax}=0\\mid\\overline N_x=k)\\\\\n &\\le \\frac1{2k\\pi_{ax}}+e^{-k\\pi_{ax}}\\\\\n &\\le \\frac3{2k\\pi_{ax}}.\n \\end{aligned}\n\\]\nFor the second line, use \\(j^{-1}\\le2(j+1)^{-1}\\) for \\(j\\ge1\\) and the elementary binomial identity\n\\[\n E\\!\\left[\n   \\frac1{\\overline N_{ax}+1}\n   \\mathrel{\\Big|}\\overline N_x=k\n \\right]\n =\\frac{1-(1-\\pi_{ax})^{k+1}}{(k+1)\\pi_{ax}}\n \\le\\frac1{k\\pi_{ax}}.\n\\]\nFor the third line, use \\(e^{-t}\\le t^{-1}\\) for \\(t>0\\).  Assumption \\(\\mathrm{ass:fixed-overlap}\\) gives \\(\\pi_{ax}\\ge\\epsilon\\) for both arms on every supported cell.\n\nThe map \\((z_0,z_1)\\mapsto\\max\\{z_0,z_1\\}\\) is one-Lipschitz in the supremum norm.  Since \\(\\sum_x\\widehat p_x=1\\), weighted Cauchy--Schwarz and the preceding conditional bound give\n\\[\n \\begin{aligned}\n E_P(T_2^2)\n &\\le E_P\\!\\left[\n   \\sum_{x=1}^d\\widehat p_x(\\widehat v_x-v_x)^2\n \\right]\\\\\n &\\le \\sum_{x=1}^d E_P\\!\\left[\n   \\frac{\\overline N_x}{n}\n   \\sum_{a=0}^1(\\widehat\\mu_{ax}-\\mu_{ax})^2\n \\right]\\\\\n &\\le \\frac{3d}{n\\epsilon}.\n \\end{aligned}\n\\]\nIndeed, on \\(\\{\\overline N_x=k\\ge1\\}\\), multiplication by \\(k/n\\) cancels the factor \\(k^{-1}\\), and\n\\[\n \\frac3{2n}\\left(\\frac1{\\pi_{0x}}+\\frac1{\\pi_{1x}}\\right)\n \\le\\frac3{n\\epsilon}.\n\\]\nOn \\(\\{\\overline N_x=0\\}\\), the weighted summand is zero.\n\nConsequently, \\((u+v)^2\\le2u^2+2v^2\\) yields\n\\[\n E_P\\!\\left[\n  \\left\\{\\widehat V_n^{\\mathrm{DAT}}-V^\\star(P)\\right\\}^2\n \\right]\n \\le \\frac1{2n}+\\frac{6d}{n\\epsilon}\n \\le \\left(\\frac12+\\frac6\\epsilon\\right)\\frac dn,\n\\]\nwhere the last inequality uses \\(d\\ge1\\).  Finally, \\(\\widehat V_n^{\\mathrm{DAT}}\\in[0,1]\\) because it is a convex combination of numbers in \\([0,1]\\), and \\(V^\\star(P)\\in[0,1]\\).  Hence the squared loss is at most one.  Taking the supremum over \\(P\\in\\mathcal P_{d,\\epsilon}\\) proves the claim, including null cells and zero arm counts.",
+      "revision": "rev:d5dddd6b6c640189ce3641113001e551aff993bf892c7dc6031001da6b9f3bde"
+    },
+    {
+      "id": "thm:elementary-minimax-bracket",
+      "kind": "theorem",
+      "statement": "For every fixed \\(0<\\epsilon<1/2\\), there are constants \\(0<c_\\epsilon\\le C_\\epsilon<\\infty\\) and \\(\\rho_\\epsilon>0\\) such that, uniformly for \\(2\\le d\\le\\rho_\\epsilon n\\log(en)\\),\n\\[\n c_\\epsilon\\left\\{\\frac1n+\\frac d{n\\log(en)}\\right\\}\n \\le\\mathfrak R_{n,d,\\epsilon}\n \\le\\sup_{P\\in\\mathcal P_{d,\\epsilon}}\n E_P\\!\\left[\n  \\left\\{\\widehat V_n^{\\mathrm{DAT}}-V^\\star(P)\\right\\}^2\n \\right]\n \\le\\min\\!\\left\\{1,C_\\epsilon\\frac dn\\right\\}.\n\\]\nConsequently, along sequences in this range, \\(d=o(n\\log n)\\) is necessary for consistency and \\(d=o(n)\\) is sufficient.  Likewise, \\(d=O(\\log n)\\) is necessary for minimax risk of order \\(n^{-1}\\), while fixed \\(d\\ge2\\) is sufficient for that order.  These implications do not close the intermediate consistency or parametric-order regimes.",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(c_\\epsilon\\)",
+        "\\(C_\\epsilon\\)",
+        "\\(\\rho_\\epsilon\\)",
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)",
+        "\\(P\\)",
+        "\\(\\mathcal P_{d,\\epsilon}\\)",
+        "\\(\\widehat V_n^{\\mathrm{DAT}}\\)",
+        "\\(V^\\star(P)\\)"
+      ],
+      "depends_on": [
+        "def:minimax-risk",
+        "lem:l1-lower-transfer",
+        "lem:empirical-cellwise-ratio-upper"
+      ],
+      "status": "proved",
+      "justification": "This theorem records the strongest complete minimax bracket currently certified on the unrestricted class.",
+      "gap": "The lower rate has the large-alphabet logarithmic gain, whereas the verified empirical upper bound is of order \\(d/n\\); closing that logarithmic gap remains open.",
+      "consumer": "Analysts obtain rigorous necessary and sufficient growth regimes without relying on an uncertified polynomial selector.",
+      "proof_tex": "\\textbf{Proof.}\nThe lower inequality is \\(\\mathrm{lem:l1-lower-transfer}\\), after denoting its positive range constant by \\(\\rho_\\epsilon\\).  By \\(\\mathrm{def:minimax-risk}\\), the infimum over all measurable estimators is no larger than the worst-case risk of the single measurable, data-driven statistic in \\(\\mathrm{lem:empirical-cellwise-ratio-upper}\\).  That lemma gives\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\le\\sup_{P\\in\\mathcal P_{d,\\epsilon}}\n E_P\\!\\left[\n  \\left\\{\\widehat V_n^{\\mathrm{DAT}}-V^\\star(P)\\right\\}^2\n \\right]\n \\le\\min\\!\\left\\{1,\n   \\left(\\frac12+\\frac6\\epsilon\\right)\\frac dn\n \\right\\}.\n\\]\nTaking \\(C_\\epsilon=1/2+6/\\epsilon\\), and decreasing the positive constant \\(c_\\epsilon\\) if necessary so that \\(c_\\epsilon\\le C_\\epsilon\\), proves the finite-sample bracket uniformly on \\(2\\le d\\le\\rho_\\epsilon n\\log(en)\\).\n\nNow let \\(n\\to\\infty\\) along a sequence satisfying this range condition.  If \\(\\mathfrak R_{n,d,\\epsilon}\\to0\\), the lower bound forces\n\\[\n \\frac d{n\\log(en)}\\longrightarrow0,\n\\]\nso \\(d=o(n\\log n)\\) is necessary.  If \\(d=o(n)\\), the explicit upper bound tends to zero, proving sufficiency.  If \\(\\mathfrak R_{n,d,\\epsilon}=O(n^{-1})\\), multiplication of the lower bound by \\(n\\) forces\n\\[\n 1+\\frac d{\\log(en)}=O(1),\n\\]\nand hence \\(d=O(\\log n)\\).  Finally, when \\(d\\ge2\\) is fixed, the upper bound is \\(O(n^{-1})\\), while the parametric component of the lower bound is \\(\\Omega(n^{-1})\\).  Thus fixed \\(d\\) gives minimax risk of order \\(n^{-1}\\).  The necessary and sufficient conditions in each pair differ, so the bracket makes no assertion about either intervening regime.",
+      "revision": "rev:44967d6a8f42384ba0f3c3212fcc21d0571958d0eed43fe4531f689b8df48bce"
+    },
+    {
+      "id": "lem:paired-sign-small-alphabet-floor",
+      "kind": "lemma",
+      "statement": "For every \\(n,d\\in\\mathbb N\\), \\(0<\\epsilon<1/2\\), and \\(2\\le d\\le n^2\\), put \\(k=2\\lfloor d/2\\rfloor\\).  Let \\(\\mathbf Q\\in\\Delta_d\\) be uniform on its first \\(k\\) coordinates and zero on the rest.  For \\(\\sigma\\in\\{-1,1\\}^{k/2}\\), define \\(\\mathbf P_\\sigma\\in\\Delta_d\\) by\n\\[\n P_{\\sigma,2j-1}=\\frac{1+\\alpha\\sigma_j}{k},\\qquad\n P_{\\sigma,2j}=\\frac{1-\\alpha\\sigma_j}{k},\n \\qquad\n \\alpha^2=\\frac{\\sqrt{k}}{16n},\n\\]\nand set its remaining coordinates to zero.  The uniform mixture of the \\(n\\)-sample laws \\(\\mathbf P_\\sigma^n\\) has chi-square divergence at most \\(e^{1/256}-1\\) from \\(\\mathbf Q^n\\), while \\(\\lVert\\mathbf P_\\sigma-\\mathbf Q\\rVert_1=\\alpha\\) for every \\(\\sigma\\).  Consequently,\n\\[\n \\mathfrak R^{L_1}_{n,d}\\ge \\frac{\\sqrt{k}}{256n}\n \\qquad\\text{and}\\qquad\n \\mathfrak R_{n,d,\\epsilon}\n \\ge \\frac{\\sqrt d}{4096\\sqrt2\\,n}.\n\\]",
+      "free_symbols": [
+        "\\(n\\)",
+        "\\(d\\)",
+        "\\(\\epsilon\\)",
+        "\\(\\Delta_d\\)",
+        "\\(\\mathbf P\\)",
+        "\\(\\mathbf Q\\)",
+        "\\(\\mathfrak R^{L_1}_{n,d}\\)",
+        "\\(\\mathfrak R_{n,d,\\epsilon}\\)"
+      ],
+      "depends_on": [
+        "ass:iid-sampling",
+        "ass:fixed-overlap",
+        "def:minimax-risk",
+        "def:l1-embedding",
+        "lem:l1-lower-transfer"
+      ],
+      "proof_tex": "\\textbf{Proof.}\nBecause \\(k\\le d\\le n^2\\),\n\\[\n 0<\\alpha^2=\\frac{\\sqrt{k}}{16n}\\le\\frac1{16},\n\\]\nso \\(0<\\alpha\\le1/4\\).  Hence all coordinates of every \\(\\mathbf P_\\sigma\\) are nonnegative.  Each displayed pair sums to \\(2/k\\), and there are \\(k/2\\) pairs, so \\(\\mathbf P_\\sigma\\in\\Delta_d\\).  Direct calculation gives\n\\[\n \\lVert\\mathbf P_\\sigma-\\mathbf Q\\rVert_1\n =\\sum_{j=1}^{k/2}\n   \\left(\\frac{\\alpha}{k}+\\frac{\\alpha}{k}\\right)\n =\\alpha.\n\\]\n\nLet \\(M=2^{-k/2}\\sum_\\sigma\\mathbf P_\\sigma^n\\), a probability law on \\(\\{1,\\ldots,k\\}^n\\).  For independent uniform sign vectors \\(\\sigma\\) and \\(\\tau\\), expansion of the squared mixture likelihood ratio under \\(\\mathbf Q^n\\), followed by independence of the \\(n\\) coordinates, gives\n\\[\n \\begin{aligned}\n 1+\\chi^2(M,\\mathbf Q^n)\n &=E_{\\sigma,\\tau}\\left[\n   \\sum_{z=1}^{k}\\frac{P_{\\sigma,z}P_{\\tau,z}}{Q_z}\n  \\right]^n\\\\\n &=E_{\\sigma,\\tau}\\left[\n  1+\\frac{2\\alpha^2}{k}\n     \\sum_{j=1}^{k/2}\\sigma_j\\tau_j\n  \\right]^n.\n \\end{aligned}\n\\]\nThis identity is well defined because all laws have common support \\(\\{1,\\ldots,k\\}\\).  The bracket is at least \\(1-\\alpha^2>0\\).  The elementary inequalities \\(1+t\\le e^t\\) for \\(t>-1\\) and \\(\\cosh t\\le e^{t^2/2}\\), together with independence of the Rademacher products \\(\\sigma_j\\tau_j\\), imply\n\\[\n \\begin{aligned}\n 1+\\chi^2(M,\\mathbf Q^n)\n &\\le\n \\left\\{\\cosh\\left(\\frac{2n\\alpha^2}{k}\\right)\\right\\}^{k/2}\\\\\n &\\le \\exp\\left(\\frac{n^2\\alpha^4}{k}\\right)\n =e^{1/256}.\n \\end{aligned}\n\\]\nFor completeness, the second elementary inequality follows by comparing the power series of \\(\\cosh t\\) and \\(e^{t^2/2}\\).  Cauchy--Schwarz applied to the likelihood ratio therefore yields\n\\[\n \\lVert M-\\mathbf Q^n\\rVert_{\\mathrm{TV}}\n \\le\\frac12\\sqrt{\\chi^2(M,\\mathbf Q^n)}<\\frac12.\n\\]\n\nWe next convert indistinguishability into squared-error risk.  The second multinomial stream has law \\(\\mathbf Q^n\\) under both the null pair \\((\\mathbf Q,\\mathbf Q)\\) and every alternative pair \\((\\mathbf P_\\sigma,\\mathbf Q)\\).  Tensoring with this common law leaves total variation unchanged.  For an arbitrary estimator \\(\\widehat L\\) based on both streams, define \\(\\varphi=\\mathbf 1\\{\\widehat L\\ge\\alpha/2\\}\\).  The target is zero at the null and equals \\(\\alpha\\) at every alternative.  If \\(R(\\widehat L)\\) is the maximum squared risk of \\(\\widehat L\\), then\n\\[\n \\begin{aligned}\n 2R(\\widehat L)\n &\\ge E_{\\mathbf Q^n\\otimes\\mathbf Q^n}(\\widehat L^2)\n   +E_{M\\otimes\\mathbf Q^n}\\{(\\widehat L-\\alpha)^2\\}\\\\\n &\\ge\\frac{\\alpha^2}{4}\n \\left[\n  P_{\\mathbf Q^n\\otimes\\mathbf Q^n}(\\varphi=1)\n  +P_{M\\otimes\\mathbf Q^n}(\\varphi=0)\n \\right]\\\\\n &\\ge\\frac{\\alpha^2}{4}\n \\left\\{1-\\lVert M-\\mathbf Q^n\\rVert_{\\mathrm{TV}}\\right\\}\n \\ge\\frac{\\alpha^2}{8}.\n \\end{aligned}\n\\]\nTaking the infimum over \\(\\widehat L\\) proves\n\\[\n \\mathfrak R^{L_1}_{n,d}\\ge\\frac{\\alpha^2}{16}\n =\\frac{\\sqrt{k}}{256n}.\n\\]\nThe exact fixed-sample Markov reduction in \\(\\mathrm{lem:l1-lower-transfer}\\) gives\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\ge\\frac1{16}\\mathfrak R^{L_1}_{n,d}.\n\\]\nFinally, \\(k=2\\lfloor d/2\\rfloor\\ge d/2\\) for \\(d\\ge2\\), whence\n\\[\n \\mathfrak R_{n,d,\\epsilon}\n \\ge\\frac{\\sqrt{k}}{4096n}\n \\ge\\frac{\\sqrt d}{4096\\sqrt2\\,n}.\n\\]\nThe embedded causal laws have propensity \\(1/2\\), so \\(\\mathrm{ass:fixed-overlap}\\) holds for every \\(0<\\epsilon<1/2\\); their causal samples are i.i.d. by the reduction.  This verifies the support, positivity, overlap, and sample-size conditions used above.",
+      "status": "proved",
+      "revision": "rev:7723128fb4e84d99df0bfb13f5ed9653ccc0c2d64d0005a71ab4d936e6f4900f"
+    }
+  ],
+  "sampling_model": {
+    "design": "\\(O_1,\\ldots,O_n\\) are independent draws from the observed \\((X,A,Y)\\)-margin of \\(P\\)",
+    "units": "\\(i\\in\\{1,\\ldots,n\\}\\)",
+    "treatment": "\\(A_i\\in\\{0,1\\}\\) with cell propensity \\(\\pi_x\\)",
+    "overlap": "\\(\\epsilon\\le\\pi_x\\le1-\\epsilon\\) for occupied cells",
+    "nuisance_estimation": "Three-way sample splitting; ratio plug-in only on pilot-certified massive cells separated from the tie diagonal; local multivariate best-polynomial approximation and fixed-multinomial factorial moments elsewhere."
+  },
+  "estimand_functional": "\\(V^\\star(P)=\\sum_{x=1}^dp_x\\max\\{\\mu_{0x},\\mu_{1x}\\}=\\frac12\\sum_{x=1}^d\\{\\Lambda(q_x)+\\Gamma(q_x)\\}\\), with \\(c_\\epsilon\\{n^{-1}+d/[n\\log(en)]\\}\\le\\mathfrak R_{n,d,\\epsilon}\\le\\min\\{1,C_\\epsilon d/n\\}\\) on the stated range",
+  "target_estimand": "\\(V^\\star(P)=E_P[\\max_{a\\in\\{0,1\\}}E_P\\{Y(a)\\mid X\\}]\\)",
+  "bibliography": [
+    {
+      "key": "ZengBalakrishnanHanKennedy2024Discrete",
+      "citation": "Zeng, Zhenghao, Sivaraman Balakrishnan, Yanjun Han, and Edward H. Kennedy (2024, revised 2026). \"Causal inference with high-dimensional discrete covariates.\" arXiv:2405.00118v3."
+    },
+    {
+      "key": "JiaoHanWeissman2018L1",
+      "citation": "Jiao, Jiantao, Yanjun Han, and Tsachy Weissman (2018). \"Minimax estimation of the \\(L_1\\) distance.\" IEEE Transactions on Information Theory 64(10): 6672--6706; accessible five-page author version and arXiv:1705.00807v7."
+    },
+    {
+      "key": "LuedtkeVanderLaan2016OptimalValue",
+      "citation": "Luedtke, Alexander R., and Mark J. van der Laan (2016). \"Statistical inference for the mean outcome under a possibly non-unique optimal treatment strategy.\" Annals of Statistics 44(2): 713--742."
+    },
+    {
+      "key": "WhitehouseChenAusternSyrgkanis2025",
+      "citation": "Whitehouse, Justin, Qizhao Chen, Morgane Austern, and Vasilis Syrgkanis (2025, revised 2026). \"Inference on optimal policy values and other irregular functionals via softmax smoothing.\" arXiv:2507.11780."
+    },
+    {
+      "key": "WuYang2016Entropy",
+      "citation": "Wu, Yihong, and Pengkun Yang (2016). \"Minimax rates of entropy estimation on large alphabets via best polynomial approximation.\" IEEE Transactions on Information Theory 62(6): 3702--3720."
+    },
+    {
+      "key": "JiaoVenkatHanWeissman2015Functionals",
+      "citation": "Jiao, Jiantao, Kartik Venkat, Yanjun Han, and Tsachy Weissman (2015). \"Minimax estimation of functionals of discrete distributions.\" IEEE Transactions on Information Theory 61(5): 2835--2885."
+    },
+    {
+      "key": "CaiLow2011L1",
+      "citation": "Cai, T. Tony, and Mark G. Low (2011). \"Testing composite hypotheses, Hermite polynomials and optimal estimation of a nonsmooth functional.\" Annals of Statistics 39(2): 1012--1041."
+    }
+  ],
+  "comparator_promise_table": [
+    {
+      "comparator_bibkey": "JiaoHanWeissman2018L1",
+      "comparator_claim": "The accessible five-page author version gives the normalized two-multinomial \\(L_1\\) lower bound in Theorem 3 and the unknown--unknown estimator and upper-risk bound in Construction 2 and Theorem 5; arXiv:1705.00807v7 gives the same lower locator in Theorem 3 and the upper locator in Construction 2 and Theorem 6, with minimaxity summarized after equation (50).",
+      "matched_by": "lem:l1-lower-transfer",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "ZengBalakrishnanHanKennedy2024Discrete",
+      "comparator_claim": "ArXiv v3 Theorem 2 on pages 9--10 gives a discrete-confounder minimax lower bound for the treatment-specific mean \\(\\psi_1(P)\\) under fixed overlap.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "LuedtkeVanderLaan2016OptimalValue",
+      "comparator_claim": "Theorem 1 characterizes pathwise differentiability of the unrestricted optimal value and gives its canonical gradient when the characterization holds.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "WhitehouseChenAusternSyrgkanis2025",
+      "comparator_claim": "The static-treatment theorem establishes root-\\(n\\) asymptotic linearity for a softmax-smoothed estimator under a polynomial gap-density condition and nuisance-rate restrictions.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    },
+    {
+      "comparator_bibkey": "WuYang2016Entropy",
+      "comparator_claim": "The minimax entropy risk is characterized within constants by pairing best polynomial approximation with a moment-matching dual lower bound.",
+      "matched_by": "unmatched",
+      "match_kind": "downgraded_to_informed_by"
+    }
+  ],
+  "tldr": "The unrestricted optimal-policy value over \\(d\\) discrete confounder cells has minimax mean-squared error \\(n^{-1}+d/(n\\log(en))\\) under fixed overlap. The estimator uses ordinary ratios only when a pilot certifies that a cell is both well populated and separated from the treatment-effect tie diagonal; it uses local multivariate polynomial approximation and factorial moments on every remaining region. The converse follows from an exact normalized equal-propensity \\(L_1\\) embedding and a black-box Markov experiment reduction, together with a separate parametric two-point bound, so parametric risk ends at \\(d=O(\\log n)\\) and consistency ends at \\(d=o(n\\log n)\\).",
+  "project_justification": {
+    "gap": "Zeng, Balakrishnan, Han, and Kennedy analyze the treatment-specific mean \\(\\psi_1(P)\\) with many discrete cells, while Luedtke and van der Laan analyze local nonregularity of the optimal value. Neither gives global minimax point risk when sparse causal ratios meet the max functional's tie diagonal.",
+    "niche": "The binary maximum splits into a degree-one homogeneous ratio sum that is smooth away from the cone vertex and a homogeneous ratio-absolute-contrast. The second term requires diagonal approximation even in heavily sampled cells, whereas the first causal ratio difficulty is concentrated near the sparse faces of the overlap cone.",
+    "fill": "A joint mass-and-tie pilot sends only heavy separated cells to ratio plug-in and sends all near-tie or sparse cells to local best-polynomial factorial estimation. An exact map from \\(\\Delta_d\\times\\Delta_d\\) to the equal-propensity causal slice and a Markov simulation kernel transfer the published normalized \\(L_1\\) lower bound with the exact factor \\(1/16\\); an independent two-point argument supplies the parametric term."
+  },
+  "related_work": "Zeng, Balakrishnan, Han, and Kennedy, \\cite{ZengBalakrishnanHanKennedy2024Discrete}, arXiv v3, Section 2, Theorem 2 on pages 9--10, and its following discussion, give the discrete-confounder lower architecture for the treatment-specific mean \\(\\psi_1(P)\\); the discussion motivates polynomial estimators and sharper optimal regimes. For Jiao, Han, and Weissman, \\cite{JiaoHanWeissman2018L1}, Theorem 3 of the accessible five-page author version supplies the normalized two-multinomial \\(L_1\\) lower bound, while Construction 2 and Theorem 5 supply the unknown--unknown estimator and upper-risk bound. In arXiv:1705.00807v7, the corresponding locators are Theorem 3 for the lower bound and Construction 2 with Theorem 6 for the upper result; the paragraph after equation (50) combines the lower and upper results into minimaxity. The exact equal-propensity embedding transfers only the lower result. Wu and Yang, \\cite{WuYang2016Entropy}, Sections 3 and 4, inform the approximation-duality handle for the unresolved leading constant but are not a separate causal lower-bound construction. Luedtke and van der Laan, \\cite{LuedtkeVanderLaan2016OptimalValue}, Theorem 1 and its discussion, establish the pathwise-differentiability boundary at treatment-effect ties but do not study a growing alphabet. Whitehouse, Chen, Austern, and Syrgkanis, \\cite{WhitehouseChenAusternSyrgkanis2025}, the static-treatment theorem and margin lemma, obtain root-\\(n\\) inference under gap-density and nuisance-rate conditions; those conditions exclude the unrestricted occupancy frontier studied here. Jiao, Venkat, Han, and Weissman, \\cite{JiaoVenkatHanWeissman2015Functionals}, and Cai and Low, \\cite{CaiLow2011L1}, supply earlier polynomial constructions for nonsmooth functionals but not the causal ratio cone. The Jiao--Han--Weissman reduction is exact only on the normalized equal-propensity slice; the headline upper theorem retains unknown observational arm masses in every four-cell vector.",
+  "technical_internal_limitation": "The local near-minimax polynomials are mathematically computable by certified optimization, but this definition is not yet a numerically efficient implementation. The theorem claims arithmetic computability and sharp risk, not near-linear running time or fixed-dimensional honest confidence intervals.",
+  "honest_scope": "The formal target is the scalar value of the unrestricted oracle policy, not regret of a learned policy. The fixed-overlap frontier is the theorem-level kernel. Vanishing overlap, weighted margin classes, and growing treatment count remain outside this core. The exact leading constant is an open-ended question. Proposition 2 gives the exact normalized equal-propensity \\(L_1\\) slice; it is a proper subexperiment and is not substituted for the full observational four-cell experiment addressed by the upper theorem."
+}

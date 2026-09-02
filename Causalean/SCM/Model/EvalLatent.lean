@@ -120,8 +120,7 @@ theorem evalMap_factors_excluding_latent (M : Causalean.SCM N Ω)
   · -- Measurability: projection ∘ evalMap(s, ·) ∘ extend.
     have hev_s :
         Measurable (fun ℓ : LatentValues M => M.evalMap s ℓ) := by
-      have := M.evalMap_measurable
-      exact this.comp (Measurable.prodMk measurable_const measurable_id)
+      fun_prop
     exact (measurable_valuesProjection hT_sub).comp (hev_s.comp hext_meas)
   · -- Pointwise factorization.
     intro ℓ

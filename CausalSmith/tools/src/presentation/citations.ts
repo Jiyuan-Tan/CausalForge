@@ -335,6 +335,72 @@ async function arxivByTitle(title: string): Promise<RecFetch> {
   return { rec: fromArxivFeed(await r.response.text()), unreachable: false };
 }
 
+function decodeHtmlMetadata(value: string): string {
+  let out = value;
+  // Some publisher pages double-encode numeric entities (`&amp;#228;`). Two
+  // passes recover the intended Unicode without adding an HTML-parser dependency.
+  for (let pass = 0; pass < 2; pass++) {
+    out = out
+      .replace(/&#x([0-9a-f]+);/gi, (_m, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#([0-9]+);/g, (_m, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+      .replace(/&quot;/gi, '"')
+      .replace(/&apos;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&amp;/gi, "&");
+  }
+  return out.trim();
+}
+
+function htmlMetaValues(html: string, name: string): string[] {
+  const values: string[] = [];
+  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
+    const attrs = new Map<string, string>();
+    const attrRe = /([\w:-]+)\s*=\s*(["'])(.*?)\2/g;
+    let match: RegExpExecArray | null;
+    while ((match = attrRe.exec(tag))) attrs.set(match[1].toLowerCase(), match[3]);
+    if (attrs.get("name")?.toLowerCase() === name.toLowerCase() && attrs.has("content")) {
+      values.push(decodeHtmlMetadata(attrs.get("content")!));
+    }
+  }
+  return values;
+}
+
+function trustedJmlrUrl(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return null;
+    if (url.hostname !== "jmlr.org" && url.hostname !== "www.jmlr.org") return null;
+    if (!/^\/papers\/v\d+\/[A-Za-z0-9._-]+\.html$/.test(url.pathname)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function jmlrByUrl(url: string): Promise<RecFetch> {
+  const fetched = await politeFetch(url);
+  if (!fetched.ok) return { rec: null, unreachable: fetched.unreachable };
+  const html = await fetched.response.text();
+  const title = htmlMetaValues(html, "citation_title")[0] ?? "";
+  const authors = htmlMetaValues(html, "citation_author");
+  const year = parseInt(htmlMetaValues(html, "citation_publication_date")[0] ?? "0", 10);
+  if (!title || authors.length === 0 || !Number.isFinite(year) || year <= 0) {
+    return { rec: null, unreachable: false };
+  }
+  const first = authors[0].trim().split(/\s+/);
+  return {
+    rec: {
+      title,
+      authorFamily: first[first.length - 1] ?? "",
+      author: authors.join(" and "),
+      year,
+    },
+    unreachable: false,
+  };
+}
+
 /**
  * Production lookup: DOI → Crossref; arXiv id → arXiv API; else title query
  * (Crossref, falling back to arXiv title search for arXiv-only preprints).
@@ -350,7 +416,8 @@ export async function defaultLookup(e: BibEntry): Promise<ExternalRecord | typeo
     if (!r.ok) return { json: null, unreachable: r.unreachable };
     return { json: await r.response.json(), unreachable: false };
   };
-  const hasAuthId = Boolean(e.fields.doi || e.fields.eprint);
+  const jmlrUrl = trustedJmlrUrl(e.fields.url);
+  const hasAuthId = Boolean(e.fields.doi || e.fields.eprint || jmlrUrl);
   let authUnreachable = false; // an authoritative id was present but its registry was unreachable
   try {
     if (e.fields.doi) {
@@ -365,6 +432,14 @@ export async function defaultLookup(e: BibEntry): Promise<ExternalRecord | typeo
       const { rec, unreachable } = await arxivById(e.fields.eprint);
       authUnreachable ||= unreachable;
       if (rec) return { ...rec, authoritative: true }; // eprint id is authoritative too
+    }
+    if (jmlrUrl) {
+      const { rec, unreachable } = await jmlrByUrl(jmlrUrl);
+      authUnreachable ||= unreachable;
+      // JMLR's canonical article page supplies Highwire citation metadata. It
+      // identifies the work directly, unlike a loose title query whose first
+      // result may be an unrelated newer paper.
+      if (rec) return { ...rec, authoritative: true };
     }
     // The entry carries a well-formed DOI/arXiv id but we could not REACH its registry (transient).
     // Do NOT fall back to a title query: its top hit is often a DIFFERENT paper, whose title mismatch

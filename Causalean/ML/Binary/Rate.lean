@@ -322,11 +322,7 @@ theorem regLogisticGrad_coord_isBigOp (φ : FeatureMap γ K) (P : Measure (γ ×
   have hφ_prod : ∀ k, Measurable (fun z : γ × ℝ => φ.φ z.1 k) := fun k =>
     (hφ k).comp measurable_fst
   have hg_meas : Measurable g := by
-    dsimp [g]
-    have hlin : Measurable (fun z : γ × ℝ => ∑ j, βstar j * φ.φ z.1 j) :=
-      Finset.measurable_sum _ fun j _ => measurable_const.mul (hφ_prod j)
-    exact ((continuous_sigmoid.measurable.comp hlin).sub measurable_snd).mul
-      (hφ_prod k)
+    fun_prop
   have hcoord :
       (fun n ω => regLogisticGrad φ S.Z lam n ω βstar k) =
         (fun n ω => S.sampleMean g n ω - ∫ z, g z ∂P) := by

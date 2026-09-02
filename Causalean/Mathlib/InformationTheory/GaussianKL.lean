@@ -123,6 +123,7 @@ lemma llr_gaussianReal_ae (m₀ m₁ : ℝ) (hv : v ≠ 0) :
 /-- **Integrability of the Gaussian log-likelihood ratio.** For `v ≠ 0`, the affine
 log-likelihood ratio `x ↦ (m₀ - m₁) * (2*x - m₀ - m₁) / (2*v)` is integrable with respect
 to `gaussianReal m₀ v`, because the Gaussian has a finite first moment. -/
+@[fun_prop]
 lemma integrable_llr_gaussianReal (m₀ m₁ : ℝ) (hv : v ≠ 0) :
     Integrable (llr (gaussianReal m₀ v) (gaussianReal m₁ v)) (gaussianReal m₀ v) := by
   have hid : Integrable (fun x : ℝ ↦ x) (gaussianReal m₀ v) := by

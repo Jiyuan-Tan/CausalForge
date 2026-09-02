@@ -3,7 +3,8 @@
 // the production ingest, and the stale-sweep archiving of companion bytes.
 
 import { describe, it, expect } from "vitest";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { existsSync, writeFileSync } from "node:fs";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -12,9 +13,17 @@ import {
   resolveTexRefs,
   isTexRef,
 } from "../../src/discovery/solve/tex_companion.js";
-import { readSolveUnitOutput } from "../../src/discovery/solve/dispatch.js";
+import {
+  acquireSolvePathLease,
+  clearOrphanSolvePathLeases,
+  readSolveUnitOutput,
+} from "../../src/discovery/solve/dispatch.js";
+import { formalizationDir } from "../../src/paths.js";
 import { proofBytesInRoundFile } from "../../src/discovery/proof_archive.js";
-import { assertSealableLatexPayload } from "../../src/discovery/core/latex_serialization.js";
+import {
+  assertSealableLatexPayload,
+  normalizeRawModelJson,
+} from "../../src/discovery/core/latex_serialization.js";
 
 const COMPANION = [
   "%%% FIELD thm:main.proof",
@@ -106,6 +115,68 @@ describe("resolveTexRefs", () => {
 });
 
 describe("production ingest round-trip (readSolveUnitOutput)", () => {
+  it("allows only one of two simultaneous path-lease contenders", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-lease-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+
+    const results = await Promise.allSettled([
+      acquireSolvePathLease(outPath),
+      acquireSolvePathLease(outPath),
+    ]);
+    const winners = results.filter(
+      (result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof acquireSolvePathLease>>> =>
+        result.status === "fulfilled",
+    );
+    expect(winners).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    await winners[0].value.release();
+  });
+
+  it("a reclaimed stale owner cannot release its successor's path lease", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-lease-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+    const first = await acquireSolvePathLease(outPath);
+    const lockDirectory = `${outPath}.lease.lock`;
+    // Model the qid-heartbeat-authorized hard-crash cleanup and a successor
+    // acquisition before the stale former owner reaches its finally block.
+    await rm(lockDirectory, { recursive: true, force: true });
+    const successor = await acquireSolvePathLease(outPath);
+    await first.release();
+    await expect(acquireSolvePathLease(outPath)).rejects.toMatchObject({ code: "ELOCKED" });
+    await successor.assertOwned();
+    await successor.release();
+
+    const after = await acquireSolvePathLease(outPath);
+    await after.release();
+  });
+
+  it("clears orphan path locks from nested, flat, canonical, and legacy artifact locations", async () => {
+    const repoRoot = await mkdtemp(path.join(os.tmpdir(), "texcomp-lock-sweep-"));
+    const ctx = {
+      repoRoot,
+      qid: "exp_lock_sweep",
+      specialization: "v1",
+      dryRun: false,
+      resume: true,
+    };
+    const runDir = formalizationDir(repoRoot, ctx.qid);
+    const discoveryDir = path.join(runDir, "discovery");
+    await mkdir(discoveryDir, { recursive: true });
+    const locks = [
+      path.join(discoveryDir, "solve_thm_main.json.lease.lock"),
+      path.join(runDir, "solve_thm_main.json.lease.lock"),
+      path.join(discoveryDir, `${ctx.qid}_solve_thm_main.json.lease.lock`),
+      path.join(runDir, `${ctx.qid}_solve_thm_main.json.lease.lock`),
+    ];
+    for (const lock of locks) await mkdir(lock);
+    const nearPrefix = path.join(discoveryDir, "unrelated.json.lease.lock");
+    await mkdir(nearPrefix);
+
+    await clearOrphanSolvePathLeases(ctx);
+    expect(locks.every((lock) => !existsSync(lock))).toBe(true);
+    expect(existsSync(nearPrefix)).toBe(true);
+  });
+
   it("ignores unmatched braces inside TeX literal/code regions", () => {
     expect(() => assertSealableLatexPayload({
       inline: String.raw`Use \verb|{| and \lstinline|}|.`,
@@ -156,8 +227,91 @@ describe("production ingest round-trip (readSolveUnitOutput)", () => {
       proofs: [{ id: "thm:main", proof_tex: { tex_ref: "p1" } }],
       added_lemmas: [],
     }), "utf8");
-    const output = await readSolveUnitOutput(outPath, "unit");
+    const output = await readSolveUnitOutput(outPath, "unit", { persistCanonical: true });
     expect(output.proofs[0].proof_tex).toBe(rawTex);
+    const persisted = JSON.parse(await readFile(outPath, "utf8"));
+    expect(persisted.proofs[0].proof_tex).toEqual({ tex_ref: "p1" });
+    expect((await readSolveUnitOutput(outPath, "unit")).proofs[0].proof_tex).toBe(rawTex);
+  });
+
+  it("a passing reader persists repaired model escapes as standards-compliant JSON", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+    const malformed = String.raw`{"proofs":[],"added_lemmas":[],"prose_updates":{"related_work":"Hájek and H\'ajek spellings"}}`;
+    expect(() => JSON.parse(malformed)).toThrow();
+    await writeFile(outPath, malformed, "utf8");
+
+    const output = await readSolveUnitOutput(outPath, "unit", { persistCanonical: true });
+    expect(output.prose_updates?.related_work).toBe("Hájek and H\\'ajek spellings");
+    const persisted = await readFile(outPath, "utf8");
+    expect(() => JSON.parse(persisted)).not.toThrow();
+    expect(JSON.parse(persisted)).toEqual(JSON.parse(normalizeRawModelJson(malformed)));
+    expect(await readFile(outPath, "utf8")).toBe(persisted);
+  });
+
+  it("is read-only by default for replay and diagnostic validation", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+    const malformed = String.raw`{"proofs":[],"added_lemmas":[],"prose_updates":{"related_work":"H\'ajek"}}`;
+    await writeFile(outPath, malformed, "utf8");
+
+    const output = await readSolveUnitOutput(outPath, "unit");
+    expect(output.prose_updates?.related_work).toBe("H\\'ajek");
+    expect(await readFile(outPath, "utf8")).toBe(malformed);
+  });
+
+  it("persists post-parse TeX repair and id healing, not only raw escape repair", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+    await writeFile(outPath, JSON.stringify({
+      proofs: [],
+      added_lemmas: [{
+        id: "lem:Ghat-envelope",
+        kind: "lemma",
+        statement: "A repaired helper.",
+        depends_on: [],
+        status: "proved",
+        proof_tex: String.raw`\\(x\\)`,
+      }],
+    }), "utf8");
+
+    const output = await readSolveUnitOutput(outPath, "unit", { persistCanonical: true });
+    expect(output.added_lemmas[0].id).toBe("lem:ghat-envelope");
+    expect(output.added_lemmas[0].proof_tex).toBe(String.raw`\(x\)`);
+    const persisted = JSON.parse(await readFile(outPath, "utf8"));
+    expect(persisted.added_lemmas[0].id).toBe("lem:ghat-envelope");
+    expect(persisted.added_lemmas[0].proof_tex).toBe(String.raw`\(x\)`);
+    expect((await readSolveUnitOutput(outPath, "unit")).added_lemmas[0].proof_tex)
+      .toBe(String.raw`\(x\)`);
+  });
+
+  it("does not persist when a caller-specific validation rejects the parsed output", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+    const malformed = String.raw`{"proofs":[],"added_lemmas":[],"prose_updates":{"related_work":"H\'ajek"}}`;
+    await writeFile(outPath, malformed, "utf8");
+    await expect(readSolveUnitOutput(outPath, "unit", {
+      persistCanonical: true,
+      postValidate: () => {
+        throw new Error("catalog-dependent rejection");
+      },
+    })).rejects.toThrow(/catalog-dependent rejection/);
+    expect(await readFile(outPath, "utf8")).toBe(malformed);
+  });
+
+  it("refuses to overwrite a newer JSON generation", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-"));
+    const outPath = path.join(tmp, "solve_thm_main.json");
+    const malformed = String.raw`{"proofs":[],"added_lemmas":[],"prose_updates":{"related_work":"H\'ajek"}}`;
+    const newer = JSON.stringify({ proofs: [], added_lemmas: [], prose_updates: { related_work: "new generation" } });
+    await writeFile(outPath, malformed, "utf8");
+    await expect(readSolveUnitOutput(outPath, "unit", {
+      persistCanonical: true,
+      postValidate: () => {
+        writeFileSync(outPath, newer, "utf8");
+      },
+    })).rejects.toThrow(/generation changed/);
+    expect(await readFile(outPath, "utf8")).toBe(newer);
   });
 
   it("companion files live under discovery/solve_tex/", () => {
@@ -196,7 +350,7 @@ describe("production ingest round-trip (readSolveUnitOutput)", () => {
   it("rejects malformed TeX inside an otherwise schema-valid structured proposal", async () => {
     const tmp = await mkdtemp(path.join(os.tmpdir(), "texcomp-"));
     const outPath = path.join(tmp, "solve_thm_main.json");
-    await writeFile(outPath, JSON.stringify({
+    const malformed = JSON.stringify({
       proofs: [],
       added_lemmas: [],
       proposed_core_edits: [{
@@ -210,9 +364,11 @@ describe("production ingest round-trip (readSolveUnitOutput)", () => {
         reason: "describe an accepted witness",
         direction: "correct",
       }],
-    }), "utf8");
+    });
+    await writeFile(outPath, malformed, "utf8");
     await expect(readSolveUnitOutput(outPath, "unit"))
       .rejects.toThrow(/unbalanced TeX grouping braces/);
+    expect(await readFile(outPath, "utf8")).toBe(malformed);
   });
 });
 

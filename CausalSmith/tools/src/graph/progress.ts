@@ -37,7 +37,7 @@ function frozenScope(graph: FormalizationGraph): Set<string> {
 function settled(n: GraphNode): boolean {
   if ((n.kind === "theorem" || n.kind === "lemma") && n.proof.state !== "complete") return false;
   const reviewerJudges = (n.kind === "theorem" && n.provenance === "from-note") || n.kind === "assumption";
-  if (reviewerJudges && n.review.status !== "matched" && n.review.status !== "derived") return false;
+  if (reviewerJudges && n.review.status !== "matched") return false;
   return true;
 }
 
@@ -68,8 +68,8 @@ export function progressed(prev: FormalizationGraph, cur: FormalizationGraph): b
     const p = prevById.get(n.id);
     if (!p) return true; // a new node appeared (decomposition / assumption)
     if (p.proof.state !== "complete" && n.proof.state === "complete") return true;
-    const wasMatched = p.review.status === "matched" || p.review.status === "derived";
-    const nowMatched = n.review.status === "matched" || n.review.status === "derived";
+    const wasMatched = p.review.status === "matched";
+    const nowMatched = n.review.status === "matched";
     if (!wasMatched && nowMatched) return true;
   }
   return false;

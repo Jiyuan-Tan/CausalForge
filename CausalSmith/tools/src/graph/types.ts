@@ -6,7 +6,11 @@ export type NodeKind = (typeof NODE_KINDS)[number];
 export const PROVENANCES = ["from-note", "agent-introduced", "library"] as const;
 export type Provenance = (typeof PROVENANCES)[number];
 
-export const REVIEW_STATUSES = ["unreviewed", "matched", "derived", "drift"] as const;
+// `matched` is the ONLY passing status. A reviewer's `derived` verdict (Lean encodes a weaker
+// consequence than the paper claims) is a FAIL and is graded to `drift` like any other
+// inequivalence — there is deliberately no separate graph status for it, so no consumer can read
+// one as a pass.
+export const REVIEW_STATUSES = ["unreviewed", "matched", "drift"] as const;
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 export const PROOF_STATES = ["complete", "sorry", "error"] as const;
@@ -44,7 +48,11 @@ const LeanSchema = z.object({
 });
 
 const ReviewSchema = z.object({
-  status: z.enum(REVIEW_STATUSES),
+  // LEGACY `derived`: graphs written before the status was retired still carry it (a banked entry
+  // does). It meant "Lean encodes a strictly weaker consequence than the paper claims" — a FAIL that
+  // several consumers wrongly read as a pass — so it loads as `drift`. Coercion, not acceptance:
+  // nothing writes `derived` any more, and it must never resolve to a passing status.
+  status: z.preprocess((s) => (s === "derived" ? "drift" : s), z.enum(REVIEW_STATUSES)),
   passed_hash: z.string().nullable(),
   /** The reviewer's one-line reason for the current verdict (esp. why a `drift`). Persisted so
    *  an escalation surfaces WHICH hypothesis/term diverged, not just that the node is flagged. */

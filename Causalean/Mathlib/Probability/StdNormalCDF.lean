@@ -88,6 +88,7 @@ lemma stdNormalCDF_tendsto_atBot : Tendsto stdNormalCDF atBot (𝓝 0) := tendst
 lemma stdNormalCDF_tendsto_atTop : Tendsto stdNormalCDF atTop (𝓝 1) := tendsto_cdf_atTop _
 
 /-- The CDF of an atomless real probability measure is continuous. -/
+@[fun_prop]
 lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [NullSingletonClass μ] :
     Continuous (cdf μ) := by
   set f := cdf μ with hf
@@ -105,6 +106,7 @@ lemma cdf_continuous_of_noAtoms (μ : Measure ℝ) [IsProbabilityMeasure μ] [Nu
   linarith [hjump, hle]
 
 /-- [The standard normal CDF `Φ` is continuous](goal): the standard normal has no atoms. -/
+@[fun_prop]
 lemma stdNormalCDF_continuous : Continuous stdNormalCDF := by
   haveI : NullSingletonClass (gaussianReal 0 1) :=
     nullSingletonClass_gaussianReal (v := 1) one_ne_zero

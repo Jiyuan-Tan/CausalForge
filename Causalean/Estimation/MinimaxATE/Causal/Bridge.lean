@@ -1165,14 +1165,14 @@ theorem dgp_unconfoundedness :
       simp [Z] at hv
       subst v
       simp [SCM.randomVars, SWIGGraph.randomVars, dgpSCM, wSWIGGraph]
-    · native_decide
-    · native_decide
-    · native_decide
+    · decide
+    · decide
+    · decide
     · change (initialSWIG wDAG).dSep
         ({SWIGNode.random WNode.A} : Finset (SWIGNode WNode))
         ({SWIGNode.random WNode.Ey, SWIGNode.random WNode.Un} : Finset (SWIGNode WNode))
         ({SWIGNode.random WNode.Xc} : Finset (SWIGNode WNode))
-      native_decide
+      decide
     · dsimp [aMap]
       exact measurable_pi_apply
         (⟨SWIGNode.random WNode.A, by simp [X]⟩ : {w // w ∈ X})
@@ -1474,6 +1474,7 @@ private lemma outFun_norm_le_one (d : Bool) (x : C) (ey : ℝ) :
   unfold outFun
   split_ifs <;> norm_num
 
+@[fun_prop]
 private lemma dgp_integrable_YofD (d : Bool) :
     Integrable ((dgpBackdoor m g).YofD d) (dgpPO m g).μ := by
   refine MeasureTheory.Integrable.of_bound
@@ -1484,11 +1485,13 @@ private lemma dgp_integrable_YofD (d : Bool) :
   exact outFun_norm_le_one (g := g) d (ℓ (iUn (C := C) m g)) (ℓ (iEy (C := C) m g))
 
 /-- The treated potential outcome is integrable because it is bounded Bernoulli-valued. -/
+@[fun_prop]
 theorem dgp_integrable_Y1 :
     Integrable ((dgpBackdoor m g).YofD true) (dgpPO m g).μ := by
   exact dgp_integrable_YofD (m := m) (g := g) true
 
 /-- The control potential outcome is integrable because it is bounded Bernoulli-valued. -/
+@[fun_prop]
 theorem dgp_integrable_Y0 :
     Integrable ((dgpBackdoor m g).YofD false) (dgpPO m g).μ := by
   exact dgp_integrable_YofD (m := m) (g := g) false

@@ -17,7 +17,10 @@ import type { PipelineContext } from "../src/types.js";
 import { protoCoreJsonPath } from "../src/discovery/stages/neg1_2_author.js";
 import { makeRequiredCoreEditMandate } from "../src/discovery/solve/mandates.js";
 import { withRunHeartbeat } from "../src/shared/run_heartbeat.js";
-import { statementRevision } from "../src/discovery/core/revision.js";
+import { coreRevision, statementRevision } from "../src/discovery/core/revision.js";
+import { assembleCore } from "../src/discovery/core/assemble.js";
+import { wiredSnapshot } from "../src/discovery/working_writer.js";
+import type { CoreStatement } from "../src/discovery/core/schema.js";
 
 const exec = promisify(execFile);
 const __TOOLS_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -459,6 +462,193 @@ describe("d0_apply_change.ts", () => {
 });
 
 describe("d0_rebuild_review_packet.ts", () => {
+  async function sealLiveProposalBasis(ctx: PipelineContext, proto: any): Promise<void> {
+    const working = await loadWorkingState(ctx);
+    if (!working?.proposals) throw new Error("test fixture has no live proposal carrier to seal");
+    working.proposals.basis_revision = coreRevision(assembleCore(proto, working));
+    await saveWorkingState(ctx, working);
+  }
+
+  async function seedUnpairedRecoveryFixture(
+    proofs: Array<{ id: string; proof_tex: string; argues_proposed?: boolean }>,
+  ): Promise<{ ctx: PipelineContext; solvePath: string; target: any }> {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
+    await mkdir(dir, { recursive: true });
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const target = proto.statements[0];
+    const proposed = `${target.statement} Corrected.`;
+    await writeFile(path.join(dir, "proto_core.json"), JSON.stringify(proto), "utf8");
+    await writeFile(path.join(dir, "core.json"), JSON.stringify(proto), "utf8");
+    await saveWorkingState(ctx, { round: 2, solved: {} });
+    const solvePath = path.join(dir, "solve_recovery.json");
+    await writeFile(solvePath, JSON.stringify({
+      proofs,
+      proposed_core_edits: [{
+        kind: "statement-replace", id: target.id,
+        proposed: { ...target, statement: proposed, free_symbols: [] },
+        reason: "correct the claim", direction: "correct",
+      }],
+    }), "utf8");
+    return { ctx, solvePath, target };
+  }
+
+  it("refuses unauthenticated lost-bundle reconstruction from a raw solve file", async () => {
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const target = proto.statements[0];
+    const { ctx, solvePath } = await seedUnpairedRecoveryFixture([
+      { id: target.id, proof_tex: "Proof of the old claim.", argues_proposed: false },
+    ]);
+
+    await expect(run("d0_rebuild_review_packet.ts", [
+      "--solve-json", solvePath, "--repair-unpaired-claim-edits",
+    ])).rejects.toMatchObject({ stderr: expect.stringMatching(/only augment an existing capability-projected live bundle/i) });
+
+    expect((await loadWorkingState(ctx))?.proposals?.proofs ?? []).toEqual([]);
+    const unchanged = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(unchanged.statements[0].statement).toBe(target.statement);
+  });
+
+  it("rejects duplicate same-id proof intent before augmenting a live bundle", async () => {
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const target = proto.statements[0];
+    const { ctx, solvePath } = await seedUnpairedRecoveryFixture([
+      { id: target.id, proof_tex: "First proof payload." },
+      { id: target.id, proof_tex: "First proof payload.", argues_proposed: true },
+    ]);
+    const raw = JSON.parse(await readFile(solvePath, "utf8"));
+    raw.proposed_statement_changes = [{
+      id: target.id, current: target.statement, proposed: raw.proposed_core_edits[0].proposed.statement,
+      reason: "correct the claim", direction: "correct",
+    }];
+    await writeFile(solvePath, JSON.stringify(raw), "utf8");
+    const working = await loadWorkingState(ctx);
+    working!.proposals = {
+      statements: raw.proposed_statement_changes, definitions: [], assumptions: [],
+      coreEdits: raw.proposed_core_edits,
+      proofs: [{ id: target.id, proof_tex: "First proof payload.", argues_proposed: true }],
+    };
+    await saveWorkingState(ctx, working!);
+    await sealLiveProposalBasis(ctx, proto);
+
+    await expect(run("d0_rebuild_review_packet.ts", [
+      "--solve-json", solvePath, "--augment-live-proposals",
+    ])).rejects.toMatchObject({ stderr: expect.stringMatching(/duplicate proof id/i) });
+
+    expect((await loadWorkingState(ctx))?.proposals?.proofs).toEqual([
+      { id: target.id, proof_tex: "First proof payload.", argues_proposed: true },
+    ]);
+    const unchanged = JSON.parse(await readFile(protoCoreJsonPath(ctx), "utf8"));
+    expect(unchanged.statements[0].statement).toBe(target.statement);
+  });
+
+  it("retains live solver proofs and exact cited receipts without promoting unrelated partial context", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
+    await mkdir(dir, { recursive: true });
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const main = proto.statements[0];
+    const support = proto.statements[1];
+    const cited: CoreStatement = {
+      id: "lem:cited-support", kind: "lemma", statement: "A cited support fact.",
+      depends_on: [], status: "cited", source: { cite: proto.bibliography[0].key, locator: "Theorem 1" },
+      free_symbols: [],
+    };
+    const unfinished: CoreStatement = {
+      id: "lem:unfinished-context", kind: "lemma", statement: "An unfinished contextual claim.",
+      depends_on: [], status: "to-prove", free_symbols: [],
+    };
+    const mainProof = "Fresh proof against the metadata postimage.";
+    const supportProof = "Previously reviewed durable support proof.";
+    proto.statements.push(cited);
+    const settledSupport = Object.fromEntries(
+      proto.statements
+        .filter((statement: CoreStatement) => statement.id !== main.id && statement.id !== cited.id)
+        .map((statement: CoreStatement) => [
+          statement.id,
+          {
+            proof_tex: statement.id === support.id ? supportProof : `Durable proof for ${statement.id}.`,
+            snapshot: wiredSnapshot(
+              proto,
+              statement,
+              statement.id === support.id ? supportProof : `Durable proof for ${statement.id}.`,
+            ),
+          },
+        ]),
+    );
+    await writeFile(path.join(dir, "proto_core.json"), JSON.stringify(proto), "utf8");
+    await writeFile(path.join(dir, "core.json"), JSON.stringify(proto), "utf8");
+    const metadataEdit = {
+      kind: "statement-replace" as const, id: main.id,
+      proposed: {
+        ...main,
+        depends_on: [...main.depends_on, cited.id],
+        consumer: `${main.consumer ?? "consumer"} (clarified)`,
+      },
+      reason: "metadata clarification", direction: "correct" as const,
+    };
+    await saveWorkingState(ctx, {
+      round: 2,
+      solved: {
+        ...settledSupport,
+        [main.id]: { proof_tex: mainProof, snapshot: wiredSnapshot(proto, main, "Old proof."), partial: true },
+        [cited.id]: {
+          proof_tex: "", snapshot: wiredSnapshot(proto, cited, ""),
+        },
+        [unfinished.id]: {
+          node: unfinished,
+          owner: main.id,
+          proof_tex: "Only a partial argument, not a completed proof.",
+          snapshot: wiredSnapshot(proto, unfinished, "Only a partial argument, not a completed proof."),
+          partial: true,
+        },
+      },
+      proposals: {
+        statements: [], definitions: [], assumptions: [], coreEdits: [metadataEdit],
+        proofs: [{ id: main.id, proof_tex: mainProof }],
+        citationRevalidations: [cited],
+      },
+    });
+    await sealLiveProposalBasis(ctx, proto);
+    const solvePath = path.join(dir, "solve_recovery.json");
+    await writeFile(solvePath, JSON.stringify({
+      proofs: [{ id: main.id, proof_tex: mainProof }],
+      added_lemmas: [cited],
+      proposed_core_edits: [metadataEdit],
+    }), "utf8");
+
+    await expect(run("d0_rebuild_review_packet.ts", [
+      "--solve-json", solvePath,
+      "--augment-live-proposals",
+    ])).rejects.toMatchObject({
+      stderr: expect.stringMatching(/cannot recover cited-source receipts.*normal D0 solve\/merge path/i),
+    });
+
+    const rebuiltRun = await run("d0_rebuild_review_packet.ts", []);
+    const rebuilt = await loadWorkingState(ctx);
+    expect(rebuilt?.proposals?.proofs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: main.id, proof_tex: mainProof }),
+    ]));
+    expect(rebuilt?.proposals?.proofs.some((proof) => proof.id === support.id)).toBe(false);
+    expect(rebuilt?.proposals?.proofs.some((proof) => proof.id === unfinished.id)).toBe(false);
+    expect(rebuilt?.solved[support.id]?.partial).not.toBe(true);
+    expect(rebuilt?.proposals?.citationRevalidations).toEqual([cited]);
+    const packet = JSON.parse(await readFile(JSON.parse(rebuiltRun.stdout).packet, "utf8"));
+    expect(packet.citation_revalidations).toEqual([cited]);
+    expect(packet.recovery.explicitly_included_durable_proof_ids).toEqual([]);
+
+    await run("d0_apply_change.ts", ["--all", "--check"]);
+    await run("d0_apply_change.ts", ["--all"]);
+    const applied = await loadWorkingState(ctx);
+    expect(applied?.solved[main.id]?.partial).not.toBe(true);
+    expect(applied?.solved[support.id]?.partial).not.toBe(true);
+    expect(applied?.solved[cited.id]?.partial).not.toBe(true);
+  });
+
   it("repins whitespace-equivalent proposal guards to durable bytes", async () => {
     const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
     const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
@@ -484,10 +674,12 @@ describe("d0_rebuild_review_packet.ts", () => {
         proofs: [{ id: target.id, proof_tex: proof, argues_proposed: true }],
       },
     });
+    await sealLiveProposalBasis(ctx, proto);
 
     const rebuiltRun = await run("d0_rebuild_review_packet.ts", []);
 
     const rebuilt = await loadWorkingState(ctx);
+    expect(rebuilt?.proposals?.basis_revision).toBe(coreRevision(assembleCore(proto, rebuilt!)));
     expect(rebuilt?.proposals?.statements).toContainEqual(
       expect.objectContaining({ id: target.id, current: target.statement, proposed }),
     );
@@ -542,6 +734,67 @@ describe("d0_rebuild_review_packet.ts", () => {
     const unchanged = await loadWorkingState(ctx);
     expect((unchanged?.proposals?.statements[0] as { current?: string } | undefined)?.current)
       .toBe(oldStatement);
+  });
+
+  it("retires durable-proof inclusion because preimage bytes cannot certify a semantic postimage", async () => {
+    const ctx: PipelineContext = { repoRoot, qid: QID, specialization: SPEC, dryRun: false, resume: true };
+    const dir = path.join(repoRoot, "doc", "research", "active", QID, "discovery");
+    await mkdir(dir, { recursive: true });
+    const protoSrc = path.resolve(__TOOLS_ROOT, "test", "fixtures", "stat_ate_overlap_decay_proto_core.json");
+    const proto = JSON.parse(await readFile(protoSrc, "utf8"));
+    const target = proto.statements[0];
+    const support = proto.statements[2];
+    const supportProof = "Previously settled proof under the pre-mandate symbol basis.";
+    await writeFile(path.join(dir, "proto_core.json"), JSON.stringify(proto), "utf8");
+    await writeFile(path.join(dir, "core.json"), JSON.stringify(proto), "utf8");
+    const metadataEdit = {
+      kind: "statement-replace" as const,
+      id: target.id,
+      proposed: { ...target, consumer: `${target.consumer ?? "consumer"} clarified` },
+      reason: "clarify metadata",
+      direction: "correct" as const,
+    };
+    await saveWorkingState(ctx, {
+      round: 2,
+      proposal_revision: "angle:0/version:1",
+      escalation_entries_consumed: 0,
+      solved: {
+        [support.id]: { proof_tex: supportProof, snapshot: wiredSnapshot(proto, support, supportProof) },
+      },
+      proposals: {
+        statements: [], definitions: [], assumptions: [], coreEdits: [metadataEdit], proofs: [],
+      },
+    });
+    await sealLiveProposalBasis(ctx, proto);
+    const state = await loadState(repoRoot, QID, SPEC);
+    state.proposed_from = {
+      topic: "test", novelty_target: "field", pivot_budget_used: 0, final_verdict: "ACCEPT",
+      proposal_path: path.join(dir, "proto_core.json"), novelty_justification: "fixture",
+      chosen_qid: QID, chosen_specialization: SPEC, current_angle_index: 0, current_version: 1,
+    };
+    await saveState(repoRoot, QID, SPEC, state);
+    const symbol = proto.symbols[0];
+    const mandate = makeRequiredCoreEditMandate({
+      core: proto,
+      working: await loadWorkingState(ctx),
+      edit: {
+        kind: "symbol-replace", name: symbol.name,
+        proposed: { ...symbol, def: `${symbol.def} under a changed semantic basis` },
+        reason: "correct symbol semantics", direction: "correct",
+      },
+      proposalRevision: "angle:0/version:1",
+    });
+    await appendEscalationLog(ctx, {
+      round: 2, changed: [], directive: "apply the symbol correction", require_core_changes: true,
+      required_core_edit_mandates: [mandate],
+    });
+
+    await expect(run("d0_rebuild_review_packet.ts", [
+      "--include-durable-proof", support.id,
+    ])).rejects.toMatchObject({
+      stderr: expect.stringMatching(/include-durable-proof is retired.*normal D0 solve\/merge path/i),
+    });
+    expect((await loadWorkingState(ctx))?.solved[support.id]?.partial).not.toBe(true);
   });
 
   it("durably recovers an unconsumed mandate and quarantines its same-target proof", async () => {
